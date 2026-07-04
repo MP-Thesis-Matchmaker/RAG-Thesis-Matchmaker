@@ -42,8 +42,10 @@ def main() -> None:
     settings = get_settings()
 
     if not args.query:
+        endpoint = settings.llm_base_url or "offline (rule-based parser)"
         print("thesis-matchmaker skeleton is ready.")
-        print(f"  llm provider:    {settings.llm_provider}")
+        print(f"  llm endpoint:    {endpoint}")
+        print(f"  llm model:       {settings.llm_model}")
         print(f"  embedding model: {settings.embedding_model}")
         print('try: thesis-matchmaker "I want an NLP thesis on RAG"')
         return

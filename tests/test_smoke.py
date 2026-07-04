@@ -10,5 +10,5 @@ def test_version_is_set():
 
 def test_settings_load_with_defaults():
     settings = get_settings()
-    assert settings.llm_provider
+    assert settings.llm_model
     assert settings.embedding_model

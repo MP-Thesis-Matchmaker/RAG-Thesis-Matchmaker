@@ -19,12 +19,14 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Stand-in reasoning LLM used during local development, before the tool is
-    # plugged into LibreChat. One of: "anthropic", "openai". Kept swappable on
-    # purpose so it does not leak into the core.
-    llm_provider: str = "anthropic"
-    anthropic_api_key: str | None = None
-    openai_api_key: str | None = None
+    # LLM used to parse the student's query into structured fields, reached over
+    # an OpenAI-compatible chat endpoint. In production llm_base_url points at
+    # LibreChat / the AI Buddy gateway (the point of contact); in development at
+    # a free local model, e.g. Ollama at http://localhost:11434/v1. When it is
+    # unset, the pipeline uses the offline rule-based parser and needs no LLM.
+    llm_base_url: str | None = None
+    llm_model: str = "llama3.1"
+    llm_api_key: str | None = None
 
     # Embedding model used for semantic search. Provisional default; the final
     # choice is shared with the retrieval and index work.
