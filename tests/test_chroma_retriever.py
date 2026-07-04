@@ -48,9 +48,7 @@ def retriever(tmp_path: Path) -> ChromaRetriever:
     (sources / "publications.jsonl").write_text(
         "".join(p.model_dump_json() + "\n" for p in publications)
     )
-    (sources / "theses.jsonl").write_text(
-        "".join(t.model_dump_json() + "\n" for t in postings)
-    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
     embedder = HashEmbedder()
     store = ChromaVectorStore(path=str(tmp_path / "index"), collection_name="test")
     Indexer(embedder=embedder, store=store, index_path=tmp_path / "index").run(sources)

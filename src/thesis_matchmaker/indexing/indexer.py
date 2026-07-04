@@ -87,7 +87,10 @@ class Indexer:
         self._write_manifest(document_count=len(documents), sources_dir=sources_dir)
         logger.info(
             "index run: embedded=%d skipped=%d deleted=%d invalid_lines=%d",
-            result.embedded, result.skipped, result.deleted, result.invalid_lines,
+            result.embedded,
+            result.skipped,
+            result.deleted,
+            result.invalid_lines,
         )
         return result
 

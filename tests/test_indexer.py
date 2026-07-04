@@ -13,15 +13,14 @@ from thesis_matchmaker.indexing.indexer import Indexer, ModelMismatchError
 from thesis_matchmaker.indexing.store import ChromaVectorStore
 
 
-def _write_sources(sources: Path, publications: list[ZoraRecord],
-                   postings: list[ThesisPosting]) -> None:
+def _write_sources(
+    sources: Path, publications: list[ZoraRecord], postings: list[ThesisPosting]
+) -> None:
     sources.mkdir(parents=True, exist_ok=True)
     (sources / "publications.jsonl").write_text(
         "".join(p.model_dump_json() + "\n" for p in publications)
     )
-    (sources / "theses.jsonl").write_text(
-        "".join(t.model_dump_json() + "\n" for t in postings)
-    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
 
 
 def _publication(pub_id: str = "zora:1", abstract: str = "We study dense retrieval.") -> ZoraRecord:

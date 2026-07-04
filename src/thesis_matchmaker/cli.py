@@ -79,11 +79,12 @@ def main(argv: list[str] | None = None) -> None:
 
     index_parser = subparsers.add_parser("index", help="build or refresh the vector index")
     index_parser.add_argument(
-        "--source", help="directory with publications.jsonl / theses.jsonl "
-        "(default: SOURCES_PATH setting)"
+        "--source",
+        help="directory with publications.jsonl / theses.jsonl (default: SOURCES_PATH setting)",
     )
     index_parser.add_argument(
-        "--rebuild", action="store_true",
+        "--rebuild",
+        action="store_true",
         help="delete the existing index first (required after changing the embedding model)",
     )
 

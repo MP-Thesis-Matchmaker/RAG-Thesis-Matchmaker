@@ -24,10 +24,18 @@ def _seed(store: ChromaVectorStore) -> HashEmbedder:
     embedder = HashEmbedder()
     docs = [
         _doc("zora:1", "dense retrieval for german text", source_type="publication", year=2024),
-        _doc("posting:1", "msc thesis on rag grounding", source_type="thesis_posting",
-             degree_level="master"),
-        _doc("posting:2", "phd position in medieval history", source_type="thesis_posting",
-             degree_level="phd"),
+        _doc(
+            "posting:1",
+            "msc thesis on rag grounding",
+            source_type="thesis_posting",
+            degree_level="master",
+        ),
+        _doc(
+            "posting:2",
+            "phd position in medieval history",
+            source_type="thesis_posting",
+            degree_level="phd",
+        ),
     ]
     store.upsert(docs, embedder.embed_documents([d.text for d in docs]))
     return embedder
