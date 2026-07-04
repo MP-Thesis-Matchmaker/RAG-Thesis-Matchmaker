@@ -29,11 +29,21 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
 
     # Embedding model used for semantic search. Provisional default; the final
-    # choice is shared with the retrieval and index work.
+    # choice is shared with the retrieval and index work. The special value
+    # "hash-fake" selects the deterministic offline fake (tests, CI, demos
+    # without the model download).
     embedding_model: str = "BAAI/bge-m3"
 
-    # Where the built vector index will live once it exists.
+    # Where the built vector index lives.
     vector_store_path: str = "data/index"
+
+    # Directory the ingestion component writes its JSONL output to; the
+    # indexer reads publications.jsonl and theses.jsonl from here. Defaults to
+    # the checked-in synthetic sample data until real ingestion output exists.
+    sources_path: str = "data/samples"
+
+    # Name of the vector store collection holding the index.
+    collection_name: str = "matchmaker"
 
 
 def get_settings() -> Settings:
