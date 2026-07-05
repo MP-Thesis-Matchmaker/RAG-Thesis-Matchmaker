@@ -1,9 +1,9 @@
 """Command line entry point.
 
 Two subcommands: `index` builds or refreshes the vector index from the
-ingested JSONL files, `match` runs a query against it. When no index has been
-built yet, `match` falls back to the fake retriever so the output shape stays
-visible.
+ingested JSONL files, `match` runs a query against it and writes a
+recommendation. When no index has been built yet, `match` falls back to the
+fake retriever so the output shape stays visible.
 """
 
 from __future__ import annotations
@@ -61,7 +61,10 @@ def _run_match(settings: Settings, args: argparse.Namespace) -> None:
         print("no index found - run 'thesis-matchmaker index' first.")
         print("(results are canned for now, from the fake retriever)\n")
     matches = pipeline.run(args.query, top_k=args.top_k)
-    print(f"query: {args.query}")
+    answer = pipeline.synthesizer.synthesize(args.query, matches)
+    print(f"query: {args.query}\n")
+    print(answer)
+    print("\nmatches (retrieval detail):")
     _print_matches(matches)
 
 

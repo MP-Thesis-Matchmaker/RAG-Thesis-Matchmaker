@@ -1,8 +1,8 @@
-"""The orchestration skeleton: parse -> retrieve -> (rank) -> (synthesise).
+"""The orchestration skeleton: parse -> retrieve -> rank -> synthesise.
 
-Parsing now runs through a real extractor (Claude when configured, rule-based
-otherwise). Ranking currently lives inside the retriever, and answer synthesis
-is not wired yet. Both slot in here without changing the callers.
+Parsing runs through a real extractor (LLM when configured, rule-based
+otherwise), retrieval and ranking sit behind the retriever, and synthesis turns
+the ranked matches into a written recommendation. Each step is swappable.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from thesis_matchmaker.contracts import ParsedQuery, SupervisorMatch
 from thesis_matchmaker.parsing import QueryExtractor, RuleBasedExtractor, build_extractor
 from thesis_matchmaker.retrieval.base import Retriever
 from thesis_matchmaker.retrieval.fake import FakeRetriever
+from thesis_matchmaker.synthesis import Synthesizer, build_synthesizer
 
 
 def parse_query(raw_query: str) -> ParsedQuery:
@@ -29,10 +30,18 @@ class Pipeline:
         self,
         retriever: Retriever | None = None,
         extractor: QueryExtractor | None = None,
+        synthesizer: Synthesizer | None = None,
     ) -> None:
         self.retriever = retriever or FakeRetriever()
         self.extractor = extractor or build_extractor()
+        self.synthesizer = synthesizer or build_synthesizer()
 
     def run(self, raw_query: str, top_k: int = 5) -> list[SupervisorMatch]:
+        """Parse and retrieve: return the ranked matches, no prose."""
         parsed = self.extractor.extract(raw_query)
         return self.retriever.retrieve(parsed, top_k=top_k)
+
+    def recommend(self, raw_query: str, top_k: int = 5) -> str:
+        """Full flow: parse, retrieve, then write a grounded recommendation."""
+        matches = self.run(raw_query, top_k=top_k)
+        return self.synthesizer.synthesize(raw_query, matches)
