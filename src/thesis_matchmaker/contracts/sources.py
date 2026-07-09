@@ -80,7 +80,9 @@ class ZoraRecord(BaseModel):
     )
     department: str | None = Field(
         default=None,
-        description="UZH department or center within the Faculty of Business, Economics and Informatics.",
+        description=(
+            "UZH department or center within the Faculty of Business, Economics and " "Informatics."
+        ),
     )
     language: str | None = Field(
         default=None, description="ISO 639 code from dc.language.iso, e.g. 'eng', 'deu'."
