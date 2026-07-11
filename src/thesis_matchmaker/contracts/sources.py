@@ -26,26 +26,9 @@ class ZoraRecord(BaseModel):
 
     One object per publication. Working out who publishes how much on a topic
     happens later in ranking, not here.
-
-    Checked against ZoraPipeline's live output directly (13,352 records,
-    2026-07-08) — every field below is populated in production, not aspirational:
-
-    - department is real now. ZoraPipeline resolves it from the owning
-      DSpace collection UUID (each WWF sub-department has its own
-      "Publications of ..." collection), not from item-level metadata.
-    - uzh_authors / author_authority_map replace the author-identity approach
-      from earlier drafts of this contract. UZH's DSpace-CRIS attaches a
-      Person-entity UUID (an "authority" key) to each author metadata value
-      when that author is a registered UZH researcher; external co-authors
-      get no UUID. This is a materially better signal than picking
-      authors[0] as a stand-in for "the supervisor" — position in an
-      author list is not a reliable seniority signal (economics in
-      particular defaults to alphabetical-by-surname ordering), and this
-      lets retrieval identify actual candidate researchers directly instead
-      of guessing from list position.
     """
 
-    id: str = Field(description="ZORA record id (handle), unique and stable.")
+    id: str = Field(description="ZORA record id, unique and stable.")
     title: str
     abstract: str | None = Field(default=None, description="Abstract text if ZORA has one.")
     authors: list[str] = Field(
@@ -62,25 +45,27 @@ class ZoraRecord(BaseModel):
     author_authority_map: dict[str, str | None] = Field(
         default_factory=dict,
         description=(
-            "author name -> CRIS Person UUID, or None for external "
-            "co-authors. The UUID is stable across a person's publications, "
-            "so it's also the right join key if researcher-level rollups "
-            "are ever rebuilt."
+            "author name -> stable UZH researcher id, or None for external "
+            "co-authors. Stable across a person's publications, so it's "
+            "also the right join key for any future researcher-level "
+            "rollup. Position in the author list alone isn't a reliable "
+            "stand-in for this — it's not a seniority signal in every "
+            "field (economics, for instance, defaults to alphabetical "
+            "ordering by surname)."
         ),
     )
     year: int | None = None
     keywords: list[str] = Field(
         default_factory=list,
         description=(
-            "DDC + Scopus subject labels. Coarse-grained (discipline level, "
-            "not sub-topic) — useful for broad filtering, not for "
-            "distinguishing e.g. NLP from other CS subfields. That "
-            "distinction has to come from the title/abstract embedding."
+            "Subject/classification labels. Discipline-level rather than "
+            "sub-topic — useful for broad filtering, not for "
+            "distinguishing specific research areas within a field."
         ),
     )
     department: str | None = Field(
         default=None,
-        description="UZH department or center in the Faculty of Business and Informatics.",
+        description="UZH department or center, if known.",
     )
     language: str | None = Field(
         default=None, description="ISO 639 code from dc.language.iso, e.g. 'eng', 'deu'."
