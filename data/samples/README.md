@@ -8,6 +8,5 @@ ZORA records and must never be presented as real data or used in any evaluation 
 - `theses.jsonl` — 20 `ThesisPosting` rows.
 
 These files stand in for the output of the ingestion component (Persons 1 & 2) until the real
-harvest and scraper land. When the ZoraPipeline export is available, replace the synthetic
-`publications.jsonl` with the latest real export from that pipeline, or point `SOURCES_PATH` at
-the directory containing the ZoraPipeline data before running the indexer.
+harvest and scraper land. The indexer reads them via the `SOURCES_PATH` setting, which defaults
+to this directory.
