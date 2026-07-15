@@ -32,15 +32,46 @@ class ZoraRecord(BaseModel):
     title: str
     abstract: str | None = Field(default=None, description="Abstract text if ZORA has one.")
     authors: list[str] = Field(
-        default_factory=list, description="Author names as listed on the publication."
+        default_factory=list, description="Every author name as listed on the publication."
+    )
+    uzh_authors: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Subset of authors with a CRIS authority key — i.e. registered "
+            "UZH researchers. These are the candidate people for supervisor "
+            "matching; the rest of authors[] are external collaborators."
+        ),
+    )
+    author_authority_map: dict[str, str | None] = Field(
+        default_factory=dict,
+        description=(
+            "author name -> stable UZH researcher id, or None for external "
+            "co-authors. Stable across a person's publications, so it's "
+            "also the right join key for any future researcher-level "
+            "rollup. Position in the author list alone isn't a reliable "
+            "stand-in for this — it's not a seniority signal in every "
+            "field (economics, for instance, defaults to alphabetical "
+            "ordering by surname)."
+        ),
     )
     year: int | None = None
-    keywords: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Subject/classification labels. Discipline-level rather than "
+            "sub-topic — useful for broad filtering, not for "
+            "distinguishing specific research areas within a field."
+        ),
+    )
     department: str | None = Field(
-        default=None, description="UZH department or institute, if known."
+        default=None,
+        description="UZH department or center, if known.",
+    )
+    language: str | None = Field(
+        default=None, description="ISO 639 code from dc.language.iso, e.g. 'eng', 'deu'."
     )
     publication_type: str | None = Field(
-        default=None, description="e.g. journal article, conference paper."
+        default=None, description="e.g. article, working_paper, dissertation."
     )
     doi: str | None = None
     url: str | None = Field(default=None, description="Link to the ZORA landing page.")
