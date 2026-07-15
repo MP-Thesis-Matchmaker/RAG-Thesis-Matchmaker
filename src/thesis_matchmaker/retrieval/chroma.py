@@ -8,7 +8,9 @@ component later.
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
+from typing import Literal
 
 from thesis_matchmaker.contracts import Evidence, ParsedQuery, SupervisorMatch
 from thesis_matchmaker.indexing.embedder import Embedder
@@ -39,10 +41,16 @@ class ChromaRetriever:
         shared: dict[str, str] = {}
         if query.department:
             shared["department"] = query.department
-        posting_filters = {"source_type": "thesis_posting", **shared}
+        posting_filters: dict[str, str | bool] = {"source_type": "thesis_posting", **shared}
         if query.degree_level:
             posting_filters["degree_level"] = query.degree_level.value
-        publication_filters = {"source_type": "publication", **shared}
+        # Only publications with at least one registered UZH researcher are
+        # supervisor-eligible; external-only author lists are pre-filtered out.
+        publication_filters: dict[str, str | bool] = {
+            "source_type": "publication",
+            "has_uzh_author": True,
+            **shared,
+        }
 
         hits = self.store.query(vector, top_k=top_k, filters=posting_filters)
         hits += self.store.query(vector, top_k=top_k, filters=publication_filters)
@@ -50,12 +58,25 @@ class ChromaRetriever:
         return self._group_by_person(hits, query)[:top_k]
 
     @staticmethod
+    def _source_type(hit: ScoredHit) -> Literal["publication", "thesis_posting"]:
+        return "publication" if hit.metadata["source_type"] == "publication" else "thesis_posting"
+
+    @staticmethod
+    def _persons(hit: ScoredHit) -> list[str]:
+        """Whom a hit counts towards: the posting's supervisor, or every UZH author."""
+        if hit.metadata["source_type"] == "thesis_posting":
+            supervisor = hit.metadata.get("supervisor")
+            return [str(supervisor)] if supervisor else []
+        # uzh_authors is a JSON-encoded list (Chroma metadata is scalar-only).
+        return json.loads(str(hit.metadata.get("uzh_authors", "[]")))
+
+    @staticmethod
     def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
         by_person: dict[str, list[ScoredHit]] = defaultdict(list)
         for hit in hits:
-            person = hit.metadata.get("supervisor") or hit.metadata.get("main_author")
-            if person:
-                by_person[str(person)].append(hit)
+            # A publication with several UZH co-authors credits each of them.
+            for person in ChromaRetriever._persons(hit):
+                by_person[person].append(hit)
 
         matches = []
         for person, person_hits in by_person.items():
@@ -72,11 +93,7 @@ class ChromaRetriever:
                     has_open_position=bool(postings),
                     evidence=[
                         Evidence(
-                            source_type=(
-                                "publication"
-                                if h.metadata["source_type"] == "publication"
-                                else "thesis_posting"
-                            ),
+                            source_type=ChromaRetriever._source_type(h),
                             source_id=h.id,
                             title=h.text.splitlines()[0] if h.text else h.id,
                             url=str(h.metadata["url"]) if h.metadata.get("url") else None,

@@ -12,6 +12,8 @@ from thesis_matchmaker.contracts import (
 def test_zora_record_defaults():
     r = ZoraRecord(id="zora:1", title="A paper")
     assert r.authors == []
+    assert r.uzh_authors == []
+    assert r.author_authority_map == {}
     assert r.abstract is None
 
 

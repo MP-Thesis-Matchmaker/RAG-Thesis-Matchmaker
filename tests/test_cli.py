@@ -20,6 +20,7 @@ def offline_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             title="Dense retrieval for German text",
             abstract="Neural search over German corpora.",
             authors=["Prof. A. Müller"],
+            uzh_authors=["Prof. A. Müller"],
         ).model_dump_json()
         + "\n"
     )

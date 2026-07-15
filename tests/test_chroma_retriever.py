@@ -23,6 +23,7 @@ def retriever(tmp_path: Path) -> ChromaRetriever:
             title="Dense retrieval for German text",
             abstract="Neural search over German corpora.",
             authors=["Prof. A. Müller", "B. Student"],
+            uzh_authors=["Prof. A. Müller"],
             year=2024,
             department="Department of Computational Linguistics",
         ),
@@ -31,8 +32,29 @@ def retriever(tmp_path: Path) -> ChromaRetriever:
             title="Medieval trade routes of the Alps",
             abstract="Archival study of alpine commerce.",
             authors=["Prof. C. Schmid"],
+            uzh_authors=["Prof. C. Schmid"],
             year=2023,
             department="Department of History",
+        ),
+        # External-only author list: indexed, but never supervisor-eligible.
+        ZoraRecord(
+            id="zora:3",
+            title="Dense retrieval for German text, external edition",
+            abstract="Neural search over German corpora.",
+            authors=["Dr. E. External"],
+            uzh_authors=[],
+            year=2022,
+            department="Department of Computational Linguistics",
+        ),
+        # Two UZH co-authors on one publication: both get credited.
+        ZoraRecord(
+            id="zora:4",
+            title="Sleep and risk-seeking behaviour",
+            abstract="Sleep intensity and risk decisions.",
+            authors=["Prof. D. Werth", "Prof. E. Huber", "F. External"],
+            uzh_authors=["Prof. D. Werth", "Prof. E. Huber"],
+            year=2021,
+            department="Department of Economics",
         ),
     ]
     postings = [
@@ -83,3 +105,22 @@ def test_evidence_points_back_to_source_ids(retriever: ChromaRetriever) -> None:
     matches = retriever.retrieve(query, top_k=3)
     ids = {e.source_id for m in matches for e in m.evidence}
     assert "zora:1" in ids or "posting:1" in ids
+
+
+def test_publications_without_uzh_authors_are_filtered_out(retriever: ChromaRetriever) -> None:
+    query = ParsedQuery(topics=["Dense retrieval for German text"])
+    matches = retriever.retrieve(query, top_k=5)
+    supervisors = {m.supervisor for m in matches}
+    evidence_ids = {e.source_id for m in matches for e in m.evidence}
+    assert "Dr. E. External" not in supervisors
+    assert "zora:3" not in evidence_ids
+
+
+def test_multi_uzh_author_publication_credits_every_author(retriever: ChromaRetriever) -> None:
+    query = ParsedQuery(topics=["Sleep and risk-seeking behaviour"])
+    matches = retriever.retrieve(query, top_k=5)
+    supervisors = {m.supervisor for m in matches}
+    assert {"Prof. D. Werth", "Prof. E. Huber"} <= supervisors
+    for match in matches:
+        if match.supervisor in {"Prof. D. Werth", "Prof. E. Huber"}:
+            assert "zora:4" in {e.source_id for e in match.evidence}
