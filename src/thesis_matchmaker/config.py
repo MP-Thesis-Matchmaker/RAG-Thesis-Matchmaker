@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     llm_model: str = "llama3.1"
     llm_api_key: str | None = None
 
+    # Minimum retrieval score a candidate needs before the LLM synthesiser
+    # presents it as a match; below it the answer says there is no strong match
+    # instead of overselling a weak one. 0 disables the filter. Only meaningful
+    # with real embeddings (hash-fake scores are arbitrary).
+    synthesis_min_score: float = 0.0
+
     # Embedding model used for semantic search. Provisional default; the final
     # choice is shared with the retrieval and index work. The special value
     # "hash-fake" selects the deterministic offline fake (tests, CI, demos
