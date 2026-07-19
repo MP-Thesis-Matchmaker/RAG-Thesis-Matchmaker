@@ -1,0 +1,110 @@
+name: ZORA Harvest
+
+# Manual-trigger only — this is a dev/backfill tool.
+# For continuous operation, the scheduler module runs as a long-lived process
+# in whatever hosts the deployed application.
+#
+# How to use:
+#   1. Go to the Actions tab in this repo
+#   2. Select "ZORA Harvest" from the left sidebar
+#   3. Click "Run workflow"
+#   4. Choose mode (full/incremental), optionally set a since date or limit
+#   5. Click "Run workflow" (green button)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Harvest mode"
+        required: true
+        default: "incremental"
+        type: choice
+        options:
+          - incremental
+          - full
+      since:
+        description: "Optional ISO date (e.g. 2024-07-01). Only fetch items accessioned on or after this date. Only applies to full mode."
+        required: false
+        default: ""
+      limit:
+        description: "Optional max number of items to fetch. Useful for smoke testing."
+        required: false
+        default: ""
+
+concurrency:
+  group: zora-harvest
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120   # full UZH harvest can take ~2 hours
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute lowercase image ref
+        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Write API token to a temp file
+        run: echo "${{ secrets.ZORA_API_KEY }}" > "${{ runner.temp }}/zora-token.secret"
+
+      - name: Build harvest command
+        run: |
+          CMD="--mode ${{ github.event.inputs.mode }}"
+          if [ -n "${{ github.event.inputs.since }}" ]; then
+            CMD="$CMD --since ${{ github.event.inputs.since }}"
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            CMD="$CMD --limit ${{ github.event.inputs.limit }}"
+          fi
+          echo "HARVEST_CMD=$CMD" >> "$GITHUB_ENV"
+
+      - name: Run harvester container (with retry)
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "Harvester attempt $attempt/3..."
+            if docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              -v "${{ github.workspace }}/data:/app/data" \
+              -v "${{ runner.temp }}/zora-token.secret:/app/zora-token.secret:ro" \
+              -e PERSONAL_API_TOKEN_FILE=/app/zora-token.secret \
+              -e DSPACE_API_ENDPOINT=https://www.zora.uzh.ch/server/api \
+              "$IMAGE:latest" \
+              $HARVEST_CMD; then
+              exit 0
+            fi
+            sleep $((attempt * 30))
+          done
+          echo "Harvester failed after 3 attempts."
+          exit 1
+
+      - name: Remove token file
+        if: always()
+        run: rm -f "${{ runner.temp }}/zora-token.secret"
+
+      - name: Upload raw dump as build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-dump-${{ github.event.inputs.mode }}-${{ github.run_id }}
+          path: data/raw/*.jsonl
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Commit updated data
+        run: |
+          git config user.name "zora-harvest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/publications.jsonl data/state.json
+          git diff --staged --quiet || git commit -m "chore: ${{ github.event.inputs.mode }} ZORA harvest $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
