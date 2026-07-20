@@ -10,6 +10,7 @@ list of strings"). Every extraction below unwraps ["value"] explicitly.
 Trusting the docstring here silently stores dicts where strings are
 expected — this was caught by reading models.py directly, not assumed.
 """
+
 import logging
 from typing import Any
 
@@ -36,9 +37,9 @@ def _first_orcid(dso: Any) -> str | None:
             raw = values[0]
             # Strip URL prefix if present
             if raw.startswith("https://orcid.org/"):
-                return raw[len("https://orcid.org/"):]
+                return raw[len("https://orcid.org/") :]
             if raw.startswith("http://orcid.org/"):
-                return raw[len("http://orcid.org/"):]
+                return raw[len("http://orcid.org/") :]
             return raw
     return None
 
@@ -56,7 +57,7 @@ def _get_department(dso: Any) -> str | None:
     if owning_collection:
         name = owning_collection.get("name", "")
         if name.startswith("Publications of "):
-            return name[len("Publications of "):]
+            return name[len("Publications of ") :]
         return name if name else None
 
     # 2. Fall back to the first mapped collection name
@@ -66,7 +67,7 @@ def _get_department(dso: Any) -> str | None:
         if colls:
             name = colls[0].get("name", "")
             if name.startswith("Publications of "):
-                return name[len("Publications of "):]
+                return name[len("Publications of ") :]
             return name if name else None
 
     return None
@@ -78,11 +79,7 @@ def _get_uzh_authors(dso: Any) -> list[str]:
     External co-authors have authority=None in the metadata entry and are excluded.
     """
     raw = dso.get_metadata_values(config.FIELD_AUTHOR)
-    return [
-        entry["value"]
-        for entry in raw
-        if entry.get("value") and entry.get("authority")
-    ]
+    return [entry["value"] for entry in raw if entry.get("value") and entry.get("authority")]
 
 
 def _clean_authority(authority: str | None) -> str | None:
@@ -91,7 +88,7 @@ def _clean_authority(authority: str | None) -> str | None:
         return None
     prefix = "will be referenced::ORCID::"
     if authority.startswith(prefix):
-        return authority[len(prefix):]
+        return authority[len(prefix) :]
     return authority
 
 
@@ -136,9 +133,7 @@ def normalize_item(dso: Any) -> dict:
         "doi": next(iter(_values(dso, config.FIELD_DOI)), None),
         "uri": next(iter(_values(dso, config.FIELD_URI)), None),
         "keywords": _collect_keywords(dso),
-        "accessioned": next(
-            iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None
-        ),
+        "accessioned": next(iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None),
     }
 
 

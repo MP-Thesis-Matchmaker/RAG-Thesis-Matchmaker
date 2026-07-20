@@ -2,6 +2,7 @@
 function. No sleeping, no signal handling, no real harvest calls needed:
 these are just timestamp arithmetic, tested directly.
 """
+
 from datetime import UTC, datetime, timedelta
 
 from thesis_matchmaker.zora.scheduler import _next_action
@@ -32,7 +33,7 @@ def test_nothing_due_returns_none():
 
 def test_incremental_due_when_past_its_interval():
     st = {
-        "last_full_run_at": _hours_ago(1),      # recent, not due
+        "last_full_run_at": _hours_ago(1),  # recent, not due
         "last_incremental_run_at": _hours_ago(30),  # past the 24h interval
     }
 
@@ -41,7 +42,7 @@ def test_incremental_due_when_past_its_interval():
 
 def test_full_takes_priority_when_both_are_due():
     st = {
-        "last_full_run_at": _hours_ago(200),        # past the 168h interval
+        "last_full_run_at": _hours_ago(200),  # past the 168h interval
         "last_incremental_run_at": _hours_ago(30),  # also past its interval
     }
 
@@ -50,7 +51,7 @@ def test_full_takes_priority_when_both_are_due():
 
 def test_full_not_yet_due_falls_through_to_incremental_check():
     st = {
-        "last_full_run_at": _hours_ago(2),          # recent, not due
+        "last_full_run_at": _hours_ago(2),  # recent, not due
         "last_incremental_run_at": _hours_ago(30),  # past its interval
     }
 

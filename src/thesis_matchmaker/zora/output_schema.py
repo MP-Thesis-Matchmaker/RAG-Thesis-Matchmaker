@@ -10,6 +10,7 @@ Field names are aligned with the main repo's ZoraRecord contract
 (thesis_matchmaker.contracts.sources) so the indexer can validate
 our JSONL directly without an adapter layer.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

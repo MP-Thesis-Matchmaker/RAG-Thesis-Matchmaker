@@ -211,7 +211,6 @@ def test_department_resolved_by_parsing_collection_name_strips_prefix():
     assert record["department"] == "Institute of Computational Linguistics"
 
 
-
 def test_department_extracted_from_mapped_collections():
     """Department is resolved from mappedCollections if owningCollection is missing."""
     dso = FakeDSO(
@@ -235,7 +234,6 @@ def test_department_extracted_from_mapped_collections():
     record = normalize_item(dso)
 
     assert record["department"] == "Department of Informatics"
-
 
 
 def test_uzh_authors_filters_by_authority_key():

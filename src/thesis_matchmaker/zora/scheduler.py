@@ -32,6 +32,7 @@ Configurable via env vars:
                                  a harvest, so an hourly default is fine
                                  even for a daily/weekly schedule)
 """
+
 from __future__ import annotations
 
 import logging
@@ -101,7 +102,9 @@ def run_forever(
 
     logger.info(
         "Scheduler started. incremental every %sh, full every %sh, polling every %ss.",
-        incremental_interval_hours, full_interval_hours, poll_interval_seconds,
+        incremental_interval_hours,
+        full_interval_hours,
+        poll_interval_seconds,
     )
 
     while not _shutdown_requested:

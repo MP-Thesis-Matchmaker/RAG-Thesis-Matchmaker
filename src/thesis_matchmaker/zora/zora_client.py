@@ -10,6 +10,7 @@ construction time, in this order:
 No manual header wiring is needed on our side — just make sure one of
 those three is set before this module constructs the client.
 """
+
 import logging
 import os
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     """An HTTPAdapter that injects a default timeout to all requests if not specified."""
+
     def __init__(self, *args, timeout=None, **kwargs):
         self.timeout = timeout
         super().__init__(*args, **kwargs)
@@ -88,8 +90,7 @@ def iter_items(
         if len(since) == 10:  # YYYY-MM-DD
             formatted_since = f"{since}T00:00:00Z"
         query = (
-            "dspace.entity.type:Publication AND "
-            f"dc.date.accessioned_dt:[{formatted_since} TO *]"
+            f"dspace.entity.type:Publication AND dc.date.accessioned_dt:[{formatted_since} TO *]"
         )
 
     yield from client.search_objects_iter(

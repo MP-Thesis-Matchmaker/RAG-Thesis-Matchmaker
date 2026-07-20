@@ -14,6 +14,7 @@ Note: this needs real network access to www.zora.uzh.ch, so it will not run
 inside a sandboxed environment without that access — run it locally or as
 a one-off GitHub Actions job.
 """
+
 from __future__ import annotations
 
 import sys

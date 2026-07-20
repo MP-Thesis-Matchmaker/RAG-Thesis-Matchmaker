@@ -5,6 +5,7 @@ Every hardcoded value the pipeline depends on lives here, not buried in
 logic files. If UZH changes a field name or the scope UUID, this is the
 only file that needs to change.
 """
+
 import os
 
 # --- ZORA scope -------------------------------------------------------
@@ -48,7 +49,7 @@ FIELD_LANGUAGE = "dc.language.iso"
 # tries each candidate in order and takes the first hit, stripping any URL
 # prefix to store a bare ORCID.
 FIELD_ORCID_CANDIDATES = [
-    "cris.virtual.orcid",       # confirmed present on real WWF records
+    "cris.virtual.orcid",  # confirmed present on real WWF records
     "person.identifier.orcid",  # kept as fallback
     "dc.contributor.orcid",
     "dc.identifier.orcid",

@@ -5,6 +5,7 @@ external store — whatever's hosting the harvester (a CI job, a
 long-running scheduler process, anything) just needs this file to
 persist on whatever disk it's given between runs.
 """
+
 from __future__ import annotations
 
 import json

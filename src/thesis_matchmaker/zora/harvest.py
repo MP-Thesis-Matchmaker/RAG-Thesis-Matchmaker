@@ -19,6 +19,7 @@ incremental: fetches only items accessioned since the last successful run
              (per data/state.json) and merges them into the existing output
              files. Cheap, runs daily.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,7 +38,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # File I/O helpers
 # ---------------------------------------------------------------------------
-
 
 
 def load_existing_publications(path: str) -> dict[str, dict]:
@@ -78,6 +78,7 @@ def write_raw_dump(raw_items: list[dict], mode: str) -> str:
 # Main harvest logic
 # ---------------------------------------------------------------------------
 
+
 def run(mode: str, since_override: str | None = None, limit: int | None = None) -> int:
     """@return: process exit code (0 success, 1 aborted/failed)"""
     st = state.load_state()
@@ -103,7 +104,6 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
     raw_items = []
     last_accessioned_seen = since
 
-
     for i, dso in enumerate(zora_client.iter_items(client, since=since)):
         if limit is not None and i >= limit:
             logger.info("Reached --limit %d, stopping", limit)
@@ -123,9 +123,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
     write_raw_dump(raw_items, mode)
 
     # --- Primary output: flat publications (publications.jsonl) ---
-    new_publications = [
-        output_schema.to_output(record) for record in raw_items
-    ]
+    new_publications = [output_schema.to_output(record) for record in raw_items]
 
     if mode == "incremental":
         existing_pubs = load_existing_publications(config.PUBLICATIONS_PATH)
@@ -151,8 +149,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
 
     if (
         previous_total_pubs > 0
-        and new_total_pubs
-        < previous_total_pubs * config.MIN_RETENTION_RATIO
+        and new_total_pubs < previous_total_pubs * config.MIN_RETENTION_RATIO
     ):
         logger.error(
             "Safety check failed: new total (%d) is less than %.0f%% of previous "
