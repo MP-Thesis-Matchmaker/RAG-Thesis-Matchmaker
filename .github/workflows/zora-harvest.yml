@@ -24,7 +24,7 @@ on:
       since:
         description: "Optional ISO date (e.g. 2024-07-01). Only fetch items accessioned on or after this date. Only applies to full mode."
         required: false
-        default: ""
+        default: "2024-07-01"
       limit:
         description: "Optional max number of items to fetch. Useful for smoke testing."
         required: false
