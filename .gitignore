@@ -1,3 +1,6 @@
+# Zora API token gitignore
+.dspace-personal-api-token.secret
+
 # macOS
 .DS_Store
 

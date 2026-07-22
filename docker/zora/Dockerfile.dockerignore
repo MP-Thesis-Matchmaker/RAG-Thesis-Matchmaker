@@ -1,0 +1,18 @@
+.git
+.github
+.gitignore
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.secret
+data/raw/
+data/publications.jsonl
+data/state.json
+tests/
+docs/
+notebooks/
+
+vencv/
+.venv/
+pytest tests/zora/ -v
