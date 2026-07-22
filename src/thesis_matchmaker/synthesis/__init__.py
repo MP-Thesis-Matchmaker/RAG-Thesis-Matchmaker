@@ -20,7 +20,7 @@ def build_synthesizer(settings: Settings | None = None) -> Synthesizer:
         from thesis_matchmaker.synthesis.llm import LLMSynthesizer
 
         client = LLMClient(settings.llm_base_url, settings.llm_model, settings.llm_api_key)
-        return LLMSynthesizer(client)
+        return LLMSynthesizer(client, min_score=settings.synthesis_min_score)
     return TemplateSynthesizer()
 
 
