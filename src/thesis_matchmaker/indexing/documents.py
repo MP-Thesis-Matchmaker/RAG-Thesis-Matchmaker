@@ -48,9 +48,19 @@ def zora_to_document(record: ZoraRecord) -> Document:
             "department": record.department,
             "year": record.year,
             "url": record.url,
-            # First listed author, used by retrieval to group hits per person
-            # until ranking builds proper researcher profiles.
-            "main_author": record.authors[0] if record.authors else None,
+            # Chroma metadata only holds scalars, so lists and dicts are stored
+            # as JSON strings and parsed on retrieval. They cannot be filtered
+            # on (Chroma has no array/substring operators over metadata); any
+            # filterable signal needs its own scalar key, like has_uzh_author
+            # below. Exact keyword filtering would need where_document
+            # $contains or a store with array filters (Qdrant/Weaviate).
+            "authors": json.dumps(record.authors),
+            "uzh_authors": json.dumps(record.uzh_authors),
+            "author_authority_map": json.dumps(record.author_authority_map),
+            "keywords": json.dumps(record.keywords),
+            # Query-time eligibility filter: only publications with at least
+            # one registered UZH researcher can lead to a supervisor match.
+            "has_uzh_author": bool(record.uzh_authors),
         },
     )
 
