@@ -109,6 +109,9 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
             logger.info("Reached --limit %d, stopping", limit)
             break
         record = normalize.normalize_item(dso)
+        if not record.get("handle"):
+            logger.warning("Skipping item %d: no handle (uuid=%s)", i, record.get("uuid"))
+            continue
         raw_items.append(record)
         if record.get("accessioned"):
             last_accessioned_seen = record["accessioned"]
@@ -117,6 +120,8 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
 
     if mode == "incremental" and not raw_items:
         logger.info("No new publications since last run — nothing to do")
+        # Re-persist unchanged watermark/total purely to stamp last_incremental_run_at,
+        # resetting the scheduler's clock so this no-op run counts as "ran".
         state.save_state(since, st.get("last_total_publications", 0), mode)
         return 0
 
@@ -141,9 +146,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
     else:
         final_publications = new_publications
 
-    write_jsonl(final_publications, config.PUBLICATIONS_PATH, sort_key="id")
-
-    # --- Safety check ---
+    # --- Safety check (before writing, so a bad run can't overwrite good data) ---
     new_total_pubs = len(final_publications)
     previous_total_pubs = st.get("last_total_publications", 0)
 
@@ -160,6 +163,8 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
             previous_total_pubs,
         )
         return 1
+
+    write_jsonl(final_publications, config.PUBLICATIONS_PATH, sort_key="id")
 
     # --- Validate primary output ---
     valid_count, errors = output_schema.validate_publications_jsonl(config.PUBLICATIONS_PATH)

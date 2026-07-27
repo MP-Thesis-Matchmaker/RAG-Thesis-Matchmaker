@@ -68,3 +68,12 @@ RAW_DIR = os.path.join(DATA_DIR, "raw")
 # faculty genuinely losing most of its publications overnight. Abort instead
 # of committing a destructive update.
 MIN_RETENTION_RATIO = 0.5  # new total must be >= 50% of previous total
+
+# --- Scheduler timing ----------------------------------------------------
+# Wall-clock hour (UTC) when harvests should fire. The scheduler polls
+# hourly and runs when the current hour >= this target and the run
+# hasn't already happened for the current period.
+HARVEST_HOUR_UTC = int(os.environ.get("HARVEST_HOUR_UTC", 1))
+
+# Day of the week (0=Monday ... 6=Sunday) for the weekly full harvest.
+FULL_HARVEST_WEEKDAY = int(os.environ.get("FULL_HARVEST_WEEKDAY", 0))  # Monday

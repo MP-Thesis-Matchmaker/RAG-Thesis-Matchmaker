@@ -43,6 +43,10 @@ def save_state(last_accessioned: str | None, total_publications: int, mode: str)
     state["last_run_at"] = now
     state["last_total_publications"] = total_publications
     state[f"last_{mode}_run_at"] = now
+    # A full run supersedes incremental — stamp both so the scheduler
+    # doesn't immediately trigger an incremental after a fresh full run.
+    if mode == "full":
+        state["last_incremental_run_at"] = now
     with open(config.STATE_PATH, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
         f.write("\n")

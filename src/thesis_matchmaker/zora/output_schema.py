@@ -13,6 +13,8 @@ our JSONL directly without an adapter layer.
 
 from __future__ import annotations
 
+import json
+
 from pydantic import BaseModel, Field
 
 from . import config
@@ -85,7 +87,6 @@ def validate_publications_jsonl(path: str) -> tuple[int, list[str]]:
     Validate every line of publications.jsonl against the schema.
     @return: (number of valid records, list of error strings for invalid ones)
     """
-    import json
 
     valid_count = 0
     errors: list[str] = []

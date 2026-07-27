@@ -89,6 +89,8 @@ def iter_items(
         formatted_since = since
         if len(since) == 10:  # YYYY-MM-DD
             formatted_since = f"{since}T00:00:00Z"
+        # Inclusive on both ends — the boundary item from the last run will be
+        # re-fetched, but harvest.py's de-duplication on record["id"] drops it.
         query = (
             f"dspace.entity.type:Publication AND dc.date.accessioned_dt:[{formatted_since} TO *]"
         )

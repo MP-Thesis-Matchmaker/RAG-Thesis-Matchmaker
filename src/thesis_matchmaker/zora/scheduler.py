@@ -25,12 +25,11 @@ Usage:
     already in progress rather than killing it mid-write)
 
 Configurable via env vars:
-    INCREMENTAL_INTERVAL_HOURS (default 24)
-    FULL_INTERVAL_HOURS        (default 168, i.e. weekly)
-    POLL_INTERVAL_SECONDS      (default 3600 — how often to check whether
-                                 a run is due; this is a cheap check, not
-                                 a harvest, so an hourly default is fine
-                                 even for a daily/weekly schedule)
+    HARVEST_HOUR_UTC       (default 1 — hour in UTC when harvests fire)
+    FULL_HARVEST_WEEKDAY   (default 0 — Monday; 0=Mon … 6=Sun)
+    POLL_INTERVAL_SECONDS  (default 3600 — how often to check whether
+                             a run is due; this is a cheap check, not
+                             a harvest, so an hourly default is fine)
 """
 
 from __future__ import annotations
@@ -40,13 +39,15 @@ import os
 import signal
 import sys
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
-from . import harvest, state
+from . import config, harvest, state
 
 logger = logging.getLogger(__name__)
 
 _shutdown_requested = False
+
+_WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def _handle_shutdown(signum, frame) -> None:  # noqa: ARG001 — signal handler signature
@@ -55,17 +56,32 @@ def _handle_shutdown(signum, frame) -> None:  # noqa: ARG001 — signal handler 
     _shutdown_requested = True
 
 
-def _is_due(last_run_at: str | None, interval_hours: float) -> bool:
+def _is_incremental_due(last_run_at: str | None, harvest_hour: int) -> bool:
+    """Incremental is due when today's date (UTC) is later than the last
+    run's date AND the current hour has reached the target."""
+    now = datetime.now(UTC)
     if last_run_at is None:
-        return True
+        return now.hour >= harvest_hour
     last_run = datetime.fromisoformat(last_run_at)
-    return datetime.now(UTC) >= last_run + timedelta(hours=interval_hours)
+    return now.date() > last_run.date() and now.hour >= harvest_hour
+
+
+def _is_full_due(last_run_at: str | None, harvest_hour: int, weekday: int) -> bool:
+    """Full is due on the designated weekday once the hour target is reached,
+    and only if it hasn't already run this week (i.e., this ISO calendar week)."""
+    now = datetime.now(UTC)
+    if last_run_at is None:
+        return now.weekday() == weekday and now.hour >= harvest_hour
+    last_run = datetime.fromisoformat(last_run_at)
+    # "This week" = same ISO calendar week
+    same_week = now.isocalendar()[:2] == last_run.isocalendar()[:2]
+    return now.weekday() == weekday and now.hour >= harvest_hour and not same_week
 
 
 def _next_action(
     st: dict,
-    incremental_interval_hours: float,
-    full_interval_hours: float,
+    harvest_hour: int,
+    full_harvest_weekday: int,
 ) -> str | None:
     """Decide what to run next, if anything. Pure function — no I/O, no sleeping.
 
@@ -75,23 +91,21 @@ def _next_action(
     with no existing data should do a full harvest first, not try to
     increment from nothing).
     """
-    if _is_due(st.get("last_full_run_at"), full_interval_hours):
+    if _is_full_due(st.get("last_full_run_at"), harvest_hour, full_harvest_weekday):
         return "full"
-    if _is_due(st.get("last_incremental_run_at"), incremental_interval_hours):
+    if _is_incremental_due(st.get("last_incremental_run_at"), harvest_hour):
         return "incremental"
     return None
 
 
 def run_forever(
-    incremental_interval_hours: float | None = None,
-    full_interval_hours: float | None = None,
+    harvest_hour: int | None = None,
+    full_harvest_weekday: int | None = None,
     poll_interval_seconds: float | None = None,
 ) -> None:
-    incremental_interval_hours = incremental_interval_hours or float(
-        os.environ.get("INCREMENTAL_INTERVAL_HOURS", 24)
-    )
-    full_interval_hours = full_interval_hours or float(
-        os.environ.get("FULL_INTERVAL_HOURS", 24 * 7)
+    harvest_hour = harvest_hour if harvest_hour is not None else config.HARVEST_HOUR_UTC
+    full_harvest_weekday = (
+        full_harvest_weekday if full_harvest_weekday is not None else config.FULL_HARVEST_WEEKDAY
     )
     poll_interval_seconds = poll_interval_seconds or float(
         os.environ.get("POLL_INTERVAL_SECONDS", 3600)
@@ -101,15 +115,17 @@ def run_forever(
     signal.signal(signal.SIGINT, _handle_shutdown)
 
     logger.info(
-        "Scheduler started. incremental every %sh, full every %sh, polling every %ss.",
-        incremental_interval_hours,
-        full_interval_hours,
+        "Scheduler started. Incremental nightly at %02d:00 UTC, "
+        "full weekly on %s at %02d:00 UTC, polling every %ss.",
+        harvest_hour,
+        _WEEKDAY_NAMES[full_harvest_weekday],
+        harvest_hour,
         poll_interval_seconds,
     )
 
     while not _shutdown_requested:
         st = state.load_state()
-        action = _next_action(st, incremental_interval_hours, full_interval_hours)
+        action = _next_action(st, harvest_hour, full_harvest_weekday)
 
         if action is not None:
             logger.info("%s harvest is due — running now.", action.capitalize())
