@@ -32,8 +32,8 @@ Runs forever, checking periodically whether a harvest is due. Handles SIGTERM/SI
 
 | Variable | Default | Description |
 |---|---|---|
-| `INCREMENTAL_INTERVAL_HOURS` | `24` | Hours between incremental harvests |
-| `FULL_INTERVAL_HOURS` | `168` (weekly) | Hours between full harvests |
+| `HARVEST_HOUR_UTC` | `1` | Hour (UTC, 0–23) when harvests fire |
+| `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Day of week for the full harvest (0=Mon … 6=Sun) |
 | `POLL_INTERVAL_SECONDS` | `3600` | How often to check if a harvest is due |
 
 ### Via GitHub Actions (manual trigger)
