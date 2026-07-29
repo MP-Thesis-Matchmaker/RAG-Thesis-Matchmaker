@@ -5,11 +5,11 @@ from thesis_matchmaker.contracts import Evidence, SupervisorMatch
 from thesis_matchmaker.synthesis import TemplateSynthesizer, build_synthesizer
 
 
-def _match(name: str, title: str) -> SupervisorMatch:
+def _match(name: str, title: str, score: float = 0.9) -> SupervisorMatch:
     return SupervisorMatch(
         supervisor=name,
         department="Dept of X",
-        score=0.9,
+        score=score,
         matched_topics=["nlp"],
         publication_count=3,
         has_open_position=True,
@@ -43,3 +43,29 @@ def test_build_synthesizer_uses_llm_when_endpoint_set():
         Settings(llm_base_url="http://localhost:11434/v1", llm_model="llama3.1")
     )
     assert isinstance(synth, LLMSynthesizer)
+
+
+def test_build_synthesizer_passes_min_score():
+    synth = build_synthesizer(
+        Settings(
+            llm_base_url="http://localhost:11434/v1",
+            llm_model="llama3.1",
+            synthesis_min_score=0.7,
+        )
+    )
+    assert synth._min_score == 0.7
+
+
+def test_llm_synthesizer_flags_weak_matches_without_calling_llm():
+    from thesis_matchmaker.llm import LLMClient
+    from thesis_matchmaker.synthesis.llm import LLMSynthesizer
+
+    # client is never called: everything is below the threshold
+    client = LLMClient("http://localhost:1", "none")
+    synth = LLMSynthesizer(client, min_score=0.8)
+    weak = _match("Prof. Weak", "Unrelated Paper", score=0.2)
+    text = synth.synthesize("history of dentistry in Switzerland", [weak])
+    assert "no supervisor" in text.lower()
+    assert "strong match" in text.lower()
+    assert "Prof. Weak" in text
+    assert "long shot" in text
