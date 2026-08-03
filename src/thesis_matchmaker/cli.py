@@ -16,6 +16,7 @@ from pathlib import Path
 from thesis_matchmaker import __version__
 from thesis_matchmaker.config import Settings, get_settings
 from thesis_matchmaker.contracts import SupervisorMatch
+from thesis_matchmaker.evaluation import DEFAULT_DATASET, evaluate, load_dataset
 from thesis_matchmaker.indexing import build_indexer
 from thesis_matchmaker.indexing.indexer import MANIFEST_FILE
 from thesis_matchmaker.pipeline import Pipeline
@@ -68,6 +69,18 @@ def _run_match(settings: Settings, args: argparse.Namespace) -> None:
     _print_matches(matches)
 
 
+def _run_evaluate(settings: Settings, args: argparse.Namespace) -> None:
+    queries = load_dataset(args.dataset)
+    if _index_exists(settings):
+        pipeline = Pipeline(retriever=build_retriever(settings))
+    else:
+        pipeline = Pipeline()
+        print("no index found - results come from the fake retriever and mean nothing.\n")
+    min_score = args.min_score if args.min_score is not None else settings.synthesis_min_score
+    report = evaluate(queries, pipeline, top_k=args.top_k, min_score=min_score)
+    print(report.format())
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="thesis-matchmaker",
@@ -91,6 +104,18 @@ def main(argv: list[str] | None = None) -> None:
         help="delete the existing index first (required after changing the embedding model)",
     )
 
+    eval_parser = subparsers.add_parser("evaluate", help="score the ground-truth query set")
+    eval_parser.add_argument(
+        "--dataset", default=str(DEFAULT_DATASET), help="ground-truth JSONL file"
+    )
+    eval_parser.add_argument("--top-k", type=int, default=5, help="rank cutoff for the metrics")
+    eval_parser.add_argument(
+        "--min-score",
+        type=float,
+        default=None,
+        help="score below which a query counts as abstained (default: SYNTHESIS_MIN_SCORE)",
+    )
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     settings = get_settings()
@@ -99,6 +124,8 @@ def main(argv: list[str] | None = None) -> None:
         _run_index(settings, args)
     elif args.command == "match":
         _run_match(settings, args)
+    elif args.command == "evaluate":
+        _run_evaluate(settings, args)
     else:
         endpoint = settings.llm_base_url or "offline (rule-based parser)"
         print("thesis-matchmaker")

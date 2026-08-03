@@ -218,3 +218,6 @@ data/index/
 # Claude
 CLAUDE.md
 .claude/
+
+# local working output (paper drafts etc)
+output/
