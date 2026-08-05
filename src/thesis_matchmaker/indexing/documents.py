@@ -47,6 +47,7 @@ def zora_to_document(record: ZoraRecord) -> Document:
             "source_type": "publication",
             "department": record.department,
             "year": record.year,
+            "language": record.language,
             "url": record.url,
             # Chroma metadata only holds scalars, so lists and dicts are stored
             # as JSON strings and parsed on retrieval. They cannot be filtered

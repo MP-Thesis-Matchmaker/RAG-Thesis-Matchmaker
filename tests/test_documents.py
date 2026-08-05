@@ -19,6 +19,7 @@ def _zora(**overrides) -> ZoraRecord:
         year=2024,
         keywords=["retrieval", "german"],
         department="Department of Informatics",
+        language="eng",
         url="https://www.zora.uzh.ch/id/eprint/1",
     )
     base.update(overrides)
@@ -38,6 +39,7 @@ def test_zora_document_carries_id_and_metadata() -> None:
     assert doc.metadata["source_type"] == "publication"
     assert doc.metadata["department"] == "Department of Informatics"
     assert doc.metadata["year"] == 2024
+    assert doc.metadata["language"] == "eng"
 
 
 def test_zora_document_encodes_author_fields_as_json() -> None:
