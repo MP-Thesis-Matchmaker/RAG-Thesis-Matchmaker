@@ -219,5 +219,5 @@ data/index/
 graphify-out/
 
 # Claude
-CLAUDE.md
+#   CLAUDE.md is tracked on purpose: it is the shared agent brief for the team.
 .claude/

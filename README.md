@@ -20,12 +20,21 @@ own through the CLI.
 
 ![AI Buddy Architecture](docs/architecture/ai_buddy_architecture.svg)
 
+![Architecture](docs/architecture.png)
+
+*Target state. The REST API, the web scraper, the application-process summaries,
+and the multi-signal ranking box are not implemented yet — the per-package
+READMEs linked under [Layout](#layout) say what actually exists.*
+
 ## How it works
 
 1. **Ingestion.** ZORA harvesting and departmental web scraping produce
    `publications.jsonl` and `theses.jsonl`, validated against the shared
-   pydantic contracts in `src/thesis_matchmaker/contracts`. (Harvesting works;
-   the scraping is still being set up. `data/samples/` holds working examples.)
+   pydantic contracts in `src/thesis_matchmaker/contracts`. Harvesting is live —
+   `data/publications.jsonl` holds 22,541 real records, refreshed by
+   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md) or by the
+   manual `zora-harvest` workflow. The scraper is **not built yet**, so
+   `theses.jsonl` is still the synthetic sample in `data/samples/`.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    ChromaDB index, incrementally via a content-hash diff.
@@ -35,8 +44,9 @@ own through the CLI.
    publications and postings, grouped per UZH researcher, and ranked.
 4. **Answer.** Two tools: one returns the ranked researchers with evidence as
    structured data (what askUZH uses), one writes a grounded recommendation in
-   prose. An offline template keeps everything runnable without any LLM. The
-   MCP server exposing these is currently in review.
+   prose. An offline template keeps everything runnable without any LLM, and a
+   match that clears no score threshold is answered deterministically rather
+   than handed to a model. Both are served by the MCP adapter.
 
 ## Quickstart
 
@@ -44,10 +54,14 @@ Needs Python 3.11+.
 
 ```
 pip install -e ".[dev]"
-cp .env.example .env        # optional, everything runs offline by default
-thesis-matchmaker index
+cp .env.example .env             # optional, everything runs offline by default
+thesis-matchmaker index --source data
 thesis-matchmaker match "I want a master's thesis in NLP on RAG"
 ```
+
+**`--source data` matters.** Without it, `index` reads `SOURCES_PATH`, which
+defaults to `data/samples` — 30 sample rows rather than the 22,541 harvested
+publications in `data/`. Nothing warns you about the difference.
 
 Optional extras: `.[embeddings]` installs the real embedding model (pulls in
 torch), `.[mcp]` installs the MCP server. All configuration is documented in
@@ -56,12 +70,38 @@ endpoint (LibreChat in production, or a local Ollama during development).
 
 Real example output is in [docs/example-run.md](docs/example-run.md).
 
+Other entry points:
+
+```
+thesis-matchmaker-mcp                                    # MCP server, HTTP on :8000/mcp
+python -m thesis_matchmaker.zora.harvest --mode full     # ZORA harvest
+```
+
 ## Layout
 
-`src/thesis_matchmaker/`: `contracts` (shared data shapes), `parsing` (query
-to structured fields), `indexing` (embedder, vector store, indexer),
-`retrieval` (semantic search and ranking), `synthesis` (written answers),
-`pipeline` (ties the steps together), `cli`.
+Everything lives under `src/thesis_matchmaker/`. Each package has its own README
+with its public API, data flow, configuration, and known gaps.
+
+| Package | What it does |
+|---|---|
+| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to source data. |
+| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → ChromaDB. No chunking. |
+| [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
+| [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
+| [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
+| [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | The application-service functions the adapters call. |
+| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
+
+Plus `cli.py`, `config.py` (pydantic-settings), and `llm.py` (OpenAI-compatible
+client).
+
+One idiom runs through `parsing`, `indexing`, `retrieval`, and `synthesis`:
+`base.py` defines a `Protocol`, sibling modules implement it, and `__init__.py`
+exposes a `build_*(settings)` factory that picks one. Each also ships a real
+offline implementation — `HashEmbedder`, `FakeRetriever`, `RuleBasedExtractor`,
+`TemplateSynthesizer` — which is why the whole pipeline runs in CI with no model
+download and no network.
 
 ## Development
 
@@ -70,8 +110,17 @@ ruff check . && ruff format --check .
 pytest
 ```
 
-CI runs both on every pull request. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
+CI (`ci.yml`) runs both on every pull request, with the `dev` extras only — the
+`mcp` and `embeddings` code paths are not exercised there. Two further workflows
+build the harvester image to GHCR (`zora-build-image.yml`) and run a manual
+harvest that commits refreshed data back to the repository (`zora-harvest.yml`).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
+
+Two known inconsistencies worth fixing at some point: the MIT badge and
+`license = { text = "MIT" }` have no `LICENSE` file behind them, and
+`docker/zora/Dockerfile` builds on Python 3.12 while the badge and
+`requires-python` say 3.11.
 
 ## Contributors
 
