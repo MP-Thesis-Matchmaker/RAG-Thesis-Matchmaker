@@ -215,6 +215,9 @@ __marimo__/
 # project specific
 data/index/
 
+# graphify / knowledge-graph tool output
+graphify-out/
+
 # Claude
 CLAUDE.md
 .claude/
