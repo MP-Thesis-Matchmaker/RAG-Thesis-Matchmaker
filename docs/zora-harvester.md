@@ -36,15 +36,6 @@ Runs forever, checking periodically whether a harvest is due. Handles SIGTERM/SI
 | `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Day of week for the full harvest (0=Mon … 6=Sun) |
 | `POLL_INTERVAL_SECONDS` | `3600` | How often to check if a harvest is due |
 
-### Via GitHub Actions (manual trigger)
-
-1. Go to the **Actions** tab
-2. Select **"ZORA Harvest"** from the sidebar
-3. Click **"Run workflow"**
-4. Choose mode, optionally set a `since` date or `limit`
-
-This commits the results directly to the repo.
-
 ## Docker
 
 The Docker image defaults to one-shot harvest mode:

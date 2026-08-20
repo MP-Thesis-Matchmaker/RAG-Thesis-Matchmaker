@@ -32,8 +32,8 @@ READMEs linked under [Layout](#layout) say what actually exists.*
    `publications.jsonl` and `theses.jsonl`, validated against the shared
    pydantic contracts in `src/thesis_matchmaker/contracts`. Harvesting is live —
    `data/publications.jsonl` holds 22,541 real records, refreshed by
-   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md) or by the
-   manual `zora-harvest` workflow. The scraper is **not built yet**, so
+   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md). The
+   scraper is **not built yet**, so
    `theses.jsonl` is still the synthetic sample in `data/samples/`.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
@@ -111,9 +111,10 @@ pytest
 ```
 
 CI (`ci.yml`) runs both on every pull request, with the `dev` extras only — the
-`mcp` and `embeddings` code paths are not exercised there. Two further workflows
-build the harvester image to GHCR (`zora-build-image.yml`) and run a manual
-harvest that commits refreshed data back to the repository (`zora-harvest.yml`).
+`mcp` and `embeddings` code paths are not exercised there. It is the only
+workflow: container images are built by hand until the UZH Harbor registry is
+wired up, and harvesting runs in the cluster, never in CI. See
+[docs/deployment.md](docs/deployment.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 

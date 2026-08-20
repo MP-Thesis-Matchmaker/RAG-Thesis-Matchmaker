@@ -52,9 +52,11 @@ Entry points: `thesis-matchmaker` (`index --source --rebuild`, `match --top-k`),
 sample rows, not the 22,541-row `data/publications.jsonl`. Use `--source data`.
 
 Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (94 tests / 18 files), `ruff` (line
-length 100, py311). Three workflows: `ci.yml` (ruff + pytest on every PR, dev extras only — never
-installs `mcp`/`embeddings`), `zora-build-image.yml` (GHCR image), `zora-harvest.yml` (manual
-harvest that **commits data back to the repo** as `zora-harvest-bot`).
+length 100, py311). **One workflow**: `ci.yml` (ruff + pytest on every PR, dev extras only — never
+installs `mcp`/`embeddings`). Deployment target is a **UZH Kubernetes cluster** pulling from a
+**private Harbor registry**, with a **Postgres + pgvector** server; see
+[`docs/deployment.md`](docs/deployment.md). Images are built by hand until Harbor access exists, and
+harvesting runs as a cluster job — never in CI, and **never committing data back to the repo**.
 
 Keep this table current as modules land; put the detail in the package README, not here.
 

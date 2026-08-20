@@ -142,13 +142,10 @@ without the indexer noticing. The DSpace field names are all isolated in
   entrypoint `python -m thesis_matchmaker.zora.harvest`. `data/` is expected to be
   bind-mounted; the container is run with `--user "$(id -u):$(id -g)"` so host
   file ownership stays sane.
-- **`zora-build-image.yml`** — builds and pushes to GHCR on pushes to `main` that
-  touch `docker/zora/**`, `pyproject.toml`, `src/thesis_matchmaker/zora/**`, or
-  `scripts/**`.
-- **`zora-harvest.yml`** — `workflow_dispatch` only, with `mode` / `since` /
-  `limit` inputs. Retries 3× with backoff, uploads `data/raw/*.jsonl` as a 14-day
-  artifact, then **commits `data/publications.jsonl` and `data/state.json` back to
-  the repository** as `zora-harvest-bot`.
+- **Scheduling** — harvesting is a cluster concern, not a CI concern. The image is
+  invoked as a one-shot job with `--mode incremental` / `--mode full`; see
+  [`docs/deployment.md`](../../../docs/deployment.md). Harvest output **never**
+  goes back into git.
 - **`scripts/zora_inspect_fields.py`** — one-off live-API diagnostic. Prints every
   metadata field present on real items, checks the field names assumed in
   `config.py`, and shows per-author `authority` keys. Run with
