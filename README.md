@@ -38,7 +38,7 @@ READMEs linked under [Layout](#layout) say what actually exists.*
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash
-   diff. Apply the schema first with `thesis-matchmaker migrate`.
+   diff. Create the schema first with `thesis-matchmaker init-db`.
 3. **Query.** Free text is parsed into topics, degree level, and department,
    by a rule-based parser offline or any OpenAI-compatible LLM when one is
    configured. The query is embedded with the same model, matched against

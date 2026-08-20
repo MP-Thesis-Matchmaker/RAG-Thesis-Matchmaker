@@ -54,7 +54,7 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: pip install -e ".[dev]"
-      - name: Migrate
-        run: thesis-matchmaker migrate
+      - name: Create schema
+        run: thesis-matchmaker init-db
       - name: Test
         run: pytest

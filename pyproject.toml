@@ -47,7 +47,7 @@ thesis-matchmaker-mcp = "thesis_matchmaker.adapters.mcp_server:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# Migrations are package data, not a top-level directory: the migrate Job runs
+# Migrations are package data, not a top-level directory: the init-db Job runs
 # from an installed package inside the container image.
 [tool.setuptools.package-data]
 thesis_matchmaker = ["migrations/*.sql"]

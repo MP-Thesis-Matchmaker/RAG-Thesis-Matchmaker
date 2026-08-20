@@ -111,7 +111,7 @@ Malformed JSONL lines are counted and skipped, not fatal.
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
 | `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
-| `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Apply the schema with `thesis-matchmaker migrate`. |
+| `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `thesis-matchmaker init-db`. |
 | `sources_path` | `SOURCES_PATH` | `data/samples` | Directory containing the JSONL files. |
 
 > **Watch out:** `sources_path` defaults to `data/samples`, **not** `data/`. The

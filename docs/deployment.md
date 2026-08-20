@@ -13,7 +13,7 @@ a committed manifest is worse than an obvious blank.
 
 | Component | Runtime | Trigger |
 |---|---|---|
-| `migrate` | one-shot `Job` | before every rollout |
+| `init-db` | one-shot `Job` | before every rollout |
 | `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` |
 | `thesis_matchmaker.zora.harvest` | `CronJob` | incremental daily, full weekly |
 | `thesis-matchmaker index` | `CronJob` | after each harvest |
@@ -25,11 +25,11 @@ datastore.
 ## Local equivalent
 
 `docker-compose.yml` mirrors the cluster: a `pgvector/pgvector` container, the
-migrate one-shot, and the harvester as a manually invoked job.
+init-db one-shot, and the harvester as a manually invoked job.
 
 ```bash
 docker compose up -d postgres
-docker compose run --rm migrate
+docker compose run --rm init-db
 docker compose run --rm harvester --mode incremental   # = what the CronJob does
 ```
 

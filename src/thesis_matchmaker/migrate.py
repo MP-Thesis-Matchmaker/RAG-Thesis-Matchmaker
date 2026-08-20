@@ -1,12 +1,17 @@
 """Schema migrations: versioned .sql files applied in filename order.
 
+"Migration" here means *schema* migration -- versioned DDL. Nothing in this
+module moves data, and in particular nothing reads ChromaDB: there was never a
+populated Chroma index to carry over. The user-facing subcommand is called
+`init-db` precisely so it does not read as "migrate away from Chroma".
+
 Deliberately small. The alternative was Alembic, but its value is autogenerating
 migrations by diffing SQLAlchemy models, and this codebase has no ORM -- every
 migration would be hand-written anyway, so Alembic would only contribute an
 ordering mechanism and a second config surface.
 
 Applying is idempotent, which is what makes it safe as a Kubernetes pre-rollout
-Job and as `docker compose run --rm migrate`.
+Job and as `docker compose run --rm init-db`.
 """
 
 from __future__ import annotations

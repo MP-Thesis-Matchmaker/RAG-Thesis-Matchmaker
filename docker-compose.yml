@@ -1,4 +1,4 @@
-# Local mirror of the cluster: the same Postgres extension, the same migrate
+# Local mirror of the cluster: the same Postgres extension, the same schema
 # step, and the harvester as a one-shot job rather than a long-running process.
 #
 # A scheduled harvest in the cluster is one container invocation with a --mode
@@ -26,11 +26,11 @@ services:
       timeout: 5s
       retries: 10
 
-  migrate:
+  init-db:
     build:
       context: .
       dockerfile: docker/zora/Dockerfile
-    entrypoint: ["thesis-matchmaker", "migrate"]
+    entrypoint: ["thesis-matchmaker", "init-db"]
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     depends_on:

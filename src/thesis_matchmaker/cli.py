@@ -1,6 +1,6 @@
 """Command line entry point.
 
-Three subcommands: `migrate` applies the database schema, `index` builds or
+Three subcommands: `init-db` applies the database schema, `index` builds or
 refreshes the vector index from the ingested JSONL files, and `match` runs a
 query against it and writes a recommendation. When no index has been built yet,
 `match` falls back to the fake retriever so the output shape stays visible.
@@ -40,7 +40,7 @@ def _index_exists(settings: Settings) -> bool:
     return read_manifest(settings) is not None
 
 
-def _run_migrate(settings: Settings, _args: argparse.Namespace) -> None:
+def _run_init_db(settings: Settings, _args: argparse.Namespace) -> None:
     applied = migrate.run(settings.database_url)
     if applied:
         print("applied " + ", ".join(applied))
@@ -120,7 +120,10 @@ def main(argv: list[str] | None = None) -> None:
         help="empty the existing index first (required after changing the embedding model)",
     )
 
-    subparsers.add_parser("migrate", help="apply any unapplied database migrations")
+    subparsers.add_parser(
+        "init-db",
+        help="create or update the database schema (idempotent; safe to re-run)",
+    )
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -135,8 +138,8 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
-    if args.command == "migrate":
-        _run_migrate(settings, args)
+    if args.command == "init-db":
+        _run_init_db(settings, args)
     elif args.command == "index":
         _run_index(settings, args)
     elif args.command == "match":
@@ -150,7 +153,7 @@ def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
         print(f"  database:        {_redacted_dsn(settings.database_url)}")
         print(f"  index:           {_index_status(settings)}")
         print(
-            "try: thesis-matchmaker migrate && thesis-matchmaker index && "
+            "try: thesis-matchmaker init-db && thesis-matchmaker index && "
             'thesis-matchmaker match "NLP thesis on RAG"'
         )
 

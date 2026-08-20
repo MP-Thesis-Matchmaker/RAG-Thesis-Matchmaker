@@ -48,7 +48,7 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 `document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points: `thesis-matchmaker` (`migrate`, `index --source --rebuild`, `match --top-k`),
+Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match --top-k`),
 `thesis-matchmaker-mcp` (`--stdio`), and `python -m thesis_matchmaker.zora.harvest`
 (**no console script**).
 
