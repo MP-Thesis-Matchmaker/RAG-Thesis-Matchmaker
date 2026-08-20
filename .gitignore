@@ -213,6 +213,8 @@ marimo/_lsp/
 __marimo__/
 
 # project specific
+# Leftover ChromaDB index directory. Chroma is gone and the index now lives in
+# Postgres, so nothing writes here any more; the directory can be deleted.
 data/index/
 
 # graphify / knowledge-graph tool output

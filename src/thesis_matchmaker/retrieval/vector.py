@@ -8,7 +8,6 @@ component later.
 
 from __future__ import annotations
 
-import json
 from collections import defaultdict
 from typing import Literal
 
@@ -25,7 +24,7 @@ def _query_text(query: ParsedQuery) -> str:
     return "; ".join(parts)
 
 
-class ChromaRetriever:
+class VectorRetriever:
     """Retriever over an Embedder + VectorStore pair built by the indexer."""
 
     def __init__(self, embedder: Embedder, store: VectorStore) -> None:
@@ -67,15 +66,15 @@ class ChromaRetriever:
         if hit.metadata["source_type"] == "thesis_posting":
             supervisor = hit.metadata.get("supervisor")
             return [str(supervisor)] if supervisor else []
-        # uzh_authors is a JSON-encoded list (Chroma metadata is scalar-only).
-        return json.loads(str(hit.metadata.get("uzh_authors", "[]")))
+        authors = hit.metadata.get("uzh_authors") or []
+        return [str(name) for name in authors] if isinstance(authors, list) else []
 
     @staticmethod
     def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
         by_person: dict[str, list[ScoredHit]] = defaultdict(list)
         for hit in hits:
             # A publication with several UZH co-authors credits each of them.
-            for person in ChromaRetriever._persons(hit):
+            for person in VectorRetriever._persons(hit):
                 by_person[person].append(hit)
 
         matches = []
@@ -93,7 +92,7 @@ class ChromaRetriever:
                     has_open_position=bool(postings),
                     evidence=[
                         Evidence(
-                            source_type=ChromaRetriever._source_type(h),
+                            source_type=VectorRetriever._source_type(h),
                             source_id=h.id,
                             title=h.text.splitlines()[0] if h.text else h.id,
                             url=str(h.metadata["url"]) if h.metadata.get("url") else None,

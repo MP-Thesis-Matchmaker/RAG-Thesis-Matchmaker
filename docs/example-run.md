@@ -61,7 +61,7 @@ list.
 
 ## Example 2: through the real retriever
 
-This one runs through the real Chroma retriever over the sample data, to show the
+This one runs through the real pgvector-backed retriever over the sample data, to show the
 actual retrieval code path rather than fixed test data. It uses the offline
 `hash-fake` embedder, which ranks randomly instead of semantically, so the
 candidate ordering is not meaningful here. With the real `bge-m3` embedder the

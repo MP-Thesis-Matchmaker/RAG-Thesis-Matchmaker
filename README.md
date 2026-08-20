@@ -37,7 +37,8 @@ READMEs linked under [Layout](#layout) say what actually exists.*
    `theses.jsonl` is still the synthetic sample in `data/samples/`.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
-   ChromaDB index, incrementally via a content-hash diff.
+   Postgres table with a pgvector column, incrementally via a content-hash
+   diff. Apply the schema first with `thesis-matchmaker migrate`.
 3. **Query.** Free text is parsed into topics, degree level, and department,
    by a rule-based parser offline or any OpenAI-compatible LLM when one is
    configured. The query is embedded with the same model, matched against
@@ -86,7 +87,7 @@ with its public API, data flow, configuration, and known gaps.
 |---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
 | [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to source data. |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → ChromaDB. No chunking. |
+| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → Postgres/pgvector. No chunking. |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |

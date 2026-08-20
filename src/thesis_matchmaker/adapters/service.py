@@ -7,10 +7,8 @@ they can be tested without it, and a pipeline can be injected for tests.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from thesis_matchmaker.config import get_settings
-from thesis_matchmaker.indexing.indexer import MANIFEST_FILE
+from thesis_matchmaker.indexing import read_manifest
 from thesis_matchmaker.pipeline import Pipeline
 from thesis_matchmaker.retrieval import build_retriever
 
@@ -18,7 +16,7 @@ from thesis_matchmaker.retrieval import build_retriever
 def _default_pipeline() -> Pipeline:
     """Pipeline over the real retriever if an index exists, else the fake one."""
     settings = get_settings()
-    if (Path(settings.vector_store_path) / MANIFEST_FILE).exists():
+    if read_manifest(settings) is not None:
         return Pipeline(retriever=build_retriever(settings))
     return Pipeline()
 

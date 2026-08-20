@@ -59,8 +59,12 @@ Blocking for deployment, not for local development against a Postgres container.
    requires superuser unless the extension is marked trusted. If it is not, the
    extension has to be pre-created for us. **Ask this first** — it is the most
    likely blocker, and `migrations/001_*.sql` opens with that statement.
-2. **pgvector version** (HNSW needs >= 0.5.0; `halfvec` needs >= 0.7.0) and the
-   Postgres major version.
+2. **pgvector version** and the Postgres major version. This is not idle
+   curiosity: HNSW needs >= 0.5.0, and **`hnsw.iterative_scan` needs >= 0.8.0**.
+   That setting is what stops a filtered vector search from silently returning
+   fewer rows than asked for, so on an older pgvector the retrieval quality
+   depends entirely on the partial indexes in migration 001. The code tolerates
+   its absence; the evaluation numbers would not be comparable.
 3. **Own database, or a schema inside a shared one?** Affects migration scoping
    and `search_path`.
 4. **Connection limit** for our role — sets the `ConnectionPool` max size.

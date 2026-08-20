@@ -6,7 +6,12 @@ on:
   pull_request:
 
 jobs:
-  check:
+  # The whole suite with no server and no network. This is the property worth
+  # protecting: the offline implementations (HashEmbedder, InMemoryVectorStore,
+  # FakeRetriever, RuleBasedExtractor, TemplateSynthesizer) are real, so the
+  # pipeline runs end to end without a model download or a database. If this job
+  # ever needs a service to pass, one of them has stopped carrying its weight.
+  offline:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,5 +24,37 @@ jobs:
         run: ruff check .
       - name: Format
         run: ruff format --check .
+      - name: Test
+        run: pytest
+
+  # The same store contract against real pgvector: real SQL, real HNSW, real
+  # jsonb containment. Skipped locally when DATABASE_URL is unset.
+  pgvector:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: matchmaker
+          POSTGRES_PASSWORD: matchmaker
+          POSTGRES_DB: matchmaker
+        options: >-
+          --health-cmd "pg_isready -U matchmaker -d matchmaker"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Migrate
+        run: thesis-matchmaker migrate
       - name: Test
         run: pytest

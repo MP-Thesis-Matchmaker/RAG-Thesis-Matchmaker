@@ -12,7 +12,7 @@ the only ranking logic in the system — see the note below.
 ## Role in the pipeline
 
 ```
-ParsedQuery ──▶ ChromaRetriever.retrieve
+ParsedQuery ──▶ VectorRetriever.retrieve
                      │
                      ├─ embed the query with the SAME model that built the index
                      │
@@ -32,13 +32,13 @@ ParsedQuery ──▶ ChromaRetriever.retrieve
 | Symbol | File | Purpose |
 |---|---|---|
 | `Retriever` | `base.py` | Protocol: `retrieve(query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]`. |
-| `ChromaRetriever` | `chroma.py` | The real implementation. Takes an `Embedder` and a `VectorStore`. |
+| `VectorRetriever` | `vector.py` | The real implementation. Takes an `Embedder` and a `VectorStore`; knows nothing about which store it is. |
 | `FakeRetriever` | `fake.py` | Three hard-coded matches, ignores the query entirely. Lets the CLI, the pipeline, and the MCP adapter run with no index present. |
-| `build_retriever(settings)` | `__init__.py` | Factory. Imports `chroma` lazily so the fake path never pulls in `chromadb`. |
+| `build_retriever(settings)` | `__init__.py` | Factory. Imports `vector` lazily so the fake path opens no database connection. |
 
 ## Data flow
 
-**Reads:** the Chroma collection, through the `VectorStore` protocol.
+**Reads:** the `document` table, through the `VectorStore` protocol.
 **Writes:** nothing.
 
 ### Why two queries instead of one
@@ -85,8 +85,7 @@ signal.
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
 | `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Must match the model that built the index; the manifest guard enforces this. |
-| `vector_store_path` | `VECTOR_STORE_PATH` | `data/index` | Which index to read. |
-| `collection_name` | `COLLECTION_NAME` | `matchmaker` | Which collection to read. |
+| `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Which Postgres to read the index from. |
 
 `build_retriever` reads these indirectly, by calling `indexing.build_embedder` and
 `indexing.build_store`.
@@ -100,13 +99,15 @@ repository and run `thesis-matchmaker match` before indexing anything.
 
 ## Status
 
-**Implemented and tested.** `tests/test_chroma_retriever.py` (6 tests) covers
+**Implemented and tested.** `tests/test_vector_retriever.py` (6 tests) covers
 ranking order, the degree-level filter, evidence back-references, the UZH-author
-pre-filter, and multi-author credit.
+pre-filter, and multi-author credit. It runs against `InMemoryVectorStore`, so it
+needs no database — the retriever depends only on the protocol, which is what
+made the store swap a rename here rather than a rewrite.
 
 One thing to be aware of: `Pipeline()` still defaults to `FakeRetriever`. The real
 retriever is wired in by the callers (`cli.py`, `adapters/service.py`) only when
-`data/index/manifest.json` exists. A caller that forgets that check silently
+`read_manifest(settings)` returns a row. A caller that forgets that check silently
 serves fake results.
 
 ## Known gaps

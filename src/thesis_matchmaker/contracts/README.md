@@ -71,7 +71,7 @@ than passing bare strings around.
 ## Known gaps
 
 - **`publication_count` is documented as a ranking signal but is not used as one.**
-  `ChromaRetriever` populates the field, but its score is `max(hit.score)` and
+  `VectorRetriever` populates the field, but its score is `max(hit.score)` and
   nothing else. The docstring overstates the current behaviour.
 - **`SupervisorMatch.matched_topics` is not actually computed.** The retriever
   copies `query.topics` wholesale into every match rather than intersecting the

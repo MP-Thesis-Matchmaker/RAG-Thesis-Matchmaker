@@ -9,12 +9,12 @@ import pytest
 from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraRecord
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer
-from thesis_matchmaker.indexing.store import ChromaVectorStore
-from thesis_matchmaker.retrieval.chroma import ChromaRetriever
+from thesis_matchmaker.indexing.store import InMemoryVectorStore
+from thesis_matchmaker.retrieval.vector import VectorRetriever
 
 
 @pytest.fixture()
-def retriever(tmp_path: Path) -> ChromaRetriever:
+def retriever(tmp_path: Path) -> VectorRetriever:
     sources = tmp_path / "src"
     sources.mkdir()
     publications = [
@@ -72,12 +72,12 @@ def retriever(tmp_path: Path) -> ChromaRetriever:
     )
     (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
     embedder = HashEmbedder()
-    store = ChromaVectorStore(path=str(tmp_path / "index"), collection_name="test")
-    Indexer(embedder=embedder, store=store, index_path=tmp_path / "index").run(sources)
-    return ChromaRetriever(embedder=embedder, store=store)
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(sources)
+    return VectorRetriever(embedder=embedder, store=store)
 
 
-def test_exact_topic_match_ranks_person_first(retriever: ChromaRetriever) -> None:
+def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=3)
     assert matches
@@ -86,28 +86,28 @@ def test_exact_topic_match_ranks_person_first(retriever: ChromaRetriever) -> Non
     assert matches[0].publication_count >= 1
 
 
-def test_matches_sorted_by_score(retriever: ChromaRetriever) -> None:
+def test_matches_sorted_by_score(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=3)
     scores = [m.score for m in matches]
     assert scores == sorted(scores, reverse=True)
 
 
-def test_degree_level_filter_narrows_postings(retriever: ChromaRetriever) -> None:
+def test_degree_level_filter_narrows_postings(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["anything at all"], degree_level="phd")
     matches = retriever.retrieve(query, top_k=5)
     for match in matches:
         assert match.has_open_position is False
 
 
-def test_evidence_points_back_to_source_ids(retriever: ChromaRetriever) -> None:
+def test_evidence_points_back_to_source_ids(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=3)
     ids = {e.source_id for m in matches for e in m.evidence}
     assert "zora:1" in ids or "posting:1" in ids
 
 
-def test_publications_without_uzh_authors_are_filtered_out(retriever: ChromaRetriever) -> None:
+def test_publications_without_uzh_authors_are_filtered_out(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=5)
     supervisors = {m.supervisor for m in matches}
@@ -116,7 +116,7 @@ def test_publications_without_uzh_authors_are_filtered_out(retriever: ChromaRetr
     assert "zora:3" not in evidence_ids
 
 
-def test_multi_uzh_author_publication_credits_every_author(retriever: ChromaRetriever) -> None:
+def test_multi_uzh_author_publication_credits_every_author(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Sleep and risk-seeking behaviour"])
     matches = retriever.retrieve(query, top_k=5)
     supervisors = {m.supervisor for m in matches}

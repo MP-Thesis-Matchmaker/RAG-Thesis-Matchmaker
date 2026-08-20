@@ -1,4 +1,11 @@
-"""Tests for the CLI subcommands, offline (hash-fake embedder, temp dirs)."""
+"""Tests for the CLI subcommands, offline (hash-fake embedder, in-memory store).
+
+The store is swapped at the factory rather than pointed at a test database, so
+these keep exercising the real CLI wiring -- argument parsing, the index/match
+subcommands, the no-index fallback -- with no server running. Both factories are
+patched because `build_indexer` and `read_manifest` resolve `build_store` from
+the indexing package, while `--rebuild` calls the name the CLI imported.
+"""
 
 from __future__ import annotations
 
@@ -6,12 +13,18 @@ from pathlib import Path
 
 import pytest
 
+from thesis_matchmaker import cli, indexing
 from thesis_matchmaker.cli import main
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.indexing.store import InMemoryVectorStore
 
 
 @pytest.fixture()
 def offline_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    store = InMemoryVectorStore()
+    monkeypatch.setattr(indexing, "build_store", lambda _settings: store)
+    monkeypatch.setattr(cli, "build_store", lambda _settings: store)
+
     sources = tmp_path / "src"
     sources.mkdir()
     (sources / "publications.jsonl").write_text(
@@ -34,7 +47,6 @@ def offline_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         + "\n"
     )
     monkeypatch.setenv("EMBEDDING_MODEL", "hash-fake")
-    monkeypatch.setenv("VECTOR_STORE_PATH", str(tmp_path / "index"))
     monkeypatch.setenv("SOURCES_PATH", str(sources))
     return tmp_path
 

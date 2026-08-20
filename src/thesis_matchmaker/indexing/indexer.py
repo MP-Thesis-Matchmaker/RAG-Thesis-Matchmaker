@@ -7,7 +7,6 @@ the sources are deleted so the index never serves stale positions.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
@@ -16,13 +15,12 @@ from pydantic import BaseModel, ValidationError
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
 from thesis_matchmaker.indexing.documents import Document, posting_to_document, zora_to_document
 from thesis_matchmaker.indexing.embedder import Embedder
-from thesis_matchmaker.indexing.store import VectorStore
+from thesis_matchmaker.indexing.store import IndexManifest, VectorStore
 
 logger = logging.getLogger(__name__)
 
 PUBLICATIONS_FILE = "publications.jsonl"
 THESES_FILE = "theses.jsonl"
-MANIFEST_FILE = "manifest.json"
 
 
 class ModelMismatchError(RuntimeError):
@@ -45,10 +43,9 @@ class IndexResult(BaseModel):
 class Indexer:
     """Runs one load -> diff -> embed -> upsert pass over the source files."""
 
-    def __init__(self, embedder: Embedder, store: VectorStore, index_path: Path) -> None:
+    def __init__(self, embedder: Embedder, store: VectorStore) -> None:
         self.embedder = embedder
         self.store = store
-        self.index_path = Path(index_path)
 
     def run(self, sources_dir: Path) -> IndexResult:
         sources_dir = Path(sources_dir)
@@ -109,31 +106,31 @@ class Indexer:
                     logger.warning("skipping invalid line %s:%d: %s", path, line_no, exc)
         return records, invalid
 
-    @property
-    def _manifest_path(self) -> Path:
-        return self.index_path / MANIFEST_FILE
-
     def _check_manifest(self) -> None:
-        if not self._manifest_path.exists():
+        manifest = self.store.read_manifest()
+        if manifest is None:
             return
-        manifest = json.loads(self._manifest_path.read_text())
-        built_with = manifest.get("embedding_model")
-        if built_with != self.embedder.model_name:
+        if manifest.embedding_model != self.embedder.model_name:
             raise ModelMismatchError(
-                f"index at {self.index_path} was built with '{built_with}' but the "
-                f"configured model is '{self.embedder.model_name}'; delete the index "
-                "directory and rebuild"
+                f"the index was built with '{manifest.embedding_model}' but the configured "
+                f"model is '{self.embedder.model_name}'; rebuild with "
+                "`thesis-matchmaker index --rebuild`"
+            )
+        if manifest.embedding_dim != self.embedder.dimensions:
+            # A different vector width is a schema change, not a config change:
+            # the `document.embedding` column is `vector(n)`.
+            raise ModelMismatchError(
+                f"the index holds {manifest.embedding_dim}-dimensional vectors but "
+                f"'{self.embedder.model_name}' produces {self.embedder.dimensions}; this "
+                "needs a migration that alters document.embedding, then a rebuild"
             )
 
     def _write_manifest(self, document_count: int, sources_dir: Path) -> None:
-        self.index_path.mkdir(parents=True, exist_ok=True)
-        self._manifest_path.write_text(
-            json.dumps(
-                {
-                    "embedding_model": self.embedder.model_name,
-                    "document_count": document_count,
-                    "sources_dir": str(sources_dir),
-                },
-                indent=2,
+        self.store.write_manifest(
+            IndexManifest(
+                embedding_model=self.embedder.model_name,
+                embedding_dim=self.embedder.dimensions,
+                document_count=document_count,
+                sources=str(sources_dir),
             )
         )

@@ -22,7 +22,7 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 |---|---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
 | [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester + scheduler; **owns all writes** |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → ChromaDB |
+| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | implemented | Free text → `ParsedQuery`; rule-based baseline, optional LLM |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | implemented | Grounded prose; weak matches short-circuit before any LLM call |
@@ -31,20 +31,24 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 
 Not built: the **web scraper** (`ThesisPosting` has no producer — sample data only; work sits on
 the unmerged `origin/webscraping` branch) and a **`ranking` package** (`pipeline/`'s docstring
-claims a rank step; in reality ranking is `score = max(hit.score)` inside `ChromaRetriever`).
+claims a rank step; in reality ranking is `score = max(hit.score)` inside `VectorRetriever`).
 
 **Repository-wide idiom — respect it.** `parsing/`, `indexing/`, `retrieval/`, `synthesis/` each
 have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
 `build_*(settings)` factory selecting one from `config.Settings`. That is invariant 3 in code
 form. Each also ships a real offline implementation (`HashEmbedder`, `FakeRetriever`,
-`RuleBasedExtractor`, `TemplateSynthesizer`) — not mocks, which is why CI runs the whole pipeline
-with no model download and no network.
+`RuleBasedExtractor`, `TemplateSynthesizer`, `InMemoryVectorStore`) — not mocks, which is why CI
+runs the whole pipeline with no model download, no database and no network.
 
-What the code currently picks for the three non-final seams (invariant 3 — still swappable, still
-not a decision): embedding `BAAI/bge-m3` (`hash-fake` offline), vector store ChromaDB
-(cosine/HNSW), LLM any OpenAI-compatible endpoint (LibreChat prod, Ollama dev).
+Seam status. The **vector store is now decided: Postgres + pgvector** (cosine, HNSW) — not a
+preference but a constraint of the deployment environment UZH Central Informatics confirmed on
+2026-08-20. It stays behind the `VectorStore` protocol (`InMemoryVectorStore` is the second
+implementation), but treat it as settled, not provisional. Still genuinely open per invariant 3:
+embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is baked into
+`document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
+OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points: `thesis-matchmaker` (`index --source --rebuild`, `match --top-k`),
+Entry points: `thesis-matchmaker` (`migrate`, `index --source --rebuild`, `match --top-k`),
 `thesis-matchmaker-mcp` (`--stdio`), and `python -m thesis_matchmaker.zora.harvest`
 (**no console script**).
 
@@ -79,7 +83,7 @@ still missing:
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped
 - `ranking` — multi-signal scoring over retrieved candidates; read-only
-  → **not built.** Ranking is currently one line inside `ChromaRetriever._group_by_person`
+  → **not built.** Ranking is currently one line inside `VectorRetriever._group_by_person`
   (`score = max(hit.score)`). Keep the intent; the slot is between retrieve and synthesise
 - `application service` — plain functions orchestrating retrieval → ranking → LLM synthesis;
   exposes the core use cases
