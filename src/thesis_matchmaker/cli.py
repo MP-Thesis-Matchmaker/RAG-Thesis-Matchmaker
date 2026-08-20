@@ -10,13 +10,18 @@ from __future__ import annotations
 
 import argparse
 import logging
-from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 from thesis_matchmaker import __version__, db, schema
 from thesis_matchmaker.config import Settings, get_settings
 from thesis_matchmaker.contracts import SupervisorMatch
-from thesis_matchmaker.indexing import build_indexer, build_store, read_manifest
+from thesis_matchmaker.indexing import (
+    DATABASE_SOURCE,
+    build_indexer,
+    build_source_reader,
+    build_store,
+    read_manifest,
+)
 from thesis_matchmaker.pipeline import Pipeline
 from thesis_matchmaker.retrieval import build_retriever
 
@@ -57,11 +62,13 @@ def _run_index(settings: Settings, args: argparse.Namespace) -> None:
     if args.rebuild:
         build_store(settings).clear()
     indexer = build_indexer(settings)
-    result = indexer.run(Path(args.source or settings.sources_path))
+    reader = build_source_reader(settings, args.source)
+    result = indexer.run(reader)
     print(
         f"index run complete: embedded={result.embedded} skipped={result.skipped} "
         f"deleted={result.deleted} invalid_lines={result.invalid_lines}"
     )
+    print(f"source: {reader.label}")
     print(f"model: {indexer.embedder.model_name} ({indexer.embedder.dimensions} dimensions)")
 
 
@@ -117,7 +124,11 @@ def main(argv: list[str] | None = None) -> None:
     index_parser = subparsers.add_parser("index", help="build or refresh the vector index")
     index_parser.add_argument(
         "--source",
-        help="directory with publications.jsonl / theses.jsonl (default: SOURCES_PATH setting)",
+        help=(
+            f"'{DATABASE_SOURCE}' to index the harvested publication table, or a "
+            "directory holding publications.jsonl / theses.jsonl "
+            "(default: SOURCES_PATH setting)"
+        ),
     )
     index_parser.add_argument(
         "--rebuild",

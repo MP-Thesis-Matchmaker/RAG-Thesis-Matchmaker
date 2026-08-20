@@ -1,14 +1,15 @@
 # zora
 
 Harvests publication metadata from ZORA, the Zurich Open Repository and Archive,
-and turns it into the `data/publications.jsonl` file that the rest of the system
-indexes. This is the *Data Extraction* lane of
+into the `publication` table that the rest of the system indexes. This is the
+*Data Extraction* lane of
 [`docs/architecture.png`](../../../docs/architecture.png), upper half.
 
-**This package owns all writes to source data (invariant 1).** Nothing in
-`indexing/`, `retrieval/`, `pipeline/`, or `adapters/` may write a source file;
-they only read what lands here. If you need new data, it enters the system
-through this package.
+**This package owns all writes to source data (invariant 1).** `store.py` is the
+only writer of `publication` and `harvest_state`; nothing in `indexing/`,
+`retrieval/`, `pipeline/`, or `adapters/` may write them. The read side of the
+same table is `indexing/sources.py::PostgresSourceReader`. If you need new data,
+it enters the system through this package.
 
 ZORA runs DSpace-CRIS and is accessed through its REST API — **not** OAI-PMH. See
 `CLAUDE.md` for the API facts confirmed with the ZORA maintainers, and
@@ -23,19 +24,28 @@ ZORA DSpace REST API
    ▼
 zora_client.iter_items ──▶ normalize.normalize_item ──▶ output_schema.to_output
    │                        (raw DSpace → flat dict)     (flat dict → ZoraPublication)
-   ├──▶ data/raw/<ts>_<mode>.jsonl        (per-run dump)
-   ├──▶ data/publications.jsonl           (the product)
-   └──▶ data/state.json                   (incremental watermark)
-                                              │
-                                              ▼
-                                     indexing/ reads publications.jsonl
+   ├──▶ data/raw/<ts>_<mode>.jsonl        (per-run dump, still on disk)
+   │
+   └──▶ store.write_harvest  ── ONE TRANSACTION ─────────────┐
+            upsert publication                              │
+            full mode only: delete rows not in this harvest  │
+            count, and ROLL BACK if the corpus shrank        │
+            implausibly (MIN_RETENTION_RATIO)                │
+        store.save_state    → harvest_state (watermark)      │
+                                              │              │
+                                              ▼              │
+                     indexing/ reads the publication table ◀─┘
+                     (`thesis-matchmaker index --source db`)
 ```
 
 ## Public API
 
 | Symbol | File | Purpose |
 |---|---|---|
-| *(constants only)* | `config.py` | Every DSpace field name, the API endpoint, derived data paths, and the safety threshold. One place to change when ZORA's schema moves. |
+| *(constants only)* | `config.py` | Every DSpace field name, the API endpoint, the raw-dump directory, and the safety threshold. One place to change when ZORA's schema moves. |
+| `write_harvest(rows, ...)` | `store.py` | Upsert + prune + retention check, in one transaction. Returns counts and whether it aborted. |
+| `publication_count()` | `store.py` | Row count, for the retention check and for operators. |
+| `load_state()` / `save_state(...)` | `store.py` | The `harvest_state` row. Re-exported by `state.py` with the old signatures. |
 | `get_client()` | `zora_client.py` | Builds an authenticated `DSpaceClient` with retries (3×, backoff 2, on 500/502/503/504) and timeouts (10 s connect, 60 s read). Raises `RuntimeError` if the token is missing or auth fails. |
 | `iter_items(client, scope, since)` | `zora_client.py` | Generator over DSpace items; builds the Solr query and handles pagination. |
 | `normalize_item(dso)` | `normalize.py` | Raw `SimpleDSpaceObject` → flat internal dict, unwrapping DSpace's `{"value": …}` metadata entries. |
@@ -98,7 +108,7 @@ python -m thesis_matchmaker.zora.harvest --mode full --limit 50     # smoke test
 | Flag | Default | Behaviour |
 |---|---|---|
 | `--mode {incremental,full}` | `incremental` | See above. |
-| `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from the state file. |
+| `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from `harvest_state`. |
 | `--limit N` | none | Stop after N items. For smoke tests. |
 
 Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
@@ -114,13 +124,18 @@ run is logged and swallowed, so one bad night does not kill the process.
 
 Cadence: incremental nightly at `HARVEST_HOUR_UTC`; full weekly on
 `FULL_HARVEST_WEEKDAY` at the same hour. When both are due, full wins — which also
-means a fresh deployment with no `state.json` does a full harvest first.
+means a fresh deployment with no `harvest_state` row does a full harvest first.
+That path is worth knowing about: because it is an INSERT rather than an UPDATE,
+it is the one place where "a full run also stamps the incremental column" is easy
+to get wrong, and getting it wrong makes the scheduler fire an incremental
+immediately after a multi-hour full harvest.
 
 ## Configuration
 
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| Data directory | `ZORA_DATA_DIR` | `data` | Root for `publications.jsonl`, `state.json`, and `raw/`. |
+| Database | `DATABASE_URL` | see `config.py` in the package root | Postgres holding `publication` and `harvest_state`. Create the schema with `thesis-matchmaker init-db`. |
+| Data directory | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
 | Nightly hour | `HARVEST_HOUR_UTC` | `1` | UTC hour at which the scheduler runs an incremental harvest. |
 | Weekly day | `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Weekday for the full harvest. |
 | API endpoint | `DSPACE_API_ENDPOINT` | `https://www.zora.uzh.ch/server/api` | Defined in `zora_client.py`, not `config.py`. |
@@ -131,8 +146,8 @@ means a fresh deployment with no `state.json` does a full harvest first.
 
 This package does not follow the `base.py` + `build_*` factory idiom that
 `parsing/`, `indexing/`, `retrieval/`, and `synthesis/` use — it is a concrete
-harvester for one concrete API, and the swap point is at the *file* boundary
-instead: anything that can produce a valid `publications.jsonl` can replace it
+harvester for one concrete API, and the swap point is at the *table* boundary
+instead: anything that can populate `publication` can replace it
 without the indexer noticing. The DSpace field names are all isolated in
 `config.py` for the same reason.
 

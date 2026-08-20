@@ -56,10 +56,16 @@ FIELD_ORCID_CANDIDATES = [
 ]
 
 # --- Paths -------------------------------------------------------------
+# Harvest output and the watermark live in Postgres now (see zora/store.py); the
+# only thing still written to disk is the raw-response cache, which keeps
+# ingestion reproducible without re-hitting ZORA.
 DATA_DIR = os.environ.get("ZORA_DATA_DIR", "data")
-PUBLICATIONS_PATH = os.path.join(DATA_DIR, "publications.jsonl")
-STATE_PATH = os.path.join(DATA_DIR, "state.json")
 RAW_DIR = os.path.join(DATA_DIR, "raw")
+
+# Legacy JSONL location. Nothing writes it any more; kept so the standalone
+# validator (`python -m thesis_matchmaker.zora.output_schema`) still has a
+# default target for checking a file harvested before the database existed.
+PUBLICATIONS_PATH = os.path.join(DATA_DIR, "publications.jsonl")
 
 # --- Safety thresholds ---------------------------------------------------
 # If a harvest run returns dramatically fewer publications than the previous

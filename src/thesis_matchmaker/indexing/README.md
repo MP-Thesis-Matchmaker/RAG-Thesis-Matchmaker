@@ -1,6 +1,6 @@
 # indexing
 
-Turns the JSONL files that ingestion produces into a searchable vector index.
+Turns the records that ingestion produces into a searchable vector index.
 This is the *Ingestion + Indexing Pipeline* lane of
 [`docs/architecture.png`](../../../docs/architecture.png): JSONL → `Document` →
 content-hash diff → embed → Postgres/pgvector, with an `index_manifest` row
@@ -12,8 +12,8 @@ This is the last package in the write path. Everything downstream of it —
 ## Role in the pipeline
 
 ```
-data/<source>/publications.jsonl ─┐
-data/<source>/theses.jsonl       ─┴─▶ zora_to_document / posting_to_document
+SourceReader (publication table, or JSONL files)
+                                 └─▶ zora_to_document / posting_to_document
                                             │
                                             ▼  Document(id, text, metadata, content_hash)
                                      Indexer.run
@@ -32,6 +32,9 @@ data/<source>/theses.jsonl       ─┴─▶ zora_to_document / posting_to_docu
 | `HashEmbedder` | `embedder.py` | Deterministic sha256 word-sum fake, `EMBEDDING_DIM` dimensions, `model_name == "hash-fake"`. Keeps tests and CI offline. |
 | `SentenceTransformerEmbedder` | `embedder.py` | The real one. Lazy-loads the model, returns normalised vectors. Needs the `embeddings` extra (pulls torch). |
 | `Document` | `documents.py` | What actually gets embedded: `id`, `text`, `metadata`, `content_hash`. |
+| `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
+| `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table. What a deployed indexer uses. |
+| `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
 | `zora_to_document` | `documents.py` | `ZoraRecord` → `Document`. |
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
 | `VectorStore` | `store.py` | Protocol: `upsert`, `delete`, `existing_hashes`, `query`, `read_manifest`, `write_manifest`, `clear`. |
@@ -47,8 +50,9 @@ data/<source>/theses.jsonl       ─┴─▶ zora_to_document / posting_to_docu
 
 ## Data flow
 
-**Reads:** `<sources_path>/publications.jsonl` and `<sources_path>/theses.jsonl`;
-the `index_manifest` row.
+**Reads:** whatever the `SourceReader` is pointed at — the `publication` table
+with `--source db`, or `<sources_path>/publications.jsonl` and `theses.jsonl`
+otherwise; plus the `index_manifest` row.
 
 **Writes:** the `document` table and the `index_manifest` row, both in the
 Postgres at `DATABASE_URL`.
@@ -112,21 +116,21 @@ Malformed JSONL lines are counted and skipped, not fatal.
 |---|---|---|---|
 | `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
 | `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `thesis-matchmaker init-db`. |
-| `sources_path` | `SOURCES_PATH` | `data/samples` | Directory containing the JSONL files. |
+| `sources_path` | `SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
 
-> **Watch out:** `sources_path` defaults to `data/samples`, **not** `data/`. The
-> real 22,541-row harvest lives at `data/publications.jsonl`, so
-> `thesis-matchmaker index` indexes 30 sample rows unless you run
-> `thesis-matchmaker index --source data` or set `SOURCES_PATH=data`. Nothing
-> warns you about this.
+> **Watch out:** `sources_path` still defaults to `data/samples`, so a bare
+> `thesis-matchmaker index` indexes the sample rows. The real harvest now lives in
+> Postgres: use `thesis-matchmaker index --source db`, or set `SOURCES_PATH=db`.
+> The output line reports which source was used, so at least it is visible.
 
 ## Swappable seams
 
 Follows the repository-wide idiom: `Protocol` definitions, concrete
-implementations, and a `build_*(settings)` factory in `__init__.py`. Two seams
-live here — the **embedding model** (`Embedder`) and the **vector store**
-(`VectorStore`) — and both are named in invariant 3 as not-yet-final. Nothing
-outside this package should import `psycopg` or `sentence_transformers`.
+implementations, and a `build_*(settings)` factory in `__init__.py`. Three seams
+live here — the **embedding model** (`Embedder`), the **vector store**
+(`VectorStore`) and the **record source** (`SourceReader`). The first is still
+open per invariant 3; the vector store is now decided (Postgres + pgvector, a
+constraint of the deployment environment) but stays behind the protocol.
 
 The fake/real pairing is deliberate: `HashEmbedder` is not a mock, it is a real
 deterministic implementation, which is why CI can run the full indexing and

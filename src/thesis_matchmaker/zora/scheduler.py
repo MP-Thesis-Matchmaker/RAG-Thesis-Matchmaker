@@ -13,7 +13,7 @@ This module changes nothing about *how* harvesting works — it calls the
 exact same harvest.run() used by the one-shot CLI. It only changes *what
 wakes it up*: an internal loop instead of an external CI schedule.
 
-Output still lands on local disk at config.DATA_DIR, exactly as before.
+Harvest output goes to Postgres; only the raw-response cache lands on disk.
 Where that disk physically lives (a Docker volume, a Kubernetes
 PersistentVolumeClaim, a plain host directory) is an infrastructure
 decision for whoever deploys this, deliberately left open here rather

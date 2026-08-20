@@ -9,6 +9,7 @@ import pytest
 from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraRecord
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer
+from thesis_matchmaker.indexing.sources import JsonlSourceReader
 from thesis_matchmaker.indexing.store import InMemoryVectorStore
 from thesis_matchmaker.retrieval.vector import VectorRetriever
 
@@ -73,7 +74,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
     (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
     embedder = HashEmbedder()
     store = InMemoryVectorStore()
-    Indexer(embedder=embedder, store=store).run(sources)
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
     return VectorRetriever(embedder=embedder, store=store)
 
 

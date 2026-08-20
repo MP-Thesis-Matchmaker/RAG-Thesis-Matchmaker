@@ -19,6 +19,11 @@ from thesis_matchmaker.indexing.embedder import (
     SentenceTransformerEmbedder,
 )
 from thesis_matchmaker.indexing.indexer import Indexer
+from thesis_matchmaker.indexing.sources import (
+    JsonlSourceReader,
+    PostgresSourceReader,
+    SourceReader,
+)
 from thesis_matchmaker.indexing.store import (
     IndexManifest,
     InMemoryVectorStore,
@@ -44,6 +49,23 @@ def build_indexer(settings: Settings) -> Indexer:
     return Indexer(embedder=build_embedder(settings), store=build_store(settings))
 
 
+# What `--source db` means, versus a filesystem path.
+DATABASE_SOURCE = "db"
+
+
+def build_source_reader(settings: Settings, source: str | None = None) -> SourceReader:
+    """Pick where the indexer reads records from.
+
+    `db` reads the harvested `publication` table -- what a deployed indexer does.
+    Anything else is a directory of JSONL files, which is how the checked-in
+    samples and the not-yet-built scraper's output are indexed.
+    """
+    chosen = source or settings.sources_path
+    if chosen == DATABASE_SOURCE:
+        return PostgresSourceReader(dsn=settings.database_url)
+    return JsonlSourceReader(directory=chosen)
+
+
 def read_manifest(settings: Settings) -> IndexManifest | None:
     """The manifest of the built index, or None if nothing has been indexed.
 
@@ -56,17 +78,22 @@ def read_manifest(settings: Settings) -> IndexManifest | None:
 
 
 __all__ = [
+    "DATABASE_SOURCE",
     "Document",
     "Embedder",
     "HashEmbedder",
     "IndexManifest",
     "InMemoryVectorStore",
     "Indexer",
+    "JsonlSourceReader",
     "PgVectorStore",
+    "PostgresSourceReader",
     "SentenceTransformerEmbedder",
+    "SourceReader",
     "VectorStore",
     "build_embedder",
     "build_indexer",
+    "build_source_reader",
     "build_store",
     "posting_to_document",
     "read_manifest",
