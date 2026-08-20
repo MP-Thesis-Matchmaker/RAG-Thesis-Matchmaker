@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from thesis_matchmaker import __version__, db, migrate
+from thesis_matchmaker import __version__, db, schema
 from thesis_matchmaker.config import Settings, get_settings
 from thesis_matchmaker.contracts import SupervisorMatch
 from thesis_matchmaker.indexing import build_indexer, build_store, read_manifest
@@ -40,12 +40,17 @@ def _index_exists(settings: Settings) -> bool:
     return read_manifest(settings) is not None
 
 
-def _run_init_db(settings: Settings, _args: argparse.Namespace) -> None:
-    applied = migrate.run(settings.database_url)
-    if applied:
-        print("applied " + ", ".join(applied))
+def _run_init_db(settings: Settings, args: argparse.Namespace) -> None:
+    try:
+        result = schema.apply(settings.database_url, reset=args.reset)
+    except schema.SchemaChangedError as exc:
+        raise SystemExit(f"error: {exc}") from exc
+    for name in result.dropped:
+        print(f"dropped table {name}")
+    if result.applied:
+        print(f"schema applied ({result.fingerprint})")
     else:
-        print("schema already up to date")
+        print(f"schema already up to date ({result.fingerprint})")
 
 
 def _run_index(settings: Settings, args: argparse.Namespace) -> None:
@@ -120,9 +125,15 @@ def main(argv: list[str] | None = None) -> None:
         help="empty the existing index first (required after changing the embedding model)",
     )
 
-    subparsers.add_parser(
+    init_db_parser = subparsers.add_parser(
         "init-db",
-        help="create or update the database schema (idempotent; safe to re-run)",
+        help="create the database schema (idempotent; safe to re-run)",
+    )
+    init_db_parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="DROP every table first, then recreate. Destroys all data. Needed after "
+        "editing schema.sql, until the first harvest worth keeping exists.",
     )
 
     args = parser.parse_args(argv)

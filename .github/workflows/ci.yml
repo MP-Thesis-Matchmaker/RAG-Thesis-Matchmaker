@@ -37,16 +37,18 @@ jobs:
         env:
           POSTGRES_USER: matchmaker
           POSTGRES_PASSWORD: matchmaker
-          POSTGRES_DB: matchmaker
+          # _test suffix on purpose: the pgvector fixtures are destructive and
+          # refuse to run against a database not named that way.
+          POSTGRES_DB: matchmaker_test
         options: >-
-          --health-cmd "pg_isready -U matchmaker -d matchmaker"
+          --health-cmd "pg_isready -U matchmaker -d matchmaker_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
           - 5432:5432
     env:
-      DATABASE_URL: postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
+      DATABASE_URL: postgresql://matchmaker:matchmaker@localhost:5432/matchmaker_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
