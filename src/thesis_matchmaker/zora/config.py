@@ -7,6 +7,7 @@ only file that needs to change.
 """
 
 import os
+from pathlib import Path
 
 # --- ZORA scope -------------------------------------------------------
 # Set to a community UUID to restrict to a single faculty, or None to
@@ -20,6 +21,57 @@ DEFAULT_SCOPE_UUID: str | None = None
 
 # --- API endpoint -------------------------------------------------------
 DEFAULT_API_ENDPOINT = "https://www.zora.uzh.ch/server/api"
+
+# --- Auth ---------------------------------------------------------------
+# The ZORA personal API token comes from one of two environment variables:
+#   ZORA_UZH_API_KEY_FILE  path to a file containing the token
+#   ZORA_UZH_API_KEY       the token itself
+# The file wins when both are set. In the cluster the token arrives as a
+# mounted Secret, so a file is the deployed truth, whereas an inline value
+# is usually a stale export in someone's shell.
+#
+# We resolve the token here and assign it to DSpaceClient.api_token (see
+# zora_client.get_client). The vendored client has its own lookup —
+# PERSONAL_API_TOKEN_FILE, then .dspace-personal-api-token.secret in the
+# working and home directories — but our assignment overrides it, so those
+# are not part of the contract and are not documented anywhere else.
+ENV_API_KEY_FILE = "ZORA_UZH_API_KEY_FILE"
+ENV_API_KEY = "ZORA_UZH_API_KEY"
+
+
+def resolve_api_token() -> str:
+    """
+    Return the ZORA personal API token, read from the environment on every
+    call (not at import time, so a test can set the variables itself).
+
+    @raise RuntimeError: if neither variable is set, or if ENV_API_KEY_FILE
+                          points at a file that cannot be read or is empty.
+                          A broken path fails loudly rather than falling back
+                          to the inline token: authenticating with a different
+                          credential than the one asked for hides the mistake.
+    """
+    path = os.environ.get(ENV_API_KEY_FILE, "").strip()
+    if path:
+        try:
+            # .strip() because writing a token with echo or an editor leaves
+            # a trailing newline, which the API rejects as part of the header.
+            token = Path(path).read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise RuntimeError(f"{ENV_API_KEY_FILE}={path} could not be read: {exc}") from exc
+        if not token:
+            raise RuntimeError(f"{ENV_API_KEY_FILE}={path} is empty.")
+        return token
+
+    token = os.environ.get(ENV_API_KEY, "").strip()
+    if token:
+        return token
+
+    raise RuntimeError(
+        f"No ZORA API token configured. Set {ENV_API_KEY_FILE} to a file containing "
+        f"the token, or {ENV_API_KEY} to the token itself. {ENV_API_KEY_FILE} takes "
+        f"precedence if both are set."
+    )
+
 
 # --- Dublin Core field names ---------------------------------------------
 # These are the DSpace defaults. UZH's DSpace-CRIS install *may* extend or

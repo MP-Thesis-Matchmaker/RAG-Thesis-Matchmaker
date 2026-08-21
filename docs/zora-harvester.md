@@ -14,7 +14,8 @@ docker compose up -d postgres
 docker compose run --rm init-db
 
 export DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
-export PERSONAL_API_TOKEN_FILE=token.secret
+# Either the token inline, or a file holding it (the file wins if you set both).
+export ZORA_UZH_API_KEY=<your ZORA personal API token>
 
 # Smoke test — fetch 5 records
 python -m thesis_matchmaker.zora.harvest --mode full --limit 5
@@ -64,7 +65,7 @@ docker run --rm \
   --network host \
   -v "$(pwd)/data:/app/data" \
   -v "$(pwd)/token.secret:/app/token.secret:ro" \
-  -e PERSONAL_API_TOKEN_FILE=/app/token.secret \
+  -e ZORA_UZH_API_KEY_FILE=/app/token.secret \
   -e DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker \
   zora-harvester --mode full --limit 5
 ```

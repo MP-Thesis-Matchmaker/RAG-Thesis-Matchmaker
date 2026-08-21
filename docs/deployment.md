@@ -46,7 +46,8 @@ two schedules as the CronJobs:
 | Variable | Purpose | Source in the cluster |
 |---|---|---|
 | `DATABASE_URL` | Postgres DSN | `Secret` — `TODO(ci)` |
-| `PERSONAL_API_TOKEN_FILE` | ZORA API token path | `Secret`, mounted as a file |
+| `ZORA_UZH_API_KEY_FILE` | ZORA API token path | `Secret`, mounted as a file |
+| `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
 | `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | `Secret` |
 | `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | `ConfigMap` |
 | `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | `ConfigMap` |

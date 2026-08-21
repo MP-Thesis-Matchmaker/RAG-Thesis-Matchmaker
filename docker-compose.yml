@@ -46,7 +46,9 @@ services:
       dockerfile: docker/zora/Dockerfile
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
-      PERSONAL_API_TOKEN_FILE: /run/secrets/zora-token
+      # Mirrors the cluster: the token arrives as a mounted file. Running
+      # the harvester on the host instead accepts ZORA_UZH_API_KEY inline.
+      ZORA_UZH_API_KEY_FILE: /run/secrets/zora-token
     volumes:
       - ./token.secret:/run/secrets/zora-token:ro
       - ./data:/app/data

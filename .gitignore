@@ -1,5 +1,7 @@
-# Zora API token gitignore
-.dspace-personal-api-token.secret
+# Zora API token. docs/zora-harvester.md and docker-compose.yml both tell
+# you to create token.secret at the repository root -- never commit it.
+token.secret
+*.secret
 
 # macOS
 .DS_Store

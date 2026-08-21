@@ -146,7 +146,8 @@ immediately after a multi-hour full harvest.
 | Weekly day | `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Weekday for the full harvest. |
 | API endpoint | `DSPACE_API_ENDPOINT` | `https://www.zora.uzh.ch/server/api` | Defined in `zora_client.py`, not `config.py`. |
 | Poll interval | `POLL_INTERVAL_SECONDS` | `3600` | Scheduler sleep between checks. Defined in `scheduler.py`. |
-| API token | `PERSONAL_API_TOKEN_FILE` | — | Path to the token file. Read by the vendored DSpace client, not by our code. **Never commit the token.** |
+| API token (file) | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
+| API token (inline) | `ZORA_UZH_API_KEY` | — | The token itself, for local runs. Both are resolved by `config.resolve_api_token` and assigned to the DSpace client. **Never commit the token.** |
 
 ## Swappable seams
 
@@ -170,7 +171,7 @@ without the indexer noticing. The DSpace field names are all isolated in
 - **`scripts/zora_inspect_fields.py`** — one-off live-API diagnostic. Prints every
   metadata field present on real items, checks the field names assumed in
   `config.py`, and shows per-author `authority` keys. Run with
-  `export PERSONAL_API_TOKEN_FILE=... && python -m scripts.zora_inspect_fields 5`.
+  `export ZORA_UZH_API_KEY=... && python -m scripts.zora_inspect_fields 5`.
   Use it before changing any `FIELD_*` constant.
 
 ## Field mapping
