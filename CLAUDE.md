@@ -11,9 +11,9 @@ first**; AI Buddy integration via MCP is a downstream possibility, never a depen
 Because this is graded work: never fabricate results, citations, data, or evaluation numbers. When
 a decision is unmade or a fact is unknown, say so explicitly.
 
-## Current repo state (as of 2026-08-15)
+## Current repo state (as of 2026-08-21)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,380 LOC, 127 tests.
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,470 LOC, 145 tests.
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API, scraper, and multi-signal ranking in it are not built yet).
@@ -54,13 +54,15 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
-corpus lives in the `publication` table — index it with `--source db`.
+corpus lives in the `publication` table — **214,685 publications** as of 2026-08-21, of which
+~91,700 (43%) have at least one UZH author and so survive `retrieval/`'s pre-filter — index it
+with `--source db`.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
 longer tracked.
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (127 tests /
-19 files; 22 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (145 tests /
+20 files; 24 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
