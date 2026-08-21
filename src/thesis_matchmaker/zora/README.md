@@ -220,6 +220,56 @@ behaviour, so the untested surface went away without anything new being verified
 
 ## Known gaps
 
+- **`uzh_authors` admits non-UZH co-authors, so most of what we index carries no UZH
+  person at all.** `_get_uzh_authors` (`normalize.py:76`) accepts any non-empty
+  `authority`. DSpace-CRIS stores two different kinds of value there, and
+  `_clean_authority` strips the marker that separates them: a bare UUID is a CRIS
+  Person record — an actual UZH researcher — while `will be referenced::ORCID::…`
+  means the authority does **not** resolve to a local Person, i.e. an external
+  co-author whose ORCID happens to be known. An ORCID is a global identifier; every
+  researcher on earth can have one. Measured on the full 214,685-record harvest
+  (2026-08-21):
+
+  | | |
+  |---|---:|
+  | publications with any authority — what `cardinality(uzh_authors) > 0` selects | 91,668 |
+  | of those, with at least one CRIS Person UUID | 53,511 |
+  | **with authorities but ORCID-only: no UZH person on the record** | **38,157** |
+  | distinct names the current rule presents as eligible supervisors | **58,092** |
+  | distinct names holding a CRIS UUID | 2,941 |
+  | names seen both ways (UUID on one record, ORCID on another) | 55 |
+
+  58,092 eligible supervisors is not a plausible figure for one university, and only
+  55 names appear both ways — so the authority kind is a property of the person, not
+  an artefact of the record. The defect is visible in output: a `match` on medical
+  imaging returned Oxford, Birmingham and Belfast co-authors of a single UZH paper as
+  candidate supervisors, which is exactly what the UZH filter exists to prevent.
+
+  **Requiring a UUID is not simply the fix**, which is why this is still open. ZORA
+  exposes only ~2,016 Person entities, so CRIS coverage is sparse and "no UUID" does
+  not mean "not UZH": ~5,800 sole-author publications sit in genuine org-unit
+  collections (Institute of Psychology 375, Theology 316, Education 257, Political
+  Science 239) — single-author humanities output by UZH staff with no CRIS record.
+  Dissertations are only 1,235 of the 38,157, so the excluded population is not
+  mostly students. Candidate rules, measured:
+
+  | rule | publications | eligible names |
+  |---|---:|---:|
+  | any authority (today) | 91,668 | 58,092 |
+  | require a CRIS Person UUID | 53,511 | 2,941 |
+  | UUID, or sole-authored in an org-unit collection | 58,082 | 4,059 |
+
+  The honest reading of an ORCID-only author is **unknown affiliation**, not
+  *external*, so what to do with unknown is a product decision rather than a bug fix:
+  exclude it, admit it under the sole-author rule, or index both and let `ranking`
+  prefer UUID-backed candidates. Whatever is decided propagates:
+  `indexing/sources.py` filters on `cardinality(uzh_authors) > 0` at index time,
+  `retrieval/vector.py` filters on `has_uzh_author` at query time, and CLAUDE.md's
+  "91,673 (42.7%) have at least one UZH author" is inflated by the same 38,157
+  records. Two loose ends: our data holds 2,941 UUID names against ~2,016 exposed
+  Person entities, so some UUIDs may name other entity types (unverified), and 20
+  authority values are malformed — lowercase-`x` checksums, a trailing period, and
+  truncated groups such as `0000-0002-8070-773`.
 - **`harvest.py` and `zora_client.py` are untested.** The merge semantics and the
   orchestration around the safety rail live in untested code. The watermark update
   itself is covered, from `tests/test_zora_store.py`.
