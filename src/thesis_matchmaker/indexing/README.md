@@ -34,7 +34,7 @@ SourceReader (publication table, or JSONL files)
 | `Document` | `documents.py` | What actually gets embedded: `id`, `text`, `metadata`, `content_hash`. |
 | `prepare_text` | `documents.py` | Strips markup and collapses whitespace before the text is hashed and embedded. |
 | `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
-| `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table. What a deployed indexer uses. |
+| `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table, **UZH-authored publications only**. What a deployed indexer uses. |
 | `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
 | `zora_to_document` | `documents.py` | `ZoraRecord` → `Document`. |
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
@@ -54,6 +54,12 @@ SourceReader (publication table, or JSONL files)
 **Reads:** whatever the `SourceReader` is pointed at — the `publication` table
 with `--source db`, or `<sources_path>/publications.jsonl` and `theses.jsonl`
 otherwise; plus the `index_manifest` row.
+
+`--source db` reads **only publications with at least one registered UZH author**,
+which is 91,673 of the 214,685 harvested rows. The rest cannot produce a supervisor
+recommendation and were never reachable through `retrieval/`'s pre-filter, so
+embedding them was work spent on vectors no query could return. The filter lives in
+`_SELECT_PUBLICATIONS`; `sources.py` explains why it is there and not a setting.
 
 **Writes:** the `document` table and the `index_manifest` row, both in the
 Postgres at `DATABASE_URL`.
@@ -235,15 +241,23 @@ at a Postgres with the extension, which CI always does via a
   including `SYNTHESIS_MIN_SCORE` — is working with a wrong mental model. The
   migration did not change this; it only moved where it is computed.
 - **Filtered HNSW recall is not verified at corpus scale by the test suite.**
-  pgvector applies `WHERE` after the index scan, which is why migration 001
-  creates one partial HNSW index per `source_type` and why `PgVectorStore._tune`
-  sets `hnsw.iterative_scan = strict_order` (pgvector >= 0.8 — the version on the
-  UZH server is an open question, so a missing GUC is tolerated rather than
-  fatal). At test-fixture sizes Postgres picks a sequential scan anyway, so the
-  contract test proves the API, not the query plan. Check the plan with
-  `EXPLAIN ANALYZE` against the real corpus, and note that a sequential scan is
-  the *correct* plan when the filter is unselective — at present ~78% of the
-  corpus is `source_type = 'publication'` with a UZH author.
+  pgvector applies `WHERE` after the index scan, which is why `schema.sql` creates
+  one partial HNSW index per `source_type` and why `PgVectorStore._tune` sets
+  `hnsw.iterative_scan = strict_order` (pgvector >= 0.8 — the version on the UZH
+  server is an open question, so a missing GUC is tolerated rather than fatal). At
+  test-fixture sizes Postgres picks a sequential scan anyway, so the contract test
+  proves the API, not the query plan. Check it with `EXPLAIN ANALYZE` against the
+  real corpus.
+
+  Note what the index-time filter did to the selectivity half of this argument.
+  Now that `--source db` yields only UZH-authored publications, every row in a
+  DB-sourced index satisfies `metadata @> '{"has_uzh_author": true}'`, so that
+  predicate matches everything and is no longer selective at all: it is a
+  per-candidate jsonb check that buys nothing on this source. It stays because it
+  is the invariant for sources that are *not* filtered (see `sources.py`), not
+  because it narrows anything. The partial HNSW indexes on `source_type` are
+  unaffected and still do real work, since the index holds both publications and
+  postings.
 - **Only publications have a real producer.** `theses.jsonl` exists only as
   hand-made sample data; no web scraper lives in `src/`. That work sits on the
   unmerged `origin/webscraping` branch, so the posting half of the index is

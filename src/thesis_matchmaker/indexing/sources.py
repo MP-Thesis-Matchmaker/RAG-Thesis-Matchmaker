@@ -26,10 +26,33 @@ logger = logging.getLogger(__name__)
 PUBLICATIONS_FILE = "publications.jsonl"
 THESES_FILE = "theses.jsonl"
 
+# The WHERE clause is the product definition, not a tuning choice, which is why it
+# is hardcoded rather than exposed as a setting: this system recommends UZH
+# supervisors, and a publication with no registered UZH author cannot produce one
+# because nobody on it works here. A student could not write a thesis with them.
+#
+# It is an OPTIMISATION, not the enforcement. The enforcement is
+# retrieval/vector.py's `has_uzh_author: True`, which every publication query
+# already carried -- so these records were never reachable, they were merely
+# embedded first and discarded at query time. Measured on the harvest: 123,012 of
+# 214,685 rows, ~57% of the embedding work and roughly 500 MB of vectors, spent to
+# produce something no query could return. Filtering here means they never leave
+# Postgres.
+#
+# The two filters are complementary rather than duplicated. JsonlSourceReader is
+# deliberately NOT filtered -- data/samples is fixture data whose 30 publications
+# all qualify anyway, and data/publications.jsonl is a legacy pre-Postgres artefact
+# -- so the query-time filter remains the invariant covering every source.
+#
+# cardinality() over array_length(uzh_authors, 1) reads as the intent. Both treat a
+# NULL array the same way: the comparison yields NULL, so the row is excluded, which
+# is what we want. (In the current corpus there are no NULLs -- the 123,012
+# ineligible rows are all empty arrays -- but the harvester does not guarantee that.)
 _SELECT_PUBLICATIONS = """
 SELECT id, title, abstract, authors, uzh_authors, author_authority_map, year,
        keywords, department, language, publication_type, doi, url
 FROM publication
+WHERE cardinality(uzh_authors) > 0
 ORDER BY id
 """
 
@@ -100,8 +123,9 @@ class JsonlSourceReader:
 class PostgresSourceReader:
     """Reads harvested publications from the `publication` table.
 
-    No parse step and so no invalid records: rows were validated against
-    `ZoraPublication` on the way in.
+    Yields only publications with at least one registered UZH author -- see
+    `_SELECT_PUBLICATIONS`. No parse step and so no invalid records: rows were
+    validated against `ZoraPublication` on the way in.
     """
 
     def __init__(self, dsn: str) -> None:

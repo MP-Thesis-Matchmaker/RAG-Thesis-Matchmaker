@@ -174,3 +174,27 @@ def test_incremental_run_does_not_stamp_the_full_column(clean_db: str) -> None:
     state = store.load_state(clean_db)
     assert state.last_incremental_run_at is not None
     assert state.last_full_run_at is None
+
+
+def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db: str) -> None:
+    """The index only holds what could actually produce a supervisor recommendation.
+
+    A publication whose author list contains no registered UZH researcher cannot
+    produce one -- nobody on it works here -- so it is filtered out in SQL rather
+    than embedded and then discarded by retrieval's query-time pre-filter.
+    """
+    _write(
+        clean_db,
+        [
+            _row("zora:1"),
+            _row(
+                "zora:2",
+                authors=["X. External", "Y. Elsewhere"],
+                uzh_authors=[],
+                author_authority_map={"X. External": None, "Y. Elsewhere": None},
+            ),
+        ],
+        mode="full",
+    )
+    reader = PostgresSourceReader(dsn=clean_db)
+    assert [r.id for r in reader.publications()] == ["zora:1"]

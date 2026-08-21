@@ -65,6 +65,14 @@ produce a valid supervisor recommendation — the people on it do not work here.
 `has_uzh_author=True` removes those records at query time rather than filtering
 them out afterwards, so they never consume a top-k slot.
 
+Indexing now applies the same rule at its source: `indexing/sources.py` selects only
+publications with a UZH author, so nothing ineligible from the harvested table is
+embedded in the first place. That makes this filter the **invariant** rather than the
+only line of defence — it still covers records that reached the index by an unfiltered
+route, such as a JSONL dump — but on a DB-sourced index every row already satisfies
+it, so it no longer narrows anything. Do not remove it on the strength of that: it is
+what makes the guarantee hold regardless of how the index was built.
+
 ### Fan-out and attribution
 
 A posting credits its `supervisor`. A publication credits **every** entry in its
