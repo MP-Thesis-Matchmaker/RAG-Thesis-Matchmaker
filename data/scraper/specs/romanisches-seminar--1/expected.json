@@ -1,0 +1,20 @@
+{
+  "source_id": "romanisches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "a486a5cde5aa192ab1386897b23a313e5cd07837",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Wer eine Bachelorarbeit buchen will, muss vor der Buchung die Zusage der gewünschten Betreuungsperson einholen (vgl. §26 der Studienordnung, allg. Teil) — indem Sie die Betreuungsperson oder den Studienprogrammdirektor (Rico Valär) kontaktieren. Nach Zusage buchen Sie das 15‑ECTS‑Modul über das Studierendenportal. Nach Ende der Buchungsfrist erhalten Sie vom Dekanat einen Link zu einer Website, auf der sofort Betreuungsperson und provisorischer Titel zu registrieren sind. Das Modul dauert ein Semester; Mindestlänge: 65’000 Zeichen inkl. Leerschläge. Als Betreuerinnen/Betreuer kommen ordentliche/ausserordentliche Professor*innen, Assistenzprofessor*innen, Titularprofessor*innen und Privatdozierende in Frage. Andere Mitarbeitende mit Doktorat benötigen Vorgesetzten‑Zustimmung und einen Antrag an die Studienprogrammdirektorin/den Studienprogrammdirektor. Abgabefristen: für HS-Bewertung bis 1. Dezember, für FS-Bewertung bis 1. Juni; Verlängerungsgesuche an Betreuungsperson und Sven Bachmann.",
+      "relevant_links": [],
+      "source_url": "https://www.rose.uzh.ch/de/studium/infos/buchung-ba.html",
+      "source_id": "romanisches-seminar--1",
+      "scraped_at": "2026-07-31T14:13:33.458477+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

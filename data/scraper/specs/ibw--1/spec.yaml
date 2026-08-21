@@ -1,0 +1,63 @@
+# ibw--1 is primarily a PROCESS page, but its (JS-rendered) "Gruppen" table
+# lists the professors who supervise theses, grouped by research area. The
+# auxiliary `people` block below extracts those professors from the same
+# rendered page and follows each professorship link one step deep for an email.
+source_id: ibw--1
+page_type: process
+render: true                     # the Gruppen table is rendered client-side
+
+people:
+  render: true
+  # the second column is a research GROUP / chair (e.g. "Financial Accounting"),
+  # not a personal research interest, so it's stored as research_group and the
+  # generic research_interest key is dropped for these people.
+  omit_fields: [research_interest, research_interest_url]
+  record:
+    # person rows have a professorship link in the first cell; category-header
+    # rows ("Accounting", ...) do not, so :has(...) selects only real people.
+    container: 'table tr:has(td a[href*="/professorships/"])'
+    fields:
+      name:
+        selector: "td:first-child a"
+        attr: text
+        transform: [normalize_ws, strip_titles]
+      role:
+        value: "Professor"
+      research_group:
+        selector: "td:nth-child(2)"
+        attr: text
+        transform: normalize_ws
+      research_group_url:                    # the chair/group page linked in
+        selector: "td:nth-child(2) a"        # the research-group cell
+        attr: href
+        transform: absolute_url
+      remarks:
+        selector: "td:nth-child(3)"
+        attr: text
+        transform: normalize_ws
+      _profile_url:
+        selector: "td:first-child a"
+        attr: href
+        transform: absolute_url
+  follow:
+    url_field: _profile_url
+    # professorship pages (person .html) AND chair-directory URLs without an
+    # extension (e.g. .../sports-data-based-management) — both can carry the email.
+    url_pattern: '^https://www\.business\.uzh\.ch/(de|en)/research/professorships/.+$'
+    render: true
+    profile:
+      fields:
+        # Fallback chain: prefer a real mailto link; otherwise recover an
+        # anti-spam-obfuscated address (e.g. "hui.chen[at]business.uzh.ch").
+        email:
+          - selector: "main a[href^=mailto]"
+            attr: href
+            transform: strip_mailto
+          - selector: "main address, main"
+            attr: text
+            transform: deobfuscate_email
+        personal_website:
+          selector: "main a[href]"
+          contains_i: ["website", "homepage", "personal page"]
+          attr: href
+          transform: absolute_url

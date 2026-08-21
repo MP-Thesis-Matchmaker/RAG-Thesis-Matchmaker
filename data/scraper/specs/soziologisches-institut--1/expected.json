@@ -1,0 +1,25 @@
+{
+  "source_id": "soziologisches-institut--1",
+  "page_type": "process",
+  "verified_content_sha1": "c641e87d66f9b03769d038d0ffc7a197448db6a1",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Masterstudierende buchen das zweisemestrige Modul «Masterarbeit (06SM240-MA)» selbst während der Modulbuchungszeit; das Modul ist nicht mit einer Lehrveranstaltung verbunden. Umfang und Thema sind vorgängig mit einer Betreuungsperson zu klären; die formalen und inhaltlichen Anforderungen werden dort festgelegt. Nach Ablauf der Buchungsfrist fordert das Studiendekanat die Studierenden auf, zunächst einen provisorischen und später den endgültigen Titel sowie die Betreuungsperson einzutragen. Die Masterarbeit muss spätestens im auf das Buchungssemester folgenden Semester abgegeben werden (Laufzeit 2 Semester); frühere Abgabe nach einem Semester ist möglich. Abgabe elektronisch an die Betreuungsperson (optional zusätzlich in Papier). Abgabefristen: 01. Dezember (Herbstsemester) und 01. Juni (Frühjahrssemester). Zur Betreuung berechtigt sind die aufgelisteten Institutspersonen; auch Mitarbeitende mit Doktorgrad können angefragt werden. Offizielle Hinweise und Termine: phil.uzh.ch/Abschluss. Fragen an programmkoordination@soziologie.uzh.ch oder abschluss@phil.uzh.ch.",
+      "relevant_links": [
+        {
+          "url": "https://www.suz.uzh.ch/de/master/masterarbeiten.html",
+          "description": "Bisherige Masterarbeiten"
+        }
+      ],
+      "source_url": "https://www.suz.uzh.ch/de/master/abschluss.html",
+      "source_id": "soziologisches-institut--1",
+      "scraped_at": "2026-07-31T14:34:56.706896+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

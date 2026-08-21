@@ -1,0 +1,43 @@
+# physics--1: the Department of Physics "Themenvorschläge" board. It is a table
+# of research GROUPS offering BA/MA thesis topics — one row per group: Gruppe
+# (group leader) | Thema (research area, links to the group page) | Flyer (a PDF
+# listing that group's concrete topic proposals). There is no per-topic
+# granularity on the page itself, so each group is modelled as one topic-like
+# offering (leader as supervisor, group page + topic flyer as links), matching
+# the department's "contact the research groups" guidance. Section separators
+# ("Affiliated Groups", "Firmen") carry no link and are dropped by the :has()
+# container. Group pages expose no e-mail, so supervisors carry a name only.
+source_id: physics--1
+page_type: topics
+
+record:
+  container: 'table tr:has(td:nth-child(3) a)'
+  fields:
+    title:
+      selector: "td:nth-child(3)"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:                     # the group's research theme (Thema column)
+      selector: "td:nth-child(3)"
+      attr: text
+      transform: normalize_ws
+    supervisors:
+      each: "td:nth-child(2)"
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+    group_url:                         # the research group's page (contact route)
+      selector: "td:nth-child(3) a"
+      attr: href
+      transform: absolute_url
+    source_link:                       # the group's topic flyer (PDF), when present
+      selector: "td:nth-child(4) a"
+      attr: href
+      transform: absolute_url
+
+id_from: [group_url]

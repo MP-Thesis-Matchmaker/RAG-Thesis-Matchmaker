@@ -106,6 +106,33 @@ services:
         condition: service_healthy
     profiles: ["manual"]
 
+  # One-shot, like the harvester. Two invocations rather than one: `fetch` is the
+  # stage that talks to uzh.ch and is deliberately polite, `run` only reads the
+  # cache, so they are kept separable.
+  #
+  #   docker compose run --rm scraper fetch --resume
+  #   docker compose run --rm scraper run --resume
+  #
+  # SCRAPER_CONTACT has no default and the scraper refuses to fetch without one:
+  # it goes out in the User-Agent so a site owner can reach a human.
+  scraper:
+    build:
+      context: .
+      dockerfile: docker/scraper/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+      SCRAPER_CONTACT: ${SCRAPER_CONTACT:-}
+      SCRAPER_LLM_API_KEY: ${SCRAPER_LLM_API_KEY:-}
+    volumes:
+      # The compose stand-in for a PVC: the page cache survives `--rm`, so a rerun
+      # does not re-fetch 103 pages.
+      - scrapercache:/app/data/scraper/cache
+      - scrapervar:/app/data/scraper/var
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
   # Don't forget to load the models:
   # docker compose exec ollama ollama pull qwen3:8b
   # docker compose exec ollama ollama pull qwen3-embedding:4b
@@ -118,6 +145,9 @@ services:
 
 volumes:
   pgdata:
+  # Written by the scraper at runtime; machine output, never the repository's.
+  scrapercache:
+  scrapervar:
   ollama:
   # Shared by indexer and serving, mirroring the single RWX PVC in the cluster.
   hfcache:

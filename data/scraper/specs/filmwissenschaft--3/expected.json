@@ -1,0 +1,33 @@
+{
+  "source_id": "filmwissenschaft--3",
+  "page_type": "process",
+  "verified_content_sha1": "45e5463b55d31f17441ad3d93affbb7008910b9c",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Students enrolled in the MA Major 90 or Mono 120 (Network Cinema CH) complete the Master by booking two modules independently: a one‑semester Fachüberblick (60‑min oral exam, typically CW 18–19 in FS or 48–49 in HS) and a two‑semester Masterarbeit. Choose and define your topic early, contact a prüfungsberechtigte Betreuungsperson (professors, postdocs, Oberassistierende or Privatdozierende listed on the FIWI team page) before booking, send an idea sketch and arrange a meeting; after acceptance agree on timeline and the timing of the module booking. Prepare a concept paper (ideally ≤8 pages excluding provisional outline, bibliography, filmography) with summary, question, theory, thesis, method and corpus. Regular attendance of the Master‑Kolloquium over two semesters (≈3–4 sessions/semester) is required. Binding rules and deadlines are on the Philosophical Faculty site (password‑protected masterarbeit area): https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html.",
+      "relevant_links": [
+        {
+          "url": "https://www.film.uzh.ch/dam/jcr:e9bd773c-2fda-4e83-93c5-f2e469818a9d/2026_Merkblatt_Masterarbeit_Abschluss_FIWI.pdf",
+          "description": "MA thesis process pdf"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.film.uzh.ch/de/team.html",
+          "description": "referenced in document"
+        }
+      ],
+      "source_url": "https://www.film.uzh.ch/dam/jcr:e9bd773c-2fda-4e83-93c5-f2e469818a9d/2026_Merkblatt_Masterarbeit_Abschluss_FIWI.pdf",
+      "source_id": "filmwissenschaft--3",
+      "scraped_at": "2026-07-31T14:20:17.743747+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

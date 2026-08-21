@@ -1,0 +1,43 @@
+# iff--1 is primarily a PROCESS page whose (server-rendered) supervision table
+# lists Finance professors by RESEARCH INTEREST (not a research group like ibw).
+# The auxiliary people block extracts them and follows each /professor/ profile
+# (static) for a biography and personal website. These profiles carry no email.
+source_id: iff--1
+page_type: process
+
+people:
+  record:
+    container: 'table tr:has(td a[href*="/people/professor"])'
+    fields:
+      name:
+        selector: "td:first-child a"
+        attr: text
+        transform: [normalize_ws, strip_titles]
+      role:
+        value: "Professor"
+      research_interest:
+        selector: "td:nth-child(2)"
+        attr: text
+        transform: normalize_ws
+      remarks:
+        selector: "td:nth-child(3)"
+        attr: text
+        transform: normalize_ws
+      _profile_url:
+        selector: "td:first-child a"
+        attr: href
+        transform: absolute_url
+  follow:
+    url_field: _profile_url
+    url_pattern: '^https://www\.df\.uzh\.ch/en/people/professor/.+\.html$'
+    profile:
+      fields:
+        bio:
+          selector: 'h2.TextImage--title:-soup-contains("Biography") + div'
+          attr: text
+          transform: normalize_ws
+        personal_website:
+          selector: "main a[href]"
+          contains_i: ["website", "homepage", "personal page"]
+          attr: href
+          transform: absolute_url

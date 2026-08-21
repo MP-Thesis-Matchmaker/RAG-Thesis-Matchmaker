@@ -1,0 +1,41 @@
+# iff--3: the Finance department's professors page (static PersonCards).
+# Each card carries the name, role and email directly. The "More about" link
+# goes to a /professors/ page whose "Website" link points to the person's
+# /professor/ detail page — followed one step deep and stored as the website.
+# (Overlapping professors are merged with iff--1 in the store, so those keep
+# iff--1's external homepage; iff--3-only professors keep this uzh link.)
+source_id: iff--3
+page_type: people
+
+record:
+  container: ".PersonCard"
+  fields:
+    name:
+      selector: ".PersonCard--name"
+      attr: text
+      transform: [normalize_ws, strip_titles]     # "Francisco Amaral, Prof. Dr."
+    role:
+      selector: ".PersonCard--positions li"
+      attr: text
+      multi: true
+      join: ", "
+    email:
+      selector: '.PersonCard--links a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    _profile_url:
+      selector: '.PersonCard--links a:-soup-contains("More")'
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https://www\.df\.uzh\.ch/en/people/professors/.+\.html$'
+  render: true
+  profile:
+    fields:
+      personal_website:
+        selector: "main a[href]"
+        contains_i: ["website"]      # the link labelled "Website"
+        attr: href
+        transform: absolute_url

@@ -1,0 +1,29 @@
+{
+  "source_id": "erziehungswissenschaft--1",
+  "page_type": "process",
+  "verified_content_sha1": "f545a452456a9a01e9e97104c62aaa0981cd4d39",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Die Masterarbeit ist ein zweisemestriges Pflichtmodul für Master-Major-Studierende der Erziehungswissenschaft und der Fachwissenschaft Pädagogik und Psychologie. Studierende wählen ihr Thema selbst; es muss aber einen Bezug zu den Forschungsthemen des gewählten Schwerpunkts/Lehrstuhls haben (Unterseiten der Lehrstühle listen Themenangebote). Alle Detailregeln zu Planung, Betreuung, Buchung etc. stehen im Merkblatt Masterarbeit (PDF, 124 KB) und in schwerpunktspezifischen Merkblättern; eine Planungspräsentation (PDF) ist ebenfalls verfügbar. Abgabe: Masterarbeiten sind spätestens am 1. Dezember (Herbstsemester) bzw. 1. Juni (Frühjahrssemester) bei der Betreuungsperson einzureichen. Zur Anmeldung des Studienabschlusses müssen Studierende fristgerecht in der App \"Studienfortschritt & -abschluss\" angemeldet sein; die Anmeldung ist erst möglich, wenn alle erforderlichen Leistungen eingetragen sind.",
+      "relevant_links": [
+        {
+          "url": "https://www.ife.uzh.ch/dam/jcr:f959d90e-2b98-4f1b-bdd8-c626da957ceb/Merkblatt%20MA-Arbeit.pdf",
+          "description": "Merkblatt Masterarbeit (PDF, 124 KB)"
+        },
+        {
+          "url": "https://www.ife.uzh.ch/dam/jcr:926ca614-9060-4076-99ae-0d6d6eb2e356/Planung%20Masterarbeit%20am%20IfE_2025.pdf",
+          "description": "Präsentation zum Austausch-Event (PDF, 338 KB)"
+        }
+      ],
+      "source_url": "https://www.ife.uzh.ch/de/study/Master/Module/Master-Arbeit.html",
+      "source_id": "erziehungswissenschaft--1",
+      "scraped_at": "2026-07-30T08:20:17.647500+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

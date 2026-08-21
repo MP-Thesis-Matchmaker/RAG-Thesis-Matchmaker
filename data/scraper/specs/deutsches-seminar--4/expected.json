@@ -1,0 +1,25 @@
+{
+  "source_id": "deutsches-seminar--4",
+  "page_type": "process",
+  "verified_content_sha1": "2704d4f05cbed0f9efc65dcd1742598c209a18b5",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Voraussetzung: Studierende, die die Bestehensvoraussetzungen ihres Masterprogramms erfüllt haben, können sich zum Abschluss anmelden. Thema und Betreuung: Die Masterarbeit (60–80 Seiten; 180'000–240'000 Zeichen inkl. Leerzeichen; 30 ECTS) wird nach Wahl in Absprache mit einer Betreuungsperson festgelegt. Betreuungsberechtigt sind Angehörige des Deutschen Seminars (ordentliche/ausserordentliche Professor:innen, Assistenzprofessor:innen, Titularprofessor:innen, Privatdozierende). Ablauf: Vor oder spätestens während der Buchungsfrist klären Sie in einer Sprechstunde die Verfügbarkeit und das Thema; während der Buchungsfrist das DS-Webformular zur Anfrage der Betreuungsvereinbarung ausfüllen; nach Betreuungsbestätigung im Studierendenportal das Modul \"Masterarbeit\" buchen (zuerst Betreuung klären, dann buchen; vgl. §31). Abgabe digital oder gedruckt an die Betreuungsperson: 1. Dezember (bei Buchung im FS) bzw. 1. Juni (bei Buchung im HS). Die Arbeit ist regulär zweisemestrig, auf Wunsch einsemestrig möglich. Fristerstreckung nur begründet und max. 1 Monat (siehe Verhinderungsgrund). Offizielle Vorgaben: Website des Studiendekanats und der Philosophischen Fakultät; Details und Formulare auf den Seiten des Deutschen Seminars.",
+      "relevant_links": [
+        {
+          "url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ma.php",
+          "description": "Betreuungsvereinbarung für die Masterarbeit"
+        }
+      ],
+      "source_url": "https://www.ds.uzh.ch/de/studium/master/info_masterstudium/abschluss_master.html",
+      "source_id": "deutsches-seminar--4",
+      "scraped_at": "2026-07-25T05:47:21.269260+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

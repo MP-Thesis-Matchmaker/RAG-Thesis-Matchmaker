@@ -1,0 +1,23 @@
+.git
+.github
+.gitignore
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.secret
+data/raw/
+data/publications.jsonl
+data/state.json
+tests/
+docs/
+notebooks/
+
+venv/
+.venv/
+
+# Scraper runtime output. registry/ and specs/ ARE copied in (see the Dockerfile);
+# these three are machine-written and would only bloat the build context.
+data/scraper/cache/
+data/scraper/var/
+data/scraper/output/

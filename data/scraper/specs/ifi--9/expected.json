@@ -1,0 +1,421 @@
+{
+  "source_id": "ifi--9",
+  "page_type": "topics",
+  "verified_content_sha1": "790a723cce10aea2fdbc99a6b2e16c3f1bebe945",
+  "records": [
+    {
+      "title": "Parasocial relationships with AI: between companionship and fan fiction",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, computational text analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "Examining stylistic and emotional parallels between AI companion interactions and fan fiction communities, with a focus on risks for young users",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "abcd70ef92262266b93c6b199f3b88a19926697a"
+    },
+    {
+      "title": "Advertising in generative AI tools/chatbots",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, computational text analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "presence, design, and influence — How are commercial interests embedded in GenAI interfaces, and do they shape outputs or recommendations?",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "e276c6ec79e9d847fe3c5f3717c18c2290dbdf27"
+    },
+    {
+      "title": "Does the open-source government software work as intented?",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, systematic prompting experiments, comparative output analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "A hands-on functional audit of public government GitHub repositories, assessing whether tools perform as intended and where they fail/introduce bias",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "0a4a0ee8415cd4b8a84e5f3f5f5bd8a4830ffe68"
+    },
+    {
+      "title": "Does AI-powered literature search reproduce scientific consensus?",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "systematic tool auditing, web scraping, and bibliometric analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "Auditing tools like Google Scholar AI by comparing their recommendations against canonical reading lists across research domains",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "96ef852a163e8c48bac5b9d048c1a4a868706e59"
+    },
+    {
+      "title": "Did generative AI make bad citations worse?",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "bibliometric, web scraping, network science methods",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "Tracking the prevalence and spread of low-quality or hallucinated references in academic literature before and after 2022",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "8a12627402656b0ad8970226b5d9fc10b524b1de"
+    },
+    {
+      "title": "How much of Spotify is fake?",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, data analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": "Auditing the presence of artificial artists and bot-driven streams, and how they embed themselves in curated playlist ecosystems.",
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "4b06d6cc85865d6686c75d9e12f98aa40fc55444"
+    },
+    {
+      "title": "Do the same models behave differently when accessed via API, consumer app, or third-party wrapper?",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, systematic prompting experiments, comparative output analysis",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        },
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "5e38a6a5c3e54bc9fec03e1952991b4cdd237ab0"
+    },
+    {
+      "title": "Evaluating biases in generative AI (ChatGPT/Bard/Bing Chat/Midjourney/DALL E 3) EARLIEST STARTING DATE APRIL 2025",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, work with APIs, basic statistics",
+      "supervisors": [
+        {
+          "name": "Aleksandra Urman",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/urman.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "0ee69bf7fe2cf263b465573fa6c09cb79cd1f4e6"
+    },
+    {
+      "title": "Literature review on Social Machine Behavior",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "data-analysis, interest in Machine Behavior, LLMs, AI agents",
+      "supervisors": [
+        {
+          "name": "Nicolò Pagan",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/pagan.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "690bea26507b6c30b7f796875cb913f646792253"
+    },
+    {
+      "title": "LLM Cover Letter generation and evaluation: a comparative study",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "LLM, basic statistics",
+      "supervisors": [
+        {
+          "name": "Nicolò Pagan",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/pagan.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "900167fba7c1316ac904233f22e0a22980f93a1f"
+    },
+    {
+      "title": "Exploratory analysis of Moltbook",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "web scraping, basic statistics",
+      "supervisors": [
+        {
+          "name": "Nicolò Pagan",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/pagan.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "64c26fa26eb5016a0dfadbdfb47fe4f0dcc50884"
+    },
+    {
+      "title": "Dynamics of consensus in LLMs opinion formation",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "LLM, basic statistics",
+      "supervisors": [
+        {
+          "name": "Nicolò Pagan",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/pagan.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "80e325c845737ff50ad8641d6036c83fe270342c"
+    },
+    {
+      "title": "Classifying Academic Research Fields from ORCID Dataset",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Big Data, Machine Learning, Science of Science",
+      "supervisors": [
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "6eb5f7d69c2f50de29eb087da384b51e453f0bdf"
+    },
+    {
+      "title": "Creating a unique and comprehensive chess player and record data base (from e.g., the FIDE website, chessbase, and public profiles on online platforms, like lichess and chess.com)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data scraping, linking data sets, big data",
+      "supervisors": [
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        },
+        {
+          "name": "Nicolò Pagan",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/pagan.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "f9fcb3cfa86c14572868227cfe097231e093b521"
+    },
+    {
+      "title": "Counterfactual explanations and algorithmic recourse in stable matching or for non-linear utility functions",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Explainable AI, theoretical work",
+      "supervisors": [
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "984232d191a8828df986f19ed3f86ad8fc2f7e81"
+    },
+    {
+      "title": "Strategic manipulation of users via algorithmic recourse alterations and its effect on system utility",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Coding simulations (Python), statistical analysis",
+      "supervisors": [
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "433f70ebbc8d7b55e421b9c3617daa5c6680f81f"
+    },
+    {
+      "title": "Exploring feedback loops in ride-sharing systems and their impact on fairness",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Coding simulations (Python), statistical analysis, algorithmic fairness",
+      "supervisors": [
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "b0cc40547952f26916d7b01eec475f86af7e074d"
+    },
+    {
+      "title": "Training classifiers that take algorithmic recourse into account",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Machine learning, model training, theoretical work, explainable AI",
+      "supervisors": [
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "a96d7d4b56353bd1283d3d6329a15de0fc82f666"
+    },
+    {
+      "title": "Detecting and mitigating bias from training order effects",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Machine learning, model training, algorithmic fairness",
+      "supervisors": [
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "1d0442f1ba4f92f1f5d69c7049392bee2a1cbf44"
+    },
+    {
+      "title": "Measuring fairness in review workload at ACL, considering incentives for new community members and the effects of power dynamics on review quality",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data analysis, algorithmic fairness",
+      "supervisors": [
+        {
+          "name": "Anikó Hannák",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/hannak.html"
+        },
+        {
+          "name": "Meirav Segal",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/segal.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "91c0e76f826507adc582883b938f3ea3d6554b42"
+    },
+    {
+      "title": "Effect of multiple recommender systems on a single platform on the contents visibility.",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Agent-based modelling, basic statistic analysis, simulations on Python",
+      "supervisors": [
+        {
+          "name": "Salima Jaoua",
+          "_url": "https://www.ifi.uzh.ch/en/scg/people/salima.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/scg/projects.html",
+      "source_id": "ifi--9",
+      "scraped_at": "2026-07-21T13:47:20.762350+00:00",
+      "topic_id": "58d3691ac9b3615685132eba62247e1c5155aa41"
+    }
+  ]
+}

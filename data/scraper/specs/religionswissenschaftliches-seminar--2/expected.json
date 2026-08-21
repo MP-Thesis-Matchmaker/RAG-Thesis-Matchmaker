@@ -1,0 +1,41 @@
+{
+  "source_id": "religionswissenschaftliches-seminar--2",
+  "page_type": "process",
+  "verified_content_sha1": "52118585469fe72d4f3e0b6f799224e72cdd73c2",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Master students select a habilitated or equivalently qualified supervisor and agree the thesis topic with them. In the semester when the thesis is submitted you must book the “Masterarbeit” module via the online module booking; after the module-booking deadline you will be emailed to provide the provisional title and supervisor and will receive a link to upload the final PDF. The thesis is normally 50–80 pages (≈180,000–240,000 characters). It is assessed by two written reports (first by the supervisor; the second is appointed by the study commission). Submit three properly bound copies to Prodekanat Lehre, Büro KIR 106, plus the PDF via the upload link. Deadlines: FS 15 May, HS 15 November. Official rules, print specifications and forms (evaluation leaflet, declaration of independence, title-page template) are on the department page. For admin: Barbara Cahn; content: Mona Lucia Velinsky (Theology), Farida Stickel (Religionswissenschaft).",
+      "relevant_links": [
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:4bb46127-3bd8-4f3e-803e-9910c45512ca/BetreuungBewertung_Masterarbeiten_TRF.pdf",
+          "description": "«Betreuung und Bewertung von Masterarbeiten» (PDF, 90 KB)"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:313b53a5-a6c2-4078-994f-c8d55275e5ad/MA_DruckbestimmungenZB_TRF.pdf",
+          "description": "hier (PDF, 91 KB)"
+        },
+        {
+          "url": "https://thesisbuddy.ch/",
+          "description": "ADAG Print"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:93d54a61-7aa8-4f2a-b83f-ac5a1c55e563/Selbststaendigkeitserklaerung_MA_TRF.pdf",
+          "description": "Selbstständigkeitserklärung (PDF, 37 KB)"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:6e636066-59b1-4232-b96e-13638dd87334/Vorlage_Titelblatt_Masterarbeit_TRF.dotx",
+          "description": "Vorlage Titelblatt Masterarbeit (DOTX, 45 KB)"
+        }
+      ],
+      "source_url": "https://www.religionswissenschaft.uzh.ch/de/studium/studienorganisation/masterarbeit.html",
+      "source_id": "religionswissenschaftliches-seminar--2",
+      "scraped_at": "2026-08-04T11:00:13.779117+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

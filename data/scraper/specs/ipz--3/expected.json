@@ -1,0 +1,73 @@
+{
+  "source_id": "ipz--3",
+  "page_type": "process",
+  "verified_content_sha1": "2cc5f3e91060f9880fc30226a9987f05d3d64420",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "The page does not give a concrete step‑by‑step process for obtaining and completing a Bachelor thesis; it only states that the Bachelorarbeit is usually done in the spring, builds on the autumn Spezialisierung (groups of max. 15 students), is normally supervised by the Spezialisierungsdozierenden, that since 2024 some Spezialisierungen are offered in spring to link with autumn theses, and that formal requirements and further information are available on the Studiendekanat der Philosophischen Fakultät website.",
+      "relevant_links": [
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/asto/ASTO_06B-7615-120.pdf",
+          "description": "Anhang zur Studienordnung"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/mk/MK_06B-7615-120.pdf",
+          "description": "Modulkatalog"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:3ce2fb20-6387-49ce-93d6-bf3c0eede695/Struktur_BA_Politikwissenschaft_Major_2024_SA_HD.pdf",
+          "description": "graphische Übersicht des Studienaufbaus (PDF, 67 KB)"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/mc/MC_06B-7615-120.pdf",
+          "description": "Mustercurriculum"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/asto/ASTO_06B-7615-060.pdf",
+          "description": "Anhang zur Studienordnung"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/mk/MK_06B-7160-120.pdf",
+          "description": "Modulkatalog"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:6c6ef7b3-fb3c-452e-8572-bd13845cf7ed/Struktur_BA_Politikwissenschaft_Minor_2024_SA_HD.pdf",
+          "description": "graphische Übersicht des Studienaufbaus (PDF, 65 KB)"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/mc/MC_06B-7615-060.pdf",
+          "description": "Mustercurriculum"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:7888108b-7323-4882-bcbf-a36dcf146f7d/StudyingMethodsatIPZ_20260612_Finale_DE.pdf",
+          "description": "einer gemeinsamen Vision der Methodenausbildung (PDF, 102 KB)"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:78029c3a-cbf0-45d4-a5f6-ab6c9e32ceb2/PlanungstabelleBA120Polito_2026.xlsx",
+          "description": "Major 120 ECTS (XLSX, 27 KB)"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:1554ab12-bb4b-44a8-b972-3ffce8fb8c4d/PlanungstabelleBA60Polito_2026.xlsx",
+          "description": "Minor 60 ECTS (XLSX, 27 KB)"
+        },
+        {
+          "url": "https://www.uzh.ch/de/studies/application/deadlines.html",
+          "description": "Bewerbungsfristen"
+        },
+        {
+          "url": "https://www.ipz.uzh.ch/dam/jcr:3463d2de-441d-4d31-89a9-51f2174f0312/Leitfaden%20Pr%C3%BCfungen%20Leistungsnachweise%20IPZ_ab%20HS25.pdf",
+          "description": "Leitfaden (PDF, 369 KB)"
+        }
+      ],
+      "source_url": "https://www.ipz.uzh.ch/de/studium/bachelor.html",
+      "source_id": "ipz--3",
+      "scraped_at": "2026-07-31T10:43:45.540231+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

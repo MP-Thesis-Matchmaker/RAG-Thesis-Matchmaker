@@ -1,0 +1,25 @@
+{
+  "source_id": "kunsthistorisches-institut--2",
+  "page_type": "process",
+  "verified_content_sha1": "f9fc93d6f7b09b8eed0ec36cafa3af2fd502ecd4",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Students in the MA program must write a two‑semester Master’s thesis (Modul 06SM640‑MA, 30 ECTS). The module is self‑booked; submission deadlines are 01.06 or 01.12 (see “Modul Masterarbeit an der PhF”). Discuss the topic in a supervisor’s Sprechstunde before booking; supervisors must teach in the Major/Mono programme, hold a doctorate and be employed at UZH. The thesis is an independent written work of 60–90 pages (text with footnotes, excl. appendix and bibliography); cover sheet and formalities follow institute practice. Submit electronically to the Studiendekanat; whether a printed/pdf copy is needed is to be agreed with the supervisor. Graduation must be applied for via the “Studienfortschritt & -abschluss” app; consult the Modulkatalog, VVZ, PhF pages (“Abschluss des Studiums”), Studienordnung and KHIST Studienprogrammberatung for full rules. Requests for withdrawal or extension follow §24/§25 RVO.",
+      "relevant_links": [
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "description": "Modul Masterarbeit an der PhF"
+        }
+      ],
+      "source_url": "https://www.khist.uzh.ch/de/studies/Studienorganisation/master/Abschluss-des-Studiums.html",
+      "source_id": "kunsthistorisches-institut--2",
+      "scraped_at": "2026-07-31T12:45:56.123930+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

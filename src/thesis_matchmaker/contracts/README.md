@@ -26,14 +26,18 @@ Pure data. No I/O, no business logic, no imports from sibling packages.
 
 | Symbol | File | Purpose |
 |---|---|---|
-| `DegreeLevel` | `sources.py` | `StrEnum` of `bachelor` / `master` / `phd`. Shared by `ParsedQuery` and `ThesisPosting` so a query's level can be compared to a posting's. |
+| `DegreeLevel` | `sources.py` | `StrEnum` of `bachelor` / `master` / `phd`. Shared by `ParsedQuery` and `ThesisPosting`, but **not symmetrically**: a query names one level, a posting is open to a list of them, so comparing them is an overlap test rather than equality. |
+| `PostingStatus` | `sources.py` | `StrEnum` of `open` / `assigned` / `pending` / `private`. Departmental pages mark a topic taken rather than removing it. |
+| `Supervisor` | `sources.py` | `name`, plus optional `email`, `profile_url`, `chair`. Only `name` is dependable: 96 of 264 scraped entries carry nothing else. |
 | `ZoraRecord` | `sources.py` | One ZORA publication after normalisation. 13 fields: `id`, `title`, `abstract`, `authors`, `uzh_authors`, `author_authority_map`, `year`, `keywords`, `department`, `language`, `publication_type`, `doi`, `url`. |
-| `ThesisPosting` | `sources.py` | One scraped open thesis position: `id`, `title`, `description`, `supervisor`, `department`, `degree_level`, `keywords`, `language`, `url`, `scraped_at`. |
+| `ThesisPosting` | `sources.py` | One scraped open thesis position: `id`, `title`, `description`, `supervisors[]`, `faculty`, `department`, `degree_levels[]`, `status`, `keywords`, `language`, `url`, `listed_on`, `source_id`, `scraped_at`. |
+| `ResearcherProfile` | `sources.py` | A researcher as their own department page describes them: `id`, `name`, `email`, `role`, `research_interest`, `research_field`, `research_group`, `bio`, `personal_website`, `profile_url`, `faculty`, `department`, `source_id`, `scraped_at`. |
+| `ApplicationProcess` | `sources.py` | How to apply at one unit, for one level: `id`, `degree_level`, `description`, `relevant_links[]`, `url`, `faculty`, `department`, `source_ids[]`, `scraped_at`. |
 | `ParsedQuery` | `retrieval.py` | A student's free-text interest turned into structure: `topics`, `keywords`, `degree_level`, `department`, `raw_query`. |
 | `Evidence` | `retrieval.py` | One citable item backing a recommendation: `source_type` (`publication` \| `thesis_posting`), `source_id`, `title`, `url`, `year`. |
 | `SupervisorMatch` | `retrieval.py` | One ranked person: `supervisor`, `department`, `score`, `matched_topics`, `publication_count`, `posting_count`, `evidence[]`. |
 
-All six are re-exported from `contracts/__init__.py`, so
+All ten are re-exported from `contracts/__init__.py`, so
 `from thesis_matchmaker.contracts import ZoraRecord` is the intended import path.
 
 ## Data flow

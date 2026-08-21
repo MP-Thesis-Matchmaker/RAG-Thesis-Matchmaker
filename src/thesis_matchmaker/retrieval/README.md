@@ -55,8 +55,9 @@ Filters applied:
 |---|---|---|
 | `source_type` | `publication` | `thesis_posting` |
 | `department` | if the query names one | if the query names one |
-| `degree_level` | — | if the query names one |
+| `degree_level` | — | *(not filtered directly -- see below)* |
 | `has_uzh_author` | **`True`** | — |
+| `degree_<level>` | — | **`True`** if the query names one |
 
 ### The UZH-author pre-filter
 
@@ -146,5 +147,14 @@ serves fake results.
   open position. The renderers therefore print a posting clause only when it is
   non-zero and **must stay that way**: the earlier "no open position" text became
   "not currently accepting new students" about a named academic in the LLM's prose
-  (see [`../../../docs/example-run.md`](../../../docs/example-run.md)). No scraper
-  exists either, so against a `--source db` index it is 0 for everyone.
+  (see [`../../../docs/example-run.md`](../../../docs/example-run.md)).
+- **A posting nobody is named on reaches nobody.** `_persons` fans a posting out to
+  every entry in its `supervisors` list, so a posting with an empty list credits no
+  one and never appears in a result. That is **63 of 247** scraped topics -- a
+  quarter of the real corpus, invisible. `has_supervisor` is emitted into metadata
+  so a future ranking pass can surface them another way; nothing does today.
+- **`degree_level` filtering goes through booleans, not the field itself.** A
+  posting can be open to several levels, and neither store can filter a list-valued
+  metadata field, so the filter is `degree_<level>: True` against the companions
+  `posting_to_document` emits. See [`../scraper/README.md`](../scraper/README.md)
+  for the measured distribution behind that.

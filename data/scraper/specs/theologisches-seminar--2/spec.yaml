@@ -1,0 +1,29 @@
+# theologisches-seminar--2: the TRF "Professuren und Lehrstühle" page is shared by
+# several seminars (each a div.PersonList section). This unit gets only the
+# "Theologisches Seminar" section's professors (PersonCards with name+title,
+# inline email, profile link). Unit level.
+source_id: theologisches-seminar--2
+page_type: people
+
+record:
+  container: 'div.PersonList:has(h2.PersonList--title:-soup-contains("Theologisches Seminar")) div.PersonCard--content'
+  fields:
+    name:                              # part before the comma (title varies)
+      - selector: "h3.PersonCard--name"
+        attr: text
+        regex: '^\s*(.+?)\s*,'
+      - selector: "h3.PersonCard--name"
+        attr: text
+        transform: normalize_ws
+    role:
+      selector: "h3.PersonCard--name"
+      attr: text
+      regex: ',\s*(.+)$'
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+    _profile_url:
+      selector: 'a[href*="/professuren/"]'
+      attr: href
+      transform: absolute_url

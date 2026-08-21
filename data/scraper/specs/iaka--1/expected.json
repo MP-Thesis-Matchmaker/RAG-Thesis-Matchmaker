@@ -1,0 +1,81 @@
+{
+  "source_id": "iaka--1",
+  "page_type": "process",
+  "verified_content_sha1": "48d89ecd758374433f298ee6af09d7e49232dd93",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Students in the IAKA’s Griechisch, Lateinisch and Mittellatein programmes may write theses; works are usually tied to a course (supervision by the course’s Dozierende; some proseminars also have tutors) but Bachelor (15 ECTS) and Master (30 ECTS) theses can be written without a course. Register/book the corresponding module (modules are normally booked in the semester after the associated course). Lengths: Bachelor 30–40 pages, Master 60–80 pages. Standard submission deadlines: 1 December (autumn) and 1 June (spring); if writing parallel to a course you must request permission by email to studium.klph@iaka.uzh.ch (deadlines then 6 Jan / 1 July). Submit an electronic PDF and usually a printed/Word copy; no post‑submission revisions; feedback only before submission. Extensions for medical reasons: up to one month with the supervisor or request module cancellation. Full formal rules and formatting are on the IAKA study pages (https://www.iaka.uzh.ch/de/klph/studium.html and subject subpages).",
+      "relevant_links": [
+        {
+          "url": "https://www.iaka.uzh.ch/dam/jcr:466b1f32-db04-4570-9991-2018fbcb40d7/Hinweise_schriftliche_Arbeiten_HS24.pdf",
+          "description": "Process pdf for BA/MA thesis"
+        },
+        {
+          "url": "https://www.iaka.uzh.ch/de/klph/studium.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.iaka.uzh.ch/de/klph/studium/latein/arbeiten.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.iaka.uzh.ch/apps/netclassics/proseminar/wissarbeite/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/pruefungen.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.iaka.uzh.ch/apps/netclassics/proseminar/wissarbeite/Vorgehensweise_Aufbau_Form.php",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.teaching.uzh.ch/de/infrastruktur/plagiate.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "http://www.lucius-",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.iaka.uzh.ch/apps/netclassics/proseminar/word/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://aboutbrepolis.files.wordpress.com/2018/09/aph_abbrc3a9viations.pdf",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://referenceworks.brill.com/display/entries/NPOG/COM-004.xml",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://journals.openedition.org/e-spania/329",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://thesaurus.badw.de/tll-digital/index",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.uzh.ch/de/explore/basics/ai/r",
+          "description": "referenced in document"
+        }
+      ],
+      "source_url": "https://www.iaka.uzh.ch/dam/jcr:466b1f32-db04-4570-9991-2018fbcb40d7/Hinweise_schriftliche_Arbeiten_HS24.pdf",
+      "source_id": "iaka--1",
+      "scraped_at": "2026-07-30T08:09:15.006356+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

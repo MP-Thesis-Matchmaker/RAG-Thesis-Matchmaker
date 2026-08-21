@@ -1,0 +1,25 @@
+{
+  "source_id": "filmwissenschaft--1",
+  "page_type": "process",
+  "verified_content_sha1": "7dcd4985e21c41ca7d9c5528306c9a6cfdd45eae",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Studierende im Major-Studienprogramm schließen das Bachelorstudium mit einer Bachelorarbeit zu einem selbstgewählten Thema ab. Die Arbeit ist auf ein Semester begrenzt (Modul „Bachelorarbeit“); frühzeitiger Kontakt zur gewünschten Betreuungsperson ist Pflicht — dieser Kontakt muss vor der Buchung erfolgen. Formale Vorgaben: Sprache Deutsch (Ausnahmen: Französisch, Englisch, Italienisch), Umfang 35–40 Seiten (detaillierte Vorgaben in den Merkblättern/Leitfäden). Den Abschluss müssen Studierende termingerecht bei der Philosophischen Fakultät beantragen; nähere Angaben dazu finden sich auf der Homepage des Studiendekanats. Offizielle Hinweise und Vorlagen sind als Downloads verfügbar (Titelblatt, Anleitung der Philosophischen Fakultät, Merkblätter/Leitfäden).",
+      "relevant_links": [
+        {
+          "url": "https://www.film.uzh.ch/dam/jcr:337e2769-8838-48b3-84e8-6d07990de7bd/2020_Vorlage_BA_Arbeit_Titelblatt_FIWI-1.docx",
+          "description": "Titelblatt für Bachelorarbeiten (DOCX, 44 KB)"
+        }
+      ],
+      "source_url": "https://www.film.uzh.ch/de/studies/studienprogrammangebot/BA/abschluss.html",
+      "source_id": "filmwissenschaft--1",
+      "scraped_at": "2026-07-31T14:19:49.853736+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

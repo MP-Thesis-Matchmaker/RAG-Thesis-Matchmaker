@@ -1,0 +1,37 @@
+{
+  "source_id": "historisches-seminar--2",
+  "page_type": "process",
+  "verified_content_sha1": "f7ec429c7dab5885692395babe69cddc94f4a4b3",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Hauptfachstudierende schliessen das Programm mit einer Bachelorarbeit ab. Studierende suchen und kontaktieren die Betreuungsperson selbst (Professor:innen; Titularprofessor:innen und Privatdozierende mit Lehrpflicht/Lehranstellung; promovierte Angestellte des Historischen Seminars inkl. längerfristiger Lehrangestellter). In der Regel sollte zuvor ein Seminar/Kolloquium bei der Betreuungsperson besucht worden sein; das Betreuungsrecht gilt meist für deren Fach-/Zeitraum (Ausnahme: Rezeptionsgeschichte). Vor der Modulbuchung Thema und Vorgehen mit der Betreuerin/dem Betreuer abklären. Modul Bachelorarbeit während ordentlicher Buchungsfristen buchen; danach auf der angegebenen Website Namen der Betreuungsperson und provisorischen Titel eintragen, zum Abgabetermin den definitiven Titel ergänzen. Abgabe an die Betreuungsperson als PDF (Benennung: Name_Vorname_Matrikelnummer_BA_Semester); späteste Abgabe: 1.12. (HS) bzw. 1.6. (FS) — sonst nicht bestanden. Modalitäten für Fristerstreckung/Abmeldung auf der Website des Studiendekanats; Regelungen in RVO und StO.",
+      "relevant_links": [
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/bachelor/regulaer-nachfolger/mk/MK_06B-7600-120.pdf",
+          "description": "Modulkatalog"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/studienrelevante-dokumente/richtlinien-formulare.html",
+          "description": "Merkblatt Beurteilungskriterien"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/beratung/kontaktformular.html",
+          "description": "Kontaktformular"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/beratung/sprechstunde.html",
+          "description": "Anmeldung Sprechstunde"
+        }
+      ],
+      "source_url": "https://www.hist.uzh.ch/de/studium/studienstufen/bachelor/aufbau/abschluss/bachelorarbeit.html",
+      "source_id": "historisches-seminar--2",
+      "scraped_at": "2026-07-30T08:01:44.209746+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

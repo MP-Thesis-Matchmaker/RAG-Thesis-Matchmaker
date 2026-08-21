@@ -1,0 +1,33 @@
+# ipz--2: IPZ staff page. Per the brief, extract all Professors — the rows of the
+# table under the "Professorinnen und Professoren" heading. Name is split across
+# two cells (Lastname | Firstname); office, phone, the mailto and the profile
+# link are in the row. Stored at the unit level.
+source_id: ipz--2
+page_type: people
+
+record:
+  container: 'div.TextImage:has(h2:-soup-contains("Professorinnen")) table tr:has(td)'
+  fields:
+    name:
+      selector: "td:nth-child(1), td:nth-child(2)"
+      attr: text
+      multi: true
+      join: " "
+    role:
+      value: "Professor"
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+    office:
+      selector: "td:nth-child(3)"
+      attr: text
+      transform: normalize_ws
+    phone:
+      selector: "td:nth-child(4)"
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      selector: 'td:nth-child(1) a[href]'
+      attr: href
+      transform: absolute_url

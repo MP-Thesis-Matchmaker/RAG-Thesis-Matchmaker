@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="robots" content="nofollow">
+<meta name="google" content="notranslate">
+<meta name="description" content="OLAT - Online Learning And Training">
+<meta name="keywords" content="OLAT, OLAT, eLearning, learning platform, LMS, Learning Management System, LCMS, Learning Content Management System, Open Source, elearning, JAVA, IMS, QTI, SCORM, Content package, collaboration, usability, performance, scalability.">
+
+<meta name="generator" content="OpenOlat 8.3.0 - https://www.openolat.org">
+<meta name="dcterms.type" content="Interactive Resource">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+<script>
+var o_info = new Object();
+o_info.initialPageLoadFinished = false;
+o_info.version = '8.3.0';
+o_info.o_winid = '1043967173';
+window.name  = '1043967173';
+o_info.uriprefix="/dmz/";
+o_info.bc="";
+o_info.businessPath="";
+o_info.startBusinessPath="";
+o_info.serverUri="https://lms.uzh.ch"
+o_info.serverContext=""
+o_info.dirty_form = "Attention! You still have unsaved form data. If you press OK, you will leave the form without saving the unsaved data. The contained changes will be lost.";
+o_info.locale = "en";
+o_info.lastClickTime = new Date().getTime();
+o_info.drop = true;
+o_info.o_baseURI = "/raw/2267:665171eb50c52a6ae163728576c3640148530feb/";
+o_info.oo_noresponse_title = "You have been logged out";
+o_info.oo_noresponse = "<p>For security reasons, you will be automatically logged out after a longer period of inactivity or a restart of the application.<\/p><p><a class=\"btn btn-primary\" href=\'reload.html\'><i class=\"o_icon o_icon_login\"> <\/i> Log in again<\/a><\/p> ";
+o_info.oo_noresponse_unsaved_data = "<h3>Unsaved data<\/h3><p>If you have unsaved data, go back to the page and save the data to the clipboard to save it. Unsaved data will be lost when you log in again.<\/p><p><a class=\"btn o_button_ghost\" href=\'back.html\'><i class=\"o_icon o_icon_back\"> <\/i> Back to page<\/a><\/p>";
+o_info.zseed = 0;
+o_info.newWindow=null;
+o_info.submit=null;
+o_info.preventOnchange=false;
+o_info.latexit=false;
+if (top!=self){top.location=self.location+"?o_winrndo=1";}
+function o_start() {
+	o_init();
+				o_info.initialPageLoadFinished = true;
+}
+
+
+var _paq = window._paq || [];
+_paq.push(['trackPageView']);
+_paq.push(['enableLinkTracking']);
+_paq.push(['HeatmapSessionRecording::disable']);  (function() {
+    var u='https://webstats.uzh.ch/';
+   _paq.push(['setTrackerUrl', u+'matomo.php']);
+   _paq.push(['setSiteId', '461']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+
+
+try{
+	if(o_info.startBusinessPath != null && o_info.startBusinessPath.length > 0
+			&& window.history && !(typeof window.history === "undefined") && window.history.pushState) {
+		window.history.pushState('', document.title, o_info.startBusinessPath);
+		o_info.startBusinessPath = null;
+	}
+	if (document.location.href.indexOf('oow') != -1) {
+		window.history.replaceState(window.history.state, document.title, window.location.href.split("?")[0]);
+	}
+} catch(e) { }
+</script>
+
+<script>
+function o_mathjax(fct_success) {
+	if(window.MathJax === undefined) {
+		window.MathJax = {
+  tex: {
+    inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+    macros: {
+      exponentialE: "\\mathrm{e}",
+      imaginaryI: "\\mathrm{i}",
+      differentialD: "\\mathrm{d}",
+      larr: "\\leftarrow",
+      lrArr: "\\leftrightarrow",
+      rarr: "\\rightarrow"
+    }
+  },
+  options: {
+    enableMenu: false,
+    processHtmlClass: 'tex2jax_process',
+    renderActions: {
+      findScripts: [11, function (doc) {
+        var nodes = document.querySelectorAll('.math');
+        for (var i=0; i<nodes.length; i++) {
+          var node = nodes[i];
+          var math = new doc.options.MathItem(node.textContent, doc.inputJax[0], (node.tagName !== 'SPAN'));
+          var text = document.createTextNode('');
+          node.parentNode.replaceChild(text, node);
+          math.start = {node: text, delim: '', n: 0};
+          math.end = {node: text, delim: '', n: 0};
+          doc.math.push(math);
+        }
+      }, '']
+    }
+  },
+  loader: {
+    paths: {
+     fonts: '//mathjax.openolat.org/mathjax/4.0-latest/'    }
+  },
+  output: {
+    font: 'mathjax-newcm',
+    fontPath: '//mathjax.openolat.org/mathjax/4.0-latest//%%FONT%%-font'  }
+};
+;
+		jQuery.ajax("//mathjax.openolat.org/mathjax/4.0-latest/tex-mml-chtml.js", {
+			cache: true,
+			dataType: "script",
+			crossDomain: true,
+			success: function() {
+		    	if(typeof fct_success !== "undefined") {
+		    		fct_success();
+		    	}
+				o_info.latexit = false;
+			}
+		});
+	}
+}
+</script>
+ 
+<script src='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/js/jquery/jquery-3.7.1.min.js'></script>
+	<script src='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/js/js.plugins.min.js'></script>
+	<script src='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/movie/player.min.js'></script>
+	<script src='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/js/iframeResizer/iframeResizer.min.js'></script>
+
+	<link href='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/js/js.plugins.min.css' rel="stylesheet">
+<script>
+jQuery.noConflict();
+
+jQuery(document).ooTranslator().initialize("/g/openolat2034-deorg.olat.core.commons.chiefcontrollers.JSTranslatorMapper");
+o_info.oo_translator = jQuery(document).ooTranslator();
+jQuery(window).on("popstate", function(e) {
+	if(e.originalEvent.state && e.originalEvent.state.businessPath) {
+		if (e.originalEvent.state.businessPath.indexOf('oow') == -1) {
+			var windowedPath = e.originalEvent.state.businessPath + '?oow=' + window.name;
+			window.history.replaceState(e.originalEvent.state, document.title, windowedPath);
+			window.location.reload();
+		} else {
+			window.location.href = e.originalEvent.state.businessPath;
+		}
+	}
+});
+	
+var closing = function(e) {
+	if(navigator.sendBeacon) {
+		var beaconUrl = '/dmz/1%3A1%3A1043967175%3A2%3A0%3Acid%3Aclose-window%3A_csrf%3A3d9d3c40-1199-43c8-bf43-52f6758f5fa5/';
+		if(beaconUrl.indexOf("/dmz/") == -1) {
+			navigator.sendBeacon(beaconUrl, null);
+		}
+	}
+};
+window.onbeforeunload = closing;
+window.onunload = closing;
+
+jQuery(function() {
+	if ((window.unsafeWindow == null ? window : unsafeWindow).MathJax == null) {
+		var count = jQuery('div.math,span.math,math,div.mathEntryInteraction').length;
+		if (count > 0 || o_info.latexit) {
+			o_mathjax();
+		}
+	}
+});
+</script>
+
+<!-- empty -->
+<link id='o_theme_css' href='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/themes/forum-uzh/theme.css' rel='stylesheet'>
+<link id='o_email_css' href='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/themes/forum-uzh/email.css' rel='stylesheet'>
+<script src='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/themes/forum-uzh/theme.js'></script>
+<link rel='icon' href='/raw/2267:665171eb50c52a6ae163728576c3640148530feb/themes/forum-uzh/favicon.ico' type='image/x-icon'>
+<meta name='msapplication-TileColor' content='#ffffff'>
+
+<script>
+"use strict";
+jQuery(document).ready(function() {
+	// Detect IE below version 11
+	if (window.navigator.userAgent.indexOf('MSIE ') > 0) {
+		jQuery('body').addClass('o_browser_ie10');
+	}
+});
+</script>
+<!-- empty -->
+<style id="o_fontSize_css"></style>
+<style>
+		.o_custom_navbar-brand { background-image: none; }
+</style>
+
+<title>OLAT - lms.uzh.ch</title>
+</head>
+
+<body onload="o_start();" id="o_body" class="o_dmz  o_lang_en ">
+<h1 id='o_top' class="sr-only" data-nosnippet>OLAT - lms.uzh.ch</h1>
+<div id="o_bg"></div>
+<!-- START guiDebug -->
+
+<!-- END guiDebug -->
+<!-- START jsServer -->
+<div id='o_c1043967216'><div id='o_c1043967214'><!-- empty --></div></div>
+<!-- END jsServer -->
+
+<!-- START olatContentPanel -->
+
+<a href="#o_main_container" class="sr-only" data-nosnippet>Skip to main content</a>
+	<div id="o_beta_logo"></div>
+
+<div id="o_messages" class="hidden-print" data-nosnippet><div id='o_c1043967179'><div id='o_c1043967172'><!-- empty --></div></div></div>
+<div id="o_header_wrapper" data-nosnippet> 
+	<div id="o_header_container" class="o_container_offcanvas container-fluid"> 
+		<div id="o_logo" aria-hidden="true"></div>
+		<div id="o_right_logo" aria-hidden="true"></div>
+		
+			</div>
+</div>
+
+<div id="o_offcanvas_right" class="o_navbar o_navbar-offcanvas " role="navigation" aria-label="Personal tools, settings and logout" data-nosnippet>
+	<a href="javascript:;" class="o_offcanvas_close" title="Close"><i class='o_icon o_icon_close o_icon-lg'> </i> <span class="sr-only">Close dialog window</span></a>
+	<div id="o_offcanvas_right_container" class="o_navbar-collapse">
+			<div id='o_c1043967194'><ul id="o_c1043967193" class="nav o_navbar-nav o_navbar-right o_sel_menu_tools list-unstyled">
+</ul></div>
+	</div>
+</div>
+<div id="o_navbar_wrapper" class="o_navbar" role="navigation" aria-label="Main navigation" data-nosnippet>
+	<div id="o_navbar_container" class="o_container_offcanvas container-fluid">
+		<a class="o_navbar-brand " href="/dmz/" title="Go to the start page"  rel="noopener noreferrer"><span class="sr-only">Go to the start page"</span></a>
+		
+		<div class="o_collapse o_navbar-collapse">
+						<ul id="o_c1043967176" class="o_navbar_sites nav o_navbar-nav">
+<script>
+"use strict";
+jQuery(document).trigger("oo.nav.sites.modified");
+</script>
+</ul>
+
+			<ul id="o_c1043967177"  class="o_navbar_tabs nav o_navbar-nav">
+<script>
+"use strict";
+jQuery(document).trigger("oo.nav.tabs.modified");
+</script>
+</ul>
+
+						<ul id="o_navbar_more" class="nav o_navbar-nav o_dropdown_toggle" style="display: none" role="presentation" >
+				<li>
+					<a class="dropdown-toggle" data-toggle="dropdown" href="javascript:;">More <b class="caret"> </b></a>
+					<ul class="dropdown-menu dropdown-menu-right"></ul>
+				</li>
+			</ul>
+							<div id='o_c1043967192'><div id='o_c1043967182'><div class="o_navbar_tools">
+	<ul class="nav o_navbar-nav o_navbar-right">
+		<li id="o_navbar_my_menu" class="dropdown o_navbar_dmz_help_menu">
+			<a id="o_navbar_my_menu_toggler" href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+				<i class="o_icon o_icon_help o_icon-lg" title='Start OLAT Help' aria-hidden='true'></i> <span>Help</span>
+			</a>
+			<ul class="dropdown-menu dropdown-menu-right"  aria-labelledby="o_navbar_my_menu_toggler">
+			 		<li><a class=""  href="https://docs.olat.uzh.ch/" target="oohelp" rel="noopener noreferrer" id='help.ooDocs'><i class="o_icon o_icon-fw o_icon_manual" aria-hidden='true'> </i> <span>OLAT Manual</span></a></li>
+			 		<li><a class=""  href="https://docs.olat.uzh.ch/de/uzh_additions/registration/registration_with_a_switch_edu-id/" target="ooCustom1" rel="noopener noreferrer" id='help.custom1'><i class="o_icon o_icon-fw o_icon_help" aria-hidden='true'> </i> <span>How to Register</span></a></li>
+			</ul>
+		</li>
+		<li id="o_navbar_langchooser"><div id='o_c1043967186'><div id='o_co_top_nav_dmz_lang_chooser'><form  method="post" id="ofo_o_top_nav_dmz_lang_chooser" name="ofo_o_top_nav_dmz_lang_chooser" action="/dmz/1%3A1%3Ao_top_nav_dmz_lang_chooser%3A1%3A1%3Aofo_%3Afid/"  onsubmit="return o_XHRSubmit('ofo_o_top_nav_dmz_lang_chooser');"  onkeydown="o_submitByEnter(event)" ><input type="hidden" id="ofo_o_top_nav_dmz_lang_chooser_dispatchuri" name="dispatchuri" value="undefined"><input type="hidden" id="ofo_o_top_nav_dmz_lang_chooser_eventval" name="dispatchevent" value="undefined"><input type="hidden" name="_csrf" value="3d9d3c40-1199-43c8-bf43-52f6758f5fa5"><div id='o_c1043967185'><div class='btn-group'><button type='button' class='btn btn-default dropdown-toggle' id='dd_btn_1043967187' data-toggle='dropdown'><span class='o_inner_wrapper '></span><span class='o_label'>English</span> <i class='o_icon o_icon_caret o-icon-fw' aria-hidden='true' title="More actions"> </i><span class='sr-only'>More actions</span></button><ul class='dropdown-menu dropdown-menu-right' id='dd_items_1043967187' role='menu'><li role='menuitem'><a class="" id="o_fi1043967188" href="javascript:;" onmousedown="o_info.preventOnchange=true;" onmouseup="o_info.preventOnchange=false;" onclick="o_ffEvent(event,'ofo_o_top_nav_dmz_lang_chooser','ofo_o_top_nav_dmz_lang_chooser_dispatchuri','o_fi1043967188','ofo_o_top_nav_dmz_lang_chooser_eventval','2'); "  onkeydown="triggerClick(event, true, false);" draggable="false"><span>Deutsch</span></a></li><li role='menuitem'><a class="" id="o_fi1043967189" href="javascript:;" onmousedown="o_info.preventOnchange=true;" onmouseup="o_info.preventOnchange=false;" onclick="o_ffEvent(event,'ofo_o_top_nav_dmz_lang_chooser','ofo_o_top_nav_dmz_lang_chooser_dispatchuri','o_fi1043967189','ofo_o_top_nav_dmz_lang_chooser_eventval','2'); "  onkeydown="triggerClick(event, true, false);" draggable="false"><span>English</span></a></li><li role='menuitem'><a class="" id="o_fi1043967190" href="javascript:;" onmousedown="o_info.preventOnchange=true;" onmouseup="o_info.preventOnchange=false;" onclick="o_ffEvent(event,'ofo_o_top_nav_dmz_lang_chooser','ofo_o_top_nav_dmz_lang_chooser_dispatchuri','o_fi1043967190','ofo_o_top_nav_dmz_lang_chooser_eventval','2'); "  onkeydown="triggerClick(event, true, false);" draggable="false"><span>Français</span></a></li><li role='menuitem'><a class="" id="o_fi1043967191" href="javascript:;" onmousedown="o_info.preventOnchange=true;" onmouseup="o_info.preventOnchange=false;" onclick="o_ffEvent(event,'ofo_o_top_nav_dmz_lang_chooser','ofo_o_top_nav_dmz_lang_chooser_dispatchuri','o_fi1043967191','ofo_o_top_nav_dmz_lang_chooser_eventval','2'); "  onkeydown="triggerClick(event, true, false);" draggable="false"><span>Italiano</span></a></li></ul></div></div></form> <script>
+ /* <![CDATA[ */ 
+ (function() {jQuery('#ofo_o_top_nav_dmz_lang_chooser').keypress(function(event) {
+ if (13 == event.keyCode) {
+  event.preventDefault();
+  if (this.onsubmit()) { this.submit(); }
+ }
+});
+})();
+ /* ]]> */ 
+</script></div></div></li>
+	</ul>	
+</div>	</div></div>
+		</div>
+		
+	</div>
+</div>
+<div id="o_container_page_width_toggler" aria-hidden="true" data-nosnippet>
+	<div id="o_go_standard_width" title="Use standard width for content, optimized for reading content" class="btn btn-primary btn-xs o_noprint"><i class="o_icon o_icon_width_collapse o_icon-fw"> </i></div>
+	<div id="o_go_full_width" title="Use standard width for content, optimized for reading content" class="btn btn-default btn-xs o_noprint"><i class="o_icon o_icon_width_expand o_icon-fw"> </i></div>
+</div>
+<div><script>
+jQuery(document).ready(function() {
+	jQuery("#o_go_standard_width").click(function() { OPOL.setContainerFullWidth(0); o_XHRNFEvent('/dmz/1:1:1043967175:2:1/','cid','width.standard','_csrf','3d9d3c40-1199-43c8-bf43-52f6758f5fa5','no-response','oo-no-response'); });
+	jQuery("#o_go_full_width").click(function() { OPOL.setContainerFullWidth(1); o_XHRNFEvent('/dmz/1:1:1043967175:2:1/','cid','width.full','_csrf','3d9d3c40-1199-43c8-bf43-52f6758f5fa5','no-response','oo-no-response'); });
+});
+</script></div>
+<div id='o_c1043967181'><!-- empty --></div>
+
+<div id="o_main_wrapper">
+	<div id="o_main_container" class="o_container_offcanvas container-fluid">
+		<div id='o_c1043967198'><div id='o_c1043967204'><div id='o_main' class='row o_loginscreen'>
+<div id='o_main_center' class='split-pane'>
+<div id='o_main_center_content' class='clearfix'>
+<a id='o_content'></a>
+<div id='o_main_center_content_inner'>
+<div id='o_comain_loging'><div class="o_login clearfix">
+	<div class="o_login_intro">
+		<h1>OLAT - Online Learning and Training</h1>
+	</div>
+
+	<div class="o_login_box_wrapper">
+		<div class="o_login_box">
+			<div class="o_login_logo"></div>
+			<div class="o_login_welcome">Welcome back</div>
+			<div class="o_login_provider">
+					<div id='o_c1043967206'><div id='o_c1043967205'><div class="o_login_form o_login_shibboleth">
+	<fieldset>
+		<legend>Login</legend>
+		<p>
+			Please select your institution.<br>You will be redirected for authentication.
+		</p>		
+		<!-- EMBEDDED-WAYF-START -->
+<script><!--
+// To use this JavaScript, please access:
+// https://wayf.switch.ch/SWITCHaai/WAYF/embedded-wayf.js/snippet.html
+// and copy/paste the resulting HTML snippet to an unprotected web page that 
+// you want the embedded WAYF to be displayed
+
+// Technical contact for this Resource: developers@olat.uzh.ch
+
+// Parameters to influence look & feel of WAYF
+// ===========================================
+
+// Whether or not the new SAML2/Shibboleth 2 flow shall be used that
+// sends the user from the discovery service back to the the Service Provider
+// Set this to true if you are using a Shibboleth Service Provider 2.x
+// [Optional, default: true]
+wayf_use_discovery_service = true;
+
+// EntityID of the Service Provider that protects this Resource
+// Examples: "https://econf.switch.ch/shibboleth", "https://dokeos.unige.ch/shibboleth"
+// [Mandatory]
+wayf_sp_entityID = "https://lms.uzh.ch/shibboleth";
+
+// Assertion consumer URL of the Service Provider
+// Examples: "https://econf.switch.ch/Shibboleth.sso/SAML/POST", "https://dokeos.unige.ch/Shibboleth.sso/SAML/POST"
+// [Mandatory, when wayf_use_discovery_service = false]
+wayf_sp_handlerURL = "https://lms.uzh.ch/Shibboleth.sso";
+
+// Assertion consumer URL of the Service Provider
+// Examples: "https://econf.switch.ch/Shibboleth.sso/DS", "https://dokeos.unige.ch/Shibboleth.sso/DS"
+// [Mandatory, when wayf_use_discovery_service = true]
+wayf_sp_samlDSURL = "https://lms.uzh.ch/Shibboleth.sso/Login";
+
+// URL of the WAYF to use
+// Examples: "https://wayf.switch.ch/SWITCHaai/WAYF", "https://wayf-test.switch.ch/aaitest/WAYF";
+// [Mandatory]
+wayf_URL = "https://wayf.switch.ch/SWITCHaai/WAYF";
+
+// URL on this resource that the user shall be returned to after authentication
+// Examples: "https://econf.switch.ch/aai/home", "https://olat.uzh.ch/my/courses"
+// [Mandatory]
+wayf_return_url = "https://lms.uzh.ch/shib/";
+
+// Default IdP to preselect when central WAYF couldn't guess IdP either
+// This is usually the case the first time ever a user accesses a resource
+// [Optional, default: commented out]
+wayf_default_idp = "urn:mace:switch.ch:SWITCHaai:unizh.ch";
+
+// Font size
+// [Optional, default: 12]
+wayf_font_size = 12;
+
+// Font color
+// [Optional, default: #000000]
+wayf_font_color = '#000000';
+
+// Border color
+// [Optional, default: #00247D]
+wayf_border_color = '#FFFFFF';
+
+// Background color
+// [Optional, default: #F4F7F7]
+wayf_background_color = '#FFFFFF';
+
+// Logo size
+// [Optional, default: false]
+wayf_use_small_logo = true;
+
+// Width of the embedded WAYF in pixels or "auto"
+// [Optional, default: 200]
+wayf_width = 400;
+
+// Height of the embedded WAYF in pixels or "auto"
+// [Optional, default: "auto"]
+wayf_height = "auto";
+
+// Whether to show the checkbox to remember settings for this session
+// [optional, default: true]
+wayf_show_remember_checkbox = false;
+
+// Whether to automatically log in user if he has a session/permanent redirect
+// cookie set at central wayf
+// [optional, default: true]
+wayf_auto_login = true;
+
+// Whether to hide the WAYF after the user was logged in
+// This requires that the _shib_session_* cookie is set when a user 
+// could be authenticated
+// [optional, default: true]
+wayf_hide_after_login = false;
+
+// Whether to hide the WAYF after the user was logged in
+// This requires that the _shib_session_* cookie is set when a user 
+// could be authenticated
+// If you want to hide the embedded WAYF completely, uncomment
+// the property and set it to "". This then won't draw anything
+// [optional, default commented out: You are already logged in]
+//wayf_logged_in_messsage = "";
+
+// Whether or not to show the categories in the drop-down list
+// Possible values are: true or false
+// [Optional, default: true]
+wayf_show_categories =  true;
+
+// Categories of Identity Provider that shall not be shown
+// Possible values are: "university","uas","hospital","library","vho","others","all"
+// [Optional, default: none]
+//wayf_hide_categories =  new Array("university","uas","hospital","library","vho","others");
+wayf_hide_categories = new Array();
+
+// EntityIDs of Identity Provider whose category is hidden but that shall be shown anyway
+// Examples: "urn:mace:switch.ch:SWITCHaai:ethz.ch", "https://aai-logon.switch.ch/idp/shibboleth"
+// [Optional, default: none]
+wayf_unhide_idps = new Array();
+
+// Example of how to unhide certain Identity Providers
+// wayf_unhide_idps = new Array("urn:mace:switch.ch:aaitest:dukono.switch.ch");
+
+// EntityIDs of Identity Provider that shall not be shown at all
+// Examples: "urn:mace:switch.ch:SWITCHaai:ethz.ch", "https://aai-logon.switch.ch/idp/shibboleth"
+// [Optional, default: none]
+wayf_hide_idps = new Array("https://aai-logon.vho-switchaai.ch/idp/shibboleth");
+
+// Example of how to hide certain Identity Providers
+//wayf_hide_idps = new Array("https://aai.example.ch/idp/shibboleth", "urn:mace:switch.ch:aaitest:test-idp.org");
+
+//////////////////// ADVANCED SETTINGS ////////////////////
+wayf_hide_logo = true;
+
+// Overwrites the text of the submit button
+// [Optional, commented out by default]
+// TODO: LD: change label with a property read string
+wayf_overwrite_submit_button_text = 'Login';
+
+// Overwrites the intro text above the drop-down list
+// [Optional, commented out by default]
+// wayf_overwrite_intro_text = 'Select your Home Organisation to log in';
+wayf_overwrite_intro_text = '';
+
+
+// EntityIDs, Names and SSO URLs of Identity Providers from other federations that shall be added to the drop-down list
+// Examples: "urn:mace:switch.ch:SWITCHaai:ethz.ch", "https://aai-logon.switch.ch/idp/shibboleth"
+// [Optional, default: none]
+wayf_additional_idps = [];
+
+// Example of how to add Identity Providers from other federations
+// wayf_additional_idps = [ 
+//         
+//         {name:"ETH Z&uuml;rich",
+//         entityID:"urn:mace:switch.ch:SWITCHaai:ethz.ch",
+//         SAML1SSOurl:"https://aai-logon.ethz.ch/shibboleth-idp/SSO"},
+// 
+//         {name:"SWITCH",
+//         entityID:"https://aai.switch.ch/idp/shibboleth",
+//         SAML1SSOurl:"https://aai-logon.switch.ch/shibboleth-idp/SSO"},
+// ];
+
+//-->
+
+// Override ugly shibboleth default style form buttons to match OLAT style
+function o_overrideShibSubmitButtonStyle() {
+       jQuery( function() {              
+               try {
+            	   	   // add bootstrap styling to wayf pulldown
+                       jQuery('#wayf_submit_button').addClass('btn btn-primary o_small').css('float','left');
+   					   jQuery("#user_idp").addClass("form-control");
+					   jQuery("#wayf_div").width("auto").css({backgroundColor: 'transparent', border: 0, padding: 0});
+                       // make submit button durty when idp is selected
+                       jQuery('#user_idp').on('change',function(){ jQuery('#wayf_submit_button').addClass('o_button_dirty')});
+               } catch (e) {
+                       // ignore, only style, not important
+               }
+       });
+}
+
+</script>
+
+<script src="https://wayf.switch.ch/SWITCHaai/WAYF/embedded-wayf.js" onload="o_overrideShibSubmitButtonStyle();"></script>
+
+
+<noscript>
+	<!-- Fallback to Shibboleth DS session initiator for non-JavaScript users -->
+	<p>
+	<strong>Login:</strong> Since Javascript is not activated or not available in your web browser, you have to <a href="/Shibboleth.sso/DS">proceed manually</a>.
+	</p>
+</noscript>
+
+<!-- EMBEDDED-WAYF-END -->
+
+	</fieldset>
+</div>
+
+<script type="text/javascript">
+  jQuery(function () {
+    // Moves option "SWITCH edu-ID" to "Other" category.
+    jQuery("#user_idp optgroup:last-child").append(
+        jQuery("#user_idp option[value='https://eduid.ch/idp/shibboleth']"))
+  })
+</script>
+</div></div>
+				<div class="divider">or</div>
+				<div class="o_login_form o_login_guest">
+					<ul class="list-unstyled">
+						<li><a  href="javascript:;" onclick="o_XHREvent('/dmz/1:1:omain_loging:1:1/',true,true,'cid','login','lp','guest','_csrf','3d9d3c40-1199-43c8-bf43-52f6758f5fa5'); return false;"  title="Log in as guest" class="btn btn-default">
+							<i class="o_icon o_icon_provider_guest" aria-hidden="true"></i><span>Guest access</span></a></li>
+					</ul>
+				</div>
+		
+			</div>
+			<div class="o_login_help">
+				Do you need help?
+				<ul class="list-unstyled o_login_pw_wrapper">
+					<li><a class=" o_login_faq"  href="https://docs.olat.uzh.ch/uzh_additions/faqs_courses/" target="_blank" rel="noopener noreferrer" id='Frequently asked questions'><i class="o_icon o_icon-fw o_icon_arrow_right" aria-hidden='true'> </i> <span>Frequently asked questions</span></a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+
+</div>
+<script>
+"use strict";
+if ((window.self != window.parent) && window.parent.OPOL) {
+	// Page is loaded in an iframe within OpenOLAT because a session timeout occurred or 
+	// system has been restartet in the meantime. 
+	// Show error on main window
+	var title = "You have been logged out";
+	var message = "<p>For security reasons, you will be automatically logged out after a longer period of inactivity or a restart of the application.<\/p><p><a class=\"btn btn-primary\" href=\'reload.html\'><i class=\"o_icon o_icon_login\"> <\/i> Log in again<\/a><\/p> ";
+	window.parent.o_afterserver();
+	window.parent.showMessageBox('error', title, message);
+}
+</script></div></div>
+</div>
+</div>
+</div>
+</div></div>
+		<a id="o_toplink" href="#o_top" onclick="o_scrollTop();" title="Go to top of page">
+			<i class="o_icon o_icon_top"></i> 
+			Go to top
+		</a>	
+	</div>
+</div>
+
+<footer id="o_footer_wrapper">
+	<div id="o_footer_container" class="o_container_offcanvas container-fluid">
+		<div id='o_c1043967203'><div id='o_c1043967199'><div id="o_footer_user" class="clearfix">
+	<span id="o_counter">(<span id='o_c1043967200'>173</span> People are online)</span>
+		<div id='o_c1043967202'><div id='o_c1043967201'><script>
+function o_shareSocialUrl() {
+	if(o_info.businessPath && o_info.businessPath.length > 0) return o_info.businessPath;
+	return 'https://lms.uzh.ch';
+} 
+function o_shareSocialTitle() {
+	return document.title;
+}
+function o_shareCallout() {
+	return '<p><input id="callout_share_link_in" type="text" name="cl_share_link" value="' + o_shareSocialUrl() + '" size="64" /></p>';
+}
+</script>
+
+<div id="o_share">
+
+	<a id="o_share_social" href="javascript:;">
+		<i class="o_icon o_icon_share_social o_icon-lg" aria-hidden='true' title="Share link to this page"></i>
+		<span class='sr-only'>Share link to this page</span>
+	</a>
+	<div id="o_share_social_wrapper" class="hide"><div id="o_share_social_container">
+			<a tabindex="1" id="o_linkedin" href="#" target="_blank" onclick="window.open('https://www.linkedin.com/feed/?shareActive&text='+encodeURIComponent(o_shareSocialTitle())+'%0A'+encodeURIComponent(o_shareSocialUrl()));return false;">
+				<i class="o_icon o_icon_linkedin o_icon-lg" aria-hidden='true' title="Share link on LinkedIn"></i>
+				<span class='sr-only'>Share link on LinkedIn</span>
+			</a>
+			<a id="o_facebook" href="#" target="_blank" onclick="window.open('https://www.facebook.com/sharer.php?u='+encodeURIComponent(o_shareSocialUrl())+'&amp;t='+encodeURIComponent(o_shareSocialTitle()));return false;">
+				<i class="o_icon o_icon_facebook o_icon-lg" aria-hidden='true' title="Share link on facebook"></i>
+				<span class='sr-only'>Share link on facebook</span>
+			</a>
+			<a id="o_twitter" href="#" target="_blank" onclick="window.open('https://twitter.com/share?url='+encodeURIComponent(o_shareSocialUrl())+'&amp;text='+encodeURIComponent(o_shareSocialTitle()));return false;">
+				<i class="o_icon o_icon_twitter o_icon-lg" aria-hidden='true' title="X link"></i>
+				<span class='sr-only'>X link</span>
+			</a>
+			<a id="o_mail" href="javascript: window.location.href='mailto:?subject=' + encodeURIComponent(o_shareSocialTitle()) + '&body=' + encodeURIComponent(o_shareSocialUrl());">
+ 				<i class="o_icon o_icon_mailto o_icon-lg" aria-hidden='true' title="Share link with mail"></i>
+ 				<span class='sr-only'>Share link with mail</span>
+ 			</a>
+	</div></div>
+	<script>
+	jQuery(function() {
+		o_shareLinkPopup('o_share_social', jQuery('#o_share_social_wrapper').html());
+	});
+	</script>
+		<a id="o_link" href="javascript:;" title="Copy link">
+			<i class="o_icon o_icon_link o_icon-lg" aria-hidden='true' title="Copy link"></i>
+			<span class='sr-only'>Copy link</span>
+		</a>
+		<a id="o_qrcode" href="javascript:;" title="Copy QR code">
+			<i class="o_icon o_icon_qrcode o_icon-lg" aria-hidden='true' title="Copy QR code"></i>
+			<span class='sr-only'>Copy QR code</span>
+		</a>
+		<script>
+		jQuery(function() {
+			o_shareLinkPopup('o_link', o_shareCallout);
+			o_QRCodePopup('o_qrcode', o_shareSocialUrl);
+		});
+		</script>
+	</div>
+</div></div>
+</div>
+	<div id="o_footer_impressum">
+		<a class="" target="_blank" id="o_co_footer_dmz_impressum"  href="/dmz/1%3A1%3Ao_footer_dmz_impressum%3A1%3A0%3Acid%3Atopnav.impressum%3A_csrf%3A3d9d3c40-1199-43c8-bf43-52f6758f5fa5/" onclick="return o2cl();"  draggable="false"><i class='o_icon o_icon_impress o_icon-lg' aria-hidden='true'></i> <span>Imprint</span></a> <script>
+(function(){ var o_co_footer_dmz_impressum = jQuery('#o_co_footer_dmz_impressum');if (o_co_footer_dmz_impressum) o_co_footer_dmz_impressum.click(function() {setTimeout(removeBusyAfterDownload,1200)});})();
+</script>
+	</div>
+<div id="o_footer_powered" class="clearfix">
+	<a href="https://www.openolat.org" target="_blank" title="Information about the learning management system OLAT" rel="noopener noreferrer">
+		<img src="/raw/2267:665171eb50c52a6ae163728576c3640148530feb/images/openolat/openolat_powerd_by_120x30.png" alt="OpenOlat Logo" width="120" height="30">
+	</a>
+</div>
+<div id="o_footer_version" class="clearfix">
+	<a class="" id="o_comenu_about"  href="javascript:;" onclick="o_XHREvent('/dmz/1:1:omenu_about:1:1/',true,true,'cid','about','_csrf','3d9d3c40-1199-43c8-bf43-52f6758f5fa5'); return false;"  draggable="false" title="Information on OLAT Build (2267:665171eb50c52a6ae163728576c3640148530feb)"><span>OLAT&nbsp;8.3.0</span></a>
+</div>	
+</div></div>
+	</div>
+</footer>
+
+<div id='o_c1043967195'><div id='o_c1043967208'><script>
+"use strict";
+</script></div></div>
+<div id='o_c1043967196'><div id='o_c1043967209'><script>
+"use strict";
+</script></div></div>
+<div id='o_c1043967197'><div id='o_c1043967210'></div></div>
+
+<dialog class="dialog modal" tabindex="-1" aria-modal="true" aria-labelledby="o_so_md_1043967175" id="o_form_dirty_message" data-nosnippet>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" aria-label="Close" onclick="o_guiCloseModal('#o_form_dirty_message').classList.remove('show');"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="o_so_md_1043967175">Unsaved form data</h4>
+      </div>
+      <div class="modal-body">
+      	<p class="o_warning_with_icon">
+			Attention! You have not saved this form yet.
+		</p>
+      	<p>
+			By clicking <strong>Do not save data</strong> you will exit the form without saving. <strong>Changes you made on this page will be lost</strong>
+		</p>
+      	<p>
+			By clicking <strong>Back to form</strong> you will get back to the form where you can save it. 
+		</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary pull-left o_form_dirty_back" onclick="o_guiCloseModal('#o_form_dirty_message').classList.remove('show');"><i class="o_icon o_icon-fw o_icon_back"> </i>Back to form</button>
+        <button type="button" class="btn btn btn-danger o_form_dirty_ignore"><i class="o_icon o_icon-fw o_icon_clear_all"> </i>Do not save data</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="o_ajax_busy" data-nosnippet>
+	<i class="o_icon o_icon_busy o_icon-5x o_icon-spin"></i>	
+	<div id="o_ajax_progress">
+		<div class="o_label">Uploading data...</div>
+		<div class="progress"><div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div></div>
+		<div class="o_progress_info text-muted small"> </div>
+		<div class="o_progress_buttons">
+			<button id="o_progress_cancel" class="btn btn-default">Cancel</button>
+		</div>
+	</div>
+</dialog>
+
+<div id="o_width_1em" style="width:1em; position: absolute; left: -1000px;" aria-hidden="true"></div>
+<div><script>
+// init size and listen to text resize events
+"use strict";
+jQuery(function() {
+	o_initEmPxFactor();
+});
+</script></div></body></html>

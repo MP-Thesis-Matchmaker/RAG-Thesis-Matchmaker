@@ -1,0 +1,61 @@
+{
+  "source_id": "ibw--1",
+  "page_type": "process",
+  "verified_content_sha1": "1c8f2e0a173395ba483041deaf6c5daa8a42001b",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Eligibility: you must have relevant prior knowledge in the subject area (relevant lectures attended and passed); some provided topics list additional requirements. How to find and approach a supervisor: use the Business Theses Market—either upload your own Research Proposal (2–3 pages) assigned to the correct research area, or apply for a posted topic (requires a short letter of motivation). Professor links on the department page lead to chair websites. Registration and documents: digital application via the Business Theses Market with CV, transcript of records (current export) and Research Proposal for own topics; you need your UZH login. After a successful match you are contacted by the supervisor and collect the official thesis assignment on OLAT. Key formal points and deadlines: collecting the OLAT assignment starts the six‑month writing period; matching typically takes up to two months (no feedback after two months = proposal rejected); submit your thesis via OLAT as a ZIP file; you receive a grade within one month. Official guidelines: follow the Dean’s Office rules and the department’s “Possible Topic Areas” document; contact theses@business.uzh.ch for questions.",
+      "relevant_links": [
+        {
+          "url": "https://www.oec.uzh.ch/en/studies/theses.html#OLAT_process:_registration,_collection_of_project_definition,_and_submission_of_thesis",
+          "description": "Detailed information on the OLAT Process"
+        },
+        {
+          "url": "https://theses.business.uzh.ch/",
+          "description": "Business Theses Market"
+        },
+        {
+          "url": "https://www.business.uzh.ch/dam/jcr:4b2871d0-fa49-437b-bdb5-e8b66b10b455/260630_Possible_Topic_Areas_for_Theses_2026.pdf",
+          "description": "Possible Topic Areas for Bachelor's and Master's Theses (PDF, 117 KB)"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/research/professorships/managerialaccounting/abschlussarbeiten.html",
+          "description": "e-Form"
+        },
+        {
+          "url": "https://www.business.uzh.ch/de/research/professorships/emap/teaching/thesis.html",
+          "description": "thesis page"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/research/professorships/hrmlead/Theses.html",
+          "description": "website"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/research/professorships/managerial-economics/thesissupervision.html",
+          "description": "website"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/research/professorships/international-management/Teaching/thesis.html",
+          "description": "our website"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/teaching/theses/thesesmarket.html",
+          "description": "Business Theses Market"
+        },
+        {
+          "url": "https://www.business.uzh.ch/en/teaching/theses/faqs.html",
+          "description": "FAQs for Students"
+        }
+      ],
+      "source_url": "https://www.business.uzh.ch/en/teaching/theses.html",
+      "source_id": "ibw--1",
+      "scraped_at": "2026-08-07T13:20:46.343099+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

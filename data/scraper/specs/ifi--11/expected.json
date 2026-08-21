@@ -1,0 +1,79 @@
+{
+  "source_id": "ifi--11",
+  "page_type": "topics",
+  "verified_content_sha1": "6cf2b8fa3a3a7af88a23894a0dc5f94faf092d09",
+  "records": [
+    {
+      "title": "Strand 1: In-Database Machine Learning",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data Systems and Theory",
+      "supervisors": [
+        {
+          "name": "DaST group",
+          "email": "dast-theses@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Goal: Train machine learning (regression, classification) models over data matrices defined by relational queries. The project may focus more on theoretical or systems-building aspects, depending on the strength and interest of the student. The exact task (e.g., which ML task) can be agreed with the project supervisor. Outcome: Good understanding of the research landscape on in-database machine learning; Design of a novel learning algorithm that exploits the relational structure of the underlying data to lower the computational complexity of the learning task; Implement the algorithm and benchmark it against existing solutions; Write-up a detailed report. Context: Recent publications and talks (pdfs and videos) available at our publications page Prerequisites: Good programming skills in C++ or Julia Conversant with: computational complexity; data structures and algorithms; databases (good grades in undergraduate courses on these topics); elements of machine learning (good grades in courses on Foundations of Data Science or Stats) Desire to push the frontier of knowledge at the interface of databases and machine learning",
+      "source_link": "https://www.ifi.uzh.ch/en/dast/projects.html",
+      "source_id": "ifi--11",
+      "scraped_at": "2026-07-22T19:11:06.358607+00:00",
+      "topic_id": "2d1fc9b8c516affb3127f02efe8295bd3dc6be15"
+    },
+    {
+      "title": "Strand 2: Linear Algebra over Relational Data",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data Systems and Theory",
+      "supervisors": [
+        {
+          "name": "DaST group",
+          "email": "dast-theses@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Goal: Understand fundamental linear algebra operations over matrices, where the matrices are defined by queries over relational data. The operations of interest, e.g., various types of matrix decompositions such as QR using Given rotations, can be agreed with the project supervisor. The project may focus more on theoretical or systems-building aspects, depending on the strength and interest of the student. Outcome: Good understanding of the research landscape on linear algebra over relational data; Design of an algorithm that exploits the relational structure of the underlying data to lower the computational complexity of the linear algebra task; Implement the algorithm and benchmark it against existing solutions; Write-up a detailed report. Context: Several recent MSc theses supervised by the DAST team on various matrix decompositions: QR, SVD, quadratically-regularised low-rank, give a good idea of this strand of work (pdfs available at https://fdbresearch.github.io/ ) Prerequisites: Good programming skills in C++ Conversant with: linear algebra; computational complexity; data structures and algorithms; databases (good grades in undergraduate courses on these topics) Desire to work on a hot research topic",
+      "source_link": "https://www.ifi.uzh.ch/en/dast/projects.html",
+      "source_id": "ifi--11",
+      "scraped_at": "2026-07-22T19:11:06.358607+00:00",
+      "topic_id": "042d341be18ca4941829b5b2cf5fc74ee7eeca4c"
+    },
+    {
+      "title": "Strand 3: Intersection Joins",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data Systems and Theory",
+      "supervisors": [
+        {
+          "name": "DaST group",
+          "email": "dast-theses@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Goal: Consider databases, where some colunmns can host multi-dimensional intervals instead of scalar values. Whereas on scalar values, a common notion of \"agreement\" is given by equality joins, for intervals one uses the intersection join that states whether the intervals overlap. Much research has been dedicated to the evaluation of queries over databases with scalar values. In particular, research in the past decade proposed new and surprising algorithms for query evaluation that achieve worst-case optimality. They were also shown to perform much better than the standard join algorithms for a variery of settings. This project will investigate novel algorithms for the evaluation of queries with intersection joins. The project can focus on the more theoretical or systems aspects of the problem. This is to be discussed with the supervisor. Outcome: Good understanding of the research landscape on worst-case optimal join algorithms; Design and implementation of algorithms; Benchmarking against existing solutions; Write-up a detailed report with the findings. Context: There are no existing results by the DAST group on this line of research. However, there is solid literature on two-way intersection joins and on worst-case optimal equality-joins. Prerequisites: Good programming skills in C++ Conversant with: computational complexity; data structures and algorithms; databases (good grades in undergraduate courses on these topics) Desire to work on a hot research topic",
+      "source_link": "https://www.ifi.uzh.ch/en/dast/projects.html",
+      "source_id": "ifi--11",
+      "scraped_at": "2026-07-22T19:11:06.358607+00:00",
+      "topic_id": "a6b8e86d2a68483fd50086b615cdbd0d8a76eba2"
+    },
+    {
+      "title": "Strand 4: Incremental Maintenance of Analytical Workloads",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Data Systems and Theory",
+      "supervisors": [
+        {
+          "name": "DaST group",
+          "email": "dast-theses@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Goal: Maintain analytics (query results, machine learning models) over relational databases under updates. Intensive research has been dedicated to the evaluation of queries over static relational databases. One outstanding achievement in this line of work was the design of algorithms that evaluate join queries in worst-case optimal time. It was shown that these algorithms perform much better than the standard join algorithms for cyclic queries. Incremental view maintenance considers the setting where the database is subject to frequent updates, e.g. insertions and deletions of tuples, or the data comes as a stream of tuples. It aims at providing algorithms that refresh the query result after each update as fast as possible. The naive approach that recomputes the query result after each update from scratch is too time-consuming. The literature proposes techniques like delta processing or view materialisation that perform better than the naive approach. The DAST group built a system called F-IVM that implements a novel maintenance mechanism over fast-evolving data. Experiments showed that F-IVM outperforms state-of-the-art systems. On the theoretical side, we designed the first worst-case optimal IVM approach that maintains the number of triangles in a database in worst-case optimal time. The approach was further extended to general triangle and hierarchical queries. Partly due to our exciting recent results, incremental maintenance is currently a very hot topic investigated by several research groups within the database community. This line of projects will investigate novel algorithms for the maintenance of different query classes like conjunctive and aggregate queries, or even more complex analytics such as machine learning models over fast evolving relational data. The project can focus more on theoretical or systems-building aspects, depending on the strength and interest of the student. Outcome: Good understanding of the research landscape on incremental maintenance techniques; Design of a novel maintenance algorithm; Implement the algorithm and benchmark it against existing solutions; Detailed report. Context: Recent publications and talks (pdfs and videos) available at our publications page . Maintaining Triangle Queries under Updates.[ arxiv ] Ahmet Kara, Hung Q. Ngo, Milos Nikolic, Dan Olteanu, Haozhe Zhang. To appear in ACM Trans. Database Syst. 2020. Trade-offs in Static and Dynamic Evaluation of Hierarchical Queries.[ paper , arxiv , video ] Ahmet Kara, Milos Nikolic, Dan Olteanu, Haozhe Zhang. In PODS 2020. Counting Triangles under Updates in Worst-Case Optimal Time.[ paper , arxiv ] Ahmet Kara, Hung Ngo, Milos Nikolic, Dan Olteanu, and Haozhe Zhang. In ICDT 2019 (best paper award). F-IVM: Learning over Fast Evolving Relational Data. [ paper , arxiv , video ] Milos Nikolic, Haozhe Zhang, Ahmet Kara, Dan Olteanu. In SIGMOD 2020 (demonstration). Incremental View Maintenance with Triple Lock Factorisation Benefits.[ paper , arxiv ] Milos Nikolic and Dan Olteanu. In SIGMOD 2018. Prerequisites: Good programming skills in C++ Conversant with: computational complexity; data structures and algorithms; databases (good grades in undergraduate courses on these topics) Desire to work on a hot research topic Master's Project: Implementation of an Efficient Algorithm for the Dynamic Evaluation of Hierarchical Queries [ presentation ]",
+      "source_link": "https://www.ifi.uzh.ch/en/dast/projects.html",
+      "source_id": "ifi--11",
+      "scraped_at": "2026-07-22T19:11:06.358607+00:00",
+      "topic_id": "cacb23803216e1f9754ef8bd4b488f6176da8b49"
+    }
+  ]
+}

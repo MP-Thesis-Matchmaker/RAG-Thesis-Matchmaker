@@ -1,0 +1,41 @@
+# psychologisches-institut--1: the MA page is a directory of per-professorship
+# topic pages. Almost all use the same UZH "DatabaseQuery" component
+# (ul.DatabaseQuery--list > li), one <li> per thesis topic with a title,
+# Beschreibung, Kontakt and a "Status: offen/vergeben" field. pages_from auto-
+# discovers the professorship pages from the directory; only OPEN (offen) topics
+# are kept. also_process keeps a short process note from the directory page.
+source_id: psychologisches-institut--1
+page_type: topics
+also_process: true
+
+pages_from:
+  url_pattern: 'masterarbeit|/MA\.html'    # professorship MA topic pages
+
+record:
+  container: 'ul.DatabaseQuery--list > li:has(div:-soup-contains("Status:"):-soup-contains("offen"))'
+  fields:
+    title:
+      selector: "h2.TextImage--title"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Psychology"
+    topic_description:
+      selector: "div.TextImage--content.richtext"
+      attr: text
+      regex: 'Beschreibung:\s*(.+?)(?:\s*(?:Literatur:|Kontakt:|Status:))'
+      transform: normalize_ws
+    supervisor_name:
+      selector: "div.TextImage--content.richtext"
+      attr: text
+      regex: 'Kontakt:\s*(.+?)\s*(?:,\s*E-Mail|E-Mail|Status:)'
+    supervisor_email:
+      selector: 'div.TextImage--content.richtext a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+
+id_from: [title]

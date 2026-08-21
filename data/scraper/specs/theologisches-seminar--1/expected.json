@@ -1,0 +1,41 @@
+{
+  "source_id": "theologisches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "67b736c39e6c587889f9156bf299deffb490420a",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Enrolled master’s students select a habilitated or equivalently qualified supervisor and agree on a topic. In the semester in which the thesis is submitted the student must book the module “Masterarbeit” via the online module booking system; after the booking deadline an e‑mail requests the provisional title and supervisor and provides the upload link for the final PDF. The thesis is individually written (typically ~50–80 pages, ≈180’000–240’000 characters). It is assessed in two written reports (first reviewer = supervisor; second reviewer appointed by the study commission). Submission: three properly bound copies to Prodekanat Lehre (Büro KIR 106) plus a PDF via the provided upload link. Deadlines: FS 15 May, HS 15 November. Official guidelines and forms (supervision/assessment, declaration of independence, title page, printing specifications) are provided as PDFs on the page.",
+      "relevant_links": [
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:4bb46127-3bd8-4f3e-803e-9910c45512ca/BetreuungBewertung_Masterarbeiten_TRF.pdf",
+          "description": "«Betreuung und Bewertung von Masterarbeiten» (PDF, 90 KB)"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:313b53a5-a6c2-4078-994f-c8d55275e5ad/MA_DruckbestimmungenZB_TRF.pdf",
+          "description": "hier (PDF, 91 KB)"
+        },
+        {
+          "url": "https://thesisbuddy.ch/",
+          "description": "ADAG Print"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:93d54a61-7aa8-4f2a-b83f-ac5a1c55e563/Selbststaendigkeitserklaerung_MA_TRF.pdf",
+          "description": "Selbstständigkeitserklärung (PDF, 37 KB)"
+        },
+        {
+          "url": "http://www.trf.uzh.ch/dam/jcr:6e636066-59b1-4232-b96e-13638dd87334/Vorlage_Titelblatt_Masterarbeit_TRF.dotx",
+          "description": "Vorlage Titelblatt Masterarbeit (DOTX, 45 KB)"
+        }
+      ],
+      "source_url": "https://www.theologie.uzh.ch/de/studium/studierende/Masterarbeit.html",
+      "source_id": "theologisches-seminar--1",
+      "scraped_at": "2026-08-04T10:50:54.515760+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

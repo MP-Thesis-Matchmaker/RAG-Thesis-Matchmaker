@@ -1,0 +1,69 @@
+# ifi--17: BDLT (Blockchain and Distributed Ledger Technologies, Prof. Tessone).
+# The theses page has a General Information / Notes / Requirements process
+# (summarised via LLM under the group) and a single "Open Theses" table:
+# Title | Level | Responsible Co-Supervisor. The title links to a PDF proposal
+# (parsed for a fuller description). The Level column gives the degree; the
+# supervisor column links to team profiles (names only — BDLT publishes no
+# supervisor emails anywhere: not on the profiles, not in the PDFs).
+source_id: ifi--17
+page_type: topics
+also_process: true
+group:
+  id: bdlt
+  name: BDLT
+  full_name: Blockchain and Distributed Ledger Technologies
+
+record:
+  # every topic row (a title link excludes the header); the link is either an
+  # HTML detail page or, for a few, a PDF proposal.
+  container: 'table tr:has(td:nth-child(1) a[href])'
+  fields:
+    title:
+      - selector: "td:nth-child(1)"    # drop the "(PDF, NN KB)" suffix if present
+        attr: text
+        regex: '^(.+?)\s*\(PDF'
+        transform: normalize_ws
+      - selector: "td:nth-child(1)"     # fallback: whole cell
+        attr: text
+        transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: degree_from_type
+    source_link:                        # detail page (HTML) or PDF proposal
+      selector: 'td:nth-child(1) a[href]'
+      attr: href
+      transform: absolute_url
+    supervisors:
+      each: 'td:nth-child(3) a[href*="/Team/"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+
+id_from: [title]
+
+# HTML detail pages: the description is the richtext block minus the metadata
+# lines (Level / Responsible / Keywords) and the trailing reference list.
+follow:
+  url_field: source_link
+  url_pattern: '^https?://www\.ifi\.uzh\.ch/en/bdlt/Thesis/.+\.html$'
+  fields:
+    topic_description:
+      selector: 'div.TextImage--content.richtext'
+      attr: text
+      exclude:
+        - 'p:-soup-contains("Level:")'
+        - 'p:-soup-contains("Keywords:")'
+        - 'p:-soup-contains("Responsible")'
+        - 'p:-soup-contains("Description:")'
+        - 'p:-soup-contains("Reference")'
+        - 'p:-soup-contains("Reference") ~ *'
+      transform: normalize_ws
+
+# PDF proposals (the rest): parse for a fuller description (no emails to extract).
+pdf_enrich:
+  url_field: source_link
+  summary_into: topic_description

@@ -1,0 +1,1467 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-template="st04">
+  
+
+    
+    
+  
+ 
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Groups | Department of Biochemistry | UZH</title>
+    <link rel="stylesheet" href="/.resources/uzh-wcms-frontend/2.10.0/assets/css/main.css">
+    <link rel="modulepreload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/js/ui.mjs">
+    <link href="https://www.bioc.uzh.ch/en/research/research-groups.html" rel="canonical">
+    <link href="https://www.uzh.ch" rel="alternate" hreflang="x-default">
+    <link rel="preload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/fonts/WOFF2/SourceSans3-Regular.otf.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="preload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/fonts/WOFF2/SourceSans3-Semibold.otf.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+   
+    <link rel="apple-touch-icon" sizes="180x180" href="/docroot/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/docroot/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/docroot/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/docroot/favicons/site.webmanifest">
+    <link rel="shortcut icon" href="/docroot/favicons/favicon.ico">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-config" content="/docroot/favicons/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+  
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.bioc.uzh.ch/en/research/research-groups.html">
+    <meta property="og:title" content="Research Groups">
+   
+      <meta property="og:description" content=""/>
+    
+    
+    <!-- 
+    <meta property="twitter:url" content="/pages/layouts/default.html">
+    <meta property="twitter:title" content="Default Layout (content area only)">
+    <meta property="twitter:description" content="Page description">
+    <meta property="twitter:image" content="../../dummy/shareimage_example_1200x630.jpg">
+    <meta property="twitter:dnt" content="on">
+    -->
+    
+    
+    
+ 
+    
+    
+    
+    
+    
+
+   
+      <!-- Matomo -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['setAPIUrl', "https://webstats.uzh.ch/"]); // overlay fix
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//webstats.uzh.ch/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', '447']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
+<!-- Navfix -->
+<script src="/docroot/jquery/jquery-3.3.1.min.js"></script>
+<script src="/docroot/jquery/jquery-migrate-3.0.0.js"></script>
+
+<script>
+    function subitems(data, name, level) {
+        var content = ""
+        for (i=0; i<data.length; i++) {
+            var loc = data[i]["href"].slice(0,-5).split("/").slice(2);
+            if (loc[level] == name[level]) {
+                if (level == name.length-1 ) {
+                    content += '<li class="Breadcrumb--flyout--item"><a class="Breadcrumb--flyout--link" style="font-weight: bold;" href="'+data[i]["href"]+'">'+data[i]["text"]+'</a></li>';
+                    var sub = data[i]["subitems"];
+                    for (j = 0; j<sub.length; j++) {
+                        content += '<li class="Breadcrumb--flyout--item"><a class="Breadcrumb--flyout--link" href="'+sub[j]["href"]+'">'+sub[j]["text"]+'</a></li>';
+                    }
+                } else {
+                    content += subitems(data[i]["subitems"], name, level+1)
+                }
+                break;
+            }
+        }
+        return content
+    }
+
+    $( "html" ).on( "click", function(e) {
+        if ($( "html" ).attr("class") == "breadcrumb-open mnf") {
+            $( "html" ).removeClass("breadcrumb-open mnf");
+            $( "div#breadcrumb_flyout-mnf" ).remove();
+        }
+    });
+
+
+    $(function(){
+        $(".Breadcrumb--link").each(function() {
+            if ($( this ).text() != "Home" && !$( this ).is(':last-child')){
+                $( this ).append('&nbsp;<span class="Icon" data-name="16--breadcrumb-arrow"><svg><use xlink:href="#16--breadcrumb-arrow"></use></svg></span>');
+            }
+        });
+        $("body").append(`<script>
+        $( ".Breadcrumb--link" ).on( "click", function(e) { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            var url = $( this ).attr("href").slice(0,-5).split("/").slice(2); // WARNING: adjust to .slice(2) for production
+            var pos = $( this ).offset();
+            var content = subitems(window.uzh_nav, url, 0);
+            if (content.length > 10) {
+                content = '<div class="Breadcrumb--flyout js-Breadcrumb--flyout" id="breadcrumb_flyout-mnf" style="visibility: visible; position: fixed; inset: '+(pos.top - $(window).scrollTop() + 40)+'px auto auto '+pos.left+'px;">'+
+                    '<div class="Breadcrumb--flyout--inner" style="opacity: 1; transform: none; padding-top:12px;"><ul class="Breadcrumb--flyout--list" >' + content;
+                content += '</ul><button class="js-Breadcrumb--close FocusOnly">schliessen/close</button></div></div>';
+                $( this ).parent().after(content);
+                $( "html").addClass("breadcrumb-open mnf");
+            }
+        });
+<\/script>`);
+    });
+
+</script>
+<!-- Navfix --> 
+  
+    <link rel="stylesheet" href="/.resources/uzh-wcms-frontend/webresources/2.10.0/css/main.css">
+    <script type="module" src="/.resources/uzh-wcms-frontend/webresources/2.10.0/js/main.js"></script>
+
+    <script src="/docroot/jquery/jquery-3.7.1.min.js"></script>
+    <script src="/docroot/jquery/jquery-migrate-3.5.2.min.js"></script>
+    
+   
+     
+</head>
+
+  
+
+  <body class="template-st04">
+   
+    <a id="top"></a>
+    <!-- component: SkipLink -->
+     <div class="SkipLink__container">
+        <!-- component: Link --><a class="Link layout-standalone icon-position-after icon-orientation-down SkipLink js-SkipLink" href="#main-content">Skip navigation<span class="Link--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                        <use xlink:href="#16--link-internal"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- /component: Link -->
+     </div>
+     <!-- /component: SkipLink -->
+ 
+   
+
+
+
+
+
+
+
+<!-- component: Header -->
+<header class="Header js-Header">
+    <p class="visuallyhidden" aria-level="1" role="heading">Header</p>
+    <div class="Header--top">
+        <div class="Header--logo">
+               <a class="Logo" href="https://www.uzh.ch/en">
+                  <svg width="208" height="92" aria-labelledby="logoTitle">
+                      <title id="logoTitle">Logo of the University of Zurich, to homepage</title>
+                      <use href="/docroot/logos/uzh_logo_d_pos.svg#uzh_logo"></use>
+                  </svg>
+               </a>
+        </div>
+        <div class="Header--mobileButtons">
+            <a class="Header--search" href="/en/search.html">
+                  <span class="visuallyhidden">Search</span>
+                  <!-- component: Icon -->
+                  <span class="Icon" data-name="24--search">
+                      <svg>
+                          <use xlink:href="#24--search">
+                          </use>
+                      </svg>
+                  </span>
+                  <!-- /component: Icon -->
+            </a>
+          
+          <button class="Header--burger js-Header--burger" type="button" aria-controls="main-nav" aria-expanded="false">
+            <span class="visuallyhidden">Open/Close Navigation</span>
+            <span class="Header--burger--open">
+                <!-- component: Icon -->
+                <span class="Icon" data-name="24--menu">
+                    <svg>
+                        <use xlink:href="#24--menu">
+                        </use>
+                    </svg>
+                </span>
+                <!-- /component: Icon -->
+            </span>
+            <span class="Header--burger--close">
+                <!-- component: Icon -->
+                <span class="Icon" data-name="24--close">
+                    <svg>
+                        <use xlink:href="#24--close">
+                        </use>
+                    </svg>
+                </span>
+                <!-- /component: Icon -->
+            </span>
+          </button>
+        </div>
+        
+      
+          <div class="Header--department">
+             
+              
+              <a class="Header--department--link" href="/en.html">Department of Biochemistry</a> 
+          </div>
+          
+        
+    </div>
+    <div class="Header--bottom js-Header--bottom">
+        <div class="Header--bottom--inner">
+<!-- component: MainNav -->
+<div class="MainNav js-MainNav" id="main-nav" data-mode="lazy">
+    
+
+<div class="MainNav--service js-Header--service">
+
+  
+
+  <!-- component: ServiceNav -->
+ 	<h2 class="visuallyhidden">Quicklinks</h2>
+  <nav class="ServiceNav">
+      <ul class="ServiceNav--list">
+          <li class="ServiceNav--list--item">
+              <a class="ServiceNav--link " href="/en.html">Home</a>
+         </li>
+         
+         
+           <li class="ServiceNav--list--item">   
+              <a class="ServiceNav--link " href="/en/contact.html">Contact</a>
+           </li>
+         
+     </ul>
+  </nav>
+  <!-- /component: ServiceNav -->
+  
+  
+ 
+    <!-- component: SearchTrigger -->
+    <a class="SearchTrigger" href="/en/search.html" data-js-search-trigger="">
+        <!-- component: Icon -->
+        <span class="Icon" data-name="24--search">
+            <svg>
+                <use xlink:href="#24--search">
+                </use>
+            </svg>
+        </span>
+        <!-- /component: Icon -->
+        <span class="text">Search</span>
+    </a>
+    <!-- /component: SearchTrigger -->
+</div>       
+    <h2 class="visuallyhidden">Main navigation</h2>
+    <nav class="MainNav--inner">
+        <ul class="MainNav--list js-MainNav--list">
+            <!-- Begin: loop through top-level items-->
+            
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_267abc40-93f3-40ff-a2cc-26ef180237ef" aria-expanded="false"> 
+                      Department  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-0">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/department.html">
+                                          <span class="visuallyhidden">Department</span>
+                                          Department
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item is-active">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_399646f2-ddf1-4619-aa4d-8fbb58b020ad" aria-expanded="false"> 
+                      Research  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-1">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/research.html">
+                                          <span class="visuallyhidden">Research</span>
+                                          Research
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_b1799153-84f0-4076-a5dd-f8154e3b616f" aria-expanded="false"> 
+                      Teaching  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-2">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/teaching.html">
+                                          <span class="visuallyhidden">Teaching</span>
+                                          Teaching
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_f487db33-7fb3-4d8f-87ba-9ab20832bdf5" aria-expanded="false"> 
+                      Calendar of Events  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-3">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/calendar-of-events.html">
+                                          <span class="visuallyhidden">Calendar of Events</span>
+                                          Calendar of Events
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_7f5201c0-4b98-4629-8e6f-1d9a112dfe89" aria-expanded="false"> 
+                      Publications  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-4">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/publications.html">
+                                          <span class="visuallyhidden">Publications</span>
+                                          Publications
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/awards.html">Awards</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-5">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/awards.html">
+                                          <span class="visuallyhidden">Awards</span>
+                                          Awards
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+              
+        </ul>
+        <!-- Begin: empty container for items that don't fit viewport-->
+        <!-- Must always be there, items are added via JS-->
+        <ul class="MainNav--list more js-MainNav--more">
+            <li class="MainNav--list--item js-MainNav--item more">
+                <button class="MainNav--link js-MainNav--link" aria-controls="main-nav_overlay_uid-4" aria-expanded="false" type="button">
+                    More
+                    <div class="MainNav--icon">
+                        <!-- component: Icon -->
+                        <span class="Icon" data-name="16--menu">
+                            <svg>
+                                <use xlink:href="#16--menu">
+                                </use>
+                            </svg>
+                        </span>
+                        <!-- /component: Icon -->
+                    </div>
+                </button>
+                <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-4">
+                    <div class="MainNav--overlay--scroller">
+                        <div class="MainNav--overlay--inner">
+                            <!-- data-mainnav-index must be 0 within this placeholder container-->
+                            <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="0">
+                                <ul class="MainNav--sub--list js-MainNav--overflow">
+                                </ul>
+                                <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <!-- End: empty container for items that don't fit viewport-->
+        </ul>
+    </nav>
+</div>
+<!-- /component: MainNav -->        </div>
+    </div>
+</header>
+<!-- /component: Header -->
+    
+   
+     
+
+ <main id="main-content">
+ 
+ 
+             
+
+ 
+  <!-- component: Breadcrumb -->
+  <nav class="Breadcrumb js-Breadcrumb">
+      <ol class="Breadcrumb--list js-Breadcrumb--list" data-js-scroll-style="{&quot;horizontal&quot;:true}" aria-label="Breadcrumb">
+   
+             
+                
+                 <li class="Breadcrumb--list--item">
+                   <a class="Breadcrumb--link" href="/en.html">Home</a>
+                   <!-- component: Icon -->
+                   <span class="Icon" data-name="16--breadcrumb-separator">
+                     <svg>
+                       <use xlink:href="#16--breadcrumb-separator">
+                       </use>
+                     </svg>
+                   </span>
+                   <!-- /component: Icon -->
+                 </li>
+                
+             
+                
+                 <li class="Breadcrumb--list--item">
+                   <a class="Breadcrumb--link" href="/en/research.html">Research</a>
+                   <!-- component: Icon -->
+                   <span class="Icon" data-name="16--breadcrumb-separator">
+                     <svg>
+                       <use xlink:href="#16--breadcrumb-separator">
+                       </use>
+                     </svg>
+                   </span>
+                   <!-- /component: Icon -->
+                 </li>
+             
+                
+        
+              <li class="Breadcrumb--list--item">
+              
+                
+                  <!-- start: current page with list of child pages-->
+                  <button class="Breadcrumb--btn js-Breadcrumb--btn" type="button" aria-controls="breadcrumb_flyout-1" aria-expanded="false" aria-current="page">
+                    Research Groups
+                    <span class="visuallyhidden">Show Subpages</span>
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--breadcrumb-arrow">
+                        <svg>
+                            <use xlink:href="#16--breadcrumb-arrow">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                  </button>
+                  
+                   <div class="Breadcrumb--flyout js-Breadcrumb--flyout" id="breadcrumb_flyout-1">
+                    <div class="Breadcrumb--flyout--inner">
+                        <ul class="Breadcrumb--flyout--list"> 
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/caflisch.html">Caflisch</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/dutzler.html">Dutzler</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/jinek.html">Jinek</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/kassube.html">Kassube</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/medalia.html">Medalia</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/perica.html">Perica</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/plueckthun.html">Plückthun</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/schuler.html">Schuler</a>
+                              </li>
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/research/research-groups/former-groups.html">Former Groups</a>
+                              </li>
+                        </ul>
+                        <button class="js-Breadcrumb--close FocusOnly">Unterseiten-Menü schliessen</button>
+                    </div>
+                </div>
+                <!-- end: current page with list of child pages-->
+          </li>
+         
+      </ol>
+  </nav>
+  <!-- /component: Breadcrumb -->
+
+
+
+  <section class="Intro">
+      <div class="Intro--inner">
+      
+      
+          <div class="Intro--content">
+          </div>
+          
+          <div class="Intro--top">
+                  <h1 class="Intro--title richtext">Research Groups</h1>
+              
+          </div>
+          
+  
+  
+  
+  
+      </div>
+  </section>
+<section class="ContentArea">
+   
+
+
+
+        
+
+   
+     
+       
+      
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+      
+         
+        
+        <figure class="TextImage--image layout-float-none">
+        
+        
+            <div class="TextImage--image--inner">
+            
+                   
+                   
+      
+  
+      
+     
+          <div class="Image" style="--image_width:840;--image_height: 561;">
+            <div class="Image--wrapper">
+              <img src="/dam/jcr:83394fab-41df-4fb0-8f7f-22f93d1131fa/4471.jpg" alt="Research Groups" title="" class="Image--img"/>
+            </div>
+          </div>
+      
+ 
+                 
+                
+                
+            </div>
+            
+            <!-- legacy news image Gallery -->
+            
+            
+        </figure>
+     
+      <div class="TextImage--content richtext">
+         <p>Our research groups are:</p>
+<ul>
+ <li>computational structural biology (<a href="/en/research/research-groups/caflisch.html">Caflisch</a>&nbsp;group)</li>
+ <li>ion channels and transporters (<a href="/en/research/research-groups/dutzler.html">Dutzler</a>&nbsp;group)</li>
+ <li>analysis of RNA-protein interactions (<a href="/en/research/research-groups/jinek.html">Jinek</a>&nbsp;group)</li>
+ <li>Fe-S protein biogenesis and DNA repair enzymes (<a href="/en/research/research-groups/kassube.html">Kassube</a> group)</li>
+ <li>cryo-electron tomography of eukaryotic cells (<a href="/en/research/research-groups/medalia.html">Medalia</a>&nbsp;group)</li>
+ <li>systems biochemistry (<a href="/en/research/research-groups/perica.html">Perica</a> group)</li>
+ <li>protein engineering and directed protein evolution (<a href="/en/research/research-groups/plueckthun.html">Plückthun</a>&nbsp;group)</li>
+ <li>single molecule spectroscopy of protein folding and dynamics (<a href="/en/research/research-groups/schuler.html">Schuler</a>&nbsp;group)</li>
+</ul> 
+      </div>
+     
+   </div>
+</div>
+<!-- /component: TextImage -->
+  
+ </section>
+
+
+
+  
+  
+  <section class="SectionNavigation">
+      <h2 class="visuallyhidden">Section navigation</h2>
+      <div class="SectionNavigation--card">
+          <nav class="SectionNavigation--breadcrumb">
+              <!-- Set class "truncated" here if the current page ist nested deeper than two levels in the page tree.-->
+              <ol class="SectionNavigation--breadcrumb--list " aria-label="Breadcrumb">
+                  <li class="SectionNavigation--breadcrumb--item">
+                      <!-- component: Icon -->
+                      <span class="Icon" data-name="16--breadcrumb-separator">
+                      <svg>
+                          <use xlink:href="#16--breadcrumb-separator">
+                          </use>
+                      </svg>
+                  </span>
+                      <!-- /component: Icon -->
+                      <a class="SectionNavigation--breadcrumb--link"
+                         href="/en.html">Welcome to the Department of Biochemistry</a>
+                  </li>
+                  
+                 <li class="SectionNavigation--breadcrumb--item">
+                      <!-- component: Icon -->
+                      <span class="Icon" data-name="16--breadcrumb-separator">
+                      <svg>
+                          <use xlink:href="#16--breadcrumb-separator">
+                          </use>
+                      </svg>
+                  </span>
+                      <!-- /component: Icon -->
+                      <a class="SectionNavigation--breadcrumb--link"
+                         href="/en/research.html">Research</a>
+                  </li>
+              </ol>
+          </nav>
+          <h3 class="SectionNavigation--title">
+              <span class="visuallyhidden">Subpages of </span> Research Groups
+          </h3>
+          <ul class="SectionNavigation--linkList">
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/caflisch.html">Caflisch
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/dutzler.html">Dutzler
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/jinek.html">Jinek
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/kassube.html">Kassube
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/medalia.html">Medalia
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/perica.html">Perica
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/plueckthun.html">Plückthun
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/schuler.html">Schuler
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/research/research-groups/former-groups.html">Former Groups
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+          </ul>
+      </div>
+  </section>
+ 
+ 
+    <!-- component: CrawlerLinks -->
+      <div class="CrawlerLinks">
+          <ul>
+          
+          
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/caflisch.html">Caflisch</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/dutzler.html">Dutzler</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/jinek.html">Jinek</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/kassube.html">Kassube</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/medalia.html">Medalia</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/perica.html">Perica</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/plueckthun.html">Plückthun</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/schuler.html">Schuler</a>
+                </li>
+                
+              
+                <li>
+                    <a rel=”dofollow” href="/en/research/research-groups/former-groups.html">Former Groups</a>
+                </li>
+                
+              
+          </ul>
+      </div>
+      <!-- /component: CrawlerLinks -->
+    
+ </main>    
+       
+<footer class="Footer">
+    
+       <p class="visuallyhidden" aria-level="1" role="heading">Footer</p>
+    
+       <div class="Footer--main"> 
+  
+       
+              <div class="Footer--column">
+<!-- component: FooterLinkList -->
+<div class="FooterLinkList">
+    <h2 class="FooterLinkList--title">Contact</h2>
+    <div class="FooterLinkList--text richtext">
+        <p><strong>Universit&auml;t Z&uuml;rich</strong><br />
+Department of Biochemistry<br />
+Winterthurerstrasse 190<br />
+8057 Zurich<br />
+Switzerland<br />
+<br />
+Phone: +41 44 635 55 11<br />
+Fax: +41 44 635 68 05<br />
+<a href="mailto:institut@bioc.uzh.ch">institut@bioc.uzh.ch</a></p>
+
+    </div>
+<!-- div if single entry, ul if multiple-->
+<ul class="FooterLinkList--list">
+   </ul>
+
+
+</div>
+<!-- /component: FooterLinkList -->              </div>
+            
+              <div class="Footer--column">
+<!-- component: Map -->
+<div class="Map js-Map" data-map-building="Y44" data-map-zoom="4">
+ 
+    <div class="Map--container">
+        <div class="js-Map--canvas" id="b6c7e382-db83-4c40-970c-7ac7e19c6de0">
+        </div>
+    </div>
+</div>              </div>
+            
+              <div class="Footer--column">
+ <!-- component: FooterLinkList -->
+ <div class="FooterLinkList">
+    <h2 class="FooterLinkList--title">Links</h2>
+    <!-- div if single entry, ul if multiple-->
+<!-- div if single entry, ul if multiple-->
+<ul class="FooterLinkList--list">
+        <li class="FooterLink--item">
+
+    
+        
+           <a class="Link size-small" title="Awards" href="/en/research/awards.html">Awards</a>
+          
+     </li>
+     <li class="FooterLink--item">
+
+
+       
+
+
+
+    
+   
+       <a class="Link size-small" title="BIOC Intranet"  alt="External Link" href="https://bookstack.bioc.uzh.ch" target="_blank">BIOC Intranet</a>
+
+     
+     </li>
+</ul>
+
+
+ </div>              </div>
+            
+         
+          <div class="Footer--column">
+
+<!-- component: FooterSocialMediaList -->
+<div class="FooterSocialMediaList">
+    <h2 class="FooterSocialMediaList--title">Follow us</h2>
+    <ul class="FooterSocialMediaList--list">
+    
+        <li class="FooterSocialMediaList--item">
+          <a class="FooterSocialMediaList--link" href="https://www.linkedin.com/company/uzh-bioc" target="_blank">
+              <!-- component: Icon -->
+              <span class="Icon" data-name="16--linkedin">
+                  <svg>
+                      <use xlink:href="#16--linkedin">
+                      </use>
+                  </svg>
+              </span>
+              <!-- /component: Icon -->LinkedIn</a>
+        </li>
+     
+     
+     
+     
+        
+                
+        
+        
+        
+        
+        
+           
+    
+    
+        
+
+       
+        
+    </ul>
+</div>
+<!-- /component: FooterSocialMediaList -->
+          </div>
+      
+      </div>
+    <div class="Footer--bottom">
+        <h2 class="visuallyhidden">Additional links</h2>
+        <div class="Footer--logos">
+        
+        
+              <div class="Footer--logos--list">
+                <!-- div if single entry, li if multiple-->
+                <div class="Footer--logos--item">
+                    <a class="Footer--logo" href="https://www.uzh.ch/en.html">
+                        <img src="/docroot/logos/uzh_logo_d_pos.svg" alt="Logo of the University of Zurich, to homepage">
+                    </a>
+                </div>
+              </div>
+           
+        </div>
+        <!-- component: FooterMeta -->
+        <div class="FooterMeta ">
+            <p class="FooterMeta--copyright">&copy;&nbsp;2023 Universität Zürich </p>
+            <nav class="FooterMeta--nav">
+                <ul class="FooterMeta--linkList">
+                      <li>
+                        <a class="FooterMeta--link" href="/en/impressum.html">About this site</a>
+                      </li>
+                    
+                      <li>
+                        <a class="FooterMeta--link" href="/en/contact.html">Contact</a>
+                      </li>
+                   
+                   
+                      <li>
+                         <a  class="FooterMeta--link" href="https://www.uzh.ch/en/privacy.html">Data Protection Statement</a>
+                      </li>
+                </ul>
+
+            </nav>
+        <!-- /component: FooterMeta -->
+    </div>
+   
+    
+    
+</footer>    
+    
+    <!-- place Footer component here-->
+    <script src="/.resources/uzh-wcms-frontend/2.10.0/assets/js/ui.mjs" type="module"></script>
+    <template id="template-lightbox">
+        <!-- component: Lightbox -->
+        <div class="Lightbox">
+            <div class="Lightbox--inner"><img src="" alt="" /><button class="Lightbox--close js-Lightbox--close" type="button">
+                    <!-- component: Icon --><span class="Icon" data-name="lightbox-close"><svg>
+                            <use xlink:href="#lightbox-close"></use>
+                        </svg></span><!-- /component: Icon --><span class="visuallyhidden">Close Image Overlay</span>
+                </button></div>
+        </div><!-- /component: Lightbox -->
+    </template>
+    <template id="template-lightbox-video">
+        <!-- component: LightboxVideo -->
+        <div class="Lightbox">
+            <div class="Lightbox--inner"><video src="" autoplay="autoplay" playsinline="playsinline"></video><button class="Lightbox--close js-Lightbox--close" type="button">
+                    <!-- component: Icon --><span class="Icon" data-name="lightbox-close"><svg>
+                            <use xlink:href="#lightbox-close"></use>
+                        </svg></span><!-- /component: Icon --><span class="visuallyhidden">Close Video Overlay</span>
+                </button></div>
+        </div><!-- /component: LightboxVideo -->
+    </template>
+    
+    <template id="main-nav-link">
+        <!-- component: MainNav--link --><a class="MainNav--link js-MainNav--link" href="[%=href%]" aria-current="[%=ariaCurrent%]">[%=content%]</a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-link-plain">
+        <!-- component: MainNav--link --><a class="MainNav--link" href="[%=href%]" aria-current="[%=ariaCurrent%]">[%=content%]</a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-button">
+        <!-- component: MainNav--link --><a class="MainNav--link js-MainNav--link" role="button" href="[%=href%]" aria-current="[%=ariaCurrent%]" aria-controls="[%=ariaControls%]" aria-expanded="false">[%=content%]<span class="MainNav--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                        <use xlink:href="#16--link-arrow-sm-right"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-overlay">
+        <!-- component: MainNav--overlay -->
+        <div class="MainNav--overlay js-MainNav--overlay" id="[%=id%]">
+            <div class="MainNav--overlay--scroller">
+                <div class="MainNav--overlay--inner">
+                    <!-- Set data-mainnav-index to the level of nesting-->
+                    <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                        <div class="MainNav--sub--back">
+                            <!-- component: Button --><button class="Button js-MainNav--back" type="button"><span class="Button--inner">back</span><span class="Button--icon">
+                                    <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                                            <use xlink:href="#16--link-arrow-sm-right"></use>
+                                        </svg></span><!-- /component: Icon -->
+                                </span></button><!-- /component: Button -->
+                        </div>
+                        <div class="MainNav--sub--title">
+                            <!-- component: Link --><a class="Link layout-standalone size-small" href="[%=href%]"><span class="visuallyhidden">Overview Page</span>[%=text%]<span class="Link--icon">
+                                    <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                                            <use xlink:href="#16--link-internal"></use>
+                                        </svg></span><!-- /component: Icon -->
+                                </span></a><!-- /component: Link -->
+                        </div>
+                        <ul class="MainNav--sub--list">[%=content%]</ul><button class="js-MainNav--close FocusOnly" type="button">Close Menu</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /component: MainNav--overlay -->
+    </template>
+    <template id="main-nav-subitem">
+        <!-- component: MainNavSubItem -->
+        <!-- Button if there are nested subitems, link if there aren’t-->
+        <!-- Add aria-current="page" if this is the currently active page--><a class="MainNav--link js-MainNav--sublink" href="[%=href%]" aria-controls="[%=id%]" aria-expanded="false" role="button">[%=text%]<span class="MainNav--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                        <use xlink:href="#16--link-arrow-sm-right"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- Set data-mainnav-index to the level of nesting-->
+        <div class="MainNav--sub js-MainNav--sub" id="[%=id%]" data-mainnav-index="[%=index%]">
+            <div class="MainNav--sub--back">
+                <!-- component: Button --><button class="Button js-MainNav--back" type="button"><span class="Button--inner">back</span><span class="Button--icon">
+                        <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                                <use xlink:href="#16--link-arrow-sm-right"></use>
+                            </svg></span><!-- /component: Icon -->
+                    </span></button><!-- /component: Button -->
+            </div>
+            <div class="MainNav--sub--title">
+                <!-- component: Link --><a class="Link layout-standalone size-small" href="[%=href%]">[%=text%]<span class="Link--icon">
+                        <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                                <use xlink:href="#16--link-internal"></use>
+                            </svg></span><!-- /component: Icon -->
+                    </span></a><!-- /component: Link -->
+            </div>
+            <ul class="MainNav--sub--list">[%=content%]</ul>
+        </div><!-- /component: MainNavSubItem -->
+    </template>
+    
+    
+    
+    <script>
+        (function(url, revision) {
+            function init(delayed) {
+                var svgEl = document.getElementById('svgsprite');
+                svgEl && svgEl.parentNode.removeChild(svgEl);
+
+                var svg = storage.svgicons.replace('<svg ', '<svg id="svgsprite" style="display: none"');
+                document.body.insertAdjacentHTML('beforeend', svg);
+            }
+
+            function fetchSprite(path, callback) {
+                var httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function() {
+                    if (httpRequest.readyState === 4 && httpRequest.status === 200 && callback) {
+                        callback(httpRequest.responseText);
+                    }
+                };
+                httpRequest.open('GET', path);
+                httpRequest.send();
+            }
+
+            var storage = window.localStorage || {};
+
+            if (!storage.svgicons || storage.svgicons_revision != revision) {
+                fetchSprite(url, function(data) {
+                    storage.svgicons = data;
+                    storage.svgicons_revision = revision;
+
+                    init(true);
+                });
+            }
+
+            if (storage.svgicons) {
+                init();
+            }
+        })("/.resources/uzh-wcms-frontend/2.10.0/assets/icons/sprite.svg", "b36a0d20815810cb45c1cdffa4d31e36");
+
+        // Important for backend implementation: The revision (second parameter) should change whenever the svg sprite changes, e.g. you can use the modification timestamp of the svg file.
+    </script>
+    
+   
+       
+       
+       <script>  
+          window.uzh_nav =  [{"subitems":[{"href":"/en/department/executive-board.html","text":"Executive Board"},{"href":"/en/department/people.html","text":"People"},{"href":"/en/department/contact.html","text":"Contact"}],"href":"/en/department.html","text":"Department"},{"subitems":[{"subitems":[{"subitems":[{"href":"/en/research/research-groups/caflisch/projects.html","text":"Projects"},{"href":"/en/research/research-groups/caflisch/publications.html","text":"Publications"},{"href":"/en/research/research-groups/caflisch/people.html","text":"People"}],"href":"/en/research/research-groups/caflisch.html","text":"Caflisch"},{"subitems":[{"subitems":[{"href":"/en/research/research-groups/dutzler/projects/clc-family.html","text":"ClC family"},{"href":"/en/research/research-groups/dutzler/projects/pentameric-ligand-gated-ion-channels.html","text":"Pentameric Ligand-Gated Ion Channels"},{"href":"/en/research/research-groups/dutzler/projects/tmem16-family.html","text":"TMEM16 family"},{"href":"/en/research/research-groups/dutzler/projects/slc26-family.html","text":"SLC26 family"},{"href":"/en/research/research-groups/dutzler/projects/volume-regulated-anion-channels.html","text":"Volume regulated anion channels"},{"href":"/en/research/research-groups/dutzler/projects/slc11nramp-family.html","text":"SLC11/NRAMP family"}],"href":"/en/research/research-groups/dutzler/projects.html","text":"Projects"},{"href":"/en/research/research-groups/dutzler/publications.html","text":"Publications"},{"href":"/en/research/research-groups/dutzler/people.html","text":"People"}],"href":"/en/research/research-groups/dutzler.html","text":"Dutzler"},{"subitems":[{"href":"/en/research/research-groups/jinek/projects.html","text":"Projects"},{"href":"/en/research/research-groups/jinek/publications.html","text":"Publications"},{"href":"/en/research/research-groups/jinek/people.html","text":"People"}],"href":"/en/research/research-groups/jinek.html","text":"Jinek"},{"subitems":[{"href":"/en/research/research-groups/kassube/projects.html","text":"Projects"},{"href":"/en/research/research-groups/kassube/publications.html","text":"Publications"},{"href":"/en/research/research-groups/kassube/people.html","text":"People"}],"href":"/en/research/research-groups/kassube.html","text":"Kassube"},{"subitems":[{"href":"/en/research/research-groups/medalia/projects.html","text":"Projects"},{"href":"/en/research/research-groups/medalia/publications.html","text":"Publications"},{"href":"/en/research/research-groups/medalia/people.html","text":"People"}],"href":"/en/research/research-groups/medalia.html","text":"Medalia"},{"subitems":[{"href":"/en/research/research-groups/perica/projects.html","text":"Projects"},{"href":"/en/research/research-groups/perica/publications.html","text":"Publications"},{"href":"/en/research/research-groups/perica/people.html","text":"People"}],"href":"/en/research/research-groups/perica.html","text":"Perica"},{"subitems":[{"subitems":[{"href":"/en/research/research-groups/plueckthun/projects/protein-engineering-applied-to-tumor-targeting.html","text":"Protein Engineering Applied to Tumor Targeting"},{"href":"/en/research/research-groups/plueckthun/projects/gene-therapy-shielded-retargeted-adenovirus.html","text":"Gene Therapy: Shielded, Retargeted Adenovirus"},{"href":"/en/research/research-groups/plueckthun/projects/g-protein-coupled-receptors.html","text":"G-protein Coupled Receptors"},{"href":"/en/research/research-groups/plueckthun/projects/designed-armadillo-repeat-proteins-for-creating-modular-sequence-specific-binding-to-linear-epitopes.html","text":"Designed Armadillo Repeat Proteins for creating modular, sequence-specific binding to linear epitopes"},{"href":"/en/research/research-groups/plueckthun/projects/designed-ankyrin-repeat-proteins-as-scaffolds-for-selective-binding.html","text":"Designed Ankyrin Repeat Proteins as Scaffolds for Selective Binding"},{"href":"/en/research/research-groups/plueckthun/projects/antibody-engineering.html","text":"Antibody Engineering"},{"href":"/en/research/research-groups/plueckthun/projects/ribosome-display.html","text":"Ribosome Display"},{"href":"/en/research/research-groups/plueckthun/projects/yeast-display.html","text":"Yeast Display"},{"href":"/en/research/research-groups/plueckthun/projects/phage-display-and-related-methods.html","text":"Phage Display and Related Methods"},{"href":"/en/research/research-groups/plueckthun/projects/directed-evolution-and-engineering-for-stability-of-gpcrs.html","text":"Directed Evolution and Engineering for Stability of GPCRs"},{"href":"/en/research/research-groups/plueckthun/projects/structural-biology.html","text":"Structural Biology"},{"href":"/en/research/research-groups/plueckthun/projects/protein-design-and-molecular-modeling.html","text":"Protein Design and Molecular Modeling"}],"href":"/en/research/research-groups/plueckthun/projects.html","text":"Projects"},{"href":"/en/research/research-groups/plueckthun/publications.html","text":"Publications"},{"href":"/en/research/research-groups/plueckthun/people.html","text":"People"}],"href":"/en/research/research-groups/plueckthun.html","text":"Plückthun"},{"subitems":[{"href":"/en/research/research-groups/schuler/projects.html","text":"Projects"},{"href":"/en/research/research-groups/schuler/publications.html","text":"Publications"},{"href":"/en/research/research-groups/schuler/people.html","text":"People"}],"href":"/en/research/research-groups/schuler.html","text":"Schuler"},{"href":"/en/research/research-groups/former-groups.html","text":"Former Groups"}],"href":"/en/research/research-groups.html","text":"Research Groups"},{"subitems":[{"href":"/en/research/core-facilities/high-throughput-binder-selection.html","text":"High Throughput Binder Selection"},{"subitems":[{"href":"/en/research/core-facilities/protein-crystallization-center/registration.html","text":"Registration"},{"subitems":[{"href":"/en/research/core-facilities/protein-crystallization-center/links-for-user/core-it-infrastructure.html","text":"Core IT Infrastructure"}],"href":"/en/research/core-facilities/protein-crystallization-center/links-for-user.html","text":"Links for Users"},{"subitems":[{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/initial-xtal-screens.html","text":"Initial Xtal Screens"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/refinement-and-custom-screens.html","text":"Refinement and Custom Screens"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/microseeding.html","text":"Microseeding"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/cryoprotection.html","text":"Cryoprotection"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/lcp-bicelle.html","text":"LCP / Bicelle"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/sample-volume.html","text":"Sample Volume"},{"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup/imaging-system.html","text":"Imaging System"}],"href":"/en/research/core-facilities/protein-crystallization-center/experimental-setup.html","text":"Experimental Setup"},{"href":"/en/research/core-facilities/protein-crystallization-center/price-and-the-fine-print.html","text":"Price and &quot;The Fine Print&quot;"},{"href":"/en/research/core-facilities/protein-crystallization-center/material-equipment.html","text":"Material &amp; Equipment"}],"href":"/en/research/core-facilities/protein-crystallization-center.html","text":"Protein Crystallization Center"},{"href":"/en/research/core-facilities/micro-calorimetry.html","text":"Microcalorimetry"},{"href":"/en/research/core-facilities/amf.html","text":"AMF"}],"href":"/en/research/core-facilities.html","text":"Core Facilities"},{"href":"/en/research/publications.html","text":"Publications"}],"href":"/en/research.html","text":"Research"},{"subitems":[{"subitems":[{"href":"/en/teaching/study-overview/bachelor.html","text":"Bachelor"},{"href":"/en/teaching/study-overview/master.html","text":"Master"},{"href":"/en/teaching/study-overview/phd.html","text":"PhD Programs"},{"href":"/en/teaching/study-overview/biochemistry-as-a-minor.html","text":"Biochemistry as a Minor"}],"href":"/en/teaching/study-overview.html","text":"Study Overview"},{"href":"/en/teaching/teaching-team.html","text":"Teaching Team"},{"subitems":[{"href":"/en/teaching/lecturers/berger.html","text":"Christine Berger Sprecher"},{"href":"/en/teaching/lecturers/boujemaa-paterski.html","text":"Rajaa Boujemaa-Paterski "},{"href":"/en/teaching/lecturers/caflisch.html","text":"Amedeo Caflisch"},{"href":"/en/teaching/lecturers/dutzler.html","text":"Raimund Dutzler"},{"href":"/en/teaching/lecturers/eibauer.html","text":"Matthias Eibauer"},{"href":"/en/teaching/lecturers/emmert.html","text":"Hila Emmert"},{"href":"/en/teaching/lecturers/jinek.html","text":"Martin Jinek"},{"href":"/en/teaching/lecturers/kassube.html","text":"Susanne Kassube"},{"href":"/en/teaching/lecturers/lobet.html","text":"Séverine Lobet"},{"href":"/en/teaching/lecturers/manatschal.html","text":"Cristina Manatschal"},{"href":"/en/teaching/lecturers/medalia.html","text":"Ohad Medalia"},{"href":"/en/teaching/lecturers/nettels.html","text":"Daniel Nettels"},{"href":"/en/teaching/lecturers/perica.html","text":"Tina Perica"},{"href":"/en/teaching/lecturers/plueckthun.html","text":"Andreas Plückthun"},{"href":"/en/teaching/lecturers/schuler.html","text":"Ben Schuler"},{"href":"/en/teaching/lecturers/thom.html","text":"Cristian Thom"},{"href":"/en/teaching/lecturers/vitalis.html","text":"Andreas Vitalis"},{"href":"/en/teaching/lecturers/wuerth.html","text":"Kathrin Würth-Roderer"}],"href":"/en/teaching/lecturers.html","text":"Lecturers"},{"href":"/en/teaching/immatriculation.html","text":"Immatriculation"},{"href":"/en/teaching/career.html","text":"Career"},{"href":"/en/teaching/student-counselling.html","text":"Student Counselling"},{"href":"/en/teaching/services-for-schools.html","text":"Services for Schools"}],"href":"/en/teaching.html","text":"Teaching"},{"subitems":[{"href":"/en/calendar-of-events/agenda.html","text":"Agenda"}],"href":"/en/calendar-of-events.html","text":"Calendar of Events"},{"subitems":[{"href":"/en/publications/publications-2026.html","text":"Publications 2026"},{"href":"/en/publications/publications-2025.html","text":"Publications 2025"},{"href":"/en/publications/publications-2024.html","text":"Publications 2024"},{"href":"/en/publications/publications-2023.html","text":"Publications 2023"},{"href":"/en/publications/publications-2022.html","text":"Publications 2022"},{"href":"/en/publications/publications-2021.html","text":"Publications 2021"},{"href":"/en/publications/publications-2020.html","text":"Publications 2020"},{"href":"/en/publications/publications-2019.html","text":"Publications 2019"},{"href":"/en/publications/publications-2018.html","text":"Publications 2018"},{"href":"/en/publications/publications-2017.html","text":"Publications 2017"},{"href":"/en/publications/publications-2016.html","text":"Publications 2016"},{"href":"/en/publications/publications-2015.html","text":"Publications 2015"},{"href":"/en/publications/publications-2014.html","text":"Publications 2014"},{"href":"/en/publications/publications-2013.html","text":"Publications 2013"},{"href":"/en/publications/publications-2012.html","text":"Publications 2012"},{"href":"/en/publications/publications-2011.html","text":"Publications 2011"},{"href":"/en/publications/publications-2010.html","text":"Publications 2010"},{"href":"/en/publications/publications-2009.html","text":"Publications 2009"},{"href":"/en/publications/publications-2008.html","text":"Publications 2008"},{"href":"/en/publications/publications-2007.html","text":"Publications 2007"},{"href":"/en/publications/publications-2006.html","text":"Publications 2006"},{"href":"/en/publications/publications-2005.html","text":"Publications 2005"},{"href":"/en/publications/publications-2004.html","text":"Publications 2004"}],"href":"/en/publications.html","text":"Publications"},{"href":"/en/awards.html","text":"Awards"}]
+       </script>
+
+    
+    
+</body>
+
+</html>

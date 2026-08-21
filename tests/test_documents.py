@@ -75,16 +75,56 @@ def test_posting_document_metadata() -> None:
         id="posting:7",
         title="MSc thesis on RAG",
         description="Ground LLM answers with retrieval.",
-        supervisor="Prof. A. Müller",
-        degree_level="master",
+        supervisors=[{"name": "Prof. A. Müller"}],
+        degree_levels=["master"],
+        status="open",
         url="https://www.cl.uzh.ch/theses/rag",
     )
     doc = posting_to_document(posting)
     assert doc.id == "posting:7"
     assert doc.metadata["source_type"] == "thesis_posting"
-    assert doc.metadata["degree_level"] == "master"
-    assert doc.metadata["supervisor"] == "Prof. A. Müller"
+    assert doc.metadata["degree_levels"] == ["master"]
+    assert doc.metadata["supervisors"] == ["Prof. A. Müller"]
+    assert doc.metadata["status"] == "open"
     assert "Ground LLM answers" in doc.text
+
+
+def test_posting_document_emits_one_boolean_per_degree_level() -> None:
+    """The filterable companions, and the whole reason they exist.
+
+    Neither store can filter a list-valued metadata field, so a posting open to two
+    levels has to be findable through scalars or it is findable by nobody.
+    """
+    posting = ThesisPosting(
+        id="posting:8",
+        title="Either level",
+        url="https://x",
+        degree_levels=["bachelor", "master"],
+    )
+    doc = posting_to_document(posting)
+    assert doc.metadata["degree_levels"] == ["bachelor", "master"]
+    assert doc.metadata["degree_bachelor"] is True
+    assert doc.metadata["degree_master"] is True
+    assert doc.metadata["degree_phd"] is False
+
+
+def test_posting_without_a_supervisor_is_flagged_as_such() -> None:
+    """63 of 247 scraped topics name nobody; retrieval has to be able to see that."""
+    doc = posting_to_document(ThesisPosting(id="posting:9", title="Anon", url="https://x"))
+    assert doc.metadata["has_supervisor"] is False
+    assert doc.metadata["supervisors"] == []
+
+
+def test_posting_title_stays_the_first_line_of_the_embedded_text() -> None:
+    """retrieval recovers Evidence.title as text.splitlines()[0], not from metadata."""
+    posting = ThesisPosting(
+        id="posting:10",
+        title="The title",
+        description="The description.",
+        keywords=["kw"],
+        url="https://x",
+    )
+    assert posting_to_document(posting).text.splitlines()[0] == "The title"
 
 
 def test_content_hash_stable_and_sensitive() -> None:

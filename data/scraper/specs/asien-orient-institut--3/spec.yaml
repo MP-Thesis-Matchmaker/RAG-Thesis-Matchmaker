@@ -1,0 +1,10 @@
+# asien-orient-institut--3: the Faculty of Philosophy's general thesis-process
+# page (phil.uzh.ch/.../module.html) — module booking, Bachelor-/Masterarbeit
+# rules and deadlines. It describes the whole faculty, not one institute, and is
+# shared by several PhF units, so it is stored ONCE at the faculty level
+# (faculties.PhF.process) rather than duplicated per unit. The process summary
+# itself is still produced by the LLM process extractor; this contract only
+# carries the routing flag.
+source_id: asien-orient-institut--3
+page_type: process
+scope: faculty

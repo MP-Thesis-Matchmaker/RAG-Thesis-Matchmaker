@@ -1,0 +1,38 @@
+# ifi--4: HISE group open thesis topics. A subpage-navigation list of topic
+# titles (no status markers) linking to detail pages; each detail page holds the
+# description and the chair contact (hise@ifi.uzh.ch — no per-topic supervisor).
+source_id: ifi--4
+page_type: topics
+group:
+  id: hise
+  name: HISE
+  full_name: Human-centered Information Systems Engineering
+
+record:
+  container: ".SectionNavigation--link"
+  fields:
+    title:
+      attr: text
+      transform: normalize_ws
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      value: "Human-centered Information Systems Engineering"
+    source_link:
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+follow:
+  url_field: source_link
+  url_pattern: '^https://www\.ifi\.uzh\.ch/en/hise/Theses/.+\.html$'
+  fields:
+    topic_description:
+      selector: ".ContentArea"
+      attr: text
+      transform: normalize_ws
+    supervisor_email:
+      selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto

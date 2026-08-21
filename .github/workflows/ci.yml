@@ -55,6 +55,31 @@ jobs:
       - name: Test
         run: uv run --no-sync pytest
 
+  # The scraper's 131 tests, which need the `scraping` extra and nothing else --
+  # they replay 103 frozen page snapshots, so no network and no database.
+  #
+  # A separate job rather than adding the extra to `offline`, because that job's
+  # value is proving the base install runs the whole pipeline on its own. But they
+  # have to run *somewhere*: the last time an extra went untested, `mcp>=1.2`
+  # resolved to 2.0.0, removed FastMCP, and broke `thesis-matchmaker-mcp` entirely
+  # -- caught only when an image was built by hand, because CI never installed it.
+  # 131 tests behind an uninstalled extra is that same hole, five times the size.
+  scraper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.11.17"
+          python-version: "3.11"
+          enable-cache: true
+      # The render extra is deliberately absent: it downloads a browser, and
+      # fetch.py imports playwright lazily so nothing here needs it.
+      - name: Install
+        run: uv sync --locked --extra scraping
+      - name: Test
+        run: uv run --no-sync pytest tests/scraper
+
   # The same store contract against real pgvector: real SQL, real HNSW, real
   # jsonb containment. Skipped locally when DATABASE_URL is unset.
   pgvector:

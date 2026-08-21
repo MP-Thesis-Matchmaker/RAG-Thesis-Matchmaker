@@ -258,10 +258,16 @@ at a Postgres with the extension, which CI always does via a
   because it narrows anything. The partial HNSW indexes on `source_type` are
   unaffected and still do real work, since the index holds both publications and
   postings.
-- **Only publications have a real producer.** `theses.jsonl` exists only as
-  hand-made sample data; no web scraper lives in `src/`. That work sits on the
-  unmerged `origin/webscraping` branch, so the posting half of the index is
-  synthetic today.
+- **Both halves of the index now have real producers.** `zora/` writes
+  `publication`, `scraper/` writes `posting`, and `PostgresSourceReader` reads
+  both. `theses.jsonl` stays because the offline path and CI need a source with no
+  database behind it -- but note those 20 fixtures are unrepresentative of scraped
+  reality in two ways: each names exactly one supervisor and exactly one degree
+  level, where a quarter of real topics name nobody and half are open to two.
+- **Postings carry three boolean companions**, `degree_bachelor` /
+  `degree_master` / `degree_phd`, for the reason the next bullet gives. They are
+  the `has_uzh_author` pattern applied to a second list-valued field, and they are
+  what a level-filtered posting query actually matches on.
 - List-valued metadata is unfilterable by construction (see above). Any future
   filter on keywords or authors needs another scalar companion field like
   `has_uzh_author`, or a different store.

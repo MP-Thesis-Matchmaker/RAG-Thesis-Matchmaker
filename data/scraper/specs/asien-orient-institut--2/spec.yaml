@@ -1,0 +1,42 @@
+# asien-orient-institut--2: AOI staff page. People are listed by category
+# (each an h2 with a block of profile links). Per the brief, only the four
+# professor categories are extracted — Professors, Professors Emeriti, Adjunct
+# Professors & Privatdozents, Visiting Professors — which are exactly the h2
+# sections whose title contains "Professors" (Academic Staff, Guests, Librarians
+# and Administration do not, and are skipped). Each profile is followed for the
+# email, research interests and short CV. Stored at the institute (unit) level.
+source_id: asien-orient-institut--2
+page_type: people
+
+record:
+  container: 'div.TextImage:has(h2:-soup-contains("Professors")) div.TextImage--content a[href]'
+  fields:
+    name:
+      attr: text
+      transform: [normalize_ws, strip_titles]
+    role:
+      attr: text
+      transform: academic_role
+    _profile_url:                      # institutional profile page (kept + followed)
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://www\.aoi\.uzh\.ch/.+\.html$'
+  fields:
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email
+    research_interest:
+      selector: 'h2.TextImage--title:-soup-contains("Research Interests") + div, h2.TextImage--title:-soup-contains("Research") + div'
+      attr: text
+      transform: normalize_ws
+    bio:
+      selector: 'h2.TextImage--title:-soup-contains("Short CV") + div, h2.TextImage--title:-soup-contains("Short Bio") + div, h2.TextImage--title:-soup-contains("Biography") + div'
+      attr: text
+      transform: normalize_ws

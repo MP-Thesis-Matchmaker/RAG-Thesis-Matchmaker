@@ -1,0 +1,73 @@
+{
+  "source_id": "soziologisches-institut--3",
+  "page_type": "process",
+  "verified_content_sha1": "91f372e7f21248b19e2b0ae587c83f38896cca89",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Eligible students are those in the Major Soziologie who have completed the statistical-method training (Statistics 1 and especially Statistics 2; Statistics 3 recommended). To register, book the module \"Bachelorarbeit\" (240-BAa, 15 ECTS) and attend the accompanying weekly four‑hour seminar; only book after passing the required statistics modules. Your thesis must be an independent empirical paper based on quantitative analysis (≈450 working hours for 15 ECTS); R and Stata are supported; common datasets are SHP or ESS (self‑collected data possible with a short exposé). Supervision is provided by the course instructors—contact them in advance to discuss topics and data and nominate one as supervisor to the Studiendekanat when requested (usually after course start). Exact deadlines, session details and formal rules are given in the course syllabus on OLAT and in this Merkblatt.",
+      "relevant_links": [
+        {
+          "url": "https://www.suz.uzh.ch/dam/jcr:b5b92ece-6b67-4649-803a-5246909cf86b/Merkblatt%20BA_2601.pdf",
+          "description": "BA thesis process pdf"
+        },
+        {
+          "url": "https://www.europeansocialsurvey.org/data/module-index.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "http://nesstar.ess.nsd.uib.no/webview/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.europeansocialsurvey.org/data/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.europeansocialsurvey.org/user/new",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://forscenter.ch/pro-jekte/swiss-household-panel/documentation/?lang=de",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://forscenter.ch/projekte/swiss-household-panel/data/?lang=de",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://psidonline.isr.umich.edu/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "http://www.worldvaluessurvey.org/wvs.jsp",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.oecd.org/pisa/",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.suz.uzh.ch/de/studium/bachelor/plnw/plagi-ate.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.suz.uzh.ch/de/studies/Downloads.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://r4ds.had.co.nz/",
+          "description": "referenced in document"
+        }
+      ],
+      "source_url": "https://www.suz.uzh.ch/dam/jcr:b5b92ece-6b67-4649-803a-5246909cf86b/Merkblatt%20BA_2601.pdf",
+      "source_id": "soziologisches-institut--3",
+      "scraped_at": "2026-07-31T14:35:25.394484+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

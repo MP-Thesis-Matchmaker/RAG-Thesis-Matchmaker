@@ -1,0 +1,89 @@
+# ifi--10: CL (Computational Linguistics). The topics page lists a "Meet Our
+# Experts" block — research fields, each with contact people. ALL those people
+# are extracted (inverted to one record per person, with the fields they cover).
+# Each person's profile URL comes from an inline link or is resolved by name
+# against the CL people page, then followed for email / research interest / bio.
+source_id: ifi--10
+page_type: people
+source_type: grouped_people
+group:
+  id: cl
+  name: CL
+  full_name: Computational Linguistics
+
+grouped:
+  container: "ul.type1 li"
+  field: "strong"                 # the research-field label
+  person: "a[href]"               # each contact person link
+  exclude_person: "sup a"         # skip the "(note)" footnote links
+
+directory:                         # resolve missing profile URLs by name
+  url: "https://www.cl.uzh.ch/de/about-us/people.html"
+  profile_pattern: '/people/team/[\w-]+/[^/]+\.html$'
+  name_strip: '^Mehr (?:über|zu)\s+'
+
+# Auxiliary topics: the same page also lists many thesis/project topics as
+# subpages; each detail page has a description and a "Supervisor(s):" line.
+topics:
+  record:
+    container: 'main a[href*="/BaMasterArbeit/"]'
+    fields:
+      title:
+        attr: text
+        transform: normalize_ws
+      status:
+        value: open
+      degree_level:
+        value: "Bachelor, Master"
+      research_area:
+        value: "Computational Linguistics"
+      source_link:
+        attr: href
+        transform: absolute_url
+  id_from: [source_link]          # stable id per topic URL (also drives dedup)
+  follow:
+    url_field: source_link
+    url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/BaMasterArbeit/.+\.html$'
+    fields:
+      topic_description:
+        selector: ".ContentArea"
+        attr: text
+        exclude: ["h1", ".Breadcrumb", 'p:-soup-contains("upervisor")']
+        transform: normalize_ws
+      supervisors:
+        selector: 'p:-soup-contains("upervisor")'
+        attr: text
+        transform: supervisor_list
+  # Fill supervisor emails by matching their names against the CL people page.
+  resolve_supervisors_via_directory:
+    directory:
+      url: "https://www.cl.uzh.ch/de/about-us/people.html"
+      profile_pattern: '/people/team/[\w-]+/[^/]+\.html$'
+      name_strip: '^Mehr (?:über|zu)\s+'
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/people/team/.+\.html$'
+  fields:
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email
+    research_interest:
+      selector: 'h2.TextImage--title:-soup-contains("Research") + div'
+      attr: text
+      transform: normalize_ws
+    bio:
+      selector: 'h2.TextImage--title:-soup-contains("Short CV") + div, h2.TextImage--title:-soup-contains("Bio") + div'
+      attr: text
+      transform: normalize_ws

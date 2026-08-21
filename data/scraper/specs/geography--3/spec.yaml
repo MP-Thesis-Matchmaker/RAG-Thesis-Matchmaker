@@ -1,0 +1,9 @@
+# geography--3: GIUZ Bachelor's thesis process. The main page is a thin hub; the
+# substance lives on two track subpages (Earth System Science, Geography), which
+# are folded into ONE combined Bachelor process summary via include_pages.
+source_id: geography--3
+page_type: process
+degree_level: "Bachelor"
+include_pages:
+  - "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/bachelor-thesis/earth-system-science.html"
+  - "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/bachelor-thesis/geography.html"

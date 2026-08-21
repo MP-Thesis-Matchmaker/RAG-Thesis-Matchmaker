@@ -1,0 +1,97 @@
+{
+  "source_id": "ifi--19",
+  "page_type": "process",
+  "verified_content_sha1": "626cc0ee051747a0d1fe20520fdf02d8f8a9115f",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "To do a BSc or MSc thesis at IfI you should first check the Bachelor's/Master's Thesis fact sheets and the \"Preparation of BSc/MSc Theses\" fact sheet on the IfI website (these and the Faculty study regulations are the official guidelines). Use the Specializations and Topics per Professor table to identify likely supervisors and contact the research groups or professors directly to discuss topics. Follow module order (e.g. compulsory program → Informatics Internship → Bachelor’s Thesis) and the plagiarism / scientific integrity rules. Register using the Bachelor's thesis registration form and submit registrations and final theses electronically from your UZH e‑mail to studies@ifi.uzh.ch. Inform yourself about all deadlines on the Faculty/IfI pages. Contact: Daniela Bärtschi, Study Coordination.",
+      "relevant_links": [
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:1b564225-e6bd-437c-9e20-a07bca1c4df2/Merkblatt-Plagiate_en.pdf",
+          "description": "fact sheet on plagiarism (PDF, 109 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:6bf63227-071b-4c3c-993f-9b8962773f30/Merkblatt-Informatikpraktikum-SO26-DE-20260702.pdf",
+          "description": "Fact Sheet (German) (PDF, 128 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:8d3a89af-2a35-4d9c-84ac-6e38ae90547c/Informatikpraktikum%202026.pdf",
+          "description": "Slides Information Event (PDF, 2 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:f0fc5571-e60a-4c4e-94d6-c5300cc0e9fa/Informatikpraktikum_Musterbeschrieb_note.pdf",
+          "description": "Example internship description (German) (PDF, 211 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:e8058f3e-9270-4b1d-868d-be4b89b6d89f/Anmeldung-Informatikpraktikum-SO26-DE-20260702.pdf",
+          "description": "Registration form Informatics Internship (PDF, 85 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:dbccd306-3981-41ee-839f-e056484287ea/Merkblatt-Independent-Study-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet (PDF, 78 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:5024e3e3-f8b6-49fb-8054-6bc32bdfc76a/Anmeldung-IndependentStudy-SO26-EN-20260702.pdf",
+          "description": "Registration form Independent Study (PDF, 97 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:98813eec-095e-413e-a276-d2d06f6b8232/Merkblatt-Bachelorarbeit-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet Bachelor's Thesis (PDF, 99 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:e563d185-4fed-46d0-920f-b38c7e84364a/Merkblatt-Ausarbeitung-Thesis-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet: Preparation of BSc/MSc Theses (PDF, 157 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:d38760ed-0651-480f-8c75-0da35bc0763c/Anmeldung-BScMScArbeiten-SO26-EN-20260702.pdf",
+          "description": "Registration form Bachelor's thesis (PDF, 173 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/ddis/theses.html",
+          "description": "Abraham Bernstein"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/dbtg/teaching/theses.html",
+          "description": "Michael Böhlen"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/zpac/teaching/theses.html",
+          "description": "Elaine Huang"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+          "description": "Giorgia Ramponi"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/imrg/theses.html",
+          "description": "Gerhard Schwabe"
+        },
+        {
+          "url": "http://www.csg.uzh.ch/csg/en/theses.html",
+          "description": "Burkhard Stiller"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:360850a4-50c9-49e1-a8c6-f5ac72144a59/Anmeldung-Tutorat%20ECTS-SO26_final.pdf",
+          "description": "Registration form Tutors (ECTS) (PDF, 71 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:e727d6fc-4a61-459b-b762-f95f84ef341b/Anmeldung-money-Tutorat-SO2026_final.pdf",
+          "description": "Registration form Tutors (money) (PDF, 64 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:40d06422-adc7-4fb0-97c0-ab68165090ac/kodex_layout_en_web.pdf",
+          "description": "Code of conduct for scientific integrity"
+        }
+      ],
+      "source_url": "https://www.ifi.uzh.ch/en/studies/bsc-info.html",
+      "source_id": "ifi--19",
+      "scraped_at": "2026-07-22T21:46:02.341587+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

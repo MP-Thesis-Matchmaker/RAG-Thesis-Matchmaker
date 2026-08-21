@@ -1,0 +1,57 @@
+# ifi--9: SCG (Social Computing Group). Dual page: "How to apply" process text
+# + a table of available topics (Topic | Keywords | Reference Person). Each
+# topic row: "title — description", keywords (research area), and one or more
+# reference persons linked to their profiles (followed to resolve emails).
+source_id: ifi--9
+page_type: topics
+also_process: true
+group:
+  id: scg
+  name: SCG
+  full_name: Social Computing Group
+
+record:
+  container: 'table tr:has(td a[href*="/scg/people/"])'
+  fields:
+    title:
+      - selector: "td:nth-child(1)"
+        attr: text
+        regex: '^(.+?)\s*—'          # before the em-dash
+      - selector: "td:nth-child(1)"   # fallback: whole cell if no em-dash
+        attr: text
+        transform: normalize_ws
+    topic_description:
+      selector: "td:nth-child(1)"
+      attr: text
+      regex: '—\s*(.+)$'             # after the em-dash
+    research_area:
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"
+    supervisors:
+      each: 'td:nth-child(3) a[href]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+        _url:
+          attr: href
+          transform: absolute_url
+
+id_from: [title]
+
+# Follow each reference person's profile once to resolve their email.
+resolve_supervisors:
+  list_field: supervisors
+  url_key: _url
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email

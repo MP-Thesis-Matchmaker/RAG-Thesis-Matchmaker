@@ -1,0 +1,55 @@
+{
+  "source_id": "ifi--8",
+  "page_type": "people",
+  "verified_content_sha1": "db863523f160535c842ea646a980954f46f8f976",
+  "records": [
+    {
+      "role": "Supervisor",
+      "name": "Pooja Rani",
+      "email": "rani@ifi.uzh.ch",
+      "research_interest": "focuses on applying empirical software engineering methods to software sustainability, green software engineering, software documentation, and aiding developers in program evolution and maintenance tasks. Her recent work can be found on her homepage .",
+      "research_field": null,
+      "bio": null,
+      "personal_website": "https://poojaruhal.github.io/",
+      "_profile_url": "https://www.ifi.uzh.ch/en/seal/people/rani.html",
+      "source_id": "ifi--8",
+      "scraped_at": "2026-07-21T13:34:24.015628+00:00"
+    },
+    {
+      "role": "Supervisor",
+      "name": "Alex Wolf",
+      "email": "wolf@ifi.uzh.ch",
+      "research_interest": "specializes in the application of Artificial Intelligence to Software Engineering, with a particular emphasis on utilizing AI in distributed systems for code verification.",
+      "research_field": null,
+      "bio": null,
+      "personal_website": null,
+      "_profile_url": "https://www.ifi.uzh.ch/en/seal/people/AlexWolf.html",
+      "source_id": "ifi--8",
+      "scraped_at": "2026-07-21T13:34:24.015628+00:00"
+    },
+    {
+      "role": "Supervisor",
+      "name": "Marco Edoardo Palma",
+      "email": null,
+      "research_interest": "is dedicated to advancing the field of Artificial Intelligence in Software Engineering. His expertise extends to AI's role in software testing and automation, as well as its application in program parsing and programming languages.",
+      "research_field": null,
+      "bio": null,
+      "personal_website": null,
+      "_profile_url": "https://www.ifi.uzh.ch/en/seal/people/MEP.html",
+      "source_id": "ifi--8",
+      "scraped_at": "2026-07-21T13:34:24.015628+00:00"
+    },
+    {
+      "role": "Supervisor",
+      "name": "Melih Catal",
+      "email": null,
+      "research_interest": "works on software security, machine learning and its applications in cybersecurtiy and software engineering.",
+      "research_field": null,
+      "bio": null,
+      "personal_website": null,
+      "_profile_url": "https://www.ifi.uzh.ch/en/seal/people/MelihCatal.html",
+      "source_id": "ifi--8",
+      "scraped_at": "2026-07-21T13:34:24.015628+00:00"
+    }
+  ]
+}

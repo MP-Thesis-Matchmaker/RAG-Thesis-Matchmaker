@@ -1,0 +1,32 @@
+# biochemisches-institut-mnf--2: the Biochemistry "Research Groups" directory
+# links to each group's page (research-groups/<name>.html). Extract the group
+# leaders (PIs) as people: the listing gives the surname, each group page is
+# followed for the full name and email. Unit level.
+source_id: biochemisches-institut-mnf--2
+page_type: people
+
+record:
+  container: 'a[href*="/research-groups/"][href$=".html"]:not([href*="former"])'
+  fields:
+    name:                              # surname; overridden by the profile's full name
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '.+/research-groups/[^/]+\.html$'
+  fields:
+    name:
+      selector: "h1"
+      attr: text
+      transform: normalize_ws
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email

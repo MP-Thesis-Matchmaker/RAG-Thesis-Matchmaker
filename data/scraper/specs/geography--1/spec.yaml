@@ -1,0 +1,28 @@
+# geography--1: the Department of Geography (GIUZ) faculty-members page listing
+# the staff who can supervise/examine a Master's thesis. A clean sortable table:
+# Name | Function | Room | Phone | E-Mail. The Name cell is "Surname, Given,
+# Prof. Dr." and links to the person's GIUZ profile (kept as _profile_url).
+source_id: geography--1
+page_type: people
+
+record:
+  container: 'table.tablesorter tr:has(td)'
+  fields:
+    name:
+      selector: "td:nth-child(1)"
+      attr: text
+      transform: name_lastfirst
+    role:
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: normalize_ws
+    email:
+      selector: "td:nth-child(5)"
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      selector: "td:nth-child(1) a"
+      attr: href
+      transform: absolute_url
+
+id_from: [name]

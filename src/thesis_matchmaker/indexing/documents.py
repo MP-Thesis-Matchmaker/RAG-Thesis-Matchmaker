@@ -14,7 +14,7 @@ import re
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import DegreeLevel, ThesisPosting, ZoraRecord
 
 # The store keeps metadata in a jsonb column, so lists and maps are stored as
 # themselves. Filters are still flat equality over scalars -- that is all
@@ -100,15 +100,41 @@ def zora_to_document(record: ZoraRecord) -> Document:
 
 
 def posting_to_document(posting: ThesisPosting) -> Document:
-    """Compose a thesis posting into one embeddable document."""
+    """Compose a thesis posting into one embeddable document.
+
+    The part order is load-bearing and must not change: `retrieval` recovers a
+    posting's displayed title as `text.splitlines()[0]` rather than from metadata, so
+    moving `title` off the front silently retitles every posting in every result.
+
+    Two metadata shapes here exist because the filter API is flat equality over
+    scalars. `degree_levels` is stored as the honest list and is *not* filterable --
+    Postgres jsonb containment does not match a scalar against a nested array, and
+    `InMemoryVectorStore` compares with `==`, so both stores would miss it in the same
+    way and the parametrised store contract could not tell. The three
+    `degree_*` booleans are what a level query actually filters on, following the
+    `has_uzh_author` precedent that `indexing/README.md` sets for exactly this case.
+    `has_supervisor` is the same trick for a different question.
+    """
+    levels = {level.value for level in posting.degree_levels}
     return _build(
         posting.id,
         [posting.title, posting.description, ", ".join(posting.keywords) or None],
         {
             "source_type": "thesis_posting",
+            "faculty": posting.faculty,
             "department": posting.department,
-            "degree_level": posting.degree_level.value if posting.degree_level else None,
-            "supervisor": posting.supervisor,
+            # Stored for display and debugging; see the docstring on why the
+            # booleans below are what gets filtered.
+            "degree_levels": sorted(levels),
+            "degree_bachelor": DegreeLevel.bachelor.value in levels,
+            "degree_master": DegreeLevel.master.value in levels,
+            "degree_phd": DegreeLevel.phd.value in levels,
+            "status": posting.status.value if posting.status else None,
+            "supervisors": [s.name for s in posting.supervisors],
+            # A posting nobody is named on cannot become a supervisor
+            # recommendation. 63 of 247 scraped topics are in that position, so this
+            # is a routine case rather than an edge one.
+            "has_supervisor": bool(posting.supervisors),
             "url": posting.url,
         },
     )

@@ -1,0 +1,77 @@
+# ifi--15: IMRG (Information Management Research Group). Two topic pages, one
+# for Master theses and one for Bachelor theses, that list the SAME topics for
+# each degree. Both are scraped (multi-page `pages:`) and merged by title, so a
+# topic offered on both becomes degree "Bachelor, Master"; a master-only topic
+# stays "Master". Each topic card has a title, a snippet, and a "read more" link
+# to a detail page (full Description + a Contacts person). The detail page is
+# followed for the full description and the supervisor, whose profile is then
+# followed for the email. The shared "Important Information" process is
+# summarised (LLM) under the group from the primary (master) page.
+source_id: ifi--15
+page_type: topics
+also_process: true
+group:
+  id: imrg
+  name: IMRG
+  full_name: Information Management Research Group
+
+# Both pages use the same record shape; `set:` stamps the per-page degree.
+pages:
+  - url: "https://www.ifi.uzh.ch/en/imrg/theses/master-theses.html"
+    set: {degree_level: "Master"}
+  - url: "https://www.ifi.uzh.ch/en/imrg/theses/bachelor-theses.html"
+    set: {degree_level: "Bachelor"}
+merge_by: title
+
+record:
+  container: 'div.TextImage:has(a:-soup-contains("read more"))'
+  fields:
+    title:
+      selector: "h2"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    research_area:
+      value: "Information Management"
+    source_link:                       # the "read more" detail page
+      selector: 'a[href*="/theses/"]'
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+# Follow each topic's detail page for the full description and its contact
+# person (name + profile link).
+follow:
+  url_field: source_link
+  url_pattern: '^https?://www\.ifi\.uzh\.ch/en/imrg/theses/.+\.html$'
+  fields:
+    topic_description:
+      selector: 'h2:-soup-contains("Description") + div'
+      attr: text
+      transform: normalize_ws
+    supervisors:                       # contact is either a profile link or a mailto
+      each: 'main a[href*="/imrg/people/"], main a[href^="mailto:"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+        email:                         # set directly for mailto contacts; None for profiles
+          attr: href
+          transform: mailto_email
+        _url:                          # profile link, followed below for the email
+          attr: href
+          transform: absolute_url
+
+# Follow each contact's profile once to resolve their email.
+resolve_supervisors:
+  list_field: supervisors
+  url_key: _url
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email

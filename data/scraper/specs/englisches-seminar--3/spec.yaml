@@ -1,0 +1,44 @@
+# englisches-seminar--3: ES staff list. Per the brief, extract everyone with
+# "Prof." or "Dr." in their title — the person rows (those with a mailto) whose
+# name cell contains one of those. Columns: Name | Room(+email) | Courses(+home-
+# page) | Ling/Lit. Emails are inline; the homepage link is followed for research
+# interests and a short bio where present. Stored at the institute (unit) level.
+source_id: englisches-seminar--3
+page_type: people
+
+record:
+  container: 'table tr:has(a[href^="mailto"]):-soup-contains("Prof."), table tr:has(a[href^="mailto"]):-soup-contains("Dr.")'
+  fields:
+    name:
+      selector: "td:nth-child(1)"
+      attr: text
+      transform: [normalize_ws, strip_titles]
+    role:                              # leading academic title(s)
+      selector: "td:nth-child(1)"
+      attr: text
+      regex: '^((?:Prof\.|PD|Dr\.|em\.|apl\.|hon\.)(?:\s+(?:Prof\.|PD|Dr\.|em\.|apl\.|hon\.))*)'
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    research_field:                    # the Ling/Lit column
+      selector: "td:nth-child(4)"
+      attr: text
+      transform: normalize_ws
+    _profile_url:                      # institutional profile page (kept + followed)
+      selector: 'a[href*="/people/team/"]'
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://www\.es\.uzh\.ch/.+\.html$'
+  fields:
+    research_interest:
+      selector: 'h2.TextImage--title:-soup-contains("Research") + div'
+      attr: text
+      transform: normalize_ws
+    bio:
+      selector: 'h2.TextImage--title:-soup-contains("Short Bio") + div, h2.TextImage--title:-soup-contains("Bio") + div, h2.TextImage--title:-soup-contains("Biography") + div'
+      attr: text
+      transform: normalize_ws
