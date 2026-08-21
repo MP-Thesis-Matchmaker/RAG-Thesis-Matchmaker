@@ -60,6 +60,22 @@ ON CONFLICT (id) DO UPDATE SET
     harvested_at         = now()
 """
 
+# Prune everything the authoritative snapshot did not contain.
+#
+# Written as an anti-join against `unnest`, not as `id <> ALL(%(kept)s)`. They mean
+# the same thing, but `<> ALL(array)` re-scans the array for every candidate row,
+# so at real corpus size (~215k kept ids against ~22k rows) it degenerates into
+# billions of comparisons inside the transaction holding the write lock.
+# `unnest` gives the planner a relation it can hash, which turns the same question
+# into one pass. NOT EXISTS rather than NOT IN because NOT IN yields NULL -- and
+# so deletes nothing at all -- if a single id in the set is NULL.
+_PRUNE = """
+DELETE FROM publication p
+WHERE NOT EXISTS (
+    SELECT 1 FROM unnest(%(kept)s::text[]) AS kept(id) WHERE kept.id = p.id
+)
+"""
+
 _LOAD_STATE = """
 SELECT last_accessioned, last_total_publications, last_run_at,
        last_incremental_run_at, last_full_run_at
@@ -159,7 +175,7 @@ def write_harvest(
 
                 deleted = 0
                 if mode == "full":
-                    cursor = conn.execute("DELETE FROM publication WHERE id <> ALL(%s)", (ids,))
+                    cursor = conn.execute(_PRUNE, {"kept": ids})
                     deleted = cursor.rowcount
 
                 total = conn.execute("SELECT count(*) FROM publication").fetchone()[0]

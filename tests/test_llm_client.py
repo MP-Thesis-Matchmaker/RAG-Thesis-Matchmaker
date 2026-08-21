@@ -128,7 +128,7 @@ def test_synthesis_fallback_is_logged(caplog, recorder):
         score=0.9,
         matched_topics=["nlp"],
         publication_count=1,
-        has_open_position=False,
+        posting_count=0,
         evidence=[Evidence(source_type="publication", source_id="pub:1", title="A Paper")],
     )
     with caplog.at_level(logging.WARNING):

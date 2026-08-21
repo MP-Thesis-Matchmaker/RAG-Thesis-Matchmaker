@@ -19,15 +19,23 @@ from __future__ import annotations
 
 import argparse
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
+from thesis_matchmaker import __version__
 from thesis_matchmaker.adapters import service
 from thesis_matchmaker.config import get_settings
 
-mcp = FastMCP("thesis-matchmaker")
+# MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from
+# mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than `mcp` on
+# purpose -- the old name shadowed the `mcp` package inside this very module.
+#
+# version is passed explicitly because 2.x defaults it to "". In 1.x the field
+# was filled with the SDK's own version, which reported "1.29.0" as though that
+# were this server's version; ours is the honest value.
+server = MCPServer("thesis-matchmaker", version=__version__)
 
 
-@mcp.tool()
+@server.tool()
 def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     """Find UZH researchers whose work matches a topic or research interest.
 
@@ -40,7 +48,7 @@ def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     return service.find_researchers(query, top_k=top_k)
 
 
-@mcp.tool()
+@server.tool()
 def recommend_supervisors(interests: str, top_k: int = 5) -> str:
     """Recommend thesis supervisors for a student as a short written answer.
 
@@ -65,13 +73,18 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.stdio:
-        mcp.run(transport="stdio")
+        server.run(transport="stdio")
         return
 
+    # host and port are run() keyword arguments in 2.x. In 1.x they had to be
+    # poked into mcp.settings before calling run(), which meant the transport and
+    # the address it binds were configured in two different places.
     settings = get_settings()
-    mcp.settings.host = settings.mcp_host
-    mcp.settings.port = settings.mcp_port
-    mcp.run(transport="streamable-http")
+    server.run(
+        transport="streamable-http",
+        host=settings.mcp_host,
+        port=settings.mcp_port,
+    )
 
 
 if __name__ == "__main__":

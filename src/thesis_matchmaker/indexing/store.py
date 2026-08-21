@@ -61,6 +61,9 @@ class IndexManifest(BaseModel):
     embedding_dim: int
     document_count: int
     sources: str | None = None
+    # None for an embedder with no token window (the offline hash-fake).
+    max_seq_length: int | None = None
+    truncated_docs: int = 0
 
 
 class VectorStore(Protocol):
@@ -131,13 +134,16 @@ LIMIT %(top_k)s
 """
 
 _WRITE_MANIFEST = """
-INSERT INTO index_manifest (id, embedding_model, embedding_dim, document_count, sources, built_at)
-VALUES (1, %s, %s, %s, %s, now())
+INSERT INTO index_manifest (id, embedding_model, embedding_dim, document_count, sources,
+                            max_seq_length, truncated_docs, built_at)
+VALUES (1, %s, %s, %s, %s, %s, %s, now())
 ON CONFLICT (id) DO UPDATE SET
     embedding_model = EXCLUDED.embedding_model,
     embedding_dim   = EXCLUDED.embedding_dim,
     document_count  = EXCLUDED.document_count,
     sources         = EXCLUDED.sources,
+    max_seq_length  = EXCLUDED.max_seq_length,
+    truncated_docs  = EXCLUDED.truncated_docs,
     built_at        = now()
 """
 
@@ -232,8 +238,8 @@ class PgVectorStore:
     def read_manifest(self) -> IndexManifest | None:
         with db.connection(self.dsn) as conn:
             row = conn.execute(
-                "SELECT embedding_model, embedding_dim, document_count, sources "
-                "FROM index_manifest WHERE id = 1"
+                "SELECT embedding_model, embedding_dim, document_count, sources, "
+                "max_seq_length, truncated_docs FROM index_manifest WHERE id = 1"
             ).fetchone()
         if row is None:
             return None
@@ -242,6 +248,8 @@ class PgVectorStore:
             embedding_dim=row[1],
             document_count=row[2],
             sources=row[3],
+            max_seq_length=row[4],
+            truncated_docs=row[5] or 0,
         )
 
     def clear(self) -> None:
@@ -258,6 +266,8 @@ class PgVectorStore:
                     manifest.embedding_dim,
                     manifest.document_count,
                     manifest.sources,
+                    manifest.max_seq_length,
+                    manifest.truncated_docs,
                 ),
             )
 

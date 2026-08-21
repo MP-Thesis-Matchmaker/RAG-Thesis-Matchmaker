@@ -97,9 +97,11 @@ built it belongs here, as a second wrapper over the same `service.py` functions.
 ## Known gaps
 
 - **`mcp_server.py` is untested.** Only the transport-free `service.py` has tests;
-  the FastMCP registration, the two tool signatures, and `main()`'s transport
+  the `MCPServer` registration, the two tool signatures, and `main()`'s transport
   switch are not exercised. CI also never installs the `mcp` extra, so nothing in
-  CI would notice if this module stopped importing.
+  CI would notice if this module stopped importing — and that is not theoretical:
+  it *did* stop importing when the SDK reached 2.0 and removed `FastMCP`, and the
+  failure was found by building an image rather than by a test.
 - **`_default_pipeline` duplicates the index-exists check** found in `cli.py`. If
   the check is wrong or forgotten, the adapter silently serves `FakeRetriever`
   output to askUZH — plausible-looking fake supervisors. Worth centralising in

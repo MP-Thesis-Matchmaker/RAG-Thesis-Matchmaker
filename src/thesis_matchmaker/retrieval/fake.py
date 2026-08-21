@@ -15,7 +15,7 @@ _CANNED: list[SupervisorMatch] = [
         score=0.91,
         matched_topics=["retrieval-augmented generation", "nlp"],
         publication_count=12,
-        has_open_position=True,
+        posting_count=1,
         evidence=[
             Evidence(
                 source_type="publication",
@@ -38,7 +38,7 @@ _CANNED: list[SupervisorMatch] = [
         score=0.78,
         matched_topics=["information retrieval"],
         publication_count=7,
-        has_open_position=False,
+        posting_count=0,
         evidence=[
             Evidence(
                 source_type="publication",
@@ -55,7 +55,7 @@ _CANNED: list[SupervisorMatch] = [
         score=0.64,
         matched_topics=["misinformation detection"],
         publication_count=5,
-        has_open_position=True,
+        posting_count=1,
         evidence=[
             Evidence(
                 source_type="publication",

@@ -65,6 +65,14 @@ produce a valid supervisor recommendation — the people on it do not work here.
 `has_uzh_author=True` removes those records at query time rather than filtering
 them out afterwards, so they never consume a top-k slot.
 
+Indexing now applies the same rule at its source: `indexing/sources.py` selects only
+publications with a UZH author, so nothing ineligible from the harvested table is
+embedded in the first place. That makes this filter the **invariant** rather than the
+only line of defence — it still covers records that reached the index by an unfiltered
+route, such as a JSONL dump — but on a DB-sourced index every row already satisfies
+it, so it no longer narrows anything. Do not remove it on the strength of that: it is
+what makes the guarantee hold regardless of how the index was built.
+
 ### Fan-out and attribution
 
 A posting credits its `supervisor`. A publication credits **every** entry in its
@@ -131,5 +139,12 @@ serves fake results.
 - **`department` matching is exact-string.** `parsing/` never populates the field
   from free text today, so the filter is effectively dormant; it will need
   normalisation (aliases, abbreviations) before it is useful.
-- The posting half of the index is synthetic sample data, so `has_open_position`
-  is not yet meaningful against real UZH postings.
+- **`posting_count` is a fact about this query, not about the person.** It counts
+  thesis postings retrieved for someone in this result set. The posting query is
+  unthresholded -- it returns the nearest `top_k` postings whatever their distance
+  -- so 0 means none of that person's reached the top-k, never that they have no
+  open position. The renderers therefore print a posting clause only when it is
+  non-zero and **must stay that way**: the earlier "no open position" text became
+  "not currently accepting new students" about a named academic in the LLM's prose
+  (see [`../../../docs/example-run.md`](../../../docs/example-run.md)). No scraper
+  exists either, so against a `--source db` index it is 0 for everyone.

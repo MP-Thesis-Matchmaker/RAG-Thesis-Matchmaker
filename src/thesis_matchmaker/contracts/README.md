@@ -31,7 +31,7 @@ Pure data. No I/O, no business logic, no imports from sibling packages.
 | `ThesisPosting` | `sources.py` | One scraped open thesis position: `id`, `title`, `description`, `supervisor`, `department`, `degree_level`, `keywords`, `language`, `url`, `scraped_at`. |
 | `ParsedQuery` | `retrieval.py` | A student's free-text interest turned into structure: `topics`, `keywords`, `degree_level`, `department`, `raw_query`. |
 | `Evidence` | `retrieval.py` | One citable item backing a recommendation: `source_type` (`publication` \| `thesis_posting`), `source_id`, `title`, `url`, `year`. |
-| `SupervisorMatch` | `retrieval.py` | One ranked person: `supervisor`, `department`, `score`, `matched_topics`, `publication_count`, `has_open_position`, `evidence[]`. |
+| `SupervisorMatch` | `retrieval.py` | One ranked person: `supervisor`, `department`, `score`, `matched_topics`, `publication_count`, `posting_count`, `evidence[]`. |
 
 All six are re-exported from `contracts/__init__.py`, so
 `from thesis_matchmaker.contracts import ZoraRecord` is the intended import path.

@@ -30,6 +30,32 @@ python -m thesis_matchmaker.zora.harvest --mode incremental
 `--since <ISO date>` narrows a **full** harvest to items accessioned on or after that date. It is
 ignored in incremental mode, which always uses the `harvest_state` watermark.
 
+## Replaying a harvest without re-fetching
+
+Every run writes its records to `data/raw/<timestamp>_<mode>.jsonl` **before** touching Postgres.
+That ordering is what makes a failed write cheap to recover from: the two hours of ZORA requests are
+already on disk, so replay the dump instead of repeating them.
+
+```bash
+python -m thesis_matchmaker.zora.harvest --mode full \
+    --from-dump data/raw/20260101T120000Z_full.jsonl
+```
+
+The records in a dump were already normalized at fetch time, so a replay re-runs only the second
+half of the pipeline — schema validation, upsert, prune, retention check, watermark. Consequences
+worth knowing:
+
+- **No ZORA API token is required.** No client is built, so `ZORA_UZH_API_KEY` can be unset.
+- **No second dump is written.** The source file already is the cache; copying it under a new
+  timestamp would only make it ambiguous which one to replay next.
+- **`--since` is ignored** (with a warning). Whatever filter produced the dump was applied when it
+  was fetched; the flag cannot retroactively narrow a file.
+- **`--mode full` still prunes.** A replayed full harvest is treated as an authoritative snapshot
+  exactly like a fetched one, so publications absent from the dump are deleted — subject to the
+  same retention rail.
+- **`--limit` still applies**, which makes it a fast way to smoke-test the write path against a
+  scratch database.
+
 ## Scheduled harvest (production)
 
 A scheduled harvest is one container invocation with a `--mode` flag — nothing more. The timing

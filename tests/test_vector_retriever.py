@@ -83,7 +83,7 @@ def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> Non
     matches = retriever.retrieve(query, top_k=3)
     assert matches
     assert matches[0].supervisor == "Prof. A. Müller"
-    assert matches[0].has_open_position is True
+    assert matches[0].posting_count == 1
     assert matches[0].publication_count >= 1
 
 
@@ -98,7 +98,7 @@ def test_degree_level_filter_narrows_postings(retriever: VectorRetriever) -> Non
     query = ParsedQuery(topics=["anything at all"], degree_level="phd")
     matches = retriever.retrieve(query, top_k=5)
     for match in matches:
-        assert match.has_open_position is False
+        assert match.posting_count == 0
 
 
 def test_evidence_points_back_to_source_ids(retriever: VectorRetriever) -> None:

@@ -31,12 +31,15 @@ def _print_matches(matches: list[SupervisorMatch]) -> None:
         print("no matches.")
         return
     for rank, m in enumerate(matches, start=1):
-        position = "open position" if m.has_open_position else "no open position"
         print(f"{rank}. {m.supervisor}  (score {m.score:.2f})")
         if m.department:
             print(f"   {m.department}")
         topics = ", ".join(m.matched_topics) or "n/a"
-        print(f"   topics: {topics}  |  {m.publication_count} papers  |  {position}")
+        # Silent on zero, for the reason spelled out in synthesis/template.py.
+        details = [f"topics: {topics}", f"{m.publication_count} papers"]
+        if m.posting_count:
+            details.append(f"{m.posting_count} open postings")
+        print("   " + "  |  ".join(details))
         for e in m.evidence:
             print(f"     - {e.title}")
 
@@ -66,10 +69,17 @@ def _run_index(settings: Settings, args: argparse.Namespace) -> None:
     result = indexer.run(reader)
     print(
         f"index run complete: embedded={result.embedded} skipped={result.skipped} "
-        f"deleted={result.deleted} invalid_lines={result.invalid_lines}"
+        f"deleted={result.deleted} invalid_lines={result.invalid_lines} "
+        f"truncated={result.truncated}"
     )
     print(f"source: {reader.label}")
     print(f"model: {indexer.embedder.model_name} ({indexer.embedder.dimensions} dimensions)")
+    window = indexer.embedder.max_seq_length
+    if window is not None:
+        print(
+            f"token window: {window} tokens "
+            f"(truncated {result.truncated} of {result.embedded} embedded)"
+        )
 
 
 def _run_match(settings: Settings, args: argparse.Namespace) -> None:

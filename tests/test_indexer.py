@@ -116,3 +116,118 @@ class _RenamedEmbedder(HashEmbedder):
     @property
     def model_name(self) -> str:
         return "some-other-model"
+
+
+class _CappedEmbedder(HashEmbedder):
+    """Same model name and width, different token window."""
+
+    @property
+    def max_seq_length(self) -> int | None:
+        return 512
+
+
+class _TruncatingEmbedder(HashEmbedder):
+    """Reports one truncated document per call, so the counter can be checked."""
+
+    @property
+    def last_truncated(self) -> int:
+        return 1
+
+
+class _FailsOnSecondChunk(InMemoryVectorStore):
+    """Dies mid-run, so the committed-so-far guarantee can be checked."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.upserts = 0
+
+    def upsert(self, documents, vectors) -> None:
+        self.upserts += 1
+        if self.upserts == 2:
+            raise RuntimeError("connection lost")
+        super().upsert(documents, vectors)
+
+
+def test_chunk_size_does_not_change_the_outcome(tmp_path: Path) -> None:
+    """Chunking is a memory bound, not a semantic one, so the counts must match."""
+    publications = [_publication(f"zora:{i}") for i in range(5)]
+    _write_sources(tmp_path / "src", publications, [_posting()])
+
+    outcomes = []
+    for chunk_size in (1, 2, 1000):
+        fresh = InMemoryVectorStore()
+        result = Indexer(embedder=HashEmbedder(), store=fresh, chunk_size=chunk_size).run(
+            JsonlSourceReader(tmp_path / "src")
+        )
+        outcomes.append((result.embedded, result.skipped, result.deleted))
+        assert len(fresh.existing_hashes()) == 6
+    assert outcomes == [(6, 0, 0)] * 3
+
+
+def test_invalid_lines_counted_after_the_stream_is_drained(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    """A reader counts bad lines as it yields, so the total is only final at the end."""
+    sources = tmp_path / "src"
+    _write_sources(sources, [_publication()], [])
+    with (sources / "publications.jsonl").open("a") as f:
+        f.write("{not valid json\n")
+
+    result = Indexer(embedder=HashEmbedder(), store=store, chunk_size=1).run(
+        JsonlSourceReader(sources)
+    )
+    assert result.embedded == 1
+    assert result.invalid_lines == 1
+
+
+def test_removed_records_still_detected_when_chunked(tmp_path: Path) -> None:
+    """Deletion needs the complete id set, which only exists after the last chunk."""
+    store = InMemoryVectorStore()
+    _write_sources(tmp_path / "src", [_publication(f"zora:{i}") for i in range(4)], [])
+    Indexer(embedder=HashEmbedder(), store=store, chunk_size=1).run(
+        JsonlSourceReader(tmp_path / "src")
+    )
+    _write_sources(tmp_path / "src", [_publication("zora:0")], [])
+    result = Indexer(embedder=HashEmbedder(), store=store, chunk_size=1).run(
+        JsonlSourceReader(tmp_path / "src")
+    )
+    assert result.deleted == 3
+
+
+def test_truncated_is_summed_across_chunks(tmp_path: Path, store: InMemoryVectorStore) -> None:
+    _write_sources(tmp_path / "src", [_publication(f"zora:{i}") for i in range(4)], [])
+    result = Indexer(embedder=_TruncatingEmbedder(), store=store, chunk_size=2).run(
+        JsonlSourceReader(tmp_path / "src")
+    )
+    assert result.embedded == 4
+    assert result.truncated == 2  # two chunks, one reported truncation each
+    manifest = store.read_manifest()
+    assert manifest is not None
+    assert manifest.truncated_docs == 2
+
+
+def test_interrupted_run_keeps_earlier_chunks_and_resumes(tmp_path: Path) -> None:
+    """The resumability store.py documents, which the eager build could not deliver."""
+    _write_sources(tmp_path / "src", [_publication(f"zora:{i}") for i in range(4)], [])
+    store = _FailsOnSecondChunk()
+
+    with pytest.raises(RuntimeError, match="connection lost"):
+        Indexer(embedder=HashEmbedder(), store=store, chunk_size=2).run(
+            JsonlSourceReader(tmp_path / "src")
+        )
+    assert len(store.existing_hashes()) == 2
+
+    resumed = Indexer(embedder=HashEmbedder(), store=store, chunk_size=2).run(
+        JsonlSourceReader(tmp_path / "src")
+    )
+    assert resumed.embedded == 2  # only the half that never landed
+    assert resumed.skipped == 2
+
+
+def test_changed_token_window_is_refused(tmp_path: Path, store: InMemoryVectorStore) -> None:
+    """The window changes every vector but no content hash, so a re-index would skip all."""
+    _write_sources(tmp_path / "src", [_publication()], [])
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+
+    with pytest.raises(ModelMismatchError, match="token window"):
+        Indexer(embedder=_CappedEmbedder(), store=store).run(JsonlSourceReader(tmp_path / "src"))

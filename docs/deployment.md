@@ -1,9 +1,17 @@
 # Deployment
 
-Target environment, confirmed with UZH Central Informatics on 2026-08-20:
+Target environment, confirmed with UZH Central Informatics on 2026-08-20 and
+then against the ZI Container Services handbook
+(<https://docs.cs.zi.uzh.ch/books/benutzerhandbuch>, UZH VPN only) on 2026-08-21:
 
-- **Kubernetes cluster**, pulling images from a **private UZH Harbor registry**
-- **Postgres** server with the **pgvector** extension available
+- **Kubernetes cluster** run by the ZI team *Cloud & Container Services* (CCS),
+  pulling images from the **private Harbor registry** at `registry.cs.zi.uzh.ch`
+- **Postgres** reached as a ZI service at `postgres.uzh.ch` — running databases
+  *inside* the cluster is explicitly discouraged, because the only storage class
+  is NFS-backed and its I/O characteristics do not suit a database
+- **Deployment is GitOps via ArgoCD**, not `kubectl apply`: Argo continuously
+  syncs `*.yaml` in the root of a GitLab repo, and each file declares
+  `appComponents` pointing at CCS's shared `general_helm_chart`
 
 Everything below that is not yet filled in is marked `TODO(ci)` — a value we do
 not have yet. Nothing here is guessed: an unverified registry hostname or DSN in
@@ -15,12 +23,14 @@ a committed manifest is worse than an obvious blank.
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
 | `thesis_matchmaker.zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — needs an `[embeddings]` image |
-| `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — needs an `[mcp]` image |
+| `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — image exists (`docker/indexer/`) |
+| `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`docker/serving/`) |
 
-The last two rows are the plan, not the state. See **Images** below for what
-blocks them, and [`k8s/README.md`](../k8s/README.md) for what the committed
-manifests still need filled in.
+The last two rows now lack only a manifest. What used to block them — no image
+installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
+the committed manifests are in the wrong format for this cluster (see
+**Deploying** below) and that two quota raises are outstanding.
+See [`k8s/README.md`](../k8s/README.md).
 
 Harvesting is a **cluster** concern. It is never run in GitHub Actions, and
 harvest output is never committed to git — the repository is source code, not a
@@ -47,8 +57,8 @@ done yet.
 | Image | Role | Runtime | Extras it needs | Exists |
 |---|---|---|---|---|
 | `docker/zora/` | ZORA harvester | `CronJob` | none | **yes** |
-| `docker/indexer/` | build the vector index | `CronJob` | `[embeddings]` | no |
-| `docker/serving/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | no |
+| `docker/indexer/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
+| `docker/serving/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
 | — | posting scraper | `CronJob` | its own set | no — still a separate repo |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
@@ -63,6 +73,34 @@ embedded with the same model as the corpus — so splitting them buys lifecycle
 separation rather than size: one is a batch job that writes and exits, the other is
 a long-lived read-only process. That is reason enough to version and roll them
 independently.
+
+**Both install a CPU-only torch, and that is a lock decision rather than a
+Dockerfile one.** PyPI's default linux `torch` wheel is the CUDA build — a wheel
+tag cannot express "linux, but no accelerator" — which drags in roughly 1.55 GB of
+`nvidia-*` and `triton`. CUDA wheels are a *capability*, not a speedup: with no
+GPU scheduled, torch runs on CPU at identical speed either way, and the shared
+Helm chart exposes no GPU, `nodeSelector` or `tolerations` key at all, so nothing
+we deploy can ever land on an accelerator. `pyproject.toml` therefore pins the
+`pytorch-cpu` index behind a `sys_platform == 'linux'` marker; macOS never matches
+it, so Apple Silicon keeps the stock wheel and MPS keeps working locally. Measured
+effect: the CPU pin alone drops the linux resolution from 132 packages to 114
+(capping `mcp` below 2.0 took it to 109), and an
+`linux/amd64` indexer image weighs **~1.6 GB unpacked / ~0.45 GB compressed**
+instead of the several GB a CUDA build produces. Compressed is the number that
+matters for the Harbor quota and for pull time, since that is what a registry
+stores; `docker images` reports the unpacked figure, which is why the two disagree.
+
+**The model weights are not baked in.** `BAAI/bge-m3` is 2.27 GB and publishes no
+safetensors, so it is a single `pytorch_model.bin`. Both images set
+`HF_HOME=/var/cache/huggingface` and expect that path to be an **RWX** PVC shared
+between the indexer and the serving pod, so the download happens once. Baking it
+in would re-push 2.27 GB of unchanged weights on every dependency rebuild. Cluster
+egress to the Internet is permitted, so the one-time fetch works.
+
+**Both are multi-stage**, copying only `/app/.venv` into a fresh
+`python:3.12-slim`, which keeps `uv` and the build context out of the artefact.
+`docker/zora/Dockerfile` is still single-stage; on a 426 MB image the difference is
+cosmetic, on a 1.95 GB one it is not.
 
 **`init-db` shares the harvester image**, and `docker-compose.yml` builds it for
 both. That is correct rather than a shortcut: `init-db` is not a role, it is this
@@ -95,6 +133,62 @@ path rewritten, and the whole test suite relocated.
 the seam between them is a guess; with two real producers it is observable. Not
 before.
 
+## Deploying
+
+**We do not run `kubectl apply`.** ArgoCD watches a GitLab repository and syncs
+whatever is in it, continuously. Every `*.yaml` in that repo's root becomes an
+ArgoCD Application; a `data/` folder holds ConfigMaps.
+
+The file format is not a raw Kubernetes manifest. It is a list of
+`appComponents`, each naming CCS's shared chart:
+
+```yaml
+appComponents:
+- name: thesis-matchmaker-indexer
+  sources:
+    - repoURL: https://gitlab.uzh.ch/zi-container-services/helm-charts.git
+      helmpath: "general_helm_chart"
+      targetRevision: dev
+      values: |-
+        image: registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
+        ...
+```
+
+**This is why the manifests in [`k8s/`](../k8s/) cannot be used as they stand** —
+they are raw `Job` and `CronJob` objects, which is a different thing from chart
+values. Converting them is a task of its own; the value keys are known:
+
+| Need | Chart key |
+|---|---|
+| the harvest and index CronJobs | `cronJob.enabled`, `.schedule`, `.backoffLimit`, `.restartPolicy` |
+| the `init-db` one-shot | `job.enabled`, `.backoffLimit`, `.restartPolicy` |
+| the model cache | `pvc.enabled`, `.mountPath`, `.storage` |
+| scratch space | `emptyDir.dirs[].mountPath`, `.sizeLimit`, `.sharedMountPath` |
+| **mandatory** requests/limits | `resources.requests/limits.{cpu,memory}` |
+| secrets from Vault | `vault.vso.{name,path,mount}`, `vaultEnv` |
+| the registry credential | `vault.dockerPullSecret`, `serviceAccount.imagePullSecretsName` |
+| overriding an image entrypoint | `shellCommand.enabled`, `.command`, `.args` |
+| non-root UID | `securityContext.runAsUser` |
+| exposing the MCP endpoint | `httproute.enabled`, `.hosts[]` |
+| Prometheus scraping | `serviceMonitor.enabled`, `.path`, `.interval` |
+
+Note **`httproute`, not `ingress`**: the handbook documents a migration from
+Ingress to Gateway API `HTTPRoute`, and CCS's own newer examples use the latter.
+
+### Admission policies
+
+Kyverno runs in the cluster. The **enforced** set is Pod Security Standards
+baseline — no privileged containers, no host namespaces, no `hostPath`, no host
+ports, no added capabilities, seccomp and AppArmor restrictions. Our images
+satisfy all of it without doing anything special.
+
+Four policies that would bite are **Audit** only, meaning they report rather than
+reject: `require-run-as-nonroot`, `require-run-as-non-root-user`,
+`require-ro-rootfs`, and `require-requests-limits`. Do not read that as licence to
+ignore them — `docker/indexer/` and `docker/serving/` both run as UID 10001
+anyway, and requests/limits are separately mandatory because of the
+ResourceQuota, whatever Kyverno's verdict.
+
 ## Local equivalent
 
 `docker-compose.yml` mirrors the cluster: a `pgvector/pgvector` container, the
@@ -116,14 +210,21 @@ two schedules as the CronJobs:
 
 ## Configuration
 
+Secrets come from **Vault**, not from `kubectl create secret`. The shared chart
+exposes three routes: `vault.vso.{name,path,mount}` materialises a
+`VaultStaticSecret`, `vaultEnv` maps its keys onto environment variables, and
+`vault.injector` writes a file into the pod (an `.env`, say). `vault.dockerPullSecret`
+covers the registry credential.
+
 | Variable | Purpose | Source in the cluster |
 |---|---|---|
-| `DATABASE_URL` | Postgres DSN | `Secret` — `TODO(ci)` |
-| `ZORA_UZH_API_KEY_FILE` | ZORA API token path | `Secret`, mounted as a file |
+| `DATABASE_URL` | Postgres DSN, pointing at `postgres.uzh.ch` | Vault via `vaultEnv` — `TODO(ci)` |
+| `ZORA_UZH_API_KEY_FILE` | ZORA API token path | Vault, mounted as a file |
 | `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
-| `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | `Secret` |
-| `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | `ConfigMap` |
-| `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | `ConfigMap` |
+| `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
+| `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
+| `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | baked into `docker/serving/` |
+| `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into both `[embeddings]` images |
 
 ## Open questions for Central Informatics
 
@@ -140,27 +241,31 @@ Blocking for deployment, not for local development against a Postgres container.
    fewer rows than asked for, so on an older pgvector the retrieval quality
    depends entirely on the partial indexes in `schema.sql`. The code tolerates
    its absence; the evaluation numbers would not be comparable.
-3. **Own database, or a schema inside a shared one?** Affects migration scoping
-   and `search_path`.
+3. **Own database, or a schema inside a shared one** on `postgres.uzh.ch`? Affects
+   migration scoping and `search_path`.
 4. **Connection limit** for our role — sets the `ConnectionPool` max size.
 5. **TLS**: required `sslmode`, and any CA certificate we must mount.
 6. **How credentials reach the pod**: plain k8s `Secret`, or an external secret
    store / sealed-secrets setup.
-7. **Harbor**: registry hostname, project name, robot-account credentials, and
-   whether pushes come from GitHub Actions (needs egress plus stored secrets) or
-   from a UZH-side runner.
+7. **Harbor project.** The hostname is known (`registry.cs.zi.uzh.ch`); what is
+   not is our project name, a robot account for pulls, and a quota above the 10 GB
+   default. Also whether pushes should come from a GitLab pipeline (the registry is
+   reachable from `gitlab.uzh.ch` runners) or by hand.
 8. **Backup and retention** policy for the harvested publication data — this is
    personal data (researcher names and affiliations), so retention is a legal
    question as much as an operational one.
-9. **Storage for the raw-response cache.** Each harvest writes one JSONL dump so
-   ingestion is reproducible without re-hitting ZORA. The committed CronJobs mount
-   an `emptyDir`, which discards it on pod exit — so that property is currently
-   lost in the cluster. Is a PVC available, and under which storage class? The
-   alternative is moving the cache into Postgres as a `jsonb` table and dropping
-   the volume question entirely.
-10. **Resource requests and limits.** Unset on every container, because nothing
-   has been profiled in a cluster. Is there a `LimitRange` in the namespace, and
-   what is a reasonable ceiling for a job that processes ~22,541 records?
+9. **Storage for the raw-response cache.** Answered in part: PVCs are available on
+   the `idnas21zb.uzh.ch` storage class (NFS; RWO/RWX/ROX; `Delete`, with a
+   `retain.` variant), and the namespace allows 10 PVCs totalling 50 Gi. So the
+   `emptyDir` in the committed CronJobs is now a choice rather than a limitation
+   and should become a PVC. Still open is whether we would rather move the cache
+   into Postgres as a `jsonb` table and drop the volume entirely.
+10. **Two quota raises.** The default namespace quota is `limits.cpu: 2`,
+   `limits.memory: 4Gi`, `pods: 10`. bge-m3 is a 568M-parameter model held in
+   memory, so an always-on serving pod and a scheduled indexer pod cannot both fit
+   under a 4 Gi *namespace-wide* ceiling. The Harbor project's 10 GB is the second.
+   Both go to `container.services.support@zi.uzh.ch`, and both want a measured
+   number rather than an estimate — see **Known limitations**.
 
 ## Known limitations of our own tooling
 
@@ -172,31 +277,138 @@ Not questions for Central Informatics — things we owe ourselves.
   the schema's identity*: editing a comment demands `init-db --reset`, which DROPs
   every table. Hashing normalized SQL instead would fix it, and costs one reset, so
   it should ride along with a reset that is happening anyway.
-- **No image is pushed anywhere automatically**, and no manifest is applied
-  automatically. Both are deliberate until Harbor exists, and both are manual work
-  in the meantime.
+- **`resources` are unset on every committed container, and in this cluster that
+  means the pods do not start.** This was written up as a considered trade-off —
+  better BestEffort than an invented limit that OOM-kills a harvest — and that
+  reasoning is simply wrong here. The namespace carries a ResourceQuota, and the
+  handbook is blunt about the consequence: "Muss bei jedem Pod die Ressourcen für
+  memory und cpu angegeben werden, ansonsten wird dieser nicht gestartet!" A pod
+  without requests and limits is rejected, not merely deprioritised. The shared
+  chart sets defaults via `resources.requests/limits.{cpu,memory}`, and those
+  defaults are meant to be adjusted rather than accepted. Fixing this is part of
+  converting `k8s/` to the Argo format.
+- **No image is pushed anywhere automatically.** Deliberate until the Harbor
+  project exists, and manual work in the meantime. Manifests are a different
+  story now — Argo applies them continuously once they are in the GitLab repo, so
+  "no manifest is applied automatically" stops being true the moment we commit one
+  there.
 - **The Python version the image runs is never tested.** CI runs the suite on 3.11;
-  the image is `python:3.12-slim`; `requires-python` says only `>=3.11`. `uv.lock`
+  every image is `python:3.12-slim`; `requires-python` says only `>=3.11`. `uv.lock`
   resolves for both, so nothing is broken today — but the interpreter production
-  actually uses is the one no test has ever executed against. Closing it means
-  either a 3.12 leg in the CI matrix or agreeing on a single version everywhere.
-  Left open deliberately: picking the target interpreter is a deployment decision,
-  not a tooling one.
+  actually uses is the one no test has ever executed against. There is now a reason
+  to prefer 3.12 rather than leave it open: the UZH side standardises on it (the
+  `ai-buddy` evaluation repo builds from `ghcr.io/astral-sh/uv:python3.12-bookworm`
+  onto `python:3.12-slim`). Closing it means a 3.12 leg in the CI matrix, or 3.12
+  everywhere.
+- **A full index takes the better part of a week under the default quota.**
+  Measured on an Apple M-series laptop, in the `docker/indexer/` image, embedding
+  the 50 checked-in samples with real `BAAI/bge-m3` and extrapolating linearly to
+  the **214,685**-row corpus the 2026-08-21 full harvest produced:
+
+  | Container CPU | torch threads | docs/s | 214,685 docs | Peak RSS |
+  |---|---|---|---|---|
+  | unrestricted (18 cores) | default (18) | 2.05 | ~29 h | 3.55 GiB |
+  | `--cpus 2` | default (18), before the fix | 0.20 | **~12.1 days** | 3.65 GiB |
+  | `--cpus 2` | `OMP_NUM_THREADS=2` set externally | 0.42 | ~5.9 days | 3.62 GiB |
+  | `--cpus 2` | **detected from the quota, empty env** | 0.37 | **~6.7 days** | 3.61 GiB |
+
+  **~57% of that work is discarded at query time.** `indexing/sources.py`'s
+  `_SELECT_PUBLICATIONS` has no `WHERE` clause, so every publication is embedded,
+  while `retrieval/`'s pre-filter only ever returns the ~91,700 with a UZH author.
+  Restricting the indexing query would cut a full index roughly in half. It is a
+  behaviour change — those rows would stop being searchable at all, which matters
+  if the pre-filter is ever relaxed — so it is not done here.
+
+  Two things follow. First, **peak RSS is ~3.6 GiB whatever the CPU budget**, and
+  the namespace ceiling is 4 Gi *in total* — so one indexer pod all but exhausts
+  the quota on its own, and an always-on serving pod holding its own copy of the
+  model cannot coexist with it. That is the number the quota request rests on.
+
+  Second, **a Kubernetes CPU limit does not reduce `os.cpu_count()`**. It is a CFS
+  bandwidth quota, so torch sees every core on the node and starts that many
+  threads to contend over a 2-core budget — measured at 18 threads under
+  `--cpus 2`, and `os.sched_getaffinity()` reports 18 as well, so nothing in the
+  standard library exposes the real allowance.
+
+  **This is now handled in code, so no manifest has to remember it.**
+  `indexing/embedder.cpu_limit()` reads `/sys/fs/cgroup/cpu.max` (falling back to
+  the v1 `cpu.cfs_quota_us`/`cpu.cfs_period_us` pair) and
+  `SentenceTransformerEmbedder._load()` applies it — to `OMP_NUM_THREADS` before
+  the first torch import, because OpenMP reads that at library init, and to
+  `torch.set_num_threads()` after. An `OMP_NUM_THREADS` the operator set is never
+  overridden. The last table row is that fix with an empty environment: 1.8× over
+  the unfixed run, about 12% behind pinning the variable externally, which is
+  within single-run variance on a laptop and not worth chasing. It does not make a
+  full index cheap — 6.7 days is not 12.1, but neither is a working schedule; the
+  quota raise is what actually fixes this.
+
+  All of these are laptop numbers extrapolated from 50 documents to 214,685 — four
+  orders of magnitude, linearly, where a real run has batch and cache effects.
+  Present them to CCS with that method attached; do not restate them as cluster
+  measurements. The honest summary is "days, not hours, and the CPU limit is the
+  dominant term".
+- **The `[mcp]` extra now requires SDK 2.x, and the adapter was ported to it.**
+  `mcp>=1.2` had resolved to **2.0.0**, which removed `FastMCP`, so
+  `thesis-matchmaker-mcp` could not start at all — CI never installs the extra, so
+  nothing caught it until an image was built. The adapter uses `MCPServer` from
+  `mcp.server.mcpserver`, and passes `host`/`port` to `run()` instead of poking
+  `mcp.settings`. The wire format was checked before and after: tool names,
+  descriptions, output schemas and the `tools/call` response shape are unchanged.
+  One field moved on purpose — `serverInfo.version` was reporting the SDK's version
+  (`1.29.0`) and now reports the distribution's (`0.0.1`).
+  **The module is still untested**, which is how this got missed; see
+  [`adapters/README.md`](../src/thesis_matchmaker/adapters/README.md).
 
 ## Registry
 
-Each image is built from its own `docker/<role>/Dockerfile` (see **Images**).
-Only the harvester's exists so far. Until Harbor details exist, it is built and
-pushed by hand:
+The private registry is **Harbor at `https://registry.cs.zi.uzh.ch/`**, run
+on-premises by CCS. It is reachable over HTTPS from Datacenter Zones 1 and 2, the
+UZH VPN, and `gitlab.uzh.ch` including its runners — so a GitLab pipeline can push
+to it. Images are scanned automatically once a day with Trivy, which is what
+satisfies the Compliance Policy's pre-deployment scan requirement without any
+pipeline work on our side.
+
+Two things about it are not negotiable and one is a real constraint:
+
+- **Self-built UZH applications must live in a private registry.** The policy
+  lists exactly two as trusted: `registry.cs.zi.uzh.ch` and `cr.gitlab.uzh.ch`.
+  GHCR is neither, which is why the deleted build-and-push workflow was pointed at
+  the wrong place — not merely inconvenient, non-compliant.
+- **Projects are created only by admins.** Request one by mail to
+  `container.services.support@zi.uzh.ch`. Nothing can be pushed before the project
+  exists. Ask for a **project**, not a repository: Harbor holds one repository per
+  image and we have four roles.
+- **A new project has a 10 GB quota by default.** At ~0.45 GB compressed per
+  image, two roles leave room for roughly twenty tags between them — workable, but
+  worth knowing before tagging every commit, and Harbor does not garbage-collect
+  old tags on its own. Raising the quota needs an admin.
+
+`cr.gitlab.uzh.ch` is equally trusted, and is what CCS's own workshop example
+uses. It was not chosen because the policy makes GitLab Container Scanning
+*mandatory and ours to configure* there — unconfigured, we would be out of
+compliance rather than merely unscanned.
+
+Until the project exists, images are built and pushed by hand:
 
 ```bash
-docker build -f docker/zora/Dockerfile -t TODO(ci)/TODO(ci)/thesis-matchmaker:<tag> .
-docker push TODO(ci)/TODO(ci)/thesis-matchmaker:<tag>
+docker build -f docker/indexer/Dockerfile \
+  -t registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha> .
+docker push registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
 ```
 
-One Harbor repository per image, so the request to Central Informatics should ask
-for a **project** rather than a single repository.
+Tag with the full commit SHA rather than a version: that is what CCS's examples
+do, and it is what makes an Argo app file name one exact artefact.
 
-There is deliberately **no** build-and-push workflow in `.github/workflows/`. The
-previous one pushed to GHCR, which is the wrong registry for this deployment; a
-replacement gets written when the values above are known, not before.
+**Build for `linux/amd64` explicitly** when building on an Apple Silicon machine.
+`docker build` defaults to the host architecture, and an arm64 image will not run
+on the cluster's nodes: `docker buildx build --platform linux/amd64 --load ...`.
+
+### Base images
+
+Compliance §2.3 asks for "offizielle und gehärtete Basis-Images" and recommends
+**Alpine** or **Red Hat UBI**. All four of our Dockerfiles use
+`python:3.12-slim` instead. That is defensible but is a deliberate deviation worth
+stating rather than hiding: the image is official with verifiable provenance
+(§2.1.1), and **Alpine is not available to us at all** for the two embeddings
+images, because Alpine is musl-based and torch publishes no musl wheels. A UBI
+Python base would satisfy the recommendation directly and has not been evaluated.

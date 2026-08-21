@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
-from thesis_matchmaker.indexing.documents import posting_to_document, zora_to_document
+from thesis_matchmaker.indexing.documents import (
+    posting_to_document,
+    prepare_text,
+    zora_to_document,
+)
 
 
 def _zora(**overrides) -> ZoraRecord:
@@ -89,3 +93,36 @@ def test_content_hash_stable_and_sensitive() -> None:
     changed = zora_to_document(_zora(abstract="Different abstract."))
     assert a.content_hash == b.content_hash
     assert a.content_hash != changed.content_hash
+
+
+def test_prepare_text_strips_tags_and_collapses_whitespace() -> None:
+    assert prepare_text("<p>Dense   retrieval</p>\n\n<br/>for German") == (
+        "Dense retrieval for German"
+    )
+
+
+def test_prepare_text_unescapes_entities() -> None:
+    assert prepare_text("Fish &amp; Chips &lt;3") == "Fish & Chips <3"
+
+
+def test_prepare_text_does_not_strip_tags_it_created_by_unescaping() -> None:
+    """`&lt;p&gt;` is text *about* a tag; unescaping must not turn it into one."""
+    assert prepare_text("the &lt;p&gt; element") == "the <p> element"
+
+
+def test_prepare_text_of_markup_only_is_empty() -> None:
+    assert prepare_text("<div>\n  <br/>\t</div>") == ""
+
+
+def test_markup_only_part_does_not_leave_a_blank_line() -> None:
+    """Preparation happens before the emptiness filter, so the part drops out."""
+    doc = zora_to_document(_zora(abstract="<br/>", keywords=[]))
+    assert doc.text == "Dense Retrieval for German Text"
+
+
+def test_prepared_text_is_what_gets_hashed() -> None:
+    """Two records differing only in markup are the same document to the index."""
+    plain = zora_to_document(_zora(abstract="We study dense retrieval."))
+    marked = zora_to_document(_zora(abstract="<p>We  study   dense retrieval.</p>"))
+    assert plain.text == marked.text
+    assert plain.content_hash == marked.content_hash

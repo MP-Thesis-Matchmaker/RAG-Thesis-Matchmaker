@@ -58,6 +58,54 @@ services:
         condition: service_healthy
     profiles: ["manual"]
 
+  # One-shot, like the harvester: it runs, writes, and exits. In the cluster this
+  # is a CronJob fired after each harvest. --source db is the image default, so a
+  # bare `docker compose run --rm indexer` indexes the harvested publication
+  # table; pass `--source data/samples` to index the 50 checked-in samples
+  # instead (the ./data mount below is what makes that path exist in-container).
+  #
+  # EMBEDDING_MODEL is deliberately NOT set here. The image exists to run the
+  # real model, so it inherits config.py's BAAI/bge-m3 default; set
+  # EMBEDDING_MODEL=hash-fake on the command line for a fast structural check
+  # that skips the 2.27 GB download.
+  indexer:
+    build:
+      context: .
+      dockerfile: docker/indexer/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    volumes:
+      - ./data:/app/data:ro
+      # The compose stand-in for the RWX PVC: the model downloads once and
+      # survives `--rm`, instead of being re-fetched on every run.
+      - hfcache:/var/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # Long-lived, unlike every other service here: a Deployment plus a Service in
+  # the cluster. Shares hfcache with the indexer on purpose -- the query has to
+  # be embedded with the same model as the corpus, and that sharing is why the
+  # cluster storage class has to support RWX.
+  #
+  # The image already sets MCP_HOST=0.0.0.0; binding to config.py's 127.0.0.1
+  # default would make the port unreachable from outside the container.
+  serving:
+    build:
+      context: .
+      dockerfile: docker/serving/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    ports:
+      - "8000:8000"
+    volumes:
+      - hfcache:/var/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
   # Don't forget to load the models:
   # docker compose exec ollama ollama pull qwen3:8b
   # docker compose exec ollama ollama pull qwen3-embedding:4b
@@ -71,3 +119,5 @@ services:
 volumes:
   pgdata:
   ollama:
+  # Shared by indexer and serving, mirroring the single RWX PVC in the cluster.
+  hfcache:

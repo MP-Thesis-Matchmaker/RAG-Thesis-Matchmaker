@@ -48,6 +48,36 @@ class Settings(BaseSettings):
     # without the model download).
     embedding_model: str = "BAAI/bge-m3"
 
+    # Token cap applied before embedding. bge-m3 ships max_seq_length 8192, which
+    # is not a free default: the attention buffer is batch x heads x seq^2, and
+    # sentence-transformers batches longest-first, so the single longest abstract
+    # in the corpus sets the size of the very first batch. At 8192 that batch asked
+    # for 88.77 GiB and the run died two seconds in.
+    #
+    # 1024 is measured, not guessed: over a 2% sample of the harvested corpus the
+    # token counts are p50=240, p95=632, p99=905, so 1024 truncates 0.69% of
+    # documents and costs 1% of the average document's tokens. 2048 would truncate
+    # only 0.04%, but its worst-case buffer is 4.29 GiB -- over the cluster's 4 GiB
+    # namespace quota on its own, before bge-m3's 2.27 GB of weights. That quota is
+    # what picks 1024.
+    #
+    # Changing this invalidates every vector in the index. It is recorded in the
+    # manifest and guarded there, because the cap changes embeddings WITHOUT
+    # changing content_hash, so a re-index would otherwise skip every document and
+    # leave a silently mixed-cap index.
+    embedding_max_seq_length: int = 1024
+
+    # Documents per forward pass. Bounds the transient attention buffer together
+    # with the cap above; it cannot substitute for it, since at 6822 tokens even a
+    # batch of 8 asks for 22 GiB.
+    embedding_batch_size: int = 16
+
+    # Documents embedded and committed per round trip. The indexer streams in
+    # chunks of this size rather than embedding the whole corpus before its first
+    # write, which is what keeps peak memory flat and makes an interrupted run
+    # resumable through the content-hash diff.
+    index_chunk_size: int = 1000
+
     # Postgres holding both the vector index and (from the ingestion work) the
     # harvested source rows. pgvector is a decided constraint, not a preference:
     # the deployment target is a UZH Kubernetes cluster against a managed
