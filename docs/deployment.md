@@ -83,7 +83,8 @@ Helm chart exposes no GPU, `nodeSelector` or `tolerations` key at all, so nothin
 we deploy can ever land on an accelerator. `pyproject.toml` therefore pins the
 `pytorch-cpu` index behind a `sys_platform == 'linux'` marker; macOS never matches
 it, so Apple Silicon keeps the stock wheel and MPS keeps working locally. Measured
-effect: the linux resolution drops from 132 packages to 114 packages, and an
+effect: the CPU pin alone drops the linux resolution from 132 packages to 114
+(capping `mcp` below 2.0 took it to 109), and an
 `linux/amd64` indexer image weighs **~1.6 GB unpacked / ~0.45 GB compressed**
 instead of the several GB a CUDA build produces. Compressed is the number that
 matters for the Harbor quota and for pull time, since that is what a registry
