@@ -26,10 +26,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "ruff>=0.6",
-]
 # Local embedding model (BGE-M3). Kept out of the default install because it
 # pulls in torch; CI and the fake embedder do not need it.
 embeddings = [
@@ -38,6 +34,17 @@ embeddings = [
 # MCP server adapter (FastMCP). Optional: only needed to run the tool server.
 mcp = [
     "mcp>=1.2",
+]
+
+# Test tooling is not an optional feature of the distribution -- nobody
+# installing thesis-matchmaker wants our test runner -- so it is a PEP 735
+# dependency group rather than an extra. `uv sync` installs it by default,
+# which makes that command the whole dev setup; the container image opts out
+# with --no-default-groups.
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
 ]
 
 [project.scripts]

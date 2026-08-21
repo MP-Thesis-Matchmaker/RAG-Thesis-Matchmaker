@@ -69,6 +69,14 @@ both. That is correct rather than a shortcut: `init-db` is not a role, it is thi
 same distribution applying its own schema, and it needs no extras. It moves to a
 shared image if `src/` is ever split.
 
+**Images install from `uv.lock`, never from version ranges.** The Dockerfile copies
+the lockfile in and runs `uv sync --locked --no-default-groups --no-editable`, so
+rebuilding the same commit gives the same dependency set, and the `dev` group —
+pytest, ruff — never reaches the artefact. uv itself is pinned in the
+`COPY --from=ghcr.io/astral-sh/uv:0.11.17` line, because it is the tool that reads
+the lock. That pin is a tag rather than a digest, which is a weaker guarantee than
+it looks: a re-pushed tag would go unnoticed.
+
 ### Why `src/` is still one tree
 
 Several images do not require several source trees: one distribution can produce
@@ -167,6 +175,13 @@ Not questions for Central Informatics — things we owe ourselves.
 - **No image is pushed anywhere automatically**, and no manifest is applied
   automatically. Both are deliberate until Harbor exists, and both are manual work
   in the meantime.
+- **The Python version the image runs is never tested.** CI runs the suite on 3.11;
+  the image is `python:3.12-slim`; `requires-python` says only `>=3.11`. `uv.lock`
+  resolves for both, so nothing is broken today — but the interpreter production
+  actually uses is the one no test has ever executed against. Closing it means
+  either a 3.12 leg in the CI matrix or agreeing on a single version everywhere.
+  Left open deliberately: picking the target interpreter is a deployment decision,
+  not a tooling one.
 
 ## Registry
 

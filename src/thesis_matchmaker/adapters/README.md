@@ -70,9 +70,9 @@ Everything else is inherited from whatever `Pipeline` builds — see
 ## Running it
 
 ```
-pip install -e ".[mcp]"
-thesis-matchmaker-mcp             # streamable HTTP on 127.0.0.1:8000/mcp
-thesis-matchmaker-mcp --stdio     # stdio, for the MCP inspector
+uv sync --extra mcp                       # add --extra dev too if you want the test tooling
+uv run thesis-matchmaker-mcp              # streamable HTTP on 127.0.0.1:8000/mcp
+uv run thesis-matchmaker-mcp --stdio      # stdio, for the MCP inspector
 ```
 
 The default is streamable HTTP because askUZH points its agent at a URL. `--stdio`
