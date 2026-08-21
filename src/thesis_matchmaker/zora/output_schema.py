@@ -1,6 +1,6 @@
 """
 The flat publication output contract — the primary deliverable of this
-pipeline. Each line of data/publications.jsonl matches this schema.
+pipeline. One `publication` row matches this schema.
 
 This is the SINGLE FILE you edit when the output shape needs to change.
 The Pydantic model defines what goes out; the to_output() function maps
@@ -84,7 +84,7 @@ def to_output(record: dict) -> dict:
 
 def validate_publications_jsonl(path: str) -> tuple[int, list[str]]:
     """
-    Validate every line of publications.jsonl against the schema.
+    Validate every line of a legacy publications.jsonl against the schema.
     @return: (number of valid records, list of error strings for invalid ones)
     """
 

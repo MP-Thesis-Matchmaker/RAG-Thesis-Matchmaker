@@ -64,7 +64,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
     st = state.load_state()
 
     # Determine the "since" filter.
-    # - incremental: always uses the watermark from state.json
+    # - incremental: always uses the watermark from harvest_state
     # - full: uses --since if provided, otherwise fetches everything
     if mode == "incremental":
         since = st.get("last_accessioned")
@@ -159,7 +159,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.since and args.mode == "incremental":
-        logger.warning("--since is ignored in incremental mode (uses state.json watermark)")
+        logger.warning("--since is ignored in incremental mode (uses the harvest_state watermark)")
 
     try:
         exit_code = run(args.mode, since_override=args.since, limit=args.limit)

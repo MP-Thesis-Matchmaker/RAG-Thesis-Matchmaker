@@ -1,13 +1,19 @@
 # ZORA Harvester
 
-The ZORA harvester fetches publication metadata from [ZORA](https://www.zora.uzh.ch) (UZH's institutional repository) and outputs clean, structured records for the Thesis Matchmaker RAG pipeline.
+The ZORA harvester fetches publication metadata from [ZORA](https://www.zora.uzh.ch) (UZH's
+institutional repository) and writes clean, structured rows into Postgres for the Thesis Matchmaker
+RAG pipeline.
 
 ## Quick Start
 
-### One-shot harvest (development)
+The harvester writes to the database, so the schema has to exist first:
 
 ```bash
-# Set your ZORA API token
+# Local Postgres with pgvector, plus the schema
+docker compose up -d postgres
+docker compose run --rm init-db
+
+export DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
 export PERSONAL_API_TOKEN_FILE=token.secret
 
 # Smoke test — fetch 5 records
@@ -16,57 +22,68 @@ python -m thesis_matchmaker.zora.harvest --mode full --limit 5
 # Full harvest (all of UZH, ~238K records, ~2 hours)
 python -m thesis_matchmaker.zora.harvest --mode full
 
-# Incremental harvest (new records since last run)
+# Incremental harvest (records accessioned since the watermark)
 python -m thesis_matchmaker.zora.harvest --mode incremental
 ```
 
-### Continuous scheduler (production)
+`--since <ISO date>` narrows a **full** harvest to items accessioned on or after that date. It is
+ignored in incremental mode, which always uses the `harvest_state` watermark.
+
+## Scheduled harvest (production)
+
+A scheduled harvest is one container invocation with a `--mode` flag — nothing more. The timing
+belongs to whatever runs the container, not to the application, so in the cluster it is a Kubernetes
+`CronJob` and locally it is the same invocation:
 
 ```bash
-python -m thesis_matchmaker.zora.scheduler
+docker compose run --rm harvester --mode incremental
 ```
 
-Runs forever, checking periodically whether a harvest is due. Handles SIGTERM/SIGINT gracefully.
+The schedules, and the two crontab lines that mirror them on a dev machine, are in
+[`deployment.md`](deployment.md) — they are not repeated here so there is one place to change them.
 
-**Environment variables:**
-
-| Variable | Default | Description |
-|---|---|---|
-| `HARVEST_HOUR_UTC` | `1` | Hour (UTC, 0–23) when harvests fire |
-| `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Day of week for the full harvest (0=Mon … 6=Sun) |
-| `POLL_INTERVAL_SECONDS` | `3600` | How often to check if a harvest is due |
+> **`src/thesis_matchmaker/zora/scheduler.py` is deprecated.** It is a long-running poll loop that
+> decided *when* to harvest from inside the process. That was the right answer while the only
+> alternative was a CI cron pushing data into git; it is redundant now that the cluster owns
+> scheduling, and its `_next_action` priority rule ("full wins when both are due") is expressed
+> declaratively by splitting the two CronJobs onto disjoint days. It is still on disk, pending
+> removal.
 
 ## Docker
 
-The Docker image defaults to one-shot harvest mode:
+There is no `Dockerfile` at the repository root — the image is built from `docker/zora/Dockerfile`,
+and `docker-compose.yml` builds the same image for both `init-db` and `harvester`:
 
 ```bash
 # Build
-docker build -t zora-harvester .
+docker build -f docker/zora/Dockerfile -t zora-harvester .
 
-# One-shot harvest
+# One-shot harvest. DATABASE_URL is required: without it there is nowhere to write.
 docker run --rm \
   --user "$(id -u):$(id -g)" \
+  --network host \
   -v "$(pwd)/data:/app/data" \
   -v "$(pwd)/token.secret:/app/token.secret:ro" \
   -e PERSONAL_API_TOKEN_FILE=/app/token.secret \
+  -e DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker \
   zora-harvester --mode full --limit 5
 ```
 
-For continuous operation, override the command:
+The `data/` mount is **only** the raw-response cache (`data/raw/`). Harvest output goes to the
+database; nothing is written back into the repository checkout.
+
+In practice prefer `docker compose`, which already wires the network, the database URL, and the
+token mount:
 
 ```bash
-docker run --rm \
-  -v "$(pwd)/data:/app/data" \
-  -v "$(pwd)/token.secret:/app/token.secret:ro" \
-  -e PERSONAL_API_TOKEN_FILE=/app/token.secret \
-  zora-harvester \
-  python -m thesis_matchmaker.zora.scheduler
+docker compose run --rm harvester --mode incremental
 ```
 
-## Output Format
+## Output
 
-The sole deliverable is `data/publications.jsonl` — one JSON object per line:
+Each harvested record becomes one row in the `publication` table (schema in
+`src/thesis_matchmaker/schema.sql`, written only by `zora/store.py` — invariant 1). The row shape is
+whatever `output_schema.to_output` emits, so as JSON one row looks like:
 
 ```json
 {
@@ -89,23 +106,30 @@ The sole deliverable is `data/publications.jsonl` — one JSON object per line:
 }
 ```
 
+`authors`, `uzh_authors` and `keywords` are `text[]` columns; `author_authority_map` is `jsonb`.
+The table also carries `accessioned` and `harvested_at`, which are not part of the output schema.
+
 **Key fields for the RAG system:**
 - **`title` + `abstract`** — embedded for semantic search
 - **`department`** — enables filtering by department
 - **`uzh_authors`** — UZH-affiliated researchers (potential supervisors)
 - **`author_authority_map`** — maps each author to their CRIS Person UUID (or `null` for external co-authors)
 
+The incremental watermark is `harvest_state.last_accessioned`, a single row — not a file. The
+indexer reads the `publication` table with `thesis-matchmaker index --source db`.
+
 ## Module Layout
 
 ```
 src/thesis_matchmaker/zora/
-├── config.py           # constants — API endpoint, field names, paths
+├── config.py           # constants — API endpoint, field names, raw-cache path
 ├── zora_client.py      # thin wrapper around dspace_rest_client
 ├── normalize.py        # raw DSpace item → flat publication dict
 ├── output_schema.py    # THE file to edit when output shape changes
-├── state.py            # harvest watermark (data/state.json)
+├── store.py            # the only writer: publication + harvest_state
+├── state.py            # watermark accessors, delegating to store.py
 ├── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)
-├── scheduler.py        # continuous operation loop (deployment override)
+├── scheduler.py        # DEPRECATED poll loop — superseded by CronJobs
 └── schema/
     └── zora_publication.schema.json
 ```

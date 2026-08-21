@@ -1,8 +1,9 @@
 """Indexing: turns ingested records into a searchable vector index.
 
-Read side of the ingestion boundary: consumes the JSONL files the ingestion
-component writes, embeds them, and maintains the vector store that retrieval
-queries. Never writes back to the source data.
+Read side of the ingestion boundary: consumes whatever the configured
+`SourceReader` yields -- the harvested `publication` table, or a directory of
+JSONL files -- embeds it, and maintains the vector store that retrieval queries.
+Never writes back to the source data.
 """
 
 from __future__ import annotations

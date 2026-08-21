@@ -49,34 +49,35 @@ zora_client.iter_items ──▶ normalize.normalize_item ──▶ output_schem
 | `get_client()` | `zora_client.py` | Builds an authenticated `DSpaceClient` with retries (3×, backoff 2, on 500/502/503/504) and timeouts (10 s connect, 60 s read). Raises `RuntimeError` if the token is missing or auth fails. |
 | `iter_items(client, scope, since)` | `zora_client.py` | Generator over DSpace items; builds the Solr query and handles pagination. |
 | `normalize_item(dso)` | `normalize.py` | Raw `SimpleDSpaceObject` → flat internal dict, unwrapping DSpace's `{"value": …}` metadata entries. |
-| `ZoraPublication` | `output_schema.py` | Pydantic model defining the on-disk contract for `publications.jsonl`. |
+| `ZoraPublication` | `output_schema.py` | Pydantic model defining the shape of one `publication` row. |
 | `to_output(record)` | `output_schema.py` | Internal flat dict → output dict. |
-| `validate_publications_jsonl(path)` | `output_schema.py` | Per-line validation; returns `(count, errors)`. Also runnable as `python -m thesis_matchmaker.zora.output_schema <path>`. |
+| `validate_publications_jsonl(path)` | `output_schema.py` | Legacy: per-line validation of a JSONL file harvested before the database existed. Runnable as `python -m thesis_matchmaker.zora.output_schema <path>`. |
 | `load_state()` / `save_state(...)` | `state.py` | Read and write the incremental watermark and per-mode run timestamps. |
 | `run(mode, since_override, limit)` | `harvest.py` | The whole harvest: fetch → normalize → dedupe → safety check → write → validate → save state. Returns an exit code. |
 | `main()` | `harvest.py` | argparse entry point. |
-| `run_forever(...)` | `scheduler.py` | Long-lived poll loop that decides when to call `harvest.run()`. |
-| `_next_action(state, hour, weekday)` | `scheduler.py` | Deliberately I/O-free decision function, which is why the scheduler is the best-tested part of this package. |
+| `run_forever(...)` | `scheduler.py` | **Deprecated.** Long-lived poll loop that decides when to call `harvest.run()`. Superseded by the cluster CronJobs; pending removal. |
+| `_next_action(state, hour, weekday)` | `scheduler.py` | **Deprecated.** Deliberately I/O-free decision function, which is why the scheduler is the best-tested part of this package. Its "full wins when both are due" rule is now expressed by giving the two CronJobs disjoint days. |
 
 ## Data flow
 
-**Reads:** the ZORA REST API; the API token file; `data/state.json`; and — in
-incremental mode only — the existing `data/publications.jsonl`.
+**Reads:** the ZORA REST API; the API token file; the `harvest_state` row.
 
-**Writes:** `data/publications.jsonl`, `data/state.json`,
-`data/raw/<YYYYMMDDTHHMMSSZ>_<mode>.jsonl`.
+**Writes:** the `publication` table and the `harvest_state` row (both via
+`store.py`, the only writer), plus
+`data/raw/<YYYYMMDDTHHMMSSZ>_<mode>.jsonl` — the raw-response cache, the one
+thing still on disk.
 
-`data/state.json` shape:
+The previous corpus does **not** need reading back: the upsert is the merge, and
+the retention check counts rows inside the same transaction.
 
-```json
-{
-  "last_accessioned": "2026-07-17T09:04:55Z",
-  "last_run_at": "2026-07-17T09:08:19.273497+00:00",
-  "last_total_publications": 22541,
-  "last_incremental_run_at": null,
-  "last_full_run_at": null
-}
-```
+`harvest_state` is a single row, `CHECK (id = 1)`:
+
+| Column | Purpose |
+|---|---|
+| `last_accessioned` | The watermark — highest `dc.date.accessioned` seen. |
+| `last_total_publications` | Row count after the last successful run; the retention check's baseline. |
+| `last_run_at` | Any successful run. |
+| `last_incremental_run_at` / `last_full_run_at` | Per-mode stamps. Both are stamped by a full run, because a full harvest supersedes an incremental one — leaving `last_incremental_run_at` NULL there made the scheduler fire an incremental immediately after a multi-hour full harvest. |
 
 ### Incremental harvesting
 
@@ -89,13 +90,18 @@ tombstones, so the delta logic is ours:
 - **Query** — full: `dspace.entity.type:Publication`. Incremental: the same plus
   `AND dc.date.accessioned_dt:[<since> TO *]`. The range is inclusive on both
   ends; the boundary item is dropped by id-dedupe rather than by the query.
-- **`full` mode replaces** `publications.jsonl` wholesale. It is the only mode
-  that reflects upstream deletions and corrections.
-- **`incremental` mode merges** by `id`, and **existing records win** — new ids
-  are appended, ids already present are skipped, nothing is updated in place.
-- **Safety rail** — the run aborts *before writing* if the new total is under
-  50 % of `last_total_publications` (`MIN_RETENTION_RATIO`), so a partial API
-  failure cannot silently truncate the dataset.
+- **`full` mode is authoritative.** After the upsert it runs
+  `DELETE FROM publication WHERE id <> ALL(<harvested ids>)`, so it is the only
+  mode that reflects upstream deletions and corrections.
+- **`incremental` mode never deletes.** It upserts what it fetched and nothing
+  else. Since the incremental query only returns newly-accessioned items, an
+  upstream edit to an existing record still stays invisible until the next full
+  harvest — `dc.date.accessioned` does not change on edit.
+- **Safety rail** — upsert, prune and count all happen in **one transaction**. If
+  the resulting total is under 50 % of `last_total_publications`
+  (`MIN_RETENTION_RATIO`), the transaction is rolled back, so a partial API
+  failure leaves the previous corpus completely intact rather than a
+  half-written one.
 
 ### CLI
 
@@ -206,11 +212,9 @@ tests** — including `harvest.py`, the largest module in the repository.
 - **Schema drift with `contracts/`**: `ZoraPublication.title` is `str | None` but
   `ZoraRecord.title` is a required `str`, so a title-less record passes validation
   here and fails at index time. See [`../contracts/README.md`](../contracts/README.md).
-- **The harvested file is not what gets indexed by default.** `SOURCES_PATH`
-  defaults to `data/samples`, so `thesis-matchmaker index` indexes the 30-row
-  sample file unless you pass `--source data`. Easy to miss.
-- **`data/raw/` is not gitignored.** A local harvest leaves untracked dumps that
-  are easy to commit by accident.
+- **The harvested table is not what gets indexed by default.** `SOURCES_PATH`
+  defaults to `data/samples`, so `thesis-matchmaker index` indexes the 50 sample
+  documents unless you pass `--source db`. Easy to miss.
 - **`author_orcid` is normalised but never emitted** — `to_output` drops it.
 - **`data/state.json` on disk predates the current `save_state`** and lacks
   `last_incremental_run_at` / `last_full_run_at`. They back-fill to `None`, so a

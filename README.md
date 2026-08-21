@@ -29,12 +29,13 @@ READMEs linked under [Layout](#layout) say what actually exists.*
 ## How it works
 
 1. **Ingestion.** ZORA harvesting and departmental web scraping produce
-   `publications.jsonl` and `theses.jsonl`, validated against the shared
-   pydantic contracts in `src/thesis_matchmaker/contracts`. Harvesting is live —
-   `data/publications.jsonl` holds 22,541 real records, refreshed by
-   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md). The
-   scraper is **not built yet**, so
-   `theses.jsonl` is still the synthetic sample in `data/samples/`.
+   publication and thesis-posting records, validated against the shared pydantic
+   contracts in `src/thesis_matchmaker/contracts`. Harvesting is live and writes
+   rows into the `publication` table —
+   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md), roughly
+   22.5k records for the faculty scope currently configured. The scraper is
+   **not built yet**, so thesis postings are still the synthetic
+   `theses.jsonl` sample in `data/samples/`.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash
@@ -56,13 +57,16 @@ Needs Python 3.11+.
 ```
 pip install -e ".[dev]"
 cp .env.example .env             # optional, everything runs offline by default
-thesis-matchmaker index --source data
+docker compose up -d postgres    # Postgres + pgvector on localhost:5432
+thesis-matchmaker init-db        # creates the schema
+thesis-matchmaker index          # indexes the 50 checked-in samples
 thesis-matchmaker match "I want a master's thesis in NLP on RAG"
 ```
 
-**`--source data` matters.** Without it, `index` reads `SOURCES_PATH`, which
-defaults to `data/samples` — 30 sample rows rather than the 22,541 harvested
-publications in `data/`. Nothing warns you about the difference.
+**`--source` decides what you are searching.** It defaults to `SOURCES_PATH`,
+which is `data/samples` — right for a fresh clone, but only 50 documents. Once
+the harvester has run, the corpus is in the `publication` table and wants
+`thesis-matchmaker index --source db`. Nothing warns you about the difference.
 
 Optional extras: `.[embeddings]` installs the real embedding model (pulls in
 torch), `.[mcp]` installs the MCP server. All configuration is documented in

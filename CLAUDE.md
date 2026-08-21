@@ -52,10 +52,12 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 `thesis-matchmaker-mcp` (`--stdio`), and `python -m thesis_matchmaker.zora.harvest`
 (**no console script**).
 
-**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so `thesis-matchmaker index` indexes 30
-sample rows, not the 22,541-row `data/publications.jsonl`. Use `--source data`.
+**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
+indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
+corpus lives in the `publication` table — index it with `--source db`.
+`data/publications.jsonl` is a legacy artefact nothing writes any more.
 
-Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (94 tests / 18 files), `ruff` (line
+Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (134 tests / 19 files), `ruff` (line
 length 100, py311). **One workflow**: `ci.yml` (ruff + pytest on every PR, dev extras only — never
 installs `mcp`/`embeddings`). Deployment target is a **UZH Kubernetes cluster** pulling from a
 **private Harbor registry**, with a **Postgres + pgvector** server; see

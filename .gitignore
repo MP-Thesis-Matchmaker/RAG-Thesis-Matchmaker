@@ -220,3 +220,11 @@ graphify-out/
 # Claude
 #   CLAUDE.md is tracked on purpose: it is the shared agent brief for the team.
 .claude/
+
+# Harvested data
+#   data/raw/ is the ZORA raw-response cache: one JSONL dump per harvest run, so
+#   ingestion is reproducible without re-hitting the live API. It is machine
+#   output, it grows with every run, and it has no business in git.
+#   data/samples/ stays tracked on purpose — it is fixture data the offline path
+#   and the test suite both depend on.
+data/raw/
