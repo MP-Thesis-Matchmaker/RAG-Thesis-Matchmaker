@@ -55,7 +55,8 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
 corpus lives in the `publication` table — index it with `--source db`.
-`data/publications.jsonl` is a legacy artefact nothing writes any more.
+`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
+longer tracked.
 
 Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (134 tests / 19 files), `ruff` (line
 length 100, py311). **One workflow**: `ci.yml` (ruff + pytest on every PR, dev extras only — never

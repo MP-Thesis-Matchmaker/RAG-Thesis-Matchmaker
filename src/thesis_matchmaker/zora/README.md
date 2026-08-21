@@ -192,8 +192,10 @@ The notable, non-obvious mappings (`normalize.py`):
 
 ## Status
 
-**Implemented and running in production.** `data/publications.jsonl` currently
-holds 22,541 harvested records (~45 MB, committed to the repository).
+**Implemented and running in production.** The `publication` table currently holds
+22,541 harvested records. Nothing is written back into the repository: the
+pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
+the only file a run still leaves behind is its raw-response dump in `data/raw/`.
 
 Test coverage is uneven: `tests/zora/test_normalize.py` (20 tests),
 `tests/zora/test_scheduler.py` (14), and `tests/zora/test_output_schema.py` (4)
@@ -217,9 +219,6 @@ tests** — including `harvest.py`, the largest module in the repository.
   defaults to `data/samples`, so `thesis-matchmaker index` indexes the 50 sample
   documents unless you pass `--source db`. Easy to miss.
 - **`author_orcid` is normalised but never emitted** — `to_output` drops it.
-- **`data/state.json` on disk predates the current `save_state`** and lacks
-  `last_incremental_run_at` / `last_full_run_at`. They back-fill to `None`, so a
-  scheduler started against it treats both cadences as "never ran".
 - `schema/zora_publication.schema.json` is a hand-maintained mirror of
   `ZoraPublication`. Nothing checks that the two agree.
 - `config.py` refers to the inspect script by its old name `scripts.inspect_fields`.

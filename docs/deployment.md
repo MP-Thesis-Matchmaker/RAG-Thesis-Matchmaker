@@ -22,6 +22,19 @@ Harvesting is a **cluster** concern. It is never run in GitHub Actions, and
 harvest output is never committed to git — the repository is source code, not a
 datastore.
 
+### Repository size
+
+That rule arrived late. `data/publications.jsonl` was tracked for most of the
+project and reached 47 MB before the corpus moved into the `publication` table;
+it and `data/state.json` are now untracked and gitignored. Untracking only stops
+the growth — **every one of those blobs is still in git history**, so a fresh
+clone still pays for them.
+
+Excising them means rewriting history (`git filter-repo`), force-pushing, and
+every collaborator re-cloning. That is a deliberate, coordinated decision for the
+whole team, not a cleanup to slip into a branch, and it is deliberately **not**
+done yet.
+
 ## Local equivalent
 
 `docker-compose.yml` mirrors the cluster: a `pgvector/pgvector` container, the

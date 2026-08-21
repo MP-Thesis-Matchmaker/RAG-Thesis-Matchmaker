@@ -15,4 +15,3 @@ notebooks/
 
 vencv/
 .venv/
-pytest tests/zora/ -v

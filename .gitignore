@@ -230,3 +230,9 @@ graphify-out/
 #   data/samples/ stays tracked on purpose — it is fixture data the offline path
 #   and the test suite both depend on.
 data/raw/
+#   publications.jsonl and state.json are the pre-Postgres harvest output. Nothing
+#   writes either any more: zora/store.py writes the publication and harvest_state
+#   tables instead. They were tracked, which meant a 47 MB blob in every clone and
+#   a tempting stale copy of a corpus that now lives in the database.
+data/publications.jsonl
+data/state.json
