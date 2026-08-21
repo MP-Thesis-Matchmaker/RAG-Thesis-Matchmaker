@@ -45,14 +45,13 @@ zora_client.iter_items ──▶ normalize.normalize_item ──▶ output_schem
 | *(constants only)* | `config.py` | Every DSpace field name, the API endpoint, the raw-dump directory, and the safety threshold. One place to change when ZORA's schema moves. |
 | `write_harvest(rows, ...)` | `store.py` | Upsert + prune + retention check, in one transaction. Returns counts and whether it aborted. |
 | `publication_count()` | `store.py` | Row count, for the retention check and for operators. |
-| `load_state()` / `save_state(...)` | `store.py` | The `harvest_state` row. Re-exported by `state.py` with the old signatures. |
+| `load_state()` / `save_state(...)` | `store.py` | The `harvest_state` row. `load_state` returns a `HarvestState`; a database that has never been harvested yields the defaults rather than an error. |
 | `get_client()` | `zora_client.py` | Builds an authenticated `DSpaceClient` with retries (3×, backoff 2, on 500/502/503/504) and timeouts (10 s connect, 60 s read). Raises `RuntimeError` if the token is missing or auth fails. |
 | `iter_items(client, scope, since)` | `zora_client.py` | Generator over DSpace items; builds the Solr query and handles pagination. |
 | `normalize_item(dso)` | `normalize.py` | Raw `SimpleDSpaceObject` → flat internal dict, unwrapping DSpace's `{"value": …}` metadata entries. |
 | `ZoraPublication` | `output_schema.py` | Pydantic model defining the shape of one `publication` row. |
 | `to_output(record)` | `output_schema.py` | Internal flat dict → output dict. |
 | `validate_publications_jsonl(path)` | `output_schema.py` | Legacy: per-line validation of a JSONL file harvested before the database existed. Runnable as `python -m thesis_matchmaker.zora.output_schema <path>`. |
-| `load_state()` / `save_state(...)` | `state.py` | Read and write the incremental watermark and per-mode run timestamps. |
 | `run(mode, since_override, limit)` | `harvest.py` | The whole harvest: fetch → normalize → dedupe → safety check → write → validate → save state. Returns an exit code. |
 | `main()` | `harvest.py` | argparse entry point. |
 
@@ -199,14 +198,19 @@ Test coverage is uneven, and got worse rather than better when the scheduler was
 deleted: `tests/zora/test_scheduler.py` went with it, and that was 14 of the
 package's tests. `tests/zora/test_normalize.py` (20 tests) and
 `tests/zora/test_output_schema.py` (4) are thorough; `store.py` is covered from
-`tests/test_zora_store.py`. But `harvest.py`, `zora_client.py`, and `state.py`
-have **no tests** — including `harvest.py`, the largest module in the repository.
-The best-tested code in the package was the part that got removed.
+`tests/test_zora_store.py`. But `harvest.py` and `zora_client.py` have **no
+tests** — including `harvest.py`, the largest module in the repository. The
+best-tested code in the package was the part that got removed.
+
+`state.py` used to be on that list and is no longer, which is worth stating
+precisely: it was deleted, not tested. It forwarded to `store.py` without adding
+behaviour, so the untested surface went away without anything new being verified.
 
 ## Known gaps
 
-- **`harvest.py`, `zora_client.py`, and `state.py` are untested.** The merge
-  semantics, the safety rail, and the watermark update all live in untested code.
+- **`harvest.py` and `zora_client.py` are untested.** The merge semantics and the
+  orchestration around the safety rail live in untested code. The watermark update
+  itself is covered, from `tests/test_zora_store.py`.
 - **Incremental mode never updates an existing record.** Merge is new-ids-only; a
   title correction or a newly added abstract upstream is invisible until the next
   full harvest. `dc.date.accessioned` does not change on edit, so this is a real

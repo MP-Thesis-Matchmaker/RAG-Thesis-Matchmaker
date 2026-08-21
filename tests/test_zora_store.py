@@ -94,21 +94,24 @@ def test_implausible_shrink_is_rolled_back_entirely(clean_db: str) -> None:
 
 def test_state_roundtrip_and_full_run_stamps_both_modes(clean_db: str) -> None:
     empty = store.load_state(clean_db)
-    assert empty["last_accessioned"] is None
-    assert empty["last_total_publications"] == 0
+    # A never-harvested database is not an error, it is the defaults -- which is
+    # what makes the first run on a fresh deployment necessarily a full one.
+    assert isinstance(empty, store.HarvestState)
+    assert empty.last_accessioned is None
+    assert empty.last_total_publications == 0
 
     store.save_state("2026-07-17T09:04:55Z", 22541, "incremental", dsn=clean_db)
     after_incremental = store.load_state(clean_db)
-    assert after_incremental["last_accessioned"] == "2026-07-17T09:04:55Z"
-    assert after_incremental["last_total_publications"] == 22541
-    assert after_incremental["last_full_run_at"] is None
+    assert after_incremental.last_accessioned == "2026-07-17T09:04:55Z"
+    assert after_incremental.last_total_publications == 22541
+    assert after_incremental.last_full_run_at is None
 
     store.save_state("2026-08-20T00:00:00Z", 22600, "full", dsn=clean_db)
     after_full = store.load_state(clean_db)
-    assert after_full["last_full_run_at"] is not None
+    assert after_full.last_full_run_at is not None
     # A full run supersedes an incremental one, so it stamps both -- otherwise the
     # row would claim the last incremental harvest was older than it is.
-    assert after_full["last_incremental_run_at"] is not None
+    assert after_full.last_incremental_run_at is not None
 
 
 def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) -> None:
@@ -132,12 +135,12 @@ def test_first_ever_run_is_full_and_still_stamps_both_modes(clean_db: str) -> No
     stamping the incremental column."""
     store.save_state("2026-08-20T00:00:00Z", 22541, "full", dsn=clean_db)
     state = store.load_state(clean_db)
-    assert state["last_full_run_at"] is not None
-    assert state["last_incremental_run_at"] is not None
+    assert state.last_full_run_at is not None
+    assert state.last_incremental_run_at is not None
 
 
 def test_incremental_run_does_not_stamp_the_full_column(clean_db: str) -> None:
     store.save_state("2026-08-20T00:00:00Z", 22541, "incremental", dsn=clean_db)
     state = store.load_state(clean_db)
-    assert state["last_incremental_run_at"] is not None
-    assert state["last_full_run_at"] is None
+    assert state.last_incremental_run_at is not None
+    assert state.last_full_run_at is None

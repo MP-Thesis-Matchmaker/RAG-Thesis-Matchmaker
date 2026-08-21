@@ -33,7 +33,7 @@ import os
 import sys
 from datetime import UTC, datetime
 
-from . import config, normalize, output_schema, state, store, zora_client
+from . import config, normalize, output_schema, store, zora_client
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -61,13 +61,13 @@ def write_raw_dump(raw_items: list[dict], mode: str) -> str:
 
 def run(mode: str, since_override: str | None = None, limit: int | None = None) -> int:
     """@return: process exit code (0 success, 1 aborted/failed)"""
-    st = state.load_state()
+    st = store.load_state()
 
     # Determine the "since" filter.
     # - incremental: always uses the watermark from harvest_state
     # - full: uses --since if provided, otherwise fetches everything
     if mode == "incremental":
-        since = st.get("last_accessioned")
+        since = st.last_accessioned
     else:
         since = since_override  # None means "fetch everything"
 
@@ -103,7 +103,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
         # Re-persist the unchanged watermark/total purely to stamp
         # last_incremental_run_at: a run that legitimately found nothing still ran,
         # and the row should say so rather than looking like a skipped night.
-        state.save_state(since, st.get("last_total_publications", 0), mode)
+        store.save_state(since, st.last_total_publications, mode)
         return 0
 
     write_raw_dump(raw_items, mode)
@@ -129,7 +129,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
         logger.error("Nothing was written. Investigate before re-running.")
         return 1
 
-    state.save_state(last_accessioned_seen, result.total, mode)
+    store.save_state(last_accessioned_seen, result.total, mode)
     logger.info(
         "Done. %d publications in the database (%d upserted, %d removed).",
         result.total,

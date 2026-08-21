@@ -126,7 +126,6 @@ src/thesis_matchmaker/zora/
 ├── normalize.py        # raw DSpace item → flat publication dict
 ├── output_schema.py    # THE file to edit when output shape changes
 ├── store.py            # the only writer: publication + harvest_state
-├── state.py            # watermark accessors, delegating to store.py
 ├── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)
 └── schema/
     └── zora_publication.schema.json

@@ -4,9 +4,14 @@ This module is the only writer of the `publication` and `harvest_state` tables
 (invariant 1: ingestion owns all writes). Serving code reads them through
 `indexing.sources.PostgresSourceReader`, never from here.
 
-Replaces the file I/O that used to live in `harvest.py` and `state.py`: a 45 MB
-`data/publications.jsonl` rewritten in full on every run, plus a `state.json`
-watermark, both committed into git by a CI bot.
+Replaces the file I/O that used to live in `harvest.py` and a `state.py` shim: a
+47 MB `data/publications.jsonl` rewritten in full on every run, plus a
+`state.json` watermark, both committed into git by a CI bot.
+
+The watermark was the worse of the two. It had to be persisted on whatever disk
+the harvester happened to be given, which is why that CI workflow committed it
+back into the repository -- a resume point coupled to git history, and unable to
+survive two concurrent runs at all.
 
 The retention safety check gets strictly better in the process. On disk it had to
 count, then write, then validate -- so a failure left a half-trusted file behind.
@@ -17,6 +22,7 @@ shrank implausibly, which is what that check was always reaching for.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel
@@ -68,6 +74,20 @@ class HarvestWriteResult(BaseModel):
     upserted: int
     deleted: int
     aborted: bool = False
+
+
+class HarvestState(BaseModel):
+    """The single `harvest_state` row: where the next incremental run resumes."""
+
+    # Text rather than a datetime because it is fed back verbatim into a Solr
+    # range query -- schema.sql says the same thing about the column. The three
+    # timestamps below are the opposite case: nothing queries them, they exist to
+    # be read by a person asking when a harvest last committed, so they stay typed.
+    last_accessioned: str | None = None
+    last_total_publications: int = 0
+    last_run_at: datetime | None = None
+    last_incremental_run_at: datetime | None = None
+    last_full_run_at: datetime | None = None
 
 
 class _RetentionAbort(Exception):
@@ -170,29 +190,24 @@ def publication_count(dsn: str | None = None) -> int:
         return conn.execute("SELECT count(*) FROM publication").fetchone()[0]
 
 
-def load_state(dsn: str | None = None) -> dict:
-    """The harvest watermark, in the shape the previous state.json had.
+def load_state(dsn: str | None = None) -> HarvestState:
+    """Where the next incremental harvest resumes from.
 
-    Timestamps come back as ISO strings rather than datetimes so that callers
-    which used to read the JSON file keep working unchanged.
+    A missing row is not an error: it is a database that has never been harvested,
+    and the field defaults say what that means -- no watermark, nothing counted.
+    That is why the first run on a fresh deployment is necessarily a full one.
     """
     with db.connection(_dsn(dsn)) as conn:
         row = conn.execute(_LOAD_STATE).fetchone()
     if row is None:
-        return {
-            "last_accessioned": None,
-            "last_total_publications": 0,
-            "last_run_at": None,
-            "last_incremental_run_at": None,
-            "last_full_run_at": None,
-        }
-    return {
-        "last_accessioned": row[0],
-        "last_total_publications": row[1],
-        "last_run_at": row[2].isoformat() if row[2] else None,
-        "last_incremental_run_at": row[3].isoformat() if row[3] else None,
-        "last_full_run_at": row[4].isoformat() if row[4] else None,
-    }
+        return HarvestState()
+    return HarvestState(
+        last_accessioned=row[0],
+        last_total_publications=row[1],
+        last_run_at=row[2],
+        last_incremental_run_at=row[3],
+        last_full_run_at=row[4],
+    )
 
 
 def save_state(
