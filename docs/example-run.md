@@ -196,9 +196,10 @@ sample postings.
 
 **3. The offline rule-based parser mangles conversational queries.** `RuleBasedExtractor` strips
 filler by substring replacement, and its `_FILLER` list covers `"master's thesis"` but not
-`"i want a"`, with no whitespace collapse afterwards. The Example 3 query parses offline to:
+`"i want a"`, with no whitespace collapse afterwards. The Example 3 query parses offline to this
+topic list — `repr` output rather than source, which is why the quotes are single:
 
-```python
+```text
 ['i want a   on multilingual embeddings', 'machine translation']
 ```
 
