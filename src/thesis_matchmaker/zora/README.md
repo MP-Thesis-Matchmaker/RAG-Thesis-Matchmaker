@@ -106,13 +106,25 @@ tombstones, so the delta logic is ours:
 python -m thesis_matchmaker.zora.harvest --mode incremental
 python -m thesis_matchmaker.zora.harvest --mode full --since 2024-07-01
 python -m thesis_matchmaker.zora.harvest --mode full --limit 50     # smoke test
+python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
 ```
 
 | Flag | Default | Behaviour |
 |---|---|---|
 | `--mode {incremental,full}` | `incremental` | See above. |
-| `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from `harvest_state`. |
+| `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from `harvest_state`. Also ignored with `--from-dump`, where the filter was already applied at fetch time. |
 | `--limit N` | none | Stop after N items. For smoke tests. |
+| `--from-dump PATH` | none | Replay a `data/raw/` dump instead of calling ZORA. |
+
+**`--from-dump` is the point of the raw cache.** A full harvest is ~215K records
+and roughly two hours of requests, and those records land in `data/raw/` *before*
+anything is written to Postgres. So a run that fetches successfully but fails on
+the write does not have to fetch again: the dump already holds normalized
+records, and replaying it re-runs only the validate/upsert half of the pipeline.
+No API token is needed (no client is built), and no second dump is written, since
+the source file already *is* the cache. Everything downstream is unchanged — same
+`to_output` validation, same single transaction, same retention rail, same
+watermark.
 
 Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
 `thesis-matchmaker-mcp`, the harvester has no console-script entry point.

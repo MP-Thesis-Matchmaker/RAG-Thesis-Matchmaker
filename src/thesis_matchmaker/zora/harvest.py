@@ -6,6 +6,7 @@ Usage:
     python -m thesis_matchmaker.zora.harvest --mode full --since 2024-07-01
     python -m thesis_matchmaker.zora.harvest --mode full --limit 5
     python -m thesis_matchmaker.zora.harvest --mode incremental
+    python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
 
 Outputs (all in the Postgres at DATABASE_URL):
     publication      — one row per publication
@@ -22,6 +23,11 @@ full:        fetches every item currently in scope (optionally filtered by
 incremental: fetches only items accessioned since the last successful run (per
              harvest_state) and upserts them, deleting nothing. Cheap, runs
              daily.
+--from-dump: skips ZORA entirely and replays a raw dump written by an earlier
+             run. The records in it were already normalized, so this re-runs
+             only the validate/upsert half of the pipeline. That is what the raw
+             cache is for: a full harvest costs hours of ZORA requests, and a
+             failure after the fetch should not cost them twice.
 """
 
 from __future__ import annotations
@@ -31,7 +37,10 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Iterator
 from datetime import UTC, datetime
+
+from thesis_matchmaker import db
 
 from . import config, normalize, output_schema, store, zora_client
 
@@ -54,12 +63,39 @@ def write_raw_dump(raw_items: list[dict], mode: str) -> str:
     return dump_path
 
 
+def read_raw_dump(path: str) -> Iterator[dict]:
+    """Yield the normalized records of a dump written by an earlier run.
+
+    @raise RuntimeError: if the file cannot be read, or a line is not valid
+        JSON. Both are operator mistakes (wrong path, truncated file) rather
+        than bugs, so they surface as the clean one-line failure `main` prints
+        instead of a traceback.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line_no, line in enumerate(f, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    yield json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise RuntimeError(f"{path}: line {line_no} is not valid JSON: {exc}") from exc
+    except OSError as exc:
+        raise RuntimeError(f"--from-dump {path} could not be read: {exc}") from exc
+
+
 # ---------------------------------------------------------------------------
 # Main harvest logic
 # ---------------------------------------------------------------------------
 
 
-def run(mode: str, since_override: str | None = None, limit: int | None = None) -> int:
+def run(
+    mode: str,
+    since_override: str | None = None,
+    limit: int | None = None,
+    from_dump: str | None = None,
+) -> int:
     """@return: process exit code (0 success, 1 aborted/failed)"""
     st = store.load_state()
 
@@ -73,22 +109,33 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
 
     logger.info("Starting %s harvest (since=%s, limit=%s)", mode, since, limit)
 
-    if since is not None:
-        logger.info(
-            "NOTE: The dc.date.accessioned range query has not been tested "
-            "against the live ZORA API. If zero results are returned with a "
-            "since filter, the Solr query syntax may need adjusting."
+    # Both branches yield the same thing -- normalized records -- which is what
+    # lets the loop below, the limit, the handle guard and the watermark stay
+    # written once. On the dump path normalization already happened, at fetch
+    # time, and `since` was whatever filter that run used: it is not re-applied
+    # here, so it only describes the watermark this run resumes from.
+    if from_dump:
+        logger.info("Replaying %s -- no ZORA request will be made", from_dump)
+        records: Iterator[dict] = read_raw_dump(from_dump)
+    else:
+        if since is not None:
+            logger.info(
+                "NOTE: The dc.date.accessioned range query has not been tested "
+                "against the live ZORA API. If zero results are returned with a "
+                "since filter, the Solr query syntax may need adjusting."
+            )
+        client = zora_client.get_client()
+        records = (
+            normalize.normalize_item(dso) for dso in zora_client.iter_items(client, since=since)
         )
 
-    client = zora_client.get_client()
     raw_items = []
     last_accessioned_seen = since
 
-    for i, dso in enumerate(zora_client.iter_items(client, since=since)):
+    for i, record in enumerate(records):
         if limit is not None and i >= limit:
             logger.info("Reached --limit %d, stopping", limit)
             break
-        record = normalize.normalize_item(dso)
         if not record.get("handle"):
             logger.warning("Skipping item %d: no handle (uuid=%s)", i, record.get("uuid"))
             continue
@@ -96,7 +143,11 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
         if record.get("accessioned"):
             last_accessioned_seen = record["accessioned"]
 
-    logger.info("Fetched %d publication records", len(raw_items))
+    logger.info(
+        "%s %d publication records",
+        "Replayed" if from_dump else "Fetched",
+        len(raw_items),
+    )
 
     if mode == "incremental" and not raw_items:
         logger.info("No new publications since last run — nothing to do")
@@ -106,7 +157,13 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
         store.save_state(since, st.last_total_publications, mode)
         return 0
 
-    write_raw_dump(raw_items, mode)
+    if from_dump:
+        # The source file already *is* the raw cache. Writing a second copy under
+        # a new timestamp would double ~50 MB on disk and make it ambiguous which
+        # dump a later replay should use.
+        logger.info("Not writing a raw dump: --from-dump replays an existing one")
+    else:
+        write_raw_dump(raw_items, mode)
 
     # to_output validates each record against ZoraPublication as it builds it, so
     # a malformed record fails here rather than after being written. accessioned
@@ -122,7 +179,7 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
     result = store.write_harvest(
         rows,
         mode=mode,
-        previous_total=st.get("last_total_publications", 0),
+        previous_total=st.last_total_publications,
         min_retention_ratio=config.MIN_RETENTION_RATIO,
     )
     if result.aborted:
@@ -157,19 +214,44 @@ def main() -> None:
         default=None,
         help="Max number of items to fetch. Useful for smoke testing.",
     )
+    parser.add_argument(
+        "--from-dump",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Replay a raw dump from data/raw/ instead of fetching from ZORA. Its "
+            "records were already normalized when they were written, so only the "
+            "validate/upsert half of the pipeline re-runs -- no API token needed, "
+            "and no second request for data already on disk. Use this after a run "
+            "that fetched successfully but failed to write."
+        ),
+    )
     args = parser.parse_args()
 
     if args.since and args.mode == "incremental":
         logger.warning("--since is ignored in incremental mode (uses the harvest_state watermark)")
+    if args.since and args.from_dump:
+        logger.warning("--since is ignored with --from-dump (the filter was applied at fetch time)")
 
     try:
-        exit_code = run(args.mode, since_override=args.since, limit=args.limit)
+        exit_code = run(
+            args.mode,
+            since_override=args.since,
+            limit=args.limit,
+            from_dump=args.from_dump,
+        )
     except RuntimeError as exc:
         # Expected failure modes (auth, config) get a clean one-line message
         # in the Actions log instead of a full traceback. Anything else
         # (a real bug) still surfaces its traceback normally.
         logger.error(str(exc))
         exit_code = 1
+    finally:
+        # The pool runs background worker threads; without this the process
+        # hangs for the pool's stop timeout on the way out and complains. In
+        # `finally` rather than after the except, because a crash mid-harvest is
+        # exactly when the pool is open -- and that is the path that hung.
+        db.close_pools()
 
     sys.exit(exit_code)
 
