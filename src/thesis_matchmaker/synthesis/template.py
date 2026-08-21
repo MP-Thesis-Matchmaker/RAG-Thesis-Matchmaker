@@ -20,16 +20,17 @@ class TemplateSynthesizer:
         lines = [f'Based on your interest in "{query}", here are the top matches:', ""]
         for rank, match in enumerate(matches, start=1):
             where = f" ({match.department})" if match.department else ""
-            position = (
-                "has an open thesis position"
-                if match.has_open_position
-                else "no open position listed"
-            )
             topics = ", ".join(match.matched_topics) or "your topics"
+            # Postings appear only when there are some, and there is deliberately no
+            # else branch. A zero count means no posting of this person's reached the
+            # top-k -- the posting query is unthresholded, so it says nothing about
+            # whether they have one. Printing "no open position" asserted a fact
+            # about a named academic that the data cannot support.
+            details = [f"{match.publication_count} related publications"]
+            if match.posting_count:
+                details.append(f"{match.posting_count} open thesis posting(s)")
             lines.append(f"{rank}. {match.supervisor}{where}")
-            lines.append(
-                f"   Works on {topics}; {match.publication_count} related publications; {position}."
-            )
+            lines.append(f"   Works on {topics}; {'; '.join(details)}.")
             for item in match.evidence:
                 reference = f" ({item.url})" if item.url else ""
                 lines.append(f"   - {item.title}{reference}")

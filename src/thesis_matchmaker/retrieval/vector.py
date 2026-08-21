@@ -89,7 +89,7 @@ class VectorRetriever:
                     score=max(h.score for h in person_hits),
                     matched_topics=query.topics,
                     publication_count=len(publications),
-                    has_open_position=bool(postings),
+                    posting_count=len(postings),
                     evidence=[
                         Evidence(
                             source_type=VectorRetriever._source_type(h),

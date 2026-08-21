@@ -27,7 +27,9 @@ _SYSTEM = (
     "facts that are not in the candidates. If a candidate only partially fits "
     "the student's interests, say so plainly instead of overstating the fit. "
     "If no candidate fits well, open by saying there is no strong match and "
-    "present the closest option as a long shot."
+    "present the closest option as a long shot. Never state or imply whether a "
+    "supervisor is accepting students, has supervision capacity, or is available: "
+    "that information is not in the data."
 )
 
 
@@ -36,12 +38,15 @@ def _format_candidates(matches: list[SupervisorMatch]) -> str:
     for match in matches:
         where = f" ({match.department})" if match.department else ""
         titles = "; ".join(item.title for item in match.evidence) or "no listed work"
-        position = "open position" if match.has_open_position else "no open position"
         topics = ", ".join(match.matched_topics) or "n/a"
-        blocks.append(
-            f"- {match.supervisor}{where}: topics {topics}; "
-            f"{match.publication_count} publications; {position}; work: {titles}"
-        )
+        # Absent data has to reach the prompt as absent. Given "no open position"
+        # the model wrote "not currently accepting new students" about a named
+        # academic; a line it never sees is a line it cannot paraphrase.
+        details = [f"topics {topics}", f"{match.publication_count} publications"]
+        if match.posting_count:
+            details.append(f"{match.posting_count} open thesis posting(s)")
+        details.append(f"work: {titles}")
+        blocks.append(f"- {match.supervisor}{where}: {'; '.join(details)}")
     return "\n".join(blocks)
 
 

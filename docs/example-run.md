@@ -192,7 +192,13 @@ detail block but misleading inside the LLM's candidate list.
 thesis posting in our scraped data". The model rendered it as "currently open to new students"
 (Example 2, Example 3) and "not currently accepting new students" (Example 2), which the data does
 not support. Since the scraper is not built, that flag currently only ever comes from the synthetic
-sample postings.
+sample postings. *Since fixed*: the field is now `posting_count`, an int, and the CLI, the
+template synthesiser and the LLM candidate list emit a posting clause only when it is
+non-zero, so absent data reaches the reader as absent rather than as a negative. The
+synthesis prompt also now forbids any claim about a supervisor's availability. Note the
+deeper reason the old `False` was indefensible: the posting query has no distance
+threshold, so an empty posting list means "none of theirs ranked in the top-k", not
+"there are none".
 
 **3. The offline rule-based parser mangles conversational queries.** `RuleBasedExtractor` strips
 filler by substring replacement, and its `_FILLER` list covers `"master's thesis"` but not
@@ -206,7 +212,15 @@ topic list — `repr` output rather than source, which is why the quotes are sin
 which then reaches the user as `Works on i want a   on multilingual embeddings, ...`. Invisible in
 Examples 2 and 3 because the LLM parser handles the phrasing cleanly, and invisible in Example 1
 only because that query has no conversational preamble. It is a stand-in parser by design, but this
-is a plain bug in it, not a design limitation.
+is a plain bug in it, not a design limitation. *Since fixed*: filler is now removed with a
+single case-insensitive, longest-phrase-first alternation, whitespace is collapsed, and a
+generic edge-trim pass drops leading and trailing grammatical glue -- which is what stops
+the completeness of the filler list from being load-bearing, since cutting any phrase out
+of a sentence leaves glue at the seam. Three further bugs surfaced in the same function
+while fixing this one: `/` was a topic separator and shredded `AI/ML`, the `len > 2` filter
+silently swallowed every acronym topic (`AI`, `ML`, `IR`), and topics were lowercased while
+the fallback branch preserved case. The Example 3 query now parses offline to
+`['multilingual embeddings', 'machine translation']`.
 
 **4. A slow LLM used to be indistinguishable from no LLM.** Writing this page, three runs produced
 Example 1's output while an LLM was configured and reachable: the synthesis call exceeded the 30 s

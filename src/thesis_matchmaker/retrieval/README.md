@@ -139,5 +139,12 @@ serves fake results.
 - **`department` matching is exact-string.** `parsing/` never populates the field
   from free text today, so the filter is effectively dormant; it will need
   normalisation (aliases, abbreviations) before it is useful.
-- The posting half of the index is synthetic sample data, so `has_open_position`
-  is not yet meaningful against real UZH postings.
+- **`posting_count` is a fact about this query, not about the person.** It counts
+  thesis postings retrieved for someone in this result set. The posting query is
+  unthresholded -- it returns the nearest `top_k` postings whatever their distance
+  -- so 0 means none of that person's reached the top-k, never that they have no
+  open position. The renderers therefore print a posting clause only when it is
+  non-zero and **must stay that way**: the earlier "no open position" text became
+  "not currently accepting new students" about a named academic in the LLM's prose
+  (see [`../../../docs/example-run.md`](../../../docs/example-run.md)). No scraper
+  exists either, so against a `--source db` index it is 0 for everyone.
