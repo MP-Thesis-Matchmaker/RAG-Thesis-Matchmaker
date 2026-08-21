@@ -44,7 +44,9 @@ often as a spec needs without touching a single UZH server. Treat `fetch` as som
 do deliberately and `run` as something you do freely.
 
 Both take `--resume`, which skips sources already completed in
-`data/scraper/var/state.json`, and `--only <source_id>` (repeatable) to work on one page.
+`data/scraper/var/state.json`, and `--only <source_id> [<source_id> ...]` to work on a
+subset. `--only` takes its ids as one space-separated list, not as a repeated flag:
+`--only a b` runs both, whereas `--only a --only b` silently runs only `b`.
 
 ## Day to day
 
@@ -115,8 +117,15 @@ docker compose run --rm scraper fetch --resume
 docker compose run --rm scraper run --resume
 ```
 
-Two things to get right in a manifest:
+Three things to get right in a manifest:
 
+- **`data/scraper/var/` needs a PVC, and it is the one that bites first.**
+  `var/state.json` is the *only* record of which sources are onboarded, and it is
+  gitignored — so a pod with an empty volume sees 0 verified sources however many specs
+  are baked into the image, and there is nothing for `run` to do. `run` exits **non-zero**
+  in that state rather than 0, so the CronJob fails visibly instead of reporting Success
+  while `posting` stays empty; that is a guard, not a fix. Onboarding has to happen
+  somewhere whose output survives the pod.
 - **`data/scraper/cache/` wants a PVC.** With an `emptyDir`, every scheduled run re-fetches
   all 103 pages — which throws away the property the cache exists for and puts avoidable
   load on other people's servers. Same open question [`deployment.md`](deployment.md)

@@ -13,8 +13,8 @@ a decision is unmade or a fact is unknown, say so explicitly.
 
 ## Current repo state (as of 2026-08-22)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,167 LOC,
-315 test functions in 25 files (342 collected with a database, 306 offline).
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,197 LOC,
+317 test functions in 26 files (344 pass with a database, 308 pass / 36 skip offline).
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API and multi-signal ranking in it are not built yet).
@@ -71,8 +71,8 @@ out at query time, so embedding it was work spent on unreachable vectors.
 longer tracked.
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (173 tests /
-20 files; 25 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (344 tests /
+26 files; 36 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,

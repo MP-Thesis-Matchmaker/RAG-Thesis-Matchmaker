@@ -243,6 +243,20 @@ process entries, zero quarantined.
   and the honest direction is this one absorbing that one.
 - **`main.py` is 1,580 lines.** Orchestration only, but still the largest single file in
   the repository by a wide margin.
+- **Onboarding state is untracked, so the committed specs are inert without it.**
+  `var/state.json` is the only record of which sources are verified and which page_type
+  each one is, and it is gitignored. 66 of the 103 sources ship a frozen
+  `spec.yaml` + `snapshot.html` + `expected.json` in the repository, but a fresh checkout
+  or a pod with an empty volume marks all 103 unverified and `run` has nothing to do.
+  `run` now exits non-zero in that state instead of 0 — it used to look like a healthy
+  no-op, which in a CronJob means Success forever while `posting` stays empty — but that
+  is a guard, not an answer. The real question is whether "verified" belongs in mutable
+  operator state at all when the artefact it certifies is committed: `page_type` in
+  particular is declared in the tracked `spec.yaml` *and* duplicated into state, and it is
+  the state copy that `run` reads, defaulting to `"process"` when absent. A topics page
+  read with the process extractor fails as a plausible-looking `extract_failed`.
+  Deriving verification from the committed triple would make the repository
+  self-sufficient; decide it with the PVC question below.
 - **The page cache is not persisted in the cluster.** The same open question
   [`../../../docs/deployment.md`](../../../docs/deployment.md) raises about the ZORA raw
   cache: an `emptyDir` throws away the property the cache exists for.

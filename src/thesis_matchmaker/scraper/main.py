@@ -18,6 +18,8 @@ import time
 
 import yaml
 
+from thesis_matchmaker import db
+
 from . import (
     cache,
     dataset,
@@ -1272,6 +1274,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             + (" ..." if len(skipped) > 8 else "")
         )
 
+    # Captured before --resume filtering, which legitimately empties `verified`
+    # once every source is done. "Nothing was verified in the first place" is a
+    # different situation and must not share its exit code.
+    none_verified = not verified
+
     if args.resume:
         before = len(verified)
         verified = [
@@ -1282,6 +1289,18 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"resume: {len(verified)} of {before} verified sources still pending")
 
     if not verified:
+        if none_verified and selected:
+            # Loud, because this is the shape a fresh deployment has: verification
+            # lives only in var/state.json, which is gitignored, so a pod with an
+            # empty volume sees 0 verified sources however many specs are committed.
+            # Exiting 0 here made a CronJob that wrote nothing report Success.
+            print(
+                f"nothing to run: none of the {len(selected)} selected source(s) is marked "
+                f"verified in {get_settings().state_path}. Onboard them "
+                f"(`onboard --next`) or restore that file -- the committed specs under "
+                f"{get_settings().specs_dir} are not sufficient on their own."
+            )
+            return 1
         print("nothing to run.")
         return 0
 
@@ -1809,7 +1828,18 @@ def main(argv: list[str] | None = None) -> int:
     # them (real pypdf errors still surface at ERROR).
     logging.getLogger("pypdf").setLevel(logging.ERROR)
     args = build_parser().parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    finally:
+        # `run` writes Postgres through scraper/store.py, which opens a pooled
+        # connection. The pool runs background worker threads, so without this
+        # the process complains on the way out ("couldn't stop thread
+        # 'pool-1-worker-0' within 5.0 seconds") and waits for the stop timeout.
+        # Same reasoning as zora/harvest.py, and in `finally` for the same
+        # reason: a crash mid-run is exactly when the pool is open. Harmless for
+        # the subcommands that never touch the database -- close_pools() on an
+        # empty pool registry is a no-op.
+        db.close_pools()
 
 
 if __name__ == "__main__":
