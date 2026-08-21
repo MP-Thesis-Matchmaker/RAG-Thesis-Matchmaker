@@ -67,6 +67,14 @@ CREATE TABLE index_manifest (
     embedding_dim   int         NOT NULL,
     document_count  int         NOT NULL,
     sources         text,
+    -- Token window the corpus was embedded at, and how many documents reached it.
+    -- The window belongs here for the same reason embedding_model does: changing it
+    -- changes every vector, but it does NOT change any document's content hash, so
+    -- a plain re-index would skip everything and leave two incompatible
+    -- generations of vector side by side. indexing/indexer.py guards on it.
+    -- Nullable: the offline hash-fake embedder has no window to record.
+    max_seq_length  int,
+    truncated_docs  int,
     built_at        timestamptz NOT NULL DEFAULT now()
 );
 

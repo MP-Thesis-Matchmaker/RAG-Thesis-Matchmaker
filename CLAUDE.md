@@ -13,7 +13,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 
 ## Current repo state (as of 2026-08-21)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,470 LOC, 145 tests.
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,470 LOC, 172 tests.
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API, scraper, and multi-signal ranking in it are not built yet).
@@ -61,7 +61,7 @@ with `--source db`.
 longer tracked.
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (159 tests /
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (172 tests /
 20 files; 24 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).

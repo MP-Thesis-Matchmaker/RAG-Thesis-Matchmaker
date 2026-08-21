@@ -106,3 +106,11 @@ def test_limit_thread_pools_respects_an_explicit_setting(monkeypatch: pytest.Mon
     monkeypatch.setenv("OMP_NUM_THREADS", "7")
     _limit_thread_pools()
     assert os.environ["OMP_NUM_THREADS"] == "7"
+
+
+def test_hash_embedder_has_no_token_window() -> None:
+    """It hashes every token it is given, so there is no window to fall out of."""
+    embedder = HashEmbedder()
+    assert embedder.max_seq_length is None
+    embedder.embed_documents(["a much longer document " * 500])
+    assert embedder.last_truncated == 0

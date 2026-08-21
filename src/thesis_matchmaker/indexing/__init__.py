@@ -37,7 +37,11 @@ def build_embedder(settings: Settings) -> Embedder:
     """Pick the embedder from config; "hash-fake" selects the offline fake."""
     if settings.embedding_model == "hash-fake":
         return HashEmbedder()
-    return SentenceTransformerEmbedder(settings.embedding_model)
+    return SentenceTransformerEmbedder(
+        settings.embedding_model,
+        max_seq_length=settings.embedding_max_seq_length,
+        batch_size=settings.embedding_batch_size,
+    )
 
 
 def build_store(settings: Settings) -> VectorStore:
@@ -47,7 +51,11 @@ def build_store(settings: Settings) -> VectorStore:
 
 def build_indexer(settings: Settings) -> Indexer:
     """Wire an indexer over the configured embedder and store."""
-    return Indexer(embedder=build_embedder(settings), store=build_store(settings))
+    return Indexer(
+        embedder=build_embedder(settings),
+        store=build_store(settings),
+        chunk_size=settings.index_chunk_size,
+    )
 
 
 # What `--source db` means, versus a filesystem path.

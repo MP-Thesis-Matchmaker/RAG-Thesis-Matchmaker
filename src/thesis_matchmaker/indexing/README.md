@@ -28,10 +28,11 @@ SourceReader (publication table, or JSONL files)
 
 | Symbol | File | Purpose |
 |---|---|---|
-| `Embedder` | `embedder.py` | Protocol: `model_name`, `dimensions`, `embed_documents`, `embed_query`. The seam that keeps the embedding model swappable (invariant 3). |
-| `HashEmbedder` | `embedder.py` | Deterministic sha256 word-sum fake, `EMBEDDING_DIM` dimensions, `model_name == "hash-fake"`. Keeps tests and CI offline. |
-| `SentenceTransformerEmbedder` | `embedder.py` | The real one. Lazy-loads the model, returns normalised vectors. Needs the `embeddings` extra (pulls torch). |
+| `Embedder` | `embedder.py` | Protocol: `model_name`, `dimensions`, `max_seq_length`, `last_truncated`, `embed_documents`, `embed_query`. The seam that keeps the embedding model swappable (invariant 3). |
+| `HashEmbedder` | `embedder.py` | Deterministic sha256 word-sum fake, `EMBEDDING_DIM` dimensions, `model_name == "hash-fake"`. No token window, so `max_seq_length is None`. Keeps tests and CI offline. |
+| `SentenceTransformerEmbedder` | `embedder.py` | The real one. Lazy-loads the model, caps input at `max_seq_length` tokens, counts what that truncated, returns normalised vectors. Needs the `embeddings` extra (pulls torch). |
 | `Document` | `documents.py` | What actually gets embedded: `id`, `text`, `metadata`, `content_hash`. |
+| `prepare_text` | `documents.py` | Strips markup and collapses whitespace before the text is hashed and embedded. |
 | `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
 | `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table. What a deployed indexer uses. |
 | `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
@@ -39,7 +40,7 @@ SourceReader (publication table, or JSONL files)
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
 | `VectorStore` | `store.py` | Protocol: `upsert`, `delete`, `existing_hashes`, `query`, `read_manifest`, `write_manifest`, `clear`. |
 | `ScoredHit` | `store.py` | One retrieved document plus its similarity score. |
-| `IndexManifest` | `store.py` | Which model built the index, its width, and the document count. |
+| `IndexManifest` | `store.py` | Which model built the index, its width and token window, the document count, and how many documents were truncated. |
 | `PgVectorStore` | `store.py` | Postgres + pgvector. Cosine distance (`<=>`), jsonb containment filters, per-batch commits. |
 | `InMemoryVectorStore` | `store.py` | Exhaustive-scan implementation for offline runs. Not a mock: it is the ground truth the approximate index is checked against. |
 | `Indexer` | `indexer.py` | `run()` performs the whole incremental index pass. |
@@ -87,6 +88,75 @@ So `has_uzh_author: bool` still exists, not as a store limitation but because
 that API. A new list field is storable and readable, but not filterable without
 its own scalar companion.
 
+### Text preparation and the token window
+
+`documents.py` runs `prepare_text` over each part before joining: HTML tags out,
+entities unescaped, whitespace runs collapsed. Tags go before the unescape, so an
+escaped `&lt;p&gt;` — text *about* a tag — is not turned into a real tag and then
+stripped. Measured over the 214,685-record harvest: 329 abstracts carry tags, 579
+carry entities, 2,300 carry runs of three or more whitespace characters. Because
+preparation happens before the emptiness filter, a part that is nothing but markup
+drops out instead of contributing a blank line. It is inside the `content_hash`, so
+changing it re-indexes the documents it affects.
+
+The embedder caps input at `embedding_max_seq_length` tokens (default **1024**),
+which is a hard tokenizer cut: keep the first N tokens, drop the tail.
+
+**Why there is a cap at all.** bge-m3 ships `max_seq_length: 8192`. The attention
+buffer is `batch × heads × seq²`, and `encode()` batches longest-first, so the
+single longest abstract in the corpus — a 30,052-char dissertation summary at 6,822
+tokens — sized the very first batch at `32 × 16 × 6822² × 4 B` = **88.77 GiB**, and
+the run died two seconds in. The cap is what makes memory bounded rather than a
+function of the worst record in the corpus.
+
+**Why 1024.** Over a 2% sample the token counts are p50 240, p95 632, p99 905. A
+1024 cap truncates **0.69%** of documents and costs about 1% of the average
+document's tokens. 2048 would truncate only 0.04%, but its worst-case buffer is
+4.29 GiB — over the cluster's 4 GiB namespace quota on its own, before bge-m3's
+2.27 GB of weights. The quota picks 1024. What gets cut is also the least useful
+part: the long documents are dissertation summaries whose opening states the topic
+and whose tail is methods and results detail.
+
+`IndexResult.truncated` and `index_manifest.truncated_docs` record how many
+documents hit the cap, so the figure is reproducible rather than estimated.
+
+**Two things deliberately not done.**
+
+*Stop-word removal* is a sparse-retrieval technique (BM25, TF-IDF) where each term
+is an independent dimension and function words are noise. A transformer's
+self-attention uses them for syntax, negation and relation, so removing `not`
+inverts a meaning rather than trimming filler; and the tokenizer is SentencePiece
+subword over 100+ languages, in a corpus that is heavily German/English mixed, so
+`the` is not even a cleanly removable unit. It would also not have fixed the crash:
+stop words are ~30–40% of tokens, so 6,822 → ~4,300 still asks for 35 GiB.
+
+*Chunking* is the textbook alternative to truncation, and is rejected because of
+how ranking works downstream, not because of cost — see the 1:1 argument above, and
+note that the retrieval unit is a **person**, scored `max(hit.score)` over their
+publications. Splitting one 30k-char dissertation into sixty windows would give that
+author sixty chances at the top spot, so long-form and prolific researchers would
+outrank concise ones for reasons unrelated to topical fit. It would need a ranking
+redesign to be safe, to buy correctness for 0.69% of documents.
+
+### Streaming and resumability
+
+`Indexer.run` streams: it reads each record, diffs it, and buffers changed documents
+until `index_chunk_size` (default 1000) are ready, then embeds and commits that
+chunk and drops it. It does **not** collect the corpus first.
+
+Eagerly, a 215k-record run held every `Document` plus every vector before its first
+write — `.tolist()` alone materialises 2.2e8 Python floats, roughly 7 GB, against a
+4 GiB namespace quota — and any failure during the hours of embedding discarded the
+whole run. Chunking bounds peak memory and makes `PgVectorStore`'s per-batch commits
+reachable, which is what actually delivers the resumability that store claims: rows
+already written match on content hash next time and are skipped, so an interrupted
+run continues instead of restarting.
+
+Three orderings matter, and are commented in the code because the eager version
+satisfied them by accident: `reader.invalid_records` is only final once the reader is
+drained; `removed` needs the complete id set, so deletion waits for the last chunk;
+and `skipped` is `total - embedded`, since there is no document list to measure.
+
 ### Incremental indexing
 
 `Indexer.run` asks the store for `{id: content_hash}` of everything it already
@@ -108,6 +178,11 @@ silently mixing vector spaces, which would produce plausible-looking nonsense;
 `document.embedding` column is `vector(1024)`, so changing model width needs a
 migration that alters the column, and the error says so.
 
+The manifest also records `max_seq_length`, under the same guard and for a subtler
+reason: changing the token window changes every vector but **no** document's content
+hash, so a plain re-index would skip everything and leave the index holding two
+incompatible generations of vector at once.
+
 Malformed JSONL lines are counted and skipped, not fatal.
 
 ## Configuration
@@ -117,6 +192,9 @@ Malformed JSONL lines are counted and skipped, not fatal.
 | `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
 | `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `thesis-matchmaker init-db`. |
 | `sources_path` | `SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
+| `embedding_max_seq_length` | `EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap per document. Recorded in the manifest and guarded: changing it needs `--rebuild`. |
+| `embedding_batch_size` | `EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer together with the cap; cannot replace it. |
+| `index_chunk_size` | `INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Lower it to cut peak memory. |
 
 > **Watch out:** `sources_path` still defaults to `data/samples`, so a bare
 > `thesis-matchmaker index` indexes the sample rows. The real harvest now lives in
@@ -166,13 +244,6 @@ at a Postgres with the extension, which CI always does via a
   `EXPLAIN ANALYZE` against the real corpus, and note that a sequential scan is
   the *correct* plan when the filter is unselective — at present ~78% of the
   corpus is `source_type = 'publication'` with a UZH author.
-- **A full build embeds everything before it writes anything.** `Indexer.run`
-  calls `embed_documents` on the whole changed set, then upserts. Writes are
-  batched and committed per batch, so a crashed run is resumable via the
-  content-hash diff — but the embedding step holds every vector in memory first
-  (22,541 x 1024 floats is a few hundred MB of Python objects, and the full ZORA
-  corpus is ten times that). Interleaving embed and upsert per batch is the fix
-  when the corpus grows past one department.
 - **Only publications have a real producer.** `theses.jsonl` exists only as
   hand-made sample data; no web scraper lives in `src/`. That work sits on the
   unmerged `origin/webscraping` branch, so the posting half of the index is
@@ -180,5 +251,10 @@ at a Postgres with the extension, which CI always does via a
 - List-valued metadata is unfilterable by construction (see above). Any future
   filter on keywords or authors needs another scalar companion field like
   `has_uzh_author`, or a different store.
-- No chunking means a long document dilutes its own embedding. Fine for abstracts;
-  a problem if full texts are ever indexed.
+- **A long document is truncated, not chunked, and 0.69% of the corpus is.** One
+  record is still one embedding, so anything past `embedding_max_seq_length` tokens
+  is dropped rather than diluted. Measured and recorded per run
+  (`index_manifest.truncated_docs`), and defensible for abstracts — the affected
+  records are dissertation summaries losing their methods tail. It would stop being
+  defensible if full texts were ever indexed, and that is the point at which the
+  chunking-versus-ranking argument above has to be reopened.

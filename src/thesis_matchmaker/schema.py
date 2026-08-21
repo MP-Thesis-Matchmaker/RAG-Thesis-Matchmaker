@@ -21,6 +21,16 @@ that would be painful to recreate -- concretely, the first real ZORA harvest int
 the UZH Postgres, which is a multi-hour job against a server we do not control.
 At that point `--reset` stops being an acceptable answer, `schema.sql` becomes
 `001_initial.sql`, and every later change is a delta.
+
+That trigger has now half fired, and it is worth being precise about why only half.
+A local database does hold a full 214,685-record harvest, and adding
+`index_manifest.max_seq_length` did force exactly the refuse-or-reset choice this
+module exists to force. `--reset` stayed acceptable only because
+`zora/harvest.py --from-dump` replays `data/raw/`'s cache into an empty database in
+seconds without re-fetching anything -- which makes the raw cache load-bearing here,
+not merely an ingestion-reproducibility nicety. The next schema change against a
+database with no replayable dump behind it -- the UZH server, once harvested -- is
+where numbered migrations stop being optional.
 """
 
 from __future__ import annotations

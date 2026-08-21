@@ -8,7 +8,9 @@ be skipped on re-index. Pure functions, no I/O.
 from __future__ import annotations
 
 import hashlib
+import html
 import json
+import re
 
 from pydantic import BaseModel, Field
 
@@ -32,10 +34,40 @@ class Document(BaseModel):
     content_hash: str = Field(description="sha256 over text and metadata, for change detection.")
 
 
+# Markup, entities and runaway whitespace, and nothing else. Measured over the
+# harvested corpus: 329 abstracts carry HTML tags, 579 carry entities, 2,300 carry
+# runs of three or more whitespace characters.
+#
+# Deliberately NOT done here: stop-word removal and chunking. Stop-word removal is
+# a sparse-retrieval idea (BM25, TF-IDF) where function words are pure noise; a
+# transformer's self-attention uses them for syntax, negation and relation, so
+# dropping "not" inverts a meaning rather than trimming filler. Chunking is the
+# textbook alternative to truncation, but our retrieval unit is a person scored
+# max(hit.score) over their publications, so splitting one long dissertation into
+# sixty windows would hand that author sixty chances at the top spot. See
+# indexing/README.md for the numbers behind both.
+_TAG_RE = re.compile(r"<[^>]+>")
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def prepare_text(value: str) -> str:
+    """Strip markup and collapse whitespace ahead of embedding.
+
+    Tags go before entities are unescaped, so an escaped `&lt;p&gt;` -- which is
+    text *about* a tag -- cannot be turned into a real tag by the unescape and then
+    stripped as one.
+    """
+    return _WHITESPACE_RE.sub(" ", html.unescape(_TAG_RE.sub(" ", value))).strip()
+
+
 def _build(
     doc_id: str, parts: list[str | None], metadata: dict[str, MetadataValue | None]
 ) -> Document:
-    text = "\n".join(p for p in parts if p)
+    # Prepared before the emptiness filter, not after: a part that is nothing but
+    # markup collapses to "" and has to drop out, rather than contributing a blank
+    # line that the embedder would then have to see.
+    prepared = (prepare_text(p) for p in parts if p)
+    text = "\n".join(p for p in prepared if p)
     clean_meta = {k: v for k, v in metadata.items() if v is not None}
     payload = json.dumps({"text": text, "metadata": clean_meta}, sort_keys=True)
     content_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()

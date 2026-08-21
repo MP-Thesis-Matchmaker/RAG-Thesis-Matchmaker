@@ -66,10 +66,17 @@ def _run_index(settings: Settings, args: argparse.Namespace) -> None:
     result = indexer.run(reader)
     print(
         f"index run complete: embedded={result.embedded} skipped={result.skipped} "
-        f"deleted={result.deleted} invalid_lines={result.invalid_lines}"
+        f"deleted={result.deleted} invalid_lines={result.invalid_lines} "
+        f"truncated={result.truncated}"
     )
     print(f"source: {reader.label}")
     print(f"model: {indexer.embedder.model_name} ({indexer.embedder.dimensions} dimensions)")
+    window = indexer.embedder.max_seq_length
+    if window is not None:
+        print(
+            f"token window: {window} tokens "
+            f"(truncated {result.truncated} of {result.embedded} embedded)"
+        )
 
 
 def _run_match(settings: Settings, args: argparse.Namespace) -> None:

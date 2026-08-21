@@ -42,6 +42,22 @@ class Embedder(Protocol):
         """Vector width; must match the store's `vector(n)` column."""
         ...
 
+    @property
+    def max_seq_length(self) -> int | None:
+        """Token cap applied before embedding; None if there is no limit.
+
+        Recorded in the index manifest and guarded there, for the same reason
+        `model_name` is: changing it changes every vector while leaving each
+        document's content hash untouched, so nothing would be re-embedded and the
+        index would quietly end up holding two incompatible generations of vector.
+        """
+        ...
+
+    @property
+    def last_truncated(self) -> int:
+        """Documents in the most recent `embed_documents` call that hit the cap."""
+        ...
+
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Embed documents for indexing."""
         ...
@@ -68,6 +84,15 @@ class HashEmbedder:
     @property
     def dimensions(self) -> int:
         return self.dim
+
+    @property
+    def max_seq_length(self) -> int | None:
+        # Hashes every token it is given, so there is no window to fall out of.
+        return None
+
+    @property
+    def last_truncated(self) -> int:
+        return 0
 
     def _token_vector(self, token: str) -> list[float]:
         vector: list[float] = []
@@ -173,13 +198,29 @@ class SentenceTransformerEmbedder:
     constructing the object) stays cheap. Requires the `embeddings` extra.
     """
 
-    def __init__(self, model_name: str) -> None:
+    def __init__(
+        self,
+        model_name: str,
+        max_seq_length: int = 1024,
+        batch_size: int = 16,
+    ) -> None:
         self._model_name = model_name
+        self._max_seq_length = max_seq_length
+        self._batch_size = batch_size
         self._model = None
+        self._last_truncated = 0
 
     @property
     def model_name(self) -> str:
         return self._model_name
+
+    @property
+    def max_seq_length(self) -> int | None:
+        return self._max_seq_length
+
+    @property
+    def last_truncated(self) -> int:
+        return self._last_truncated
 
     @property
     def dimensions(self) -> int:
@@ -218,12 +259,44 @@ class SentenceTransformerEmbedder:
                     limit,
                     torch.get_num_threads(),
                 )
-            self._model = SentenceTransformer(self._model_name)
+            model = SentenceTransformer(self._model_name)
+            # bge-m3 reports 8192 here. Left alone, the attention buffer is
+            # batch x heads x seq^2, and encode() batches longest-first, so the one
+            # 6822-token abstract in the corpus sized the very first batch at
+            # 88.77 GiB and killed the run. Assigning the property propagates to
+            # the Transformer module (model[0]), which is what actually truncates.
+            logger.info(
+                "%s reports max_seq_length %s; capping at %d",
+                self._model_name,
+                model.max_seq_length,
+                self._max_seq_length,
+            )
+            model.max_seq_length = self._max_seq_length
+            self._model = model
         return self._model
+
+    def _count_truncated(self, model, texts: list[str]) -> int:
+        """How many of `texts` reach the cap, and so lose their tail.
+
+        One extra pass over the (Rust) tokenizer, which costs well under a percent
+        of the forward pass it precedes. Slightly conservative: a document landing
+        exactly on the cap is counted, though nothing was actually dropped.
+        """
+        encoded = model.tokenizer(texts, truncation=True, max_length=self._max_seq_length)
+        return sum(1 for ids in encoded["input_ids"] if len(ids) >= self._max_seq_length)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         model = self._load()
-        return model.encode(texts, normalize_embeddings=True).tolist()
+        self._last_truncated = self._count_truncated(model, texts)
+        # normalize_embeddings is redundant -- the model's own modules.json ends in
+        # a 2_Normalize stage, and measured output norms are already 1.0 -- but it
+        # is kept as the explicit statement that cosine distance in the store
+        # assumes unit vectors. Harmless, and it stops the assumption being silent.
+        return model.encode(
+            texts,
+            batch_size=self._batch_size,
+            normalize_embeddings=True,
+        ).tolist()
 
     def embed_query(self, text: str) -> list[float]:
         return self.embed_documents([text])[0]
