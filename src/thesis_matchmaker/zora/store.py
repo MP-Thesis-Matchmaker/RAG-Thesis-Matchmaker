@@ -203,13 +203,15 @@ def save_state(
 ) -> None:
     """Record the watermark and stamp this run.
 
-    A full run supersedes an incremental one, so it stamps both -- otherwise the
-    in-process scheduler fires an incremental immediately after a full harvest.
+    A full run supersedes an incremental one, so it stamps both columns. Nothing
+    reads them now that the CronJobs own the cadence, but a full run that left
+    last_incremental_run_at pointing at last week would make the row lie about
+    when a harvest last committed.
     """
-    # A full run stamps the incremental column too, so the scheduler does not fire
-    # an incremental immediately after one. Both branches below have to agree on
-    # that: the very first run on a fresh deployment is an INSERT, and it is a
-    # *full* harvest precisely because no state exists yet.
+    # Both branches below have to agree on that rule. The very first run on a fresh
+    # deployment is an INSERT rather than an UPDATE, and it is a *full* harvest
+    # precisely because no state exists yet -- so the INSERT is exactly where
+    # forgetting the incremental stamp would go unnoticed.
     stamped = ["last_full_run_at", "last_incremental_run_at"]
     if mode != "full":
         stamped = ["last_incremental_run_at"]

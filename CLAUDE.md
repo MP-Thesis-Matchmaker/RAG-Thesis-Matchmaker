@@ -13,7 +13,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 
 ## Current repo state (as of 2026-08-15)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 8 packages, ~2,580 LOC, 94 tests.
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,380 LOC, 127 tests.
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API, scraper, and multi-signal ranking in it are not built yet).
@@ -21,7 +21,7 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 | Package | Status | Concern |
 |---|---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester + scheduler; **owns all writes** |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** |
 | [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | implemented | Free text → `ParsedQuery`; rule-based baseline, optional LLM |
@@ -58,12 +58,13 @@ corpus lives in the `publication` table — index it with `--source db`.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
 longer tracked.
 
-Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (134 tests / 19 files), `ruff` (line
-length 100, py311). **One workflow**: `ci.yml` (ruff + pytest on every PR, dev extras only — never
-installs `mcp`/`embeddings`). Deployment target is a **UZH Kubernetes cluster** pulling from a
-**private Harbor registry**, with a **Postgres + pgvector** server; see
-[`docs/deployment.md`](docs/deployment.md). Images are built by hand until Harbor access exists, and
-harvesting runs as a cluster job — never in CI, and **never committing data back to the repo**.
+Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (127 tests / 19 files; 22 need
+Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311). **One workflow**:
+`ci.yml` (ruff + pytest on every PR, dev extras only — never installs `mcp`/`embeddings`).
+Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
+with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
+are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in
+CI, and **never committing data back to the repo**.
 
 Keep this table current as modules land; put the detail in the package README, not here.
 
@@ -81,7 +82,8 @@ still missing:
   → **shipped as `contracts/`**
 - `ingestion` — **owns all writes**; sub-packages for ZORA and the scraper, plus a store layer;
   includes a scheduled ingest runner
-  → **shipped as `zora/`** (harvester + scheduler). **The scraper sub-package does not exist yet**;
+  → **shipped as `zora/`** (harvester only; the cluster's CronJobs own scheduling).
+    **The scraper sub-package does not exist yet**;
   when it lands, decide whether it joins `zora/` under a shared `ingestion/` parent
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped

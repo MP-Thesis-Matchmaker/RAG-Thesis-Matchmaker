@@ -55,8 +55,6 @@ zora_client.iter_items ──▶ normalize.normalize_item ──▶ output_schem
 | `load_state()` / `save_state(...)` | `state.py` | Read and write the incremental watermark and per-mode run timestamps. |
 | `run(mode, since_override, limit)` | `harvest.py` | The whole harvest: fetch → normalize → dedupe → safety check → write → validate → save state. Returns an exit code. |
 | `main()` | `harvest.py` | argparse entry point. |
-| `run_forever(...)` | `scheduler.py` | **Deprecated.** Long-lived poll loop that decides when to call `harvest.run()`. Superseded by the cluster CronJobs; pending removal. |
-| `_next_action(state, hour, weekday)` | `scheduler.py` | **Deprecated.** Deliberately I/O-free decision function, which is why the scheduler is the best-tested part of this package. Its "full wins when both are due" rule is now expressed by giving the two CronJobs disjoint days. |
 
 ## Data flow
 
@@ -77,7 +75,7 @@ the retention check counts rows inside the same transaction.
 | `last_accessioned` | The watermark — highest `dc.date.accessioned` seen. |
 | `last_total_publications` | Row count after the last successful run; the retention check's baseline. |
 | `last_run_at` | Any successful run. |
-| `last_incremental_run_at` / `last_full_run_at` | Per-mode stamps. Both are stamped by a full run, because a full harvest supersedes an incremental one — leaving `last_incremental_run_at` NULL there made the scheduler fire an incremental immediately after a multi-hour full harvest. |
+| `last_incremental_run_at` / `last_full_run_at` | Per-mode stamps. Both are stamped by a full run, because a full harvest supersedes an incremental one. Nothing reads them now that the CronJobs own the cadence, but they are not dead: a CronJob's own history records that a pod *fired*, whereas these record that a harvest *committed*, and the retention rail can roll a run back while the pod still exits 0. `schema.sql` calls them redundant — that comment is wrong, and is frozen in place because `schema.py` fingerprints the file's raw text, comments included. |
 
 ### Incremental harvesting
 
@@ -120,21 +118,24 @@ python -m thesis_matchmaker.zora.harvest --mode full --limit 50     # smoke test
 Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
 `thesis-matchmaker-mcp`, the harvester has no console-script entry point.
 
-### Scheduler
+### Scheduling
 
-`scheduler.py` is an in-process poll loop, not cron and not APScheduler. Each
-iteration loads state, asks `_next_action`, optionally harvests, then sleeps in
-1-second increments so `SIGTERM`/`SIGINT` stays responsive. A shutdown signal lets
-an in-flight harvest finish rather than killing it mid-write. Any exception in a
-run is logged and swallowed, so one bad night does not kill the process.
+This package does not decide when to run. There was an in-process poll loop
+(`scheduler.py`, deleted); the cluster's CronJobs replace it, and the `k8s/`
+manifests hold the two schedules. See
+[`docs/deployment.md`](../../../docs/deployment.md).
 
-Cadence: incremental nightly at `HARVEST_HOUR_UTC`; full weekly on
-`FULL_HARVEST_WEEKDAY` at the same hour. When both are due, full wins — which also
-means a fresh deployment with no `harvest_state` row does a full harvest first.
-That path is worth knowing about: because it is an INSERT rather than an UPDATE,
-it is the one place where "a full run also stamps the incremental column" is easy
-to get wrong, and getting it wrong makes the scheduler fire an incremental
-immediately after a multi-hour full harvest.
+What the CronJobs replaced is narrower than it looks. They took over the *when* —
+the "is a run due yet?" decision. They did not touch the *what*: `--mode
+incremental` still resumes from `harvest_state.last_accessioned`, exactly as it
+did under the poll loop. The one rule that had to survive the move is "full wins
+when both are due", and it is now declarative: the two CronJobs get disjoint day
+sets (`0 1 * * 1` and `0 1 * * 0,2-6`), so they cannot both fire and the tie-break
+has nowhere left to live.
+
+Still worth knowing: a fresh deployment with no `harvest_state` row writes that
+row by INSERT rather than UPDATE, which is the one place where "a full run also
+stamps the incremental column" is easy to get wrong.
 
 ## Configuration
 
@@ -142,10 +143,7 @@ immediately after a multi-hour full harvest.
 |---|---|---|---|
 | Database | `DATABASE_URL` | see `config.py` in the package root | Postgres holding `publication` and `harvest_state`. Create the schema with `thesis-matchmaker init-db`. |
 | Data directory | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
-| Nightly hour | `HARVEST_HOUR_UTC` | `1` | UTC hour at which the scheduler runs an incremental harvest. |
-| Weekly day | `FULL_HARVEST_WEEKDAY` | `0` (Monday) | Weekday for the full harvest. |
 | API endpoint | `DSPACE_API_ENDPOINT` | `https://www.zora.uzh.ch/server/api` | Defined in `zora_client.py`, not `config.py`. |
-| Poll interval | `POLL_INTERVAL_SECONDS` | `3600` | Scheduler sleep between checks. Defined in `scheduler.py`. |
 | API token (file) | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
 | API token (inline) | `ZORA_UZH_API_KEY` | — | The token itself, for local runs. Both are resolved by `config.resolve_api_token` and assigned to the DSpace client. **Never commit the token.** |
 
@@ -197,10 +195,13 @@ The notable, non-obvious mappings (`normalize.py`):
 pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
 the only file a run still leaves behind is its raw-response dump in `data/raw/`.
 
-Test coverage is uneven: `tests/zora/test_normalize.py` (20 tests),
-`tests/zora/test_scheduler.py` (14), and `tests/zora/test_output_schema.py` (4)
-are thorough, but `harvest.py`, `zora_client.py`, and `state.py` have **no
-tests** — including `harvest.py`, the largest module in the repository.
+Test coverage is uneven, and got worse rather than better when the scheduler was
+deleted: `tests/zora/test_scheduler.py` went with it, and that was 14 of the
+package's tests. `tests/zora/test_normalize.py` (20 tests) and
+`tests/zora/test_output_schema.py` (4) are thorough; `store.py` is covered from
+`tests/test_zora_store.py`. But `harvest.py`, `zora_client.py`, and `state.py`
+have **no tests** — including `harvest.py`, the largest module in the repository.
+The best-tested code in the package was the part that got removed.
 
 ## Known gaps
 

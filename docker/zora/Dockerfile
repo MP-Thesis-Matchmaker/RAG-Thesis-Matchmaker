@@ -31,13 +31,19 @@ RUN mkdir -p data/raw
 # Baking a fixed UID into the image would only work by coincidence on
 # whichever host happens to share it.
 
-# NAME IS NOW A MISNOMER: docker-compose.yml builds this same image for the
-# init-db and harvester services, and the MCP deployment will use it too, so it
-# is the application image rather than the ZORA harvester's. It wants moving to
-# docker/Dockerfile — deferred to the change that deletes scheduler.py.
+# One Dockerfile per deployable role — that is what the docker/<role>/ layout is
+# for, and this one is the ZORA harvester: a batch job that runs, writes, exits.
+# The remaining roles get their own directories rather than extra entrypoints
+# here, because they differ in what has to be installed, not just in how they are
+# invoked: docker/indexer/ and docker/serving/ need the [embeddings] and [mcp]
+# extras this image deliberately leaves out, and the posting scraper arrives with
+# a dependency set of its own. See the Images section of docs/deployment.md.
 #
-# Default: one-shot incremental harvest. A scheduled run is this same
-# invocation with a --mode flag, issued by a Kubernetes CronJob; do NOT
-# override the command to run zora.scheduler, which is deprecated.
+# docker-compose.yml builds this image for init-db too, overriding the entrypoint.
+# That is not the misnomer it looks like: init-db is not a separate role, it is
+# this same distribution applying its own schema, and it needs no extras.
+#
+# Default: one-shot incremental harvest. A scheduled run is this same invocation
+# with a --mode flag, issued by a Kubernetes CronJob — see k8s/.
 ENTRYPOINT ["python", "-m", "thesis_matchmaker.zora.harvest"]
 CMD ["--mode", "incremental"]

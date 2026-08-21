@@ -39,7 +39,8 @@ services:
       postgres:
         condition: service_healthy
 
-  # One-shot. Invoke explicitly; there is deliberately no scheduler here.
+  # One-shot: it runs, writes, and exits. A schedule is the host's job (or the
+  # cluster's), never the application's.
   harvester:
     build:
       context: .

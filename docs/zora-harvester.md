@@ -43,12 +43,10 @@ docker compose run --rm harvester --mode incremental
 The schedules, and the two crontab lines that mirror them on a dev machine, are in
 [`deployment.md`](deployment.md) — they are not repeated here so there is one place to change them.
 
-> **`src/thesis_matchmaker/zora/scheduler.py` is deprecated.** It is a long-running poll loop that
-> decided *when* to harvest from inside the process. That was the right answer while the only
-> alternative was a CI cron pushing data into git; it is redundant now that the cluster owns
-> scheduling, and its `_next_action` priority rule ("full wins when both are due") is expressed
-> declaratively by splitting the two CronJobs onto disjoint days. It is still on disk, pending
-> removal.
+There used to be an in-process poll loop (`zora/scheduler.py`) that decided *when* to harvest from
+inside the process. That was the right answer while the only alternative was a CI cron pushing data
+into git. The cluster owns scheduling now, so it is gone, and its one non-obvious rule — "full wins
+when both are due" — is expressed declaratively by putting the two CronJobs on disjoint days.
 
 ## Docker
 
@@ -130,7 +128,6 @@ src/thesis_matchmaker/zora/
 ├── store.py            # the only writer: publication + harvest_state
 ├── state.py            # watermark accessors, delegating to store.py
 ├── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)
-├── scheduler.py        # DEPRECATED poll loop — superseded by CronJobs
 └── schema/
     └── zora_publication.schema.json
 ```

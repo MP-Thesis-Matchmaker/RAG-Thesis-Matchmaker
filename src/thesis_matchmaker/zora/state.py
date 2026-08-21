@@ -5,10 +5,11 @@ persisted on whatever disk the harvester happened to be given, which is why the
 deleted GitHub Actions workflow committed it back into the repository -- a
 watermark coupled to git history, unable to survive two concurrent runs.
 
-The function signatures are unchanged on purpose: `scheduler.py` calls these and
-reads the same keys, so moving the storage did not touch it. The scheduler's own
-future is a separate question (Kubernetes CronJobs make it redundant), and
-conflating the two changes would have made both harder to review.
+These two functions kept their signatures so that the storage move to Postgres
+did not have to touch `scheduler.py`. The scheduler is now deleted and Kubernetes
+CronJobs own the cadence, which leaves this module a pass-through with exactly one
+caller (`harvest.py`). Folding it into `store.py` is the obvious follow-up; it is
+left as a separate change rather than smuggled into the scheduler's removal.
 """
 
 from __future__ import annotations

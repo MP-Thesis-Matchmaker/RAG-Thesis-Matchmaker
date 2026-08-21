@@ -107,7 +107,7 @@ def test_state_roundtrip_and_full_run_stamps_both_modes(clean_db: str) -> None:
     after_full = store.load_state(clean_db)
     assert after_full["last_full_run_at"] is not None
     # A full run supersedes an incremental one, so it stamps both -- otherwise the
-    # scheduler fires an incremental straight after a full harvest.
+    # row would claim the last incremental harvest was older than it is.
     assert after_full["last_incremental_run_at"] is not None
 
 
@@ -127,9 +127,9 @@ def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) 
 
 def test_first_ever_run_is_full_and_still_stamps_both_modes(clean_db: str) -> None:
     """The regression: a fresh deployment has no state row, so its first harvest is
-    a full one *inserting* the row rather than updating it. If that path forgets
-    the incremental stamp, the scheduler fires an incremental straight after a
-    multi-hour full harvest."""
+    a full one *inserting* the row rather than updating it. The INSERT and UPDATE
+    paths are written separately, so this is where the two can disagree about
+    stamping the incremental column."""
     store.save_state("2026-08-20T00:00:00Z", 22541, "full", dsn=clean_db)
     state = store.load_state(clean_db)
     assert state["last_full_run_at"] is not None

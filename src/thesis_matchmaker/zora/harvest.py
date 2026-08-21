@@ -100,8 +100,9 @@ def run(mode: str, since_override: str | None = None, limit: int | None = None) 
 
     if mode == "incremental" and not raw_items:
         logger.info("No new publications since last run — nothing to do")
-        # Re-persist unchanged watermark/total purely to stamp last_incremental_run_at,
-        # resetting the scheduler's clock so this no-op run counts as "ran".
+        # Re-persist the unchanged watermark/total purely to stamp
+        # last_incremental_run_at: a run that legitimately found nothing still ran,
+        # and the row should say so rather than looking like a skipped night.
         state.save_state(since, st.get("last_total_publications", 0), mode)
         return 0
 
