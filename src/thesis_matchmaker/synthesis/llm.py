@@ -10,10 +10,14 @@ candidate as a long shot. Falls back to the template synthesiser on any error.
 
 from __future__ import annotations
 
+import logging
+
 from thesis_matchmaker.contracts import SupervisorMatch
 from thesis_matchmaker.llm import LLMClient, LLMError
 from thesis_matchmaker.synthesis.base import Synthesizer
 from thesis_matchmaker.synthesis.template import TemplateSynthesizer
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "You help a student pick a thesis supervisor. Using only the candidates "
@@ -75,5 +79,13 @@ class LLMSynthesizer:
         user = f'Student query: "{query}"\n\nCandidates:\n{_format_candidates(strong)}'
         try:
             return self._client.chat(_SYSTEM, user).strip()
-        except LLMError:
+        except LLMError as exc:
+            # Same reasoning as the parser: the template answer is a fine
+            # degradation but an invisible one, so say that the LLM was tried
+            # and lost rather than letting it pass for the offline path.
+            logger.warning(
+                "LLM synthesis failed (%s: %s) - falling back to the template synthesiser",
+                type(exc).__name__,
+                exc,
+            )
             return self._fallback.synthesize(query, strong)

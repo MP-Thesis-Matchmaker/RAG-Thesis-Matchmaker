@@ -56,6 +56,7 @@ both paths return the same contract.
 |---|---|---|---|
 | `llm_base_url` | `LLM_BASE_URL` | unset | **The switch.** Unset → rule-based. Set → LLM extractor with rule-based fallback. |
 | `llm_model` | `LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
+| `llm_reasoning_effort` | `LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
 | `llm_api_key` | `LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
 
 Any OpenAI-compatible endpoint works — LibreChat in production, a local Ollama

@@ -55,5 +55,16 @@ services:
         condition: service_healthy
     profiles: ["manual"]
 
+  # Don't forget to load the models:
+  # docker compose exec ollama ollama pull qwen3:8b
+  # docker compose exec ollama ollama pull qwen3-embedding:4b
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
 volumes:
   pgdata:
+  ollama:
