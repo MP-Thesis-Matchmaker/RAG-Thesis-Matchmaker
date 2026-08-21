@@ -30,10 +30,30 @@ dependencies = [
 # pulls in torch; CI and the fake embedder do not need it.
 embeddings = [
     "sentence-transformers>=3.0",
+    # torch is a transitive dependency of sentence-transformers and would resolve
+    # perfectly well without being named here. It is listed because
+    # [tool.uv.sources] below is only honoured for OUR OWN dependencies -- a
+    # source override on a purely transitive package is silently ignored, which
+    # would leave the CUDA wheels in place while looking like it had worked.
+    #
+    # The upper bound keeps the two platforms on the SAME upstream version.
+    # PyPI and the CPU index advance independently, so an open range resolved
+    # 2.12.1 on macOS and 2.13.0+cpu on linux -- a laptop and the cluster running
+    # different torch minors is the drift this lockfile exists to prevent. Raise
+    # the ceiling deliberately, once, when both indexes carry the newer version.
+    "torch>=2.6,<2.13",
 ]
 # MCP server adapter (FastMCP). Optional: only needed to run the tool server.
+#
+# Capped below 2.0 because adapters/mcp_server.py imports mcp.server.fastmcp,
+# and SDK 2.0 removed FastMCP -- the equivalent now lives at
+# mcp.server.mcpserver. With an open range this resolved to 2.0.0 and
+# thesis-matchmaker-mcp could not start at all; CI never installs this extra, so
+# nothing caught it. The floor is 1.9 because the server runs over the
+# streamable-http transport, which earlier 1.x releases do not offer. Porting
+# the adapter to the 2.x API is the way to lift this, not widening the range.
 mcp = [
-    "mcp>=1.2",
+    "mcp>=1.9,<2",
 ]
 
 # Test tooling is not an optional feature of the distribution -- nobody
@@ -46,6 +66,31 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
 ]
+
+# The deployment target is a CPU-only Kubernetes namespace: the ZI general Helm
+# chart exposes no GPU, nodeSelector or tolerations key at all, so nothing we
+# deploy can ever be scheduled onto an accelerator. PyPI's default linux torch
+# wheel is the CUDA build regardless -- a wheel tag cannot say "linux, but no
+# accelerator" -- which drags in ~1.55 GB of nvidia-* and triton that runs
+# nothing faster, because CUDA wheels are a capability rather than a speedup.
+# Three separate reasons to drop them: the Harbor project quota is 10 GB by
+# default, the container Compliance Policy asks images to carry "nur die absolut
+# notwendigen Komponenten", and pulling them on every scheduled indexer run
+# costs bandwidth for nothing. See docs/deployment.md.
+#
+# The marker is what keeps this from hurting local development: macOS never
+# matches sys_platform == 'linux', so Apple Silicon still resolves the stock
+# universal wheel, and MPS keeps working -- MPS ships inside that wheel, there is
+# no separate build to opt into.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+# explicit: this index is used ONLY by packages that name it below, never as a
+# general fallback for anything else in the lock.
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
 [project.scripts]
 thesis-matchmaker = "thesis_matchmaker.cli:main"

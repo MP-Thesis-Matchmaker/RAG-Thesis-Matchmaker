@@ -1,7 +1,18 @@
 # Kubernetes manifests
 
-What is here runs the **ZORA harvester** and the **schema step**, and nothing else
-yet. Both are things the one image we currently build can actually execute.
+> [!IMPORTANT]
+> **These files are the wrong format for our cluster, and none of them can be
+> applied as they stand.** Deployment is GitOps through ArgoCD, which syncs a
+> GitLab repository whose `*.yaml` files declare `appComponents` referencing CCS's
+> shared `general_helm_chart` — chart *values*, not raw Kubernetes objects. They
+> also all omit `resources`, which this namespace rejects outright (see
+> **Resources** below). They are kept because the intent encoded in them — the two
+> disjoint schedules, the retention reasoning, the init-db ordering — is still
+> correct and is what the conversion will carry over. See the **Deploying**
+> section of [`../docs/deployment.md`](../docs/deployment.md) for the target
+> format and the full list of chart keys.
+
+What is here describes the **ZORA harvester** and the **schema step**.
 
 | Manifest | Kind | What it does |
 |---|---|---|
@@ -11,24 +22,22 @@ yet. Both are things the one image we currently build can actually execute.
 
 ## Not here yet, and why
 
-Two components in `docs/deployment.md`'s "What runs where" table have no manifest,
-and the reason is not Harbor:
-
-- **`thesis-matchmaker index` (CronJob)** needs `sentence-transformers`.
-- **`thesis-matchmaker-mcp` (Deployment + Service)** needs `mcp`.
-
-`pyproject.toml` keeps both behind optional extras — `[embeddings]` and `[mcp]` —
-and `docker/zora/Dockerfile` installs neither, deliberately: `sentence-transformers`
-pulls in torch, and a harvester pod has no use for it. So a manifest for either
-would reference an image whose entrypoint cannot import its own dependencies:
+Two components in `docs/deployment.md`'s "What runs where" table still have no
+manifest — but the reason has changed. It used to be that no image installed the
+extras they need, so a manifest would have referenced an image whose entrypoint
+could not import its own dependencies:
 
 ```console
-$ docker run --rm --entrypoint thesis-matchmaker-mcp <image> --stdio
+$ docker run --rm --entrypoint thesis-matchmaker-mcp <harvester-image> --stdio
     from mcp.server.fastmcp import FastMCP
 ModuleNotFoundError: No module named 'mcp'
-``` They
-land when `docker/indexer/` and `docker/serving/` exist. See the Images section of
-[`../docs/deployment.md`](../docs/deployment.md).
+```
+
+**`docker/indexer/` and `docker/serving/` now exist**, so that blocker is gone.
+What remains is the format problem above, plus two quota raises that have to be
+granted before either could run: the namespace ceiling is `limits.memory: 4Gi` and
+bge-m3 does not leave room for two pods holding it, and the Harbor project defaults
+to 10 GB for all our images together.
 
 The posting scraper is a third case: it is still a separate repository.
 
@@ -40,13 +49,23 @@ manifest is worse than an obvious blank, so nothing here is guessed.
 
 | Placeholder | Needs | Blocked on |
 |---|---|---|
-| `image:` host / project / tag | `harbor.example/project/thesis-matchmaker:0.0.1` | Harbor hostname, project name, robot account |
+| `image:` project / tag | `registry.cs.zi.uzh.ch/<project>/thesis-matchmaker:<git-sha>` | project name + robot account — the **host is now known** |
 | `timeZone` support | Kubernetes >= 1.27 (where CronJob `timeZone` is GA) | cluster version |
+
+The host placeholders are deliberately left in the YAML rather than half-filled:
+these three files are being replaced wholesale by Argo `appComponents` (see the
+note at the top), so editing them now would be churn on files with no future.
 
 ## Secrets are not committed, not even as placeholders
 
-Create them out of band. Neither command's value should ever reach a file in this
-repository:
+**In the cluster these come from Vault, not from `kubectl`.** The chart exposes
+`vault.vso.{name,path,mount}` to materialise a `VaultStaticSecret`, `vaultEnv` to
+map its keys onto environment variables, and `vault.injector` to write a file into
+the pod — which is how the ZORA token should arrive, since
+`config.resolve_api_token` prefers a file over the inline variable.
+
+The commands below are therefore the **local / debugging** form, not the deployed
+one. Neither command's value should ever reach a file in this repository:
 
 ```bash
 # Postgres DSN. Ask Central Informatics; do not reuse the compose password.
@@ -81,14 +100,30 @@ Field names and value types remain **unverified**. Either run
 [`kubeconform`](https://github.com/yannh/kubeconform) to CI, which validates
 against bundled schemas with no cluster.
 
-## Deliberately unset
+## Resources
 
-**`resources`** — no requests or limits on any container. Nothing here has been
-profiled in a cluster: a full harvest of ~22,541 records has only ever been run on
-a laptop, and an invented memory limit would OOM-kill it mid-run for no reason.
-Without a `LimitRange` these pods are BestEffort and first to be evicted under
-pressure, which is a real trade-off, not an oversight. Fill them in from a measured
-run, not from a guess.
+**`resources` is unset on every container here, and that is a defect rather than a
+trade-off.** The argument used to be: nothing has been profiled in a cluster, an
+invented memory limit would OOM-kill a harvest mid-run, and BestEffort pods being
+first to evict is a price worth paying. The premise was that omitting the field
+degrades scheduling. In this cluster it does not — it prevents scheduling:
+
+> "Da eine Ressourcenquota für den Namespace gesetzt wurde. Muss bei jedem Pod die
+> Ressourcen für memory und cpu angegeben werden, ansonsten wird dieser nicht
+> gestartet!"
+
+The namespace quota is `limits.cpu: 2`, `limits.memory: 4Gi`, `requests.cpu: 2`,
+`requests.memory: 2Gi`, `pods: 10`, `persistentvolumeclaims: 10`,
+`requests.storage: 50Gi`. A pod with no requests and limits is rejected. The shared
+chart supplies defaults through `resources.requests/limits.{cpu,memory}`, which are
+meant to be adjusted rather than accepted.
+
+Note the quota is **namespace-wide**, not per pod: 4 Gi is the sum across every
+container we run. That is the constraint behind the outstanding quota request, since
+bge-m3 is a 568M-parameter model and the indexer and serving pods each hold a copy.
+
+The original instinct was still half right — fill these in from a measured run, not
+a guess. It just cannot be left blank in the meantime.
 
 **The raw-response cache** — `harvest.write_raw_dump` writes one JSONL per run to
 `ZORA_DATA_DIR/raw/`, which exists so ingestion is reproducible without re-hitting
