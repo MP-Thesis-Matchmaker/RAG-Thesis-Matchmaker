@@ -13,7 +13,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 
 ## Current repo state (as of 2026-08-15)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 8 packages, ~2,580 LOC, 94 tests.
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,380 LOC, 127 tests.
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API, scraper, and multi-signal ranking in it are not built yet).
@@ -21,8 +21,8 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 | Package | Status | Concern |
 |---|---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester + scheduler; **owns all writes** |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → ChromaDB |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** |
+| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | implemented | Free text → `ParsedQuery`; rule-based baseline, optional LLM |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | implemented | Grounded prose; weak matches short-circuit before any LLM call |
@@ -31,30 +31,40 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 
 Not built: the **web scraper** (`ThesisPosting` has no producer — sample data only; work sits on
 the unmerged `origin/webscraping` branch) and a **`ranking` package** (`pipeline/`'s docstring
-claims a rank step; in reality ranking is `score = max(hit.score)` inside `ChromaRetriever`).
+claims a rank step; in reality ranking is `score = max(hit.score)` inside `VectorRetriever`).
 
 **Repository-wide idiom — respect it.** `parsing/`, `indexing/`, `retrieval/`, `synthesis/` each
 have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
 `build_*(settings)` factory selecting one from `config.Settings`. That is invariant 3 in code
 form. Each also ships a real offline implementation (`HashEmbedder`, `FakeRetriever`,
-`RuleBasedExtractor`, `TemplateSynthesizer`) — not mocks, which is why CI runs the whole pipeline
-with no model download and no network.
+`RuleBasedExtractor`, `TemplateSynthesizer`, `InMemoryVectorStore`) — not mocks, which is why CI
+runs the whole pipeline with no model download, no database and no network.
 
-What the code currently picks for the three non-final seams (invariant 3 — still swappable, still
-not a decision): embedding `BAAI/bge-m3` (`hash-fake` offline), vector store ChromaDB
-(cosine/HNSW), LLM any OpenAI-compatible endpoint (LibreChat prod, Ollama dev).
+Seam status. The **vector store is now decided: Postgres + pgvector** (cosine, HNSW) — not a
+preference but a constraint of the deployment environment UZH Central Informatics confirmed on
+2026-08-20. It stays behind the `VectorStore` protocol (`InMemoryVectorStore` is the second
+implementation), but treat it as settled, not provisional. Still genuinely open per invariant 3:
+embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is baked into
+`document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
+OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points: `thesis-matchmaker` (`index --source --rebuild`, `match --top-k`),
+Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match --top-k`),
 `thesis-matchmaker-mcp` (`--stdio`), and `python -m thesis_matchmaker.zora.harvest`
 (**no console script**).
 
-**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so `thesis-matchmaker index` indexes 30
-sample rows, not the 22,541-row `data/publications.jsonl`. Use `--source data`.
+**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
+indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
+corpus lives in the `publication` table — index it with `--source db`.
+`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
+longer tracked.
 
-Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (94 tests / 18 files), `ruff` (line
-length 100, py311). Three workflows: `ci.yml` (ruff + pytest on every PR, dev extras only — never
-installs `mcp`/`embeddings`), `zora-build-image.yml` (GHCR image), `zora-harvest.yml` (manual
-harvest that **commits data back to the repo** as `zora-harvest-bot`).
+Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (127 tests / 19 files; 22 need
+Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311). **One workflow**:
+`ci.yml` (ruff + pytest on every PR, dev extras only — never installs `mcp`/`embeddings`).
+Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
+with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
+are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in
+CI, and **never committing data back to the repo**.
 
 Keep this table current as modules land; put the detail in the package README, not here.
 
@@ -62,8 +72,14 @@ Keep this table current as modules land; put the detail in the package README, n
 
 **Modular monolith in a single monorepo.** Not microservices: batch ingestion pipelines writing to
 shared storage don't need HTTP boundaries, and hard module seams inside one repo give decoupling
-without multi-repo friction for a four-person, one-semester team. Per-component containerization
-remains possible later if deployment separation is needed.
+without multi-repo friction for a four-person, one-semester team.
+**Per-component containerization is decided**: one image per deployable role
+(harvester, indexer, serving adapter, posting scraper), each with its own
+`docker/<role>/Dockerfile`. That does **not** imply one source tree per image — a
+single distribution builds all of them, differing only in entrypoint and installed
+extras. Splitting `src/` into a `projects/` workspace is still open, and the
+scraper migration is what decides it. See the Images section of
+[`docs/deployment.md`](docs/deployment.md).
 
 Target layout (~6–8 packages). Names in the code drifted from this list; the mapping and what is
 still missing:
@@ -72,12 +88,13 @@ still missing:
   → **shipped as `contracts/`**
 - `ingestion` — **owns all writes**; sub-packages for ZORA and the scraper, plus a store layer;
   includes a scheduled ingest runner
-  → **shipped as `zora/`** (harvester + scheduler). **The scraper sub-package does not exist yet**;
+  → **shipped as `zora/`** (harvester only; the cluster's CronJobs own scheduling).
+    **The scraper sub-package does not exist yet**;
   when it lands, decide whether it joins `zora/` under a shared `ingestion/` parent
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped
 - `ranking` — multi-signal scoring over retrieved candidates; read-only
-  → **not built.** Ranking is currently one line inside `ChromaRetriever._group_by_person`
+  → **not built.** Ranking is currently one line inside `VectorRetriever._group_by_person`
   (`score = max(hit.score)`). Keep the intent; the slot is between retrieve and synthesise
 - `application service` — plain functions orchestrating retrieval → ranking → LLM synthesis;
   exposes the core use cases

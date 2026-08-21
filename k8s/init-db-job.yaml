@@ -1,0 +1,45 @@
+# Applies the database schema. Runs once before a rollout; safe to re-run, since
+# thesis-matchmaker init-db compares src/thesis_matchmaker/schema.sql's fingerprint
+# against the schema_version row and does nothing when they match.
+#
+# It refuses rather than migrating when they differ -- there is no migration path
+# yet (see docs/deployment.md). A schema change therefore means --reset, which
+# DROPs every table. Do not add --reset to this manifest.
+#
+# A Job's name and pod template are immutable once created, so this is not
+# re-appliable in place. To re-run:
+#   kubectl delete job/thesis-matchmaker-init-db --ignore-not-found
+#   kubectl apply -f k8s/init-db-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: thesis-matchmaker-init-db
+  labels:
+    app.kubernetes.io/name: thesis-matchmaker
+    app.kubernetes.io/component: init-db
+spec:
+  backoffLimit: 2
+  # Let a finished Job clean itself up rather than accumulating.
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: thesis-matchmaker
+        app.kubernetes.io/component: init-db
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init-db
+          # TODO(ci): Harbor host / project / tag. See k8s/README.md.
+          image: TODO(ci)/TODO(ci)/thesis-matchmaker:TODO(ci)
+          # Overrides the image's harvester entrypoint: this is the same
+          # distribution applying its own schema, not a separate role.
+          command: ["thesis-matchmaker", "init-db"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: thesis-matchmaker-db
+                  key: database-url
+          # resources: deliberately unset. Requests and limits would be guesses --
+          # nothing here has been profiled in a cluster. See k8s/README.md.

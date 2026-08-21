@@ -29,15 +29,17 @@ READMEs linked under [Layout](#layout) say what actually exists.*
 ## How it works
 
 1. **Ingestion.** ZORA harvesting and departmental web scraping produce
-   `publications.jsonl` and `theses.jsonl`, validated against the shared
-   pydantic contracts in `src/thesis_matchmaker/contracts`. Harvesting is live —
-   `data/publications.jsonl` holds 22,541 real records, refreshed by
-   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md) or by the
-   manual `zora-harvest` workflow. The scraper is **not built yet**, so
-   `theses.jsonl` is still the synthetic sample in `data/samples/`.
+   publication and thesis-posting records, validated against the shared pydantic
+   contracts in `src/thesis_matchmaker/contracts`. Harvesting is live and writes
+   rows into the `publication` table —
+   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md), roughly
+   22.5k records for the faculty scope currently configured. The scraper is
+   **not built yet**, so thesis postings are still the synthetic
+   `theses.jsonl` sample in `data/samples/`.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
-   ChromaDB index, incrementally via a content-hash diff.
+   Postgres table with a pgvector column, incrementally via a content-hash
+   diff. Create the schema first with `thesis-matchmaker init-db`.
 3. **Query.** Free text is parsed into topics, degree level, and department,
    by a rule-based parser offline or any OpenAI-compatible LLM when one is
    configured. The query is embedded with the same model, matched against
@@ -55,13 +57,16 @@ Needs Python 3.11+.
 ```
 pip install -e ".[dev]"
 cp .env.example .env             # optional, everything runs offline by default
-thesis-matchmaker index --source data
+docker compose up -d postgres    # Postgres + pgvector on localhost:5432
+thesis-matchmaker init-db        # creates the schema
+thesis-matchmaker index          # indexes the 50 checked-in samples
 thesis-matchmaker match "I want a master's thesis in NLP on RAG"
 ```
 
-**`--source data` matters.** Without it, `index` reads `SOURCES_PATH`, which
-defaults to `data/samples` — 30 sample rows rather than the 22,541 harvested
-publications in `data/`. Nothing warns you about the difference.
+**`--source` decides what you are searching.** It defaults to `SOURCES_PATH`,
+which is `data/samples` — right for a fresh clone, but only 50 documents. Once
+the harvester has run, the corpus is in the `publication` table and wants
+`thesis-matchmaker index --source db`. Nothing warns you about the difference.
 
 Optional extras: `.[embeddings]` installs the real embedding model (pulls in
 torch), `.[mcp]` installs the MCP server. All configuration is documented in
@@ -86,7 +91,7 @@ with its public API, data flow, configuration, and known gaps.
 |---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
 | [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to source data. |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → ChromaDB. No chunking. |
+| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → Postgres/pgvector. No chunking. |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
@@ -111,9 +116,10 @@ pytest
 ```
 
 CI (`ci.yml`) runs both on every pull request, with the `dev` extras only — the
-`mcp` and `embeddings` code paths are not exercised there. Two further workflows
-build the harvester image to GHCR (`zora-build-image.yml`) and run a manual
-harvest that commits refreshed data back to the repository (`zora-harvest.yml`).
+`mcp` and `embeddings` code paths are not exercised there. It is the only
+workflow: container images are built by hand until the UZH Harbor registry is
+wired up, and harvesting runs in the cluster, never in CI. See
+[docs/deployment.md](docs/deployment.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 

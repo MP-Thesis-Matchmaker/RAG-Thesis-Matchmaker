@@ -22,6 +22,7 @@ def build_extractor(settings: Settings | None = None) -> QueryExtractor:
             base_url=settings.llm_base_url,
             model=settings.llm_model,
             api_key=settings.llm_api_key,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
     return RuleBasedExtractor()
 

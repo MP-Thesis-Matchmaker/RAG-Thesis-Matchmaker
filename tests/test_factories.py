@@ -7,14 +7,17 @@ from pathlib import Path
 from thesis_matchmaker.config import Settings
 from thesis_matchmaker.indexing import build_embedder, build_indexer
 from thesis_matchmaker.indexing.embedder import HashEmbedder, SentenceTransformerEmbedder
+from thesis_matchmaker.indexing.store import PgVectorStore
 from thesis_matchmaker.retrieval import build_retriever
-from thesis_matchmaker.retrieval.chroma import ChromaRetriever
+from thesis_matchmaker.retrieval.vector import VectorRetriever
+
+_DSN = "postgresql://nobody@localhost:1/unused"
 
 
 def _settings(tmp_path: Path) -> Settings:
     return Settings(
         embedding_model="hash-fake",
-        vector_store_path=str(tmp_path / "index"),
+        database_url=_DSN,
         sources_path=str(tmp_path / "src"),
     )
 
@@ -32,8 +35,10 @@ def test_real_model_name_selects_sentence_transformers(tmp_path: Path) -> None:
 
 
 def test_build_indexer_and_retriever_share_config(tmp_path: Path) -> None:
+    """Wiring the stack must not touch the database: no connection until a query."""
     settings = _settings(tmp_path)
     indexer = build_indexer(settings)
     retriever = build_retriever(settings)
-    assert isinstance(retriever, ChromaRetriever)
-    assert indexer.index_path == Path(settings.vector_store_path)
+    assert isinstance(retriever, VectorRetriever)
+    assert isinstance(indexer.store, PgVectorStore)
+    assert indexer.store.dsn == _DSN

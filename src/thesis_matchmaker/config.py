@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     llm_model: str = "llama3.1"
     llm_api_key: str | None = None
 
+    # Only for reasoning models (Qwen3, o-series, DeepSeek-R1 and friends).
+    # "none" turns hidden reasoning off; "low"/"medium"/"high" bound it. Left
+    # unset by default: the field is meaningless for a non-reasoning model, and
+    # some OpenAI-compatible servers reject request fields they do not know.
+    # Worth setting locally -- an 8B reasoning model can spend 25 s thinking
+    # before its first output token, which reads as a dead endpoint.
+    llm_reasoning_effort: str | None = None
+
     # Minimum retrieval score a candidate needs before the LLM synthesiser
     # presents it as a match; below it the answer says there is no strong match
     # instead of overselling a weak one. 0 disables the filter. Only meaningful
@@ -40,16 +48,16 @@ class Settings(BaseSettings):
     # without the model download).
     embedding_model: str = "BAAI/bge-m3"
 
-    # Where the built vector index lives.
-    vector_store_path: str = "data/index"
+    # Postgres holding both the vector index and (from the ingestion work) the
+    # harvested source rows. pgvector is a decided constraint, not a preference:
+    # the deployment target is a UZH Kubernetes cluster against a managed
+    # Postgres with the extension available. See docs/deployment.md.
+    database_url: str = "postgresql://matchmaker:matchmaker@localhost:5432/matchmaker"
 
     # Directory the ingestion component writes its JSONL output to; the
     # indexer reads publications.jsonl and theses.jsonl from here. Defaults to
     # the checked-in synthetic sample data until real ingestion output exists.
     sources_path: str = "data/samples"
-
-    # Name of the vector store collection holding the index.
-    collection_name: str = "matchmaker"
 
     # MCP server. This is deployed as a standalone service that the AI Buddy
     # agent points at, so the tools are served over HTTP at

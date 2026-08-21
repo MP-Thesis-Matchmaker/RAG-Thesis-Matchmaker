@@ -2,13 +2,12 @@
 Thin wrapper around dspace_rest_client.DSpaceClient, scoped to the
 Faculty of Economics community.
 
-Auth: DSpaceClient reads a personal access token automatically at
-construction time, in this order:
-  1. the file path in the PERSONAL_API_TOKEN_FILE env var
-  2. .dspace-personal-api-token.secret in the current working directory
-  3. .dspace-personal-api-token.secret in the user's home directory
-No manual header wiring is needed on our side — just make sure one of
-those three is set before this module constructs the client.
+Auth: we resolve the personal access token ourselves — from
+ZORA_UZH_API_KEY_FILE or ZORA_UZH_API_KEY, see config.resolve_api_token —
+and assign it to the constructed client. That overrides the token
+DSpaceClient scrapes from the environment on its own, so resolution is
+deterministic and there is exactly one documented contract. No manual
+header wiring is needed beyond that assignment.
 """
 
 import logging
@@ -51,12 +50,9 @@ def get_client() -> DSpaceClient:
     client.session.mount("http://", adapter)
     client.session.mount("https://", adapter)
 
-    if client.api_token is None:
-        raise RuntimeError(
-            "No personal API token found. Set PERSONAL_API_TOKEN_FILE to a "
-            "file containing the token, or place it at "
-            "./.dspace-personal-api-token.secret"
-        )
+    # Must happen before authenticate(), which branches on api_token being
+    # set; overwrites whatever the client picked up from the environment.
+    client.api_token = config.resolve_api_token()
 
     authenticated = client.authenticate()
     if not authenticated:

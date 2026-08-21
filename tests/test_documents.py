@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
 from thesis_matchmaker.indexing.documents import posting_to_document, zora_to_document
 
@@ -42,22 +40,23 @@ def test_zora_document_carries_id_and_metadata() -> None:
     assert doc.metadata["language"] == "eng"
 
 
-def test_zora_document_encodes_author_fields_as_json() -> None:
+def test_zora_document_keeps_author_fields_as_native_collections() -> None:
+    """The store column is jsonb, so lists and maps are stored as themselves."""
     doc = zora_to_document(_zora())
-    assert json.loads(doc.metadata["authors"]) == ["A. Müller", "X. External"]
-    assert json.loads(doc.metadata["uzh_authors"]) == ["A. Müller"]
-    assert json.loads(doc.metadata["author_authority_map"]) == {
+    assert doc.metadata["authors"] == ["A. Müller", "X. External"]
+    assert doc.metadata["uzh_authors"] == ["A. Müller"]
+    assert doc.metadata["author_authority_map"] == {
         "A. Müller": "uuid-1",
         "X. External": None,
     }
-    assert json.loads(doc.metadata["keywords"]) == ["retrieval", "german"]
+    assert doc.metadata["keywords"] == ["retrieval", "german"]
     assert doc.metadata["has_uzh_author"] is True
 
 
 def test_zora_document_without_uzh_authors_is_flagged_ineligible() -> None:
     doc = zora_to_document(_zora(uzh_authors=[], author_authority_map={"A. Müller": None}))
     assert doc.metadata["has_uzh_author"] is False
-    assert json.loads(doc.metadata["uzh_authors"]) == []
+    assert doc.metadata["uzh_authors"] == []
 
 
 def test_zora_document_handles_missing_optionals() -> None:

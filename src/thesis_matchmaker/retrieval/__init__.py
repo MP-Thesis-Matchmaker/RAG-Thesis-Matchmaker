@@ -10,13 +10,13 @@ from thesis_matchmaker.retrieval.fake import FakeRetriever
 def build_retriever(settings: Settings) -> Retriever:
     """Wire the real retriever over the configured embedder and store.
 
-    Imported lazily so importing the retrieval package (e.g. for the fake)
-    does not pull in chromadb.
+    Imported lazily so importing the retrieval package (e.g. for the fake) does
+    not open a database connection or reach for the embedding model.
     """
     from thesis_matchmaker.indexing import build_embedder, build_store
-    from thesis_matchmaker.retrieval.chroma import ChromaRetriever
+    from thesis_matchmaker.retrieval.vector import VectorRetriever
 
-    return ChromaRetriever(embedder=build_embedder(settings), store=build_store(settings))
+    return VectorRetriever(embedder=build_embedder(settings), store=build_store(settings))
 
 
 __all__ = ["FakeRetriever", "Retriever", "build_retriever"]

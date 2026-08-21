@@ -8,12 +8,16 @@ rule-based parser on any error, so a flaky dev model never breaks the pipeline.
 
 from __future__ import annotations
 
+import logging
+
 from pydantic import BaseModel, Field, ValidationError
 
 from thesis_matchmaker.contracts import DegreeLevel, ParsedQuery
 from thesis_matchmaker.llm import LLMClient, LLMError
 from thesis_matchmaker.parsing.base import QueryExtractor
 from thesis_matchmaker.parsing.rule_based import RuleBasedExtractor
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "You extract structured search fields from a student's description of their "
@@ -41,16 +45,25 @@ class OpenAICompatExtractor:
         api_key: str | None = None,
         timeout: float = 30.0,
         fallback: QueryExtractor | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
-        self._client = LLMClient(base_url, model, api_key, timeout)
+        self._client = LLMClient(base_url, model, api_key, timeout, reasoning_effort)
         self._fallback = fallback or RuleBasedExtractor()
 
     def extract(self, raw_query: str) -> ParsedQuery:
         try:
             content = self._client.chat(_SYSTEM, raw_query, json_mode=True)
             data = _QueryExtraction.model_validate_json(content)
-        except (LLMError, ValidationError):
-            # Endpoint unreachable or gave something off-schema; degrade quietly.
+        except (LLMError, ValidationError) as exc:
+            # Endpoint unreachable or gave something off-schema. Degrading to the
+            # rule-based parser is right, but doing it silently is not: the
+            # fallback's output is indistinguishable from "no LLM configured",
+            # so a timing out endpoint looks like a correctly offline pipeline.
+            logger.warning(
+                "LLM query parsing failed (%s: %s) - falling back to the rule-based parser",
+                type(exc).__name__,
+                exc,
+            )
             return self._fallback.extract(raw_query)
         return ParsedQuery(
             topics=data.topics,

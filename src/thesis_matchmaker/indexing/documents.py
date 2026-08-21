@@ -14,7 +14,11 @@ from pydantic import BaseModel, Field
 
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
 
-MetadataValue = str | int | float | bool
+# The store keeps metadata in a jsonb column, so lists and maps are stored as
+# themselves. Filters are still flat equality over scalars -- that is all
+# retrieval asks for, and it maps onto one jsonb containment predicate.
+MetadataScalar = str | int | float | bool
+MetadataValue = MetadataScalar | list[str] | dict[str, str | None]
 
 
 class Document(BaseModel):
@@ -49,18 +53,15 @@ def zora_to_document(record: ZoraRecord) -> Document:
             "year": record.year,
             "language": record.language,
             "url": record.url,
-            # Chroma metadata only holds scalars, so lists and dicts are stored
-            # as JSON strings and parsed on retrieval. They cannot be filtered
-            # on (Chroma has no array/substring operators over metadata); any
-            # filterable signal needs its own scalar key, like has_uzh_author
-            # below. Exact keyword filtering would need where_document
-            # $contains or a store with array filters (Qdrant/Weaviate).
-            "authors": json.dumps(record.authors),
-            "uzh_authors": json.dumps(record.uzh_authors),
-            "author_authority_map": json.dumps(record.author_authority_map),
-            "keywords": json.dumps(record.keywords),
-            # Query-time eligibility filter: only publications with at least
-            # one registered UZH researcher can lead to a supervisor match.
+            "authors": record.authors,
+            "uzh_authors": record.uzh_authors,
+            "author_authority_map": record.author_authority_map,
+            "keywords": record.keywords,
+            # Query-time eligibility filter: only publications with at least one
+            # registered UZH researcher can lead to a supervisor match. Kept as
+            # its own scalar even though jsonb could express the array test,
+            # because the filter API is flat equality -- this is the only shape
+            # the eligibility rule fits into.
             "has_uzh_author": bool(record.uzh_authors),
         },
     )

@@ -10,7 +10,8 @@ import pytest
 from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer, ModelMismatchError
-from thesis_matchmaker.indexing.store import ChromaVectorStore
+from thesis_matchmaker.indexing.sources import JsonlSourceReader
+from thesis_matchmaker.indexing.store import InMemoryVectorStore
 
 
 def _write_sources(
@@ -32,71 +33,83 @@ def _posting(post_id: str = "posting:1") -> ThesisPosting:
 
 
 @pytest.fixture()
-def index_dir(tmp_path: Path) -> Path:
-    return tmp_path / "index"
+def store() -> InMemoryVectorStore:
+    """One store shared across the runs in a test, standing in for one database."""
+    return InMemoryVectorStore()
 
 
-def _indexer(index_dir: Path) -> Indexer:
-    store = ChromaVectorStore(path=str(index_dir), collection_name="test")
-    return Indexer(embedder=HashEmbedder(), store=store, index_path=index_dir)
+def _indexer(store: InMemoryVectorStore) -> Indexer:
+    return Indexer(embedder=HashEmbedder(), store=store)
 
 
-def test_fresh_build_embeds_everything(tmp_path: Path, index_dir: Path) -> None:
+def test_fresh_build_embeds_everything(tmp_path: Path, store: InMemoryVectorStore) -> None:
     _write_sources(tmp_path / "src", [_publication()], [_posting()])
-    result = _indexer(index_dir).run(tmp_path / "src")
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     assert result.embedded == 2
     assert result.skipped == 0
     assert result.deleted == 0
 
 
-def test_rerun_embeds_nothing(tmp_path: Path, index_dir: Path) -> None:
+def test_rerun_embeds_nothing(tmp_path: Path, store: InMemoryVectorStore) -> None:
     _write_sources(tmp_path / "src", [_publication()], [_posting()])
-    _indexer(index_dir).run(tmp_path / "src")
-    result = _indexer(index_dir).run(tmp_path / "src")
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     assert result.embedded == 0
     assert result.skipped == 2
 
 
-def test_changed_record_reembedded(tmp_path: Path, index_dir: Path) -> None:
+def test_changed_record_reembedded(tmp_path: Path, store: InMemoryVectorStore) -> None:
     _write_sources(tmp_path / "src", [_publication()], [_posting()])
-    _indexer(index_dir).run(tmp_path / "src")
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     _write_sources(tmp_path / "src", [_publication(abstract="Different now.")], [_posting()])
-    result = _indexer(index_dir).run(tmp_path / "src")
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     assert result.embedded == 1
     assert result.skipped == 1
 
 
-def test_removed_record_deleted(tmp_path: Path, index_dir: Path) -> None:
+def test_removed_record_deleted(tmp_path: Path, store: InMemoryVectorStore) -> None:
     _write_sources(tmp_path / "src", [_publication(), _publication("zora:2")], [_posting()])
-    _indexer(index_dir).run(tmp_path / "src")
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     _write_sources(tmp_path / "src", [_publication()], [_posting()])
-    result = _indexer(index_dir).run(tmp_path / "src")
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
     assert result.deleted == 1
 
 
-def test_malformed_lines_skipped_not_fatal(tmp_path: Path, index_dir: Path) -> None:
+def test_malformed_lines_skipped_not_fatal(tmp_path: Path, store: InMemoryVectorStore) -> None:
     sources = tmp_path / "src"
     _write_sources(sources, [_publication()], [])
     with (sources / "publications.jsonl").open("a") as f:
         f.write("{not valid json\n")
         f.write(json.dumps({"title": "missing required id"}) + "\n")
-    result = _indexer(index_dir).run(sources)
+    result = _indexer(store).run(JsonlSourceReader(sources))
     assert result.embedded == 1
     assert result.invalid_lines == 2
 
 
-def test_manifest_written_and_model_guarded(tmp_path: Path, index_dir: Path) -> None:
+def test_manifest_written_and_model_guarded(tmp_path: Path, store: InMemoryVectorStore) -> None:
     _write_sources(tmp_path / "src", [_publication()], [_posting()])
-    _indexer(index_dir).run(tmp_path / "src")
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
 
-    manifest = json.loads((index_dir / "manifest.json").read_text())
-    assert manifest["embedding_model"] == "hash-fake"
-    assert manifest["document_count"] == 2
+    manifest = store.read_manifest()
+    assert manifest is not None
+    assert manifest.embedding_model == "hash-fake"
+    assert manifest.document_count == 2
 
-    store = ChromaVectorStore(path=str(index_dir), collection_name="test")
-    mismatched = Indexer(embedder=_RenamedEmbedder(), store=store, index_path=index_dir)
+    mismatched = Indexer(embedder=_RenamedEmbedder(), store=store)
     with pytest.raises(ModelMismatchError):
-        mismatched.run(tmp_path / "src")
+        mismatched.run(JsonlSourceReader(tmp_path / "src"))
+
+
+def test_changed_vector_width_is_a_migration_not_a_rebuild(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    """A narrower model does not fit `vector(n)`, so it must be refused up front."""
+    _write_sources(tmp_path / "src", [_publication()], [_posting()])
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+
+    narrower = Indexer(embedder=HashEmbedder(dim=32), store=store)
+    with pytest.raises(ModelMismatchError, match="migration"):
+        narrower.run(JsonlSourceReader(tmp_path / "src"))
 
 
 class _RenamedEmbedder(HashEmbedder):

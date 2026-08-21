@@ -13,6 +13,12 @@ import re
 import struct
 from typing import Protocol
 
+# Width of the vectors the index stores. Fixed project-wide because pgvector
+# needs the dimension in the DDL (`vector(n)`) and HNSW cannot index a column of
+# unspecified width. 1024 is BAAI/bge-m3's output size. Switching to a model of
+# a different width is therefore a schema migration, not a config change.
+EMBEDDING_DIM = 1024
+
 
 class Embedder(Protocol):
     """What indexing and retrieval depend on for embeddings.
@@ -24,6 +30,11 @@ class Embedder(Protocol):
     @property
     def model_name(self) -> str:
         """Identifier stored in the index manifest to detect model changes."""
+        ...
+
+    @property
+    def dimensions(self) -> int:
+        """Vector width; must match the store's `vector(n)` column."""
         ...
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
@@ -42,12 +53,16 @@ class HashEmbedder:
     so tests can assert on ranking and filtering without downloading a model.
     """
 
-    def __init__(self, dim: int = 64) -> None:
+    def __init__(self, dim: int = EMBEDDING_DIM) -> None:
         self.dim = dim
 
     @property
     def model_name(self) -> str:
         return "hash-fake"
+
+    @property
+    def dimensions(self) -> int:
+        return self.dim
 
     def _token_vector(self, token: str) -> list[float]:
         vector: list[float] = []
@@ -94,6 +109,10 @@ class SentenceTransformerEmbedder:
     @property
     def model_name(self) -> str:
         return self._model_name
+
+    @property
+    def dimensions(self) -> int:
+        return int(self._load().get_sentence_embedding_dimension())
 
     def _load(self):
         if self._model is None:

@@ -7,7 +7,8 @@ actually present, with one example value each — plus an explicit check
 against the field names this pipeline assumes.
 
 Usage:
-    export PERSONAL_API_TOKEN_FILE=/path/to/your/token.secret
+    export ZORA_UZH_API_KEY=<your ZORA personal API token>
+    # or: export ZORA_UZH_API_KEY_FILE=/path/to/your/token.secret
     python -m scripts.zora_inspect_fields [n_items]
 
 Note: this needs real network access to www.zora.uzh.ch, so it will not run

@@ -52,7 +52,7 @@ are what the adapters call.
 So a bare `Pipeline()` returns plausible-looking fake results. Every real caller
 must check that the index exists and pass a real retriever; `cli.py` and
 `adapters/service.py` both do this by testing for
-`<vector_store_path>/manifest.json`. That check is duplicated in two places rather
+the `index_manifest` row. That check is duplicated in two places rather
 than living here.
 
 ## Configuration
@@ -78,7 +78,7 @@ the fake retriever.
 - **There is no rank step.** `orchestrator.py`'s module docstring describes
   "parse → retrieve → rank → synthesise", but no ranking happens here and there is
   no `ranking` package. What ranking exists is `score = max(hit.score)` inside
-  `ChromaRetriever._group_by_person` — see
+  `VectorRetriever._group_by_person` — see
   [`../retrieval/README.md`](../retrieval/README.md). When multi-signal ranking is
   built, this is where it slots in, between retrieve and synthesise.
 - **The index-exists check is duplicated** in `cli.py` and
