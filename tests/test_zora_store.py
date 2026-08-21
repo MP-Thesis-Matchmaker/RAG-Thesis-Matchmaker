@@ -74,6 +74,36 @@ def test_full_harvest_prunes_publications_it_no_longer_sees(clean_db: str) -> No
     assert result.total == 2
 
 
+def test_full_harvest_prune_scales_to_a_large_kept_set(clean_db: str) -> None:
+    """Pins the prune semantics across the anti-join rewrite.
+
+    The original `id <> ALL(%s)` evaluated the kept-id array once per row, which
+    is quadratic and became untenable at the real corpus size (~215k kept ids
+    against ~22k rows). The replacement has to agree with it exactly: every row
+    present in the kept set survives, every row absent from it goes.
+    """
+    _write(clean_db, [_row(f"zora:{i}") for i in range(50)], mode="full")
+    kept = [_row(f"zora:{i}") for i in range(25)] + [_row(f"zora:new-{i}") for i in range(2000)]
+    result = _write(clean_db, kept, mode="full", previous_total=50)
+    assert result.aborted is False
+    assert result.deleted == 25
+    assert result.total == 2025
+
+
+def test_full_harvest_with_nothing_kept_prunes_everything(clean_db: str) -> None:
+    """The empty-kept-set edge case, which the two DELETE formulations could differ on.
+
+    `id <> ALL('{}')` is TRUE for every row, so an empty full harvest wipes the
+    table. That only survives the retention check when there was nothing to lose
+    (previous_total = 0), but the semantics must not change silently.
+    """
+    _write(clean_db, [_row("zora:1"), _row("zora:2")], mode="full")
+    result = _write(clean_db, [], mode="full", previous_total=0)
+    assert result.aborted is False
+    assert result.deleted == 2
+    assert store.publication_count(clean_db) == 0
+
+
 def test_incremental_harvest_never_deletes(clean_db: str) -> None:
     """An incremental run only ever saw new items, so absence proves nothing."""
     _write(clean_db, [_row(f"zora:{i}") for i in range(4)], mode="full")
