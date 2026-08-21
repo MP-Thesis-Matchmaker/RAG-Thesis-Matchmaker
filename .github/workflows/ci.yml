@@ -14,9 +14,15 @@ on:
 # touched no Python at all.
 #
 # uv's own version is pinned for the same reason: it is the tool that reads the
-# lock. The two pins below are deliberately literal rather than a shared `env`
-# value -- a workflow expression is the one thing here that cannot be tested
-# before pushing, so keep them in sync by hand.
+# lock. The pins below are deliberately literal rather than a shared `env` value
+# -- a workflow expression is the one thing here that cannot be tested before
+# pushing, so keep the two copies in sync by hand.
+#
+# setup-uv is pinned by commit SHA, not by tag. Partly because it has no moving
+# major tag above v7, so `@v10` does not resolve at all -- only `v10.0.1` exists
+# -- and partly because a tag is mutable while this action runs with the
+# workflow's token. The trailing comment is the only thing making the SHA
+# readable, so update both together.
 
 jobs:
   # The whole suite with no server and no network. This is the property worth
@@ -28,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.17"
           python-version: "3.11"
@@ -73,7 +79,7 @@ jobs:
       DATABASE_URL: postgresql://matchmaker:matchmaker@localhost:5432/matchmaker_test
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.17"
           python-version: "3.11"
