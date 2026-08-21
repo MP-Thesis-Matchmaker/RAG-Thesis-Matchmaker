@@ -121,8 +121,8 @@ Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
 ### Scheduling
 
 This package does not decide when to run. There was an in-process poll loop
-(`scheduler.py`, deleted); the cluster's CronJobs replace it, and the `k8s/`
-manifests hold the two schedules. See
+(`scheduler.py`, deleted); the cluster's CronJobs replace it, and
+[`k8s/`](../../../k8s/README.md) holds the two schedules. See
 [`docs/deployment.md`](../../../docs/deployment.md).
 
 What the CronJobs replaced is narrower than it looks. They took over the *when* —

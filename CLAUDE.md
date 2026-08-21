@@ -72,8 +72,14 @@ Keep this table current as modules land; put the detail in the package README, n
 
 **Modular monolith in a single monorepo.** Not microservices: batch ingestion pipelines writing to
 shared storage don't need HTTP boundaries, and hard module seams inside one repo give decoupling
-without multi-repo friction for a four-person, one-semester team. Per-component containerization
-remains possible later if deployment separation is needed.
+without multi-repo friction for a four-person, one-semester team.
+**Per-component containerization is decided**: one image per deployable role
+(harvester, indexer, serving adapter, posting scraper), each with its own
+`docker/<role>/Dockerfile`. That does **not** imply one source tree per image — a
+single distribution builds all of them, differing only in entrypoint and installed
+extras. Splitting `src/` into a `projects/` workspace is still open, and the
+scraper migration is what decides it. See the Images section of
+[`docs/deployment.md`](docs/deployment.md).
 
 Target layout (~6–8 packages). Names in the code drifted from this list; the mapping and what is
 still missing:
