@@ -61,7 +61,7 @@ with `--source db`.
 longer tracked.
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (145 tests /
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (159 tests /
 20 files; 24 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).

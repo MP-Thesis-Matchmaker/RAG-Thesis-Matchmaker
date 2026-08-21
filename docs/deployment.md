@@ -300,17 +300,24 @@ Not questions for Central Informatics — things we owe ourselves.
   `ai-buddy` evaluation repo builds from `ghcr.io/astral-sh/uv:python3.12-bookworm`
   onto `python:3.12-slim`). Closing it means a 3.12 leg in the CI matrix, or 3.12
   everywhere.
-- **A full re-index takes the better part of a day under the default quota, and
-  torch has to be told the CPU limit or it takes twice that.** Measured on an
-  Apple M-series laptop, in the `docker/indexer/` image, embedding the 50
-  checked-in samples with real `BAAI/bge-m3` and extrapolating linearly to the
-  22,541-row corpus:
+- **A full index takes the better part of a week under the default quota.**
+  Measured on an Apple M-series laptop, in the `docker/indexer/` image, embedding
+  the 50 checked-in samples with real `BAAI/bge-m3` and extrapolating linearly to
+  the **214,685**-row corpus the 2026-08-21 full harvest produced:
 
-  | Container CPU | torch threads | docs/s | 22,541 docs | Peak RSS |
+  | Container CPU | torch threads | docs/s | 214,685 docs | Peak RSS |
   |---|---|---|---|---|
-  | unrestricted (18 cores) | default (18) | 2.0 | ~3.1 h | 3.55 GiB |
-  | `--cpus 2` | default (18) | 0.2 | **~30.6 h** | 3.65 GiB |
-  | `--cpus 2` | `OMP_NUM_THREADS=2` | 0.4 | **~14.9 h** | 3.62 GiB |
+  | unrestricted (18 cores) | default (18) | 2.05 | ~29 h | 3.55 GiB |
+  | `--cpus 2` | default (18), before the fix | 0.20 | **~12.1 days** | 3.65 GiB |
+  | `--cpus 2` | `OMP_NUM_THREADS=2` set externally | 0.42 | ~5.9 days | 3.62 GiB |
+  | `--cpus 2` | **detected from the quota, empty env** | 0.37 | **~6.7 days** | 3.61 GiB |
+
+  **~57% of that work is discarded at query time.** `indexing/sources.py`'s
+  `_SELECT_PUBLICATIONS` has no `WHERE` clause, so every publication is embedded,
+  while `retrieval/`'s pre-filter only ever returns the ~91,700 with a UZH author.
+  Restricting the indexing query would cut a full index roughly in half. It is a
+  behaviour change — those rows would stop being searchable at all, which matters
+  if the pre-filter is ever relaxed — so it is not done here.
 
   Two things follow. First, **peak RSS is ~3.6 GiB whatever the CPU budget**, and
   the namespace ceiling is 4 Gi *in total* — so one indexer pod all but exhausts
@@ -318,21 +325,39 @@ Not questions for Central Informatics — things we owe ourselves.
   model cannot coexist with it. That is the number the quota request rests on.
 
   Second, **a Kubernetes CPU limit does not reduce `os.cpu_count()`**. It is a CFS
-  quota, so torch sees every core on the node and spawns that many threads to
-  contend over a 2-core budget; pinning `OMP_NUM_THREADS` to the limit was worth a
-  clean 2×. Any indexer pod should therefore set it to match
-  `resources.limits.cpu` — or better, `SentenceTransformerEmbedder` should read
-  the cgroup quota and call `torch.set_num_threads()` itself, which would stop
-  this depending on whoever writes the manifest.
+  bandwidth quota, so torch sees every core on the node and starts that many
+  threads to contend over a 2-core budget — measured at 18 threads under
+  `--cpus 2`, and `os.sched_getaffinity()` reports 18 as well, so nothing in the
+  standard library exposes the real allowance.
 
-  All of these are laptop numbers extrapolated from 50 documents. Present them to
-  CCS with that method attached; do not restate them as cluster measurements.
-- **The `[mcp]` extra was pinned to `<2` to match code that was never built.**
-  `mcp>=1.2` resolved to SDK **2.0.0**, which removed `FastMCP`; the adapter
-  imports `mcp.server.fastmcp`, so `thesis-matchmaker-mcp` could not start at all.
-  CI never installs the extra, so nothing caught it. The constraint makes the code
-  and its dependency agree today; porting the adapter to the 2.x API
-  (`mcp.server.mcpserver`) is a separate task.
+  **This is now handled in code, so no manifest has to remember it.**
+  `indexing/embedder.cpu_limit()` reads `/sys/fs/cgroup/cpu.max` (falling back to
+  the v1 `cpu.cfs_quota_us`/`cpu.cfs_period_us` pair) and
+  `SentenceTransformerEmbedder._load()` applies it — to `OMP_NUM_THREADS` before
+  the first torch import, because OpenMP reads that at library init, and to
+  `torch.set_num_threads()` after. An `OMP_NUM_THREADS` the operator set is never
+  overridden. The last table row is that fix with an empty environment: 1.8× over
+  the unfixed run, about 12% behind pinning the variable externally, which is
+  within single-run variance on a laptop and not worth chasing. It does not make a
+  full index cheap — 6.7 days is not 12.1, but neither is a working schedule; the
+  quota raise is what actually fixes this.
+
+  All of these are laptop numbers extrapolated from 50 documents to 214,685 — four
+  orders of magnitude, linearly, where a real run has batch and cache effects.
+  Present them to CCS with that method attached; do not restate them as cluster
+  measurements. The honest summary is "days, not hours, and the CPU limit is the
+  dominant term".
+- **The `[mcp]` extra now requires SDK 2.x, and the adapter was ported to it.**
+  `mcp>=1.2` had resolved to **2.0.0**, which removed `FastMCP`, so
+  `thesis-matchmaker-mcp` could not start at all — CI never installs the extra, so
+  nothing caught it until an image was built. The adapter uses `MCPServer` from
+  `mcp.server.mcpserver`, and passes `host`/`port` to `run()` instead of poking
+  `mcp.settings`. The wire format was checked before and after: tool names,
+  descriptions, output schemas and the `tools/call` response shape are unchanged.
+  One field moved on purpose — `serverInfo.version` was reporting the SDK's version
+  (`1.29.0`) and now reports the distribution's (`0.0.1`).
+  **The module is still untested**, which is how this got missed; see
+  [`adapters/README.md`](../src/thesis_matchmaker/adapters/README.md).
 
 ## Registry
 

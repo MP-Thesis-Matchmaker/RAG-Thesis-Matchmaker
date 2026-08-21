@@ -29,7 +29,12 @@ dependencies = [
 # Local embedding model (BGE-M3). Kept out of the default install because it
 # pulls in torch; CI and the fake embedder do not need it.
 embeddings = [
-    "sentence-transformers>=3.0",
+    # Floor is 5.6 because SentenceTransformerEmbedder calls
+    # get_embedding_dimension, which only exists in 5.x -- it lives in the
+    # sentence_transformers/sentence_transformer/ subpackage introduced by that
+    # restructure, and the 3.x/4.x name warns on every call. >=3.0 was promising
+    # support for versions whose API we do not call.
+    "sentence-transformers>=5.6",
     # torch is a transitive dependency of sentence-transformers and would resolve
     # perfectly well without being named here. It is listed because
     # [tool.uv.sources] below is only honoured for OUR OWN dependencies -- a
@@ -43,17 +48,14 @@ embeddings = [
     # the ceiling deliberately, once, when both indexes carry the newer version.
     "torch>=2.6,<2.13",
 ]
-# MCP server adapter (FastMCP). Optional: only needed to run the tool server.
+# MCP server adapter. Optional: only needed to run the tool server.
 #
-# Capped below 2.0 because adapters/mcp_server.py imports mcp.server.fastmcp,
-# and SDK 2.0 removed FastMCP -- the equivalent now lives at
-# mcp.server.mcpserver. With an open range this resolved to 2.0.0 and
-# thesis-matchmaker-mcp could not start at all; CI never installs this extra, so
-# nothing caught it. The floor is 1.9 because the server runs over the
-# streamable-http transport, which earlier 1.x releases do not offer. Porting
-# the adapter to the 2.x API is the way to lift this, not widening the range.
+# Floor is 2.0 because the adapter uses the 2.x API: MCPServer, from
+# mcp.server.mcpserver, with host and port as run() arguments. 1.x had FastMCP
+# at mcp.server.fastmcp and configured the address through mcp.settings, so the
+# two majors are not interchangeable and a range spanning both would be a lie.
 mcp = [
-    "mcp>=1.9,<2",
+    "mcp>=2.0",
 ]
 
 # Test tooling is not an optional feature of the distribution -- nobody
