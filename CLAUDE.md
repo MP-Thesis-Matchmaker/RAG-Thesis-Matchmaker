@@ -58,9 +58,11 @@ corpus lives in the `publication` table — index it with `--source db`.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
 longer tracked.
 
-Tooling: `uv` locally (`uv.lock` **is tracked**), `pytest` (127 tests / 19 files; 22 need
-Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311). **One workflow**:
-`ci.yml` (ruff + pytest on every PR, dev extras only — never installs `mcp`/`embeddings`).
+Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (127 tests /
+19 files; 22 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
+on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
 with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
 are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in

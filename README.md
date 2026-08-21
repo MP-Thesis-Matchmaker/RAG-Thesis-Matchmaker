@@ -52,15 +52,15 @@ READMEs linked under [Layout](#layout) say what actually exists.*
 
 ## Quickstart
 
-Needs Python 3.11+.
+Needs [uv](https://docs.astral.sh/uv/) and Python 3.11+.
 
 ```
-pip install -e ".[dev]"
-cp .env.example .env             # optional, everything runs offline by default
-docker compose up -d postgres    # Postgres + pgvector on localhost:5432
-thesis-matchmaker init-db        # creates the schema
-thesis-matchmaker index          # indexes the 50 checked-in samples
-thesis-matchmaker match "I want a master's thesis in NLP on RAG"
+uv sync                           # installs exactly what uv.lock pins, dev tooling included
+cp .env.example .env              # optional, everything runs offline by default
+docker compose up -d postgres     # Postgres + pgvector on localhost:5432
+uv run thesis-matchmaker init-db  # creates the schema
+uv run thesis-matchmaker index    # indexes the 50 checked-in samples
+uv run thesis-matchmaker match "I want a master's thesis in NLP on RAG"
 ```
 
 **`--source` decides what you are searching.** It defaults to `SOURCES_PATH`,
@@ -68,8 +68,11 @@ which is `data/samples` — right for a fresh clone, but only 50 documents. Once
 the harvester has run, the corpus is in the `publication` table and wants
 `thesis-matchmaker index --source db`. Nothing warns you about the difference.
 
-Optional extras: `.[embeddings]` installs the real embedding model (pulls in
-torch), `.[mcp]` installs the MCP server. All configuration is documented in
+Optional extras: `uv sync --extra embeddings` adds the real embedding model
+(pulls in torch), `uv sync --extra mcp` adds the MCP server. Ask for both in one
+command if you want both — unlike `pip install`, `uv sync` makes the environment
+*match* what you named, so it uninstalls whatever you left out. All
+configuration is documented in
 `.env.example`; to use an LLM, point `LLM_BASE_URL` at any OpenAI-compatible
 endpoint (LibreChat in production, or a local Ollama during development).
 
@@ -111,14 +114,15 @@ download and no network.
 ## Development
 
 ```
-ruff check . && ruff format --check .
-pytest
+uv run ruff check . && uv run ruff format --check .
+uv run pytest
 ```
 
-CI (`ci.yml`) runs both on every pull request, with the `dev` extras only — the
-`mcp` and `embeddings` code paths are not exercised there. It is the only
-workflow: container images are built by hand until the UZH Harbor registry is
-wired up, and harvesting runs in the cluster, never in CI. See
+CI (`ci.yml`) runs both on every pull request, installing with `uv sync --locked`
+so it gets the versions in `uv.lock` and not whatever has been released since —
+the `dev` group only, so the `mcp` and `embeddings` code paths are not exercised
+there. It is the only workflow: container images are built by hand until the UZH
+Harbor registry is wired up, and harvesting runs in the cluster, never in CI. See
 [docs/deployment.md](docs/deployment.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.

@@ -13,5 +13,5 @@ tests/
 docs/
 notebooks/
 
-vencv/
+venv/
 .venv/

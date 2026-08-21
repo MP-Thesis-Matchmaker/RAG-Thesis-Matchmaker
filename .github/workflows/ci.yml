@@ -5,6 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# Dependencies come from uv.lock, never from a fresh resolution. `uv sync
+# --locked` fails when pyproject.toml and uv.lock disagree, which turns "edited
+# a dependency and forgot to re-lock" into a red build on the PR that caused it
+# instead of a silent difference between CI and everyone's laptop. Before this,
+# CI installed the project with pip straight from the version ranges in
+# pyproject.toml, and a ruff release nobody asked for failed a branch that
+# touched no Python at all.
+#
+# uv's own version is pinned for the same reason: it is the tool that reads the
+# lock. The two pins below are deliberately literal rather than a shared `env`
+# value -- a workflow expression is the one thing here that cannot be tested
+# before pushing, so keep them in sync by hand.
+
 jobs:
   # The whole suite with no server and no network. This is the property worth
   # protecting: the offline implementations (HashEmbedder, InMemoryVectorStore,
@@ -15,17 +28,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10
         with:
+          version: "0.11.17"
           python-version: "3.11"
+          # Keyed on uv.lock, so the cache invalidates exactly when the
+          # dependency set does.
+          enable-cache: true
+      # The dev group is a default group, so plain `uv sync` is the whole dev
+      # environment. The mcp and embeddings extras are not requested and so are
+      # not installed -- that is the seam this job exists to keep honest.
       - name: Install
-        run: pip install -e ".[dev]"
+        run: uv sync --locked
+      # --no-sync: the environment was just built from the lock; re-checking it
+      # per step buys nothing and would let a step quietly change it.
       - name: Lint
-        run: ruff check .
+        run: uv run --no-sync ruff check .
       - name: Format
-        run: ruff format --check .
+        run: uv run --no-sync ruff format --check .
       - name: Test
-        run: pytest
+        run: uv run --no-sync pytest
 
   # The same store contract against real pgvector: real SQL, real HNSW, real
   # jsonb containment. Skipped locally when DATABASE_URL is unset.
@@ -51,12 +73,14 @@ jobs:
       DATABASE_URL: postgresql://matchmaker:matchmaker@localhost:5432/matchmaker_test
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10
         with:
+          version: "0.11.17"
           python-version: "3.11"
+          enable-cache: true
       - name: Install
-        run: pip install -e ".[dev]"
+        run: uv sync --locked
       - name: Create schema
-        run: thesis-matchmaker init-db
+        run: uv run --no-sync thesis-matchmaker init-db
       - name: Test
-        run: pytest
+        run: uv run --no-sync pytest

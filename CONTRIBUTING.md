@@ -36,6 +36,21 @@ We want to keep our codebase clean, collaborative, and professional.
 
 ---
 
+## Dependencies
+
+- Install and run everything through `uv`: `uv sync` builds the environment, `uv run <cmd>` runs
+  anything inside it. **Never `pip install`** — pip re-resolves version ranges on every run, so
+  two people installing the same commit can end up with different packages
+- `uv.lock` is authoritative and tracked. CI installs with `uv sync --locked`, which fails when
+  `pyproject.toml` and the lockfile disagree, and the container images install from it as well
+- Changing a dependency means editing `pyproject.toml`, running `uv lock`, and committing the
+  updated lockfile in the same commit
+- Test and lint tooling goes in the `dev` dependency group, not in
+  `[project.optional-dependencies]` — an extra is published metadata that anyone installing this
+  package can request, and our test runner is not that
+
+---
+
 ## Code Quality
 
 - Make sure your code runs locally before pushing

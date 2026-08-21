@@ -1,17 +1,29 @@
 FROM python:3.12-slim
 
+# uv, pinned to the version the team runs. This image must install exactly what
+# uv.lock resolves, so the tool that reads the lock is itself a dependency worth
+# pinning. Installing from version ranges instead would mean the artefact
+# deployed to the cluster is built from a fresh resolution every time.
+COPY --from=ghcr.io/astral-sh/uv:0.11.17 /uv /uvx /bin/
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    UV_NO_CACHE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-# Install dependencies. We need pyproject.toml, README.md, and the source code
-# present because pip will build the package metadata using setuptools.
-COPY pyproject.toml README.md ./
+# uv.lock is what makes this build reproducible. pyproject.toml, README.md and
+# the source are also needed because --no-editable builds the project into a
+# wheel rather than linking /app/src -- which is why schema.sql has to be
+# declared as package data to survive the trip.
+COPY pyproject.toml uv.lock README.md ./
 COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
 COPY scripts/ ./scripts/
-RUN pip install .
+# --no-default-groups drops the dev group: no pytest, no ruff in a batch image.
+RUN uv sync --locked --no-default-groups --no-editable
 
 # data/ is expected to be bind-mounted at runtime, but it is now ONLY the
 # raw-response cache (data/raw/). Harvest output and the incremental watermark
