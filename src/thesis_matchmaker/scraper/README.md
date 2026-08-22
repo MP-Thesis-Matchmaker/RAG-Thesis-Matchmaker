@@ -217,11 +217,14 @@ process entries, zero quarantined.
 
 ## Known gaps
 
-- **`researcher_profile` and `application_process` are written and never read.** 565
-  profiles and 57 procedures stored with no consumer. The profiles are the more
-  interesting of the two: a researcher stating their interests in their own words is an
-  independent signal from what ZORA infers from authorship, and it is the natural second
-  input to the missing `ranking` package. Wiring either into retrieval is follow-up work.
+- **`researcher_profile` and `application_process` are written and never read —
+  high-priority follow-up.** Hundreds of profiles and dozens of procedures stored with no
+  consumer. The intended use is concrete (2026-08-22): when the querying student's
+  department is known, attach that unit's application process to the MCP response
+  alongside papers and postings — the same argument holds for the people records. The
+  profiles are also the more interesting signal: a researcher stating their interests in
+  their own words is independent of what ZORA infers from authorship, and the natural
+  second input to the missing `ranking` package.
 - **63 of 247 topics name no supervisor, and they disappear.** `_persons()` fans a
   posting out to everyone named on it, so a posting naming nobody credits nobody and
   never reaches a result. That is a quarter of the corpus. `has_supervisor` is emitted as

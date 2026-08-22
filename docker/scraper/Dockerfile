@@ -4,9 +4,16 @@
 #
 # Single-stage, like docker/zora/Dockerfile and unlike docker/indexer/. The
 # [scraping] closure is requests / beautifulsoup4 / PyYAML / pypdf / openai: pure
-# Python, no torch, so the artefact is small enough that copying only /app/.venv
-# into a fresh stage would buy little. Revisit if the render extra is ever installed
-# here -- a browser is a different weight class.
+# Python, no torch. The render extra IS installed here, browser included -- that
+# was a deliberate revisit (2026-08-22): ibw--1 and ivw--4 serve their listings
+# JS-only and iff--3's profile follows render client-side, so without a browser
+# those sources are permanently FETCH_FAILED however healthy the run. That is
+# the "absolut notwendigen Komponenten" test the container Compliance Policy
+# asks for: the browser is not a convenience, it is the only way to read three
+# of the 103 sources. Headless shell keeps the cost at roughly half of full
+# chromium; measured after the change the image is 1.64 GB uncompressed (docker
+# images), most of it the --with-deps OS libraries -- still comfortably under
+# the 10 GB Harbor project quota, which stores compressed layers besides.
 FROM python:3.12-slim
 
 # Pinned for the same reason as everywhere else: uv is the tool that reads the lock.
@@ -23,12 +30,26 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
-# --extra scraping is the whole point of this image. --no-default-groups still drops
-# the dev group, so no pytest and no ruff. The render extra is NOT installed: it
-# downloads a chromium build, fetch.py imports playwright lazily, and a scheduled
-# run that hits a JS-only page degrades to the static fetch and flags the source
-# rather than failing.
-RUN uv sync --locked --no-default-groups --no-editable --extra scraping
+# --extra scraping is the whole point of this image; --extra render is what lets it
+# read the three JS-only sources (see the header). --no-default-groups still drops
+# the dev group, so no pytest and no ruff.
+RUN uv sync --locked --no-default-groups --no-editable --extra scraping --extra render
+
+# The browser is baked into the image, not fetched at runtime -- a CronJob must not
+# download 100 MB from Microsoft's CDN on every scheduled run, and the cluster may
+# not allow it anyway. Three deliberate choices:
+#   PLAYWRIGHT_BROWSERS_PATH pins the install to a fixed, world-readable path
+#     instead of the invoking user's home -- this image has no USER directive and
+#     the runtime UID is whatever `--user` or the pod securityContext says, so a
+#     browser cached under /root would be unreadable exactly when it is needed.
+#   --with-deps installs the OS libraries chromium needs on python:3.12-slim
+#     (libnss3, libatk, fonts, ...); without it the binary exists but will not launch.
+#   --only-shell installs the headless shell rather than full chromium -- roughly
+#     half the size, and the scraper never opens a headed window.
+# Runtime note (k8s/README.md): chromium wants a real /dev/shm; give the pod an
+# emptyDir with medium: Memory or it can crash on heavy pages.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN playwright install --with-deps --only-shell chromium
 
 # The scraper's data tree, and it has to be COPYied rather than left to a mount:
 # `uv sync --no-editable` builds the project into a wheel, so nothing outside

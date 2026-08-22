@@ -13,7 +13,7 @@ what looks like friction below is that difference.
 ## Before the first run
 
 ```bash
-uv sync --extra scraping                 # + --extra render for JS-only pages
+uv sync --extra scraping --extra render  # render: 3 sources are JS-only (see below)
 export SCRAPER_CONTACT='thesis-matchmaker@example.uzh.ch'
 export DATABASE_URL='postgresql://matchmaker:matchmaker@localhost:5432/matchmaker'
 thesis-matchmaker init-db                # the posting/* tables have to exist
@@ -24,9 +24,12 @@ of every request so a site owner can reach a human, and `Settings.user_agent` ra
 rather than sending a blank one. Use a project address; the value ends up in other
 people's server logs.
 
-The `render` extra additionally wants `uv run python -m playwright install chromium`. Skip
-it unless a source needs it — `fetch.py` imports playwright lazily and falls back to the
-static fetch, flagging the source rather than failing the run.
+The `render` extra additionally wants `uv run python -m playwright install chromium`
+(~100 MB, cached outside the repo). Three sources need it — `ibw--1` and `ivw--4` serve
+their listings JS-only, `iff--3`'s profile pages render client-side — so a full run
+without it permanently flags those three. `fetch.py` still imports playwright lazily and
+degrades to the static fetch when it is absent, so every *other* source works either way.
+The container image bakes the browser in (`docker/scraper/Dockerfile`).
 
 ## The two stages, and why they are separate
 

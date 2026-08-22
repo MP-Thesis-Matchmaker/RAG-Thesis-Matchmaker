@@ -60,7 +60,7 @@ done yet.
 | `docker/zora/` | ZORA harvester | `CronJob` | none | **yes** |
 | `docker/indexer/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
 | `docker/serving/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
-| `docker/scraper/` | posting scraper | `CronJob` | `[scraping]` | **yes** |
+| `docker/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
 image from roughly 200 MB to a few GB; a harvester pod that imports neither would
@@ -69,6 +69,15 @@ case, and now a measured one rather than a prediction: the `[scraping]` extra is
 `requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and it intersects the
 core's `httpx` / `psycopg` / `dspace-rest-client` only at pydantic and dotenv. One
 image for both means each ships the other's dependency tree.
+
+The scraper image also carries chromium's headless shell (`[render]` +
+`playwright install --with-deps --only-shell`), which moves it from the ~250 MB
+class to 1.64 GB uncompressed (measured; mostly the `--with-deps` OS libraries).
+That passes the compliance policy's "absolut notwendigen
+Komponenten" test rather than straining it: `ibw--1` and `ivw--4` serve their
+listings JS-only and `iff--3`'s profile pages render client-side, so without a
+browser three sources are permanently unreadable. The browser is baked in at build
+time — a CronJob must not download 100 MB from a CDN on every scheduled run.
 
 The scraper image also carries something none of the others do: `data/scraper/`.
 `uv sync --no-editable` builds the project into a wheel, so nothing outside
