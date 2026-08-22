@@ -1257,6 +1257,30 @@ def _enrich_topic_pdfs(src, records, cfg) -> int:
     return n
 
 
+def _flag_llm_outage(result, spec) -> None:
+    """Name the LLM as the suspect when it plausibly is.
+
+    A spec whose descriptions come from LLM enrichment (pdf_enrich / pdf_summary)
+    fails schema validation whenever the LLM is down -- the records extract fine,
+    only the enriched field is None. Without this hint the flag reads exactly like
+    page drift; it misdiagnosed ifi--17 that way on the first full run (the LLM was
+    out of credits, the page had not changed at all). Prepended, not appended: the
+    per-source line and the summary table print only reasons[0], and when the LLM
+    is down this IS the headline. No new status, no state change.
+    """
+    if (
+        result.status == validate.SCHEMA_INVALID
+        and spec
+        and (spec.get("pdf_enrich") or spec.get("pdf_summary"))
+        and not llm.is_available()
+    ):
+        result.reasons.insert(
+            0,
+            "LLM unavailable for pdf enrichment -- descriptions may be "
+            "missing because of that, not because the page changed",
+        )
+
+
 def _ensure_main_cached(state, src, page_type) -> bool:
     """Guarantee a usable cached main page, fetching once if needed (retry-once
     for fetch_failed). Returns True if the source is now cached."""
@@ -1396,6 +1420,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                         sp and (sp.get("source_type") == "json" or sp.get("allow_empty"))
                     ),
                 )
+
+                _flag_llm_outage(result, sp)
 
                 # LLM fallback: the deterministic template failed — either it
                 # matched nothing (extract_failed) or what it matched was

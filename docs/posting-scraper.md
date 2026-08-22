@@ -66,7 +66,7 @@ the run itself. The states, from `validate.py`:
 | `OK` | extracted and stored | nothing |
 | `PAGE_CHANGED` | content hash moved since the frozen snapshot | look at the diff; the spec may still be right |
 | `NEEDS_REVIEW` | extracted, but the result looks implausible | usually a title; see `title_check.py` |
-| `SCHEMA_INVALID` | records did not satisfy the record shape | the spec is wrong |
+| `SCHEMA_INVALID` | records did not satisfy the record shape | the spec is wrong — unless the reason opens with "LLM unavailable": on specs with `pdf_enrich`/`pdf_summary` a dead LLM leaves the enriched field empty, and that is an outage, not drift (it misdiagnosed `ifi--17` once) |
 | `EXTRACT_FAILED` | the spec matched nothing | the page was restructured |
 | `LLM_FALLBACK` | a template matched nothing and the model filled in | **always** review; the one non-deterministic path |
 | `FETCH_FAILED` | network, timeout, or a block | retry later; check whether the UA is being rejected |
