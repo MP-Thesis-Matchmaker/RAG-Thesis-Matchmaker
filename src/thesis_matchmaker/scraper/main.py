@@ -166,9 +166,31 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     try:
         for i, src in enumerate(targets):
             print(f"[{i + 1}/{len(targets)}] {src.source_id}  {src.url}")
+            contract = _contract_spec(src)
+            # JSON-backed sources (a SPA whose listing lives behind an API) must
+            # fetch that API, exactly as `onboard` does. Fetching the page URL
+            # instead caches the pre-render HTML shell -- which then satisfies
+            # cache.is_cached(), so `run` never fetches the API either and
+            # extraction dies on the missing data.json. That is not hypothetical:
+            # the first full fetch did it to all three json sources.
+            if contract and contract.get("source_type") == "json":
+                jmeta = _cache_json_source(state, src, contract["api_url"])
+                if jmeta is None:
+                    failed += 1
+                    print("    FAILED  (json api)")
+                else:
+                    fetched += 1
+                    changed = " (changed)" if jmeta.get("content_changed") else ""
+                    print(
+                        f"    ok  status={jmeta['http_status']} method=json-api"
+                        f"{changed}  sha1={jmeta['content_sha1'][:12]}"
+                    )
+                if i < len(targets) - 1:
+                    time.sleep(delay)
+                continue
             # Honour the contract's `render: true` (a JS-rendered listing), so a
             # plain `fetch` doesn't capture the pre-render shell of those pages.
-            render = args.render or bool((_contract_spec(src) or {}).get("render"))
+            render = args.render or bool(contract and contract.get("render"))
             result, meta = _fetch_and_cache(state, src, sess, render)
             if meta is None:
                 failed += 1
