@@ -1,0 +1,58 @@
+# Verified spec for ivw--4 (Dept. of Economics — professors).
+# JS-rendered listing AND JS-rendered profiles → render: true in both places.
+# The listing already carries name/role/research interests & fields; profile
+# following adds the personal email, short bio and (if present) a website.
+source_id: ivw--4
+page_type: people
+render: true
+
+record:
+  container: ".PersonCard"
+  fields:
+    name:
+      selector: ".PersonCard--name"
+      attr: text
+      transform: normalize_ws
+    role:
+      selector: ".PersonCard--positions li"
+      attr: text
+      multi: true
+      join: ", "
+    research_interest:
+      selector: '.PersonCard--info dt:-soup-contains("Research Interests") + dd'
+      attr: text
+      transform: normalize_ws
+    research_field:
+      selector: '.PersonCard--info dt:-soup-contains("Research Fields") + dd'
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      selector: ".PersonCard--links a"
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  # optional /en language segment — matches all 43, not just the /en/ ones
+  url_pattern: "^https://www\\.econ\\.uzh\\.ch(/en)?/people/faculty/[^/]+\\.html$"
+  render: true
+  profile:
+    fields:
+      # Precise: the person's own Email row — NOT the footer contact@ box.
+      email:
+        selector: '.PersonCard--info dt:-soup-contains("Email") + dd a[href^=mailto]'
+        attr: href
+        transform: strip_mailto
+      bio:
+        selector: 'h2.PersonCard--name:-soup-contains("Short Bio") + p'
+        attr: text
+        transform: normalize_ws
+      # No "Website" row exists in the info list; the homepage is a body link
+      # whose label varies: "Personal website", "Personal Homepage", "Private
+      # Website", "Personal page", ... contains_i matches any of these
+      # (case-insensitively) while ignoring CV / Google Scholar / Program links.
+      personal_website:
+        selector: 'main a[href]'
+        contains_i: ["website", "homepage", "personal page"]
+        attr: href
+        transform: absolute_url

@@ -1,0 +1,45 @@
+# ifi--2: IVDA group (Interactive Visual Data Analysis) thesis topics.
+# The page lists topics as navigation links "<Title> [<status>]" pointing to
+# per-topic detail pages, which the follow block reads for the description.
+# Single supervisor (Prof. Jürgen Bernard).
+source_id: ifi--2
+page_type: topics
+also_process: true          # dual page: also summarize the chair's thesis process
+group:
+  id: ivda
+  name: IVDA
+  full_name: Interactive Visual Data Analysis
+
+record:
+  container: ".SectionNavigation--link"
+  fields:
+    title:
+      selector: null            # the link itself
+      attr: text
+      regex: '^(.+?)\s*\['       # "Health Data Analytics [open]" -> title
+    status:
+      attr: text
+      regex: '\[(\w+)\]'         # open | assigned | pending
+      transform: lower
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      value: "Interactive Visual Data Analysis"
+    supervisor_name:
+      value: "Jürgen Bernard"
+    supervisor_email:
+      value: "bernard@ifi.uzh.ch"     # single supervisor for all IVDA topics
+    source_link:
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+follow:
+  url_field: source_link
+  url_pattern: '^https://www\.ifi\.uzh\.ch/en/ivda/open-positions/students/theses/.+\.html$'
+  fields:
+    topic_description:
+      selector: ".ContentArea"
+      attr: text
+      transform: normalize_ws

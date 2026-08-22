@@ -1,0 +1,332 @@
+{
+  "source_id": "ifi--14",
+  "page_type": "topics",
+  "verified_content_sha1": "090db15767b6702bcbd49368f5ddcf6955325b04",
+  "records": [
+    {
+      "title": "Self-Supervised Event-Driven World Models for High-Speed Scene Forecasting",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Rong Zou",
+          "email": "zou@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Self-supervised future prediction allows a robot to internalize \"common sense\" physics by learning to anticipate how its environment changes over time. However, predicting the future using standard cameras is notoriously difficult during high-speed maneuvers because the inputs themselves become degraded by blur. This project aims to leverage the continuous, blur-free nature of event data to build a predictive world model. Instead of predicting actions or rewards, the core objective is purely generative: given a history of events, the model must predict the event stream (or a latent representation of it) over a future time horizon. The student will explore how self-supervised objectives, such as masked autoencoding or next-volume prediction, can force the network to implicitly learn the velocity, geometry, and trajectories of moving objects.",
+      "source_link": "https://sirop.org/app/6896c7c4-1a26-4c4f-9450-d2fe6ff1b3fd",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "2e0d142a095c925531e1920b4bb40b77f6196ac6"
+    },
+    {
+      "title": "Vision Language Action models for Drones",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Daniel Zhai",
+          "email": "dzhai@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Designing a generative model for drone flight paths that obey high-level natural language descriptions (e.g. “fast 8 shape”) and pass through specific waypoints is a challenging multi-modal problem. The goal is to produce plausible 3D trajectories offline, which can then be used to train reinforcement learning (RL) policies by imitation or as goal demonstrations. Key challenges include: (1) combining textual commands with spatial constraints (control points) in a single model, (2) obtaining training data of trajectories paired with language descriptions (potentially from videos), and (3) ensuring generated paths are physically feasible and capture the qualitative style indicated by the language (e.g. *“fast”*implies higher speed, “8 shape” implies a figure-eight loop). In this project we will explore suitable model architectures, data sources, trajectory extraction methods, relevant research, and propose a system design to tackle this text-to-trajectory generation task.",
+      "source_link": "https://sirop.org/app/35913727-3508-4602-b09b-490b85d385c2",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "268f223f724ef9ffe8900012719e514045b340fb"
+    },
+    {
+      "title": "Vision-Based Tactile Sensor for Humanoid Hands (in collaboration with Soft Robotics Lab)",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Jaehoon Kim",
+          "email": "jaehoon.kim@srl.ethz.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Humanoid robots are rapidly advancing, with dexterous hand manipulation emerging as a key research frontier. These systems currently rely primarily on vision-based perception for manipulation. However, such approaches face limitations in scenarios where the line of sight is blocked, or when precise force control is critical for stable manipulation. To enable fine-grained and robust manipulation, tactile sensing at multiple points on the fingertip and palm is fundamental. Several tactile sensing strategies exist, but vision-based tactile sensors stand out due to their compactness, low cost, and high spatial resolution. Their performance, however, is limited by the camera bandwidth and power consumption.",
+      "source_link": "https://sirop.org/app/d6d99694-b380-49a8-bac9-8b4e872e6894",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "ed18b20107d4fff9658775e859c38be1a8b17d27"
+    },
+    {
+      "title": "Time-continuous Facial Motion Capture Using Event Cameras",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Rong Zou",
+          "email": "zou@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Traditional facial motion capture systems often rely on marker-based methods or multi-camera rigs to track facial movements. However, these approaches can be limited in capturing fine details such as subtle wrinkles and micro-expressions. Recent advancements in learning-based techniques have enabled high-fidelity facial tracking using monocular RGB images, but the temporal resolution is constrained by the frame rate of conventional cameras. Event-based cameras offer a promising alternative, providing superior temporal resolution without the need for costly and bulky high-speed RGB cameras. This project aims to leverage the advantages of event-based cameras to achieve unprecedented quality in tracking subtle facial movements.",
+      "source_link": "https://sirop.org/app/aa406ac6-27e6-481a-a14c-0beebabffdfb",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "6ef282f3514d5c6cee143ffe4d7ffdf0d9a800e3"
+    },
+    {
+      "title": "Rethinking RNNs for Neuromorphic Computing and Event-based Vision",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Nikola Zubic",
+          "email": "zubic@ifi.uzh.ch"
+        },
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "While more recent sequence modeling architectures have gained prominence, traditional Recurrent Neural Networks (RNNs), such as LSTMs and GRUs, remain highly effective for tasks requiring strong state-tracking capabilities and continuous temporal reasoning, which are qualities crucial for processing dynamic time-series data. Event-based cameras, which produce sparse, asynchronous data streams in response to scene changes, generate precisely this kind of highly temporal information. However, efficiently processing these event streams with traditional RNNs, especially on resource-constrained platforms or future neuromorphic hardware, presents significant challenges due to their strictly sequential nature and inherent inefficiencies in current hardware implementations. This project aims to change the deployment of RNNs for event-based vision by developing hardware-aware optimization strategies. We will explore novel parallelization schemes that can process multiple, smaller hidden states concurrently, analogous to how multi-head mechanisms operate, thereby better utilizing modern parallel computing architectures. Furthermore, we will focus on fine-grained kernel optimization, targeting specific hardware characteristics such as internal cache sizes, memory access patterns, and compute handling, to unlock efficiency and throughput for RNNs processing event data. The ultimate goal is to enable RNNs to leverage the advantages of event-based sensors for real-time, low-latency applications.",
+      "source_link": "https://sirop.org/app/44310e74-9660-493e-8a39-e581dc077395",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "ae43ded93423ed3c3feb96ac4d4f30fff759d9cc"
+    },
+    {
+      "title": "Event Representation Learning for Control with Visual Distractors",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Nikola Zubic",
+          "email": "zubic@ifi.uzh.ch"
+        },
+        {
+          "name": "Rong Zou",
+          "email": "zou@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "Autonomous systems operating in complex, real-world environments often face significant challenges from visual distractors and high-speed dynamics. Traditional frame-based cameras can struggle with motion blur and high-dynamic range, leading to unreliable visual representations for control. Event-based cameras, with their microsecond latency and ability to capture only changes in a scene, offer a promising alternative for robust perception in such demanding scenarios. This project aims to investigate event-based representation learning for control tasks, specifically focusing on environments with static and dynamic visual distractors. Drawing inspiration from benchmarks like the DeepMind Control Vision Benchmark (DMC-VB), we will explore how event data's unique properties, sparsity, and high temporal resolution can be leveraged to learn more robust and efficient control policies. The goal is to develop representations that are inherently less susceptible to visual noise and rapid environmental changes, thereby improving the performance and reliability of autonomous agents.",
+      "source_link": "https://sirop.org/app/fa5785dc-0063-4631-9c0c-67b0beeb44f3",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "36571ed1711406be603b4b6ff4e47e28ded949c9"
+    },
+    {
+      "title": "Vision-based Navigation in Dynamic Environment via Reinforcement Learning",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Jiaxu Xing",
+          "email": "jixing@ifi.uzh.ch"
+        },
+        {
+          "name": "Yunfan Ren",
+          "email": "yunfan@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "In this project, the goal is to develop a vision-based policy that enables autonomous navigation in complex, cluttered environments. The learned policy should enable the robot to effectively reach a designated target based on visual input while safely avoiding encountered obstacles. Some of the use cases for this approach will be to ensure a safe landing on a moving target in a cluttered environment or to track a moving target in the wild. Applicants should have a solid understanding of reinforcement learning, machine learning experience (PyTorch), and programming experience in C++ and Python.",
+      "source_link": "https://sirop.org/app/31449d75-75d3-4401-b5b8-5cd2b9562865",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "891c17b4cb366ed8258bf9c43c92ee63fb0fee96"
+    },
+    {
+      "title": "Reinforcement Learning with World Models",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": null,
+      "topic_description": "Reinforcement learning has shown promising results for robot control, but many approaches require large amounts of interaction data and struggle to generalize to new situations. World models provide a way to learn predictive representations of the environment that capture its dynamics and enable more efficient decision making. By modeling how the environment evolves in response to actions, these approaches can support planning and improve policy learning.",
+      "source_link": "https://sirop.org/app/74341798-c51d-4e05-8472-0bc28669c8be",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "24ff20ead7ef7123148d4fc291aa796a0811a653"
+    },
+    {
+      "title": "Event‑based Temporal Segmentation & Tracking",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Roberto Pellerito",
+          "email": "rpellerito@ifi.uzh.ch"
+        },
+        {
+          "name": "Leonardo Ravaglia",
+          "email": "leonardo.ravaglia@thegoodailab.org"
+        },
+        {
+          "name": "Nicoletta Risi",
+          "email": "nicolettarisi93@gmail.com"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Event cameras are revolutionary sensors that capture pixel-level illumination changes with microsecond latency, providing significant advantages in high-speed and high-dynamic-range scenarios where traditional cameras suffer from motion blur. Recently, large-scale foundational segmentation models have been successfully adapted to the event domain. However, these current approaches remain constrained to per-frame analysis, treating continuous event streams as isolated, static snapshots and ignoring temporal consistency. At the same time, existing event-based methods for moving object segmentation can isolate motion but fail to maintain instance identity over time—they can segment moving pixels, but they cannot \"track\" specific objects. This project aims to bridge the gap between static foundational segmentation and dynamic motion analysis by developing the first comprehensive tracker for event cameras. The objective is to design a system capable of not only segmenting arbitrary objects but also maintaining their identity consistently across long, high-speed sequences. The student will extend current spatial feature adaptation strategies to support temporal identity, effectively transforming a frame-by-frame instance segmenter into a robust Video Object Segmentation (VOS) tracker. Furthermore, to handle severe object occlusions and rapid, erratic motion, the project will explore sparse temporal memory mechanisms that prevent identity-switching. Finally, to rigorously test the system's reliability, the student will establish a novel benchmark for dense segmentation in extreme edge cases, such as night driving with severe glare and rapid evasive maneuver.",
+      "source_link": "https://sirop.org/app/f815a14c-0270-4882-ae92-4079f9299ad5",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "e0cf450d18b99ecf04e2010c6af5a4c08d1c1f26"
+    },
+    {
+      "title": "Long-Horizon Learning for Agile Autonomous Drone Racing",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Nikola Zubic",
+          "email": "zubic@ifi.uzh.ch"
+        },
+        {
+          "name": "Ismail Geles",
+          "email": "geles@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "Autonomous drone racing is one of the most demanding domains for robot learning. A racing drone must perceive its environment, estimate its state, plan aggressive maneuvers, and execute precise control actions at high speed. Small mistakes can quickly lead to large performance losses or crashes, making this an ideal setting for studying advanced learning-based control. Many learning-based methods focus on short-term observations or reactive policies. However, drone racing naturally involves long-horizon temporal structure: the drone must anticipate future gates, adapt its trajectory, and maintain stability across complex sequences of decisions. This creates an exciting opportunity to study modern sequence models in the context of agile robotics. The goal of this project is to explore whether long-sequence architectures can improve the performance, robustness, and adaptability of Reinforcement Learning systems for drone racing. The student will work on simulation-based development and evaluation, with the possibility of progressing to real-world validation. This is a challenging thesis topic intended for a truly outstanding student with excellent grades, strong technical skills, and prior experience in machine learning, robotics, control, or autonomous systems.",
+      "source_link": "https://sirop.org/app/a6067279-777e-4dd4-b1b6-c04ee859f9f5",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "0e65a7a6c936c8add1195ad14320d074e633be9f"
+    },
+    {
+      "title": "Learning Robust Agile Flight via Adaptive Curriculum",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Jiaxu Xing",
+          "email": "jixing@ifi.uzh.ch"
+        },
+        {
+          "name": "Ismail Geles",
+          "email": "geles@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "Reinforcement learning-based controllers have demonstrated remarkable success in enabling fast and agile flight. Currently, the training process of these reinforcement learning controllers relies on a static, pre-defined curriculum. In this project, our objective is to develop a dynamic and adaptable curriculum to enhance the robustness of the learning-based controllers. This curriculum will continually adapt in an online fashion based on the controller's performance during the training process. By using the adaptive curriculum, we expect the reinforcement learning controllers to enable more diverse, generalizable, and robust performance in unforeseen scenarios. Applicants should have a solid understanding of reinforcement learning, machine learning experience (PyTorch), and programming experience in C++ and Python.",
+      "source_link": "https://sirop.org/app/80142829-f10e-4635-a55b-efb71f368126",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "5e42365a93c39c875f3fcb40781d0758d9054fa4"
+    },
+    {
+      "title": "Event Cameras for Agile Drone 3D Perception",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Rong Zou",
+          "email": "zou@ifi.uzh.ch"
+        },
+        {
+          "name": "Daniel Zhai",
+          "email": "dzhai@ifi.uzh.ch"
+        }
+      ],
+      "topic_description": "Drones are becoming faster, smaller, and more agile, but their cameras often struggle exactly when perception matters most. During rapid flight, sharp turns, or low-light conditions, conventional cameras can produce heavily blurred images, making it difficult for an autonomous drone to understand where it is and what the world around it looks like. Event cameras offer a radically different way of seeing: instead of recording full images at fixed frame rates, they react instantly to tiny brightness changes, similar to how biological vision is sensitive to motion. This project explores how event cameras can help drones perceive the world during fast flight. The student will develop machine learning methods that combine conventional camera images, event camera data, and drone motion information to recover a sharp and consistent 3D understanding of the environment. Rather than treating motion blur as a failure case, the project will investigate how high-speed visual signals can be used as a strength: events provide precise timing information that can help reconstruct what happened during the blurred exposure of a normal camera. The project is suitable for students interested in computer vision, machine learning, robotics, and autonomous systems. It offers the opportunity to work on robust 3D reconstruction, motion estimation, sensor fusion, neural rendering, and real-world drone experiments.",
+      "source_link": "https://sirop.org/app/843bd236-f607-4d55-8839-cca4369cb9e7",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "f6563b9c372c889b1b8062d225f4e1a7266ded91"
+    },
+    {
+      "title": "Learning Rapid UAV Exploration with Foundation Models",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Jiaxu Xing",
+          "email": "jixing@ifi.uzh.ch"
+        },
+        {
+          "name": "Daniel Zhai",
+          "email": "dzhai@ifi.uzh.ch"
+        },
+        {
+          "name": "Davide Scaramuzza",
+          "email": "scaramuzza.applications@gmail.com"
+        }
+      ],
+      "topic_description": "In this project, our objective is to efficiently explore unknown indoor environments using UAVs. Recent research has demonstrated significant success in integrating foundational models with robotic systems. Leveraging these foundational models, the drone will employ learned semantic relationships from large-world-scale data to actively explore and navigate through unknown environments. While most prior research has focused on ground-based robots, this project aims to investigate the potential of integrating foundational models with aerial robots to introduce more agility and flexibility. Applicants should have a solid understanding of mobile robot navigation, machine learning experience (PyTorch), and programming experience in C++ and Python.",
+      "source_link": "https://sirop.org/app/1367503d-4ae2-4a07-af3b-5cc83a8b69e8",
+      "source_id": "ifi--14",
+      "scraped_at": "2026-07-22T20:13:42.401788+00:00",
+      "topic_id": "2a71f02ab43841fe82868eb6e1577ff3727e4dca"
+    }
+  ]
+}

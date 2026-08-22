@@ -1,0 +1,56 @@
+{
+  "source_id": "ipz--1",
+  "page_type": "topics",
+  "verified_content_sha1": "4bc0f67be31170d17837836252f33d454af73e94",
+  "records": [
+    {
+      "title": "Ideological Bias in Large Language Models (LLMs)",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Political Science",
+      "supervisors": [
+        {
+          "name": "Hugo Subtil",
+          "_url": "https://www.ipz.uzh.ch/de/ueber-uns/personen/mitarbeitende/hsubti.html"
+        }
+      ],
+      "topic_description": "This project explores a still underdeveloped question of ideological bias in large language models (LLMs). While there is a growing debate in computer science, political science has only begun to consider what it means if AI systems carry implicit worldviews. Too often, attention is directed at specific actors like DeepSeek or Musk’s ventures, while the most influential systems — OpenAI (ChatGPT), Anthropic (Claude), Perplexity — remain insufficiently interrogated. A central challenge is to unpack what we even mean by “political bias” in this context. The issue is not only about outputs, but also about the raw material (the internet as training data), the cleaning and filtering procedures (what is removed to “protect” models from bias, and at what political cost), and the post-training and alignment layers that strongly shape model behaviour. Beyond technical design, political scientists should also ask how such systems are used in practice (research, media, governance, lobbying) and what it means for democratic accountability when information intermediaries become algorithmic. The dissertation can thus move along two axes: Theoretical – clarifying what it means to speak of “ideological bias” in AI, and how it compares to concepts of bias in media, institutions, or survey design. Empirical (optional) – testing different models on survey-like or political prompts, analysing variation across providers, or exploring how alignment and fine-tuning affect ideological orientation. Argyle, L. P., et al. (2023). Out of One, Many: Using Language Models to Simulate Human Samples. Political Analysis. Bisbee, J., et al. (2023). Synthetic Replacements for Human Survey Data? The Perils of Large Language Models. Political Analysis. Boelaert, J., & Ollion, É. (forthcoming). Machine Bias: Generative Large Language Models Have a Worldview of Their Own. Sociological Methods & Research. OpenAI (2024). Defining and Evaluating Political Bias in LLMs.",
+      "source_link": "https://www.ipz.uzh.ch/de/studium/master/themenausschreibung.html",
+      "source_id": "ipz--1",
+      "scraped_at": "2026-07-31T10:41:32.505737+00:00",
+      "topic_id": "9dd9031777dd42f1ecb8a03b65a7c0b731d6aeb7"
+    },
+    {
+      "title": "Civil Wars, Political Violence and Peace",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Political Science",
+      "supervisors": [
+        {
+          "name": "Geraldine Bustos Zamora",
+          "_url": "https://www.ipz.uzh.ch/de/ueber-uns/personen/mitarbeitende/gebust.html"
+        }
+      ],
+      "topic_description": "I study the dynamics of civil wars, political violence, and peace. I’m interested in how armed groups evolve, why some conflicts end while others persist, and what helps societies move towards sustainable peace. I use both qualitative and quantitative methods and welcome projects on conflict, violence, and peacebuilding in different contexts.",
+      "source_link": "https://www.ipz.uzh.ch/de/studium/master/themenausschreibung.html",
+      "source_id": "ipz--1",
+      "scraped_at": "2026-07-31T10:41:32.505737+00:00",
+      "topic_id": "fc589c72969e975e27fb788a1ed0dfd0264c14a1"
+    },
+    {
+      "title": "Abstimmungsforschung in der Schweiz",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Political Science",
+      "supervisors": null,
+      "topic_description": "Kurzbeschrieb: Sind Sie an Abstimmungen in der Schweiz interessiert? Wollen Sie in Ihrer Masterarbeit mit neuen und aktuellen Daten aus Umfragen arbeiten? Mit den Daten des DDS-21 Projekts ( https://www.dds21.uzh.ch/de.html ) haben Sie eine gute Datenquelle, mit der eine Vielzahl an verschiedenen Fragestellungen bearbeitet werden können. Stadt/Land-Graben In den Medien liest man immer wieder von einem extremen Stadt-Land Graben bei Abstimmungen. Beispielsweise die Biodiversitätsinitiative fand grossen Anklang in städtischen Gebieten, während sie wenig Anklang fand bei der Landbevölkerung. Aber was löst diese unterschiedlichen Präferenzen aus? Mit Satellitendaten, die mit unseren Umfragedaten verknüpft worden sind, kann diese Frage auf eine neue Art und Weise beleuchtet werden: Ist es tatsächlich der Wohnort (Stadt oder Dorf) der entscheidend ist für solche Präferenzen, oder ist es viel mehr entscheidend wie viel Natur in meiner Umgebung ist? Dörfler, die im dichtbebauten Dorfkern wohnen sind eher für mehr grün, während auch Städterinnen, die am grünen Stadtrand wohnen nicht für mehr Biodiversität einstehen wollen, da es ja schon vermeintlich viel davon gibt in ihrer Umgebung? Haben die beiden Mietvorlagen auch auf dem Land polarisiert, oder sind diese nur in urbanen Zentren wichtig gewesen? Was ist affektive Polarisierung in der direkten Demokratie? Eine grosse Innovation dieses Projekts sind Daten zu affektiver Polarisierung bei Abstimmungen. Bei der Jahrhundertsabstimmung über den Brexit konnte gezeigt werden, dass eine Abstimmung zu tiefen gesellschaftlichen Gräben führen kann, die noch tiefer sind als die Gräben zwischen den Anhänger:innen der verschiedenen Parteien. Was passiert jedoch, wenn wir issuebezogene Affekte und Gruppenidentitäten bei Abstimmungen anschauen in einem Land, in dem regelmässig Abstimmungen stattfinden? Was bedeutet affektive Polarisierung in Bezug auf Abstimmungen überhaupt? Inwiefern unterscheidet sich diese von affektiver Polarisierung bei Parteien? Bei welchen Vorlagen ist die Polarisierung besonders stark und bei welchen schwach? Wodurch wird affektive Polarisierung bei Vorlagen ausgelöst? Im Projekt gibt es auch ein Panel mit zwei Wellen. Die erste Welle wurde vor dem Start der Kampagne und die zweite nach dem Abstimmungssonntag durchgeführt. Auf den ersten Blick würde erwartet werden, dass die affektive Polarisierung während der Kampagne stärker wird, da der Wahlkampf Emotionen weckt und harte verbale Schlagabtäusche zwischen Befürworter:innen und Gegner:innen der Vorlagen stattfinden. Erste Auswertungen zeigen jedoch, dass die affektive Polarisierung vor dem Start der Kampagne höher ist, als nach der Abstimmung. Dieser Befund löst verschiedene Fragen aus. Wenn es nicht die Kampagne ist, was löst dann die affektive Polarisierung aus? Was passiert mit den Stimmbürger:innen während der Kampagne? Welche Stimmbürger:innen sind polarisiert und welche nicht? Wie hängt politische Werbung mit affektiver Polarisierung zusammen? Wenn die affektive Polarisierung während der Kampagne sinkt, wie hängen politische Werbungen mit affektiver Polarisierung zusammen? In den DDS-21 Daten werden den Befragten auch verschiedene Werbungen gezeigt. Darunter hat es echte Werbungen und erfundene. Danach wird erfragt, welche Emotionen diese Werbungen bei den Stimmberechtigten auslösen. Wie hängt diese emotionale Reaktion auf Werbung mit affektiver Polarisierung zusammen? Sind Stimmberechtigte, die politische Werbung wahrnehmen polarisierter als andere Stimmberechtigte? Wie unterscheiden sich diese Stimmberechtigten von anderen Stimmberechtigten?",
+      "source_link": "https://www.ipz.uzh.ch/de/studium/master/themenausschreibung.html",
+      "source_id": "ipz--1",
+      "scraped_at": "2026-07-31T10:41:32.505737+00:00",
+      "topic_id": "cf17f6dadfa64fbd9ce15c946ac1d55722c6b484"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "source_id": "deutsches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "0978bbbf1afdf39678647337608b6a0d49ea32ca",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "This page describes the MA thesis procedure. MA students must first contact a desired supervisor (check that the person is authorised to supervise), confirm their willingness and agree a topic and provisional title. Then the student fills in the online supervision request form (name, matriculation number, UZH email, booking semester, supervisor and module code, work title). The student receives a submission confirmation by UZH email and—if the supervisor accepts—a supervision confirmation which should be retained. After the supervision confirmation, the student must book the corresponding module themselves in the Studierendenportal (the request is not the module booking). There is no entitlement to be supervised by the chosen person; StO §26/31 apply as the legal basis.",
+      "relevant_links": [],
+      "source_url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ma.php?get=s",
+      "source_id": "deutsches-seminar--1",
+      "scraped_at": "2026-08-05T13:54:54.231886+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

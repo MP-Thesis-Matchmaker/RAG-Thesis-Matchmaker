@@ -1,0 +1,25 @@
+{
+  "source_id": "erziehungswissenschaft--3",
+  "page_type": "process",
+  "verified_content_sha1": "19f0126f06f9c999b9c605352535de104bea9334",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "The page directs students to the unit’s Merkblatt Bachelorarbeit (PDF) for all information on planning, supervision, booking and submission deadlines; additional, chair- or specialization-specific Merkblätter are available for more detailed rules. Eligibility is not specified on this page. Bachelor theses must be submitted to the supervising person by 1 December (autumn semester) or 1 June (spring semester). You must register yourself for graduation in the Studienfortschritt & -abschluss app within the Studiendekanat’s deadlines; registration is only possible once all required study credits have been obtained and entered in the system. Official rules and procedures live in the Merkblatt Bachelorarbeit, the specialization/Lehrstuhl Merkblätter and the Philosophical Faculty’s bachelor-completion information.",
+      "relevant_links": [
+        {
+          "url": "https://www.ife.uzh.ch/dam/jcr:5c0e99fe-d5b0-427e-b311-88d59cd7cf43/Merkblatt%20BA-Arbeit.pdf",
+          "description": "Merkblatt Bachelorarbeit (PDF, 106 KB)"
+        }
+      ],
+      "source_url": "https://www.ife.uzh.ch/de/study/Bachelor/Module/Bachelorarbeit.html",
+      "source_id": "erziehungswissenschaft--3",
+      "scraped_at": "2026-07-30T08:20:43.976301+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

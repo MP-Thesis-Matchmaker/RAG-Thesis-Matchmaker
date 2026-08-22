@@ -1,0 +1,40 @@
+# isek--1: ISEK MA research-project listing ("Ausschreibungen MA-Forschungs-
+# projekte") plus the surrounding process (summarised via LLM). Each project is a
+# collapsible h2.toggle block with a description and a mailto contact. Stored at
+# the unit level.
+source_id: isek--1
+page_type: topics
+also_process: true
+
+record:
+  container: 'div.TextImage:has(h2.TextImage--title.toggle)'
+  fields:
+    title:
+      selector: 'h2.TextImage--title.toggle'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Social Anthropology / Ethnology"
+    topic_description:
+      selector: 'div.TextImage--content.richtext'
+      attr: text
+      exclude:
+        - "h2"
+        - 'a[href^="mailto"]'
+        - 'a[href*="#top"]'
+      transform: normalize_ws
+    supervisors:
+      each: 'a[href^="mailto:"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles, drop_if_email]
+        email:
+          attr: href
+          transform: mailto_email
+
+id_from: [title]

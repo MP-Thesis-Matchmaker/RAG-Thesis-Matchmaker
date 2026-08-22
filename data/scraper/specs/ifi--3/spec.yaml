@@ -1,0 +1,41 @@
+# ifi--3: DDIS group thesis/project topics, listed INLINE on the page. Each
+# topic is a .TextImage block with an <h2> "<Degree> Thesis/Project: <Title>",
+# a description, and one contact mailto (the supervisor). The intro block has
+# no <h2>, so :has(h2) selects only real topics.
+source_id: ifi--3
+page_type: topics
+# This DDIS page legitimately fluctuates to ZERO open topics (it then just says
+# "no open topics — email us"). Treat an empty match as a valid empty listing,
+# not an extraction failure.
+allow_empty: true
+also_process: true          # dual page: also summarize the chair's thesis process
+group:
+  id: ddis
+  name: DDIS
+  full_name: Dynamic and Distributed Information Systems
+
+record:
+  container: ".TextImage:has(h2)"
+  fields:
+    title:
+      selector: "h2"
+      attr: text
+      regex: ':\s*(.+)$'                 # after "Master Thesis:"
+    degree_level:
+      selector: "h2"
+      attr: text
+      regex: '^(Master|Bachelor)'        # "Master Project" -> Master
+    status:
+      value: "open"                       # page lists currently-open topics
+    research_area:
+      value: "Dynamic and Distributed Information Systems"
+    supervisor_email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto             # drops the ?subject=... too
+    topic_description:
+      selector: ".TextImage--inner, .TextImage--text"
+      attr: text
+      transform: normalize_ws
+
+id_from: [title]

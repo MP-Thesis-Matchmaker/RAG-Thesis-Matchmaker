@@ -1,0 +1,91 @@
+{
+  "source_id": "ifi--7",
+  "page_type": "topics",
+  "verified_content_sha1": "3d5705fe73293659ca3343ee6af66d1da285225b",
+  "records": [
+    {
+      "title": "Leverage the Busy Light, TimerBuzzer or Apple Vision Pro to support Knowledge Workers",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/teachings/project-thesis-leverage-the-busy-light-timerbuzzer-or-apple-vision-pro-to-support-knowledge-workers/",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "7651b0ffccc1e96a24bed743485322595fff9f03"
+    },
+    {
+      "title": "ScheduleGPT: Enhance workday scheduling through user context and preferences",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/?post_type=teachings&p=2498",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "64fd7dc3e2d2ead5153f3e8727d07f040095ee3a"
+    },
+    {
+      "title": "Digital Ethnography of Focus and Productivity Strategies in Individuals with ADHD",
+      "status": "private",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/?post_type=teachings&p=2870",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "f8218220e010c4ebf6d572ad63c4d4cd2a77929d"
+    },
+    {
+      "title": "LinkNest: Never lose another link shared within your team",
+      "status": "private",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/?post_type=teachings&p=2864",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "f6b2e5cdc91d69cb4ac7ff4667c1b917697ba257"
+    },
+    {
+      "title": "Context Snapshots for Developer Collaboration",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/teachings/project-thesis-schedulegpt-enhance-workday-scheduling-through-context-and-preferences-copy/",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "dc692b4a595acf65d2090c41a54ece2be96f936c"
+    },
+    {
+      "title": "Wellbeing-Aware AI Coding Assistants: An IDE Extension for Detecting and Responding to Developer Fatigue",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Software Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://hasel.dev/teachings/projectthesis-context-aware-break-recommendation-based-on-genai-use/",
+      "source_id": "ifi--7",
+      "scraped_at": "2026-07-21T12:52:12.638157+00:00",
+      "topic_id": "2c6ee993bd62c0c54fd7c72243c6cc0e3bd3a1ff"
+    }
+  ]
+}

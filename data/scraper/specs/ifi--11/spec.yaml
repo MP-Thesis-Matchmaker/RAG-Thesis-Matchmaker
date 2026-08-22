@@ -1,0 +1,37 @@
+# ifi--11: DaST (Data Systems and Theory). No topic board — the page is a
+# thesis process ("how to apply", two paths + registration workflow) plus four
+# research strands you propose a thesis into. The process is summarised (LLM)
+# under the group; each strand is captured as an open topic (Goal/Outcome/
+# Prerequisites text), sharing the group's contact address (no per-topic
+# supervisor). Already-assigned "Current/Completed" projects are ignored.
+source_id: ifi--11
+page_type: topics
+also_process: true
+group:
+  id: dast
+  name: DaST
+  full_name: Data Systems and Theory
+
+record:
+  container: 'div.TextImage:has(h2.TextImage--title[id^="Strand_"])'
+  fields:
+    title:
+      selector: "h2.TextImage--title"
+      attr: text
+      transform: normalize_ws
+    topic_description:
+      exclude: ["h2"]                 # body minus the title
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      value: "Data Systems and Theory"
+    supervisors:
+      value:
+        - name: "DaST group"
+          email: "dast-theses@ifi.uzh.ch"
+
+id_from: [title]

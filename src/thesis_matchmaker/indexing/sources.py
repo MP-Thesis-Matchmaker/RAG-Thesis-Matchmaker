@@ -2,11 +2,11 @@
 
 Two implementations behind one protocol, following the repository idiom: the
 Postgres reader is what production uses now that ingestion writes rows, and the
-JSONL reader stays because `data/samples` is checked-in fixture data, the web
-scraper is not built yet, and CI has to run with no database.
+JSONL reader stays because `data/samples` is checked-in fixture data and CI has to
+run with no database.
 
 Read-only, both of them (invariant 1). Writes to `publication` belong to
-`zora/store.py`.
+`zora/store.py`; writes to `posting` belong to `scraper/store.py`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from typing import Protocol
 from pydantic import BaseModel, ValidationError
 
 from thesis_matchmaker import db
-from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import Supervisor, ThesisPosting, ZoraRecord
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,19 @@ THESES_FILE = "theses.jsonl"
 # NULL array the same way: the comparison yields NULL, so the row is excluded, which
 # is what we want. (In the current corpus there are no NULLs -- the 123,012
 # ineligible rows are all empty arrays -- but the harvester does not guarantee that.)
+# Postings the scraper wrote. `status` is filtered here rather than at query time
+# because an assigned topic is not a recommendation under any query -- the same
+# reasoning as the UZH-author clause above, applied to availability instead of
+# eligibility. NULL status is kept: 8 of 247 scraped topics say nothing about
+# availability, and "the page did not say" is not the same claim as "taken".
+_SELECT_POSTINGS = """
+SELECT id, title, description, supervisors, faculty, department, degree_levels,
+       status, keywords, language, url, listed_on, source_id, scraped_at
+FROM posting
+WHERE status IS NULL OR status NOT IN ('assigned', 'private')
+ORDER BY id
+"""
+
 _SELECT_PUBLICATIONS = """
 SELECT id, title, abstract, authors, uzh_authors, author_authority_map, year,
        keywords, department, language, publication_type, doi, url
@@ -159,7 +172,22 @@ class PostgresSourceReader:
                 )
 
     def postings(self) -> Iterator[ThesisPosting]:
-        # The web scraper does not exist yet, so there is no posting table to
-        # read. Index postings from data/samples with --source data/samples until
-        # one produces rows.
-        return iter(())
+        with db.connection(self.dsn) as conn:
+            for row in conn.execute(_SELECT_POSTINGS):
+                yield ThesisPosting(
+                    id=row[0],
+                    title=row[1] or "",
+                    description=row[2],
+                    # jsonb comes back already decoded, so these are dicts.
+                    supervisors=[Supervisor.model_validate(s) for s in (row[3] or [])],
+                    faculty=row[4],
+                    department=row[5],
+                    degree_levels=list(row[6] or []),
+                    status=row[7],
+                    keywords=list(row[8] or []),
+                    language=row[9],
+                    url=row[10] or "",
+                    listed_on=row[11],
+                    source_id=row[12],
+                    scraped_at=row[13],
+                )

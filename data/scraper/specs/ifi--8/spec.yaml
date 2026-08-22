@@ -1,0 +1,59 @@
+# ifi--8: SEAL (Software Evolution and Architecture Lab). No topic board — the
+# page presents the group's supervisors, each with their research focus in a
+# paragraph and a link to their profile. Extracted as chair-level PEOPLE with
+# research_interest; profiles are followed for the email. (Registry lists two
+# URLs, master + bachelor theses; both carry the same people, so the primary
+# master URL is used.)
+source_id: ifi--8
+page_type: people
+group:
+  id: seal
+  name: SEAL
+  full_name: Software Evolution and Architecture Lab
+
+record:
+  container: 'p:has(a[href*="/seal/people/"])'
+  fields:
+    name:
+      selector: 'a[href*="/seal/people/"]'
+      attr: text
+      transform: normalize_ws
+    role:
+      value: "Supervisor"
+    research_interest:                     # the focus paragraph, minus the name
+      exclude: ['a[href*="/seal/people/"]']
+      attr: text
+      transform: normalize_ws
+    personal_website:                      # inline "homepage" link, if present
+      selector: "a[href]"
+      contains_i: ["homepage", "website"]
+      attr: href
+      transform: absolute_url
+    _profile_url:
+      selector: 'a[href*="/seal/people/"]'
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https://www\.ifi\.uzh\.ch/en/seal/people/.+\.html$'
+  fields:
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email
+    # Richer research interest + bio straight from the profile page (these
+    # override the short inline focus from the listing; the listing value
+    # remains as a fallback for people whose profile link is broken).
+    research_interest:
+      selector: 'h2.TextImage--title:-soup-contains("Research Interests") + div'
+      attr: text
+      transform: normalize_ws
+    bio:
+      # "Short Bio" also matches "Short Biography"
+      selector: 'h2.TextImage--title:-soup-contains("Short Bio") + div'
+      attr: text
+      transform: normalize_ws

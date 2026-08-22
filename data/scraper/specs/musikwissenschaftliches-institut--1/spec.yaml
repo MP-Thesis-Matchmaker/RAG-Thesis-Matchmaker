@@ -1,0 +1,8 @@
+# musikwissenschaftliches-institut--1: the Faculty-of-Philosophy shared thesis-
+# process page (phil.uzh.ch/.../module.html), the SAME page as asien-orient-
+# institut--3. Routed to the faculty level (scope: faculty); consolidate_process
+# dedups it against the existing entry by URL, so the faculty has ONE process
+# entry crediting both source_ids.
+source_id: musikwissenschaftliches-institut--1
+page_type: process
+scope: faculty

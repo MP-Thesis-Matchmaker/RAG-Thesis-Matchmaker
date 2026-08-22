@@ -1,0 +1,59 @@
+{
+  "source_id": "ibw--2",
+  "page_type": "topics",
+  "verified_content_sha1": "e9efc6bd5b5ef1f86423ee5760e54f442acf38ea",
+  "records": [
+    {
+      "title": "Fair Referee Assignment",
+      "degree_level": "Master Thesis (30 ECTS)",
+      "date_of_listing": "2025-11-17",
+      "research_area": "Business Analytics & Operations",
+      "supervisor_name": "Jie Ren",
+      "supervisor_email": "jie.ren@business.uzh.ch",
+      "topic_description": "This thesis is inspired by, and generalizes, the Eurovision Song Contest semifinal setting, where participating countries are split into two semifinals and most countries both perform and evaluate. The study considers a variant with a single role per identity—either participant or reviewer. Specifically, suppose we already have the partition of participants, how would we assign a group of reviewers disjointly and exhaustively across these partitions to maximize a specified fairness criterion under heterogeneous reviewer–participant preferences? The tasks of this thesis are to formalize this optimization problem, analyze its computational complexity, and to compare the performance of well-known heuristics and metaheuristics.",
+      "source_link": "https://theses.business.uzh.ch/2eb0a3d5-d549-4983-8953-971e3a44135e",
+      "source_id": "ibw--2",
+      "scraped_at": "2026-07-17T21:12:20.947140+00:00",
+      "topic_id": "65d3a007d402c3c665978ab7b9d7571a7c3b2429"
+    },
+    {
+      "title": "Frontiers in Causal Inference: Bayesian Synthetic Control Methods",
+      "degree_level": "Master Thesis (30 ECTS)",
+      "date_of_listing": "2025-12-02",
+      "research_area": "Marketing, Digital Transformation & Entrepreneurship",
+      "supervisor_name": "Wang Fei",
+      "supervisor_email": "fei.wang@business.uzh.ch",
+      "topic_description": "1. This thesis investigates cutting-edge Bayesian Synthetic Control Methods—one of the most exciting frontiers in modern causal inference over the past decade. 2. You will replicate and extend an award-winning Journal of Marketing Research study, benchmarking models and overcoming key limitations of standard SCM. 3. The project integrates simulation, model design, and evaluation—ideal for students aiming to master state-of-the-art causal inference techniques and build strong modeling skills for both academic and industry settings.",
+      "source_link": "https://theses.business.uzh.ch/3f71d989-d1e1-4709-8211-839a36f1a480",
+      "source_id": "ibw--2",
+      "scraped_at": "2026-07-17T21:12:20.947140+00:00",
+      "topic_id": "67081c10ef8e1ca859dd082bb6f0e0431cabd2e4"
+    },
+    {
+      "title": "How Tools like GitHub Copilot Reshape Roles, Specialization, and Team Dynamics (Quantitative Study)",
+      "degree_level": "Master Thesis (30 ECTS)",
+      "date_of_listing": "2025-10-23",
+      "research_area": "Strategy, Organization & Innovation",
+      "supervisor_name": "Alexey Rusakov",
+      "supervisor_email": "alexey.rusakov@business.uzh.ch",
+      "topic_description": "The project should investigate how collaboration and developer roles within software projects are changing with the increasing use of AI-based coding assistants such as GitHub Copilot. The focus lies on understanding whether AI tools are reshaping patterns of specialization and coordination among developers. Specifically, the student will analyze how Copilot’s evolving programming support affects task distribution: do developers increasingly specialize in particular tasks, or do projects now rely more on a smaller number of generalist developers who work across multiple tasks? The project addresses broader organizational and social questions about collaboration in software engineering. If AI tools increasingly assist or automate parts of the development process, do teams still need coordination and management to the same extent, or is software production becoming more autonomous and individualized? The project will combine large-scale data analysis with literature on digital collaboration, AI-assisted work, and software ecosystems. The expected outcome is an empirically grounded contribution to current debates on how AI is transforming division of labor, expertise, and collective organization in software development. The work is designed to be completed within a typical Master’s thesis timeframe, including phases for data collection, analysis, and writing.",
+      "source_link": "https://theses.business.uzh.ch/405e5ad1-b6b9-4577-b344-965b1a2d60a7",
+      "source_id": "ibw--2",
+      "scraped_at": "2026-07-17T21:12:20.947140+00:00",
+      "topic_id": "2fc3989f12791895034b8fd25343934be0dc8dca"
+    },
+    {
+      "title": "From \"Risk\" to \"Extinction\": A Longitudinal Analysis of Biodiversity Disclosure in European ESG Reports",
+      "degree_level": "Bachelor Thesis (18 ECTS)",
+      "date_of_listing": "2025-12-18",
+      "research_area": "Accounting",
+      "supervisor_name": "Müller Tobias",
+      "supervisor_email": "tobias.mueller@business.uzh.ch",
+      "topic_description": "This thesis investigates whether corporate biodiversity disclosure is maturing from a superficial, risk-based exercise into a substantive, action-oriented response. Biodiversity is often a neglected component of ESG, lacking standardized metrics and suffering from an anthropocentric bias in current frameworks, which typically frame nature by its utility to humans or its financial risk to the company. This study will analyze disclosure quality, not just quantity, by examining the divide between anthropocentric (human-centered) and ecocentric (ecology-centered) framing. The research will address two main questions. First, it will track how the volume and content of biodiversity disclosure in ESG reports, such as land use and supply chain impacts, have changed over the last decade. Second, it will assess whether the disclosure framing shows a meaningful shift from a purely anthropocentric perspective toward an ecocentric one that recognizes nature's intrinsic value. The thesis will employ a mixed-method content analysis of public ESG and sustainability reports from 2015 to 2025, focusing on high-impact European firms in sectors such as Materials, Utilities, and Energy. This methodology will include quantitative textual analysis to measure disclosure volume and identify topics over time, supplemented by a qualitative content analysis using a coding framework to assess the quality and philosophy of the reporting. This research will provide longitudinal, empirical evidence on whether new standards, like the Taskforce on Nature-related Financial Disclosures (TNFD), are successfully pushing companies toward genuine accountability for biodiversity impacts.",
+      "source_link": "https://theses.business.uzh.ch/e30441eb-846c-4b6e-94e6-a4e7f7b2b988",
+      "source_id": "ibw--2",
+      "scraped_at": "2026-07-17T21:12:20.947140+00:00",
+      "topic_id": "b3432c6bf906453acd5e3a4124b0ec53c0360bab"
+    }
+  ]
+}

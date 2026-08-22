@@ -1,0 +1,29 @@
+{
+  "source_id": "religionswissenschaftliches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "ae465b632b4a8014069089a271f7cd6b85f8f809",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Bachelorarbeiten werden individuell angefertigt; Umfang ca. 24–30 Seiten (Richtwert 72'000–90'000 Zeichen inkl. Leerzeichen). Studierende wählen eine habilitierte Fachperson des Religionswissenschaftlichen Seminars als Betreuerin/Betreuer. Auf Antrag ist Betreuung, Begutachtung und Benotung auch durch eine habilitierte, am Studiengang beteiligte Fachperson des Theologischen Seminars oder der Philosophischen Fakultät möglich; in diesem Fall erstellt eine habilitierte Fachperson des Religionswissenschaftlichen Seminars das Zweitgutachten. Die Arbeit wird in der Regel in doppelter Ausführung bei der betreuenden Fachperson abgegeben. Als offizielle Hilfsmittel sind ein „Leitfaden zum Verfassen schriftlicher Arbeiten“ (PDF) und die „Selbständigkeitserklärung Bachelorarbeit“ (PDF) verlinkt. Konkrete Angaben zu Anmeldung/Registrierung, Fristen und zum Masterarbeitsverfahren fehlen auf der Seite.",
+      "relevant_links": [
+        {
+          "url": "https://www.religionswissenschaft.uzh.ch/dam/jcr:17161337-e48a-4d64-87ae-ac3fbb16c071/Leitfaden%20zum%20Verfassen%20einer%20wissenschaftlichen%20Arbeit_2023.pdf",
+          "description": "Leitfaden zum Verfassen schriftlicher Arbeiten (PDF, 428 KB)"
+        },
+        {
+          "url": "https://www.religionswissenschaft.uzh.ch/dam/jcr:ffffffff-8c4d-5a67-0000-000041c6bd97/selbststaendigkeitserklaerung_bachelor.pdf",
+          "description": "Selbständigkeitserklärung Bachelorarbeit (PDF, 75 KB)"
+        }
+      ],
+      "source_url": "https://www.religionswissenschaft.uzh.ch/de/studium/studienorganisation/bachelorarbeit.html",
+      "source_id": "religionswissenschaftliches-seminar--1",
+      "scraped_at": "2026-08-04T10:59:53.121492+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

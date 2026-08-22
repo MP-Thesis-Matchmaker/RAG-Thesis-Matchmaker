@@ -236,3 +236,16 @@ data/raw/
 #   a tempting stale copy of a corpus that now lives in the database.
 data/publications.jsonl
 data/state.json
+
+# Scraped data
+#   data/scraper/cache/ is the page cache: one directory per source holding the
+#   fetched HTML plus a few previous versions, so re-extracting never re-hits a UZH
+#   site. var/ is per-source run state. output/ is the scraper's own JSON view.
+#   All three are machine output that grows with every run.
+#   data/scraper/registry/ and data/scraper/specs/ stay tracked on purpose:
+#   registry/ is the human-authored list of what to scrape, and specs/ holds the
+#   per-source spec.yaml the extractor reads at runtime plus the frozen page
+#   snapshots the offline test suite replays against.
+data/scraper/cache/
+data/scraper/var/
+data/scraper/output/

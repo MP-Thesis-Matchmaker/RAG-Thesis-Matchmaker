@@ -1,0 +1,43 @@
+# isek--2: ISEK Bachelor-thesis page — the BA process (summarised via LLM) plus a
+# table of "(Ko-)Betreuende" (co-supervisors). Per the brief, extract all listed
+# people: each table row is a name linking to a profile, which is followed for
+# the email, title (role), research interests and short bio. Unit level.
+source_id: isek--2
+page_type: people
+also_process: true
+
+record:
+  container: 'table tr:has(a[href*="/personen/"])'
+  fields:
+    name:
+      selector: 'a[href*="/personen/"]'
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      selector: 'a[href*="/personen/"]'
+      attr: href
+      transform: absolute_url
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://www\.isek\.uzh\.ch/.+\.html$'
+  fields:
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email
+    role:
+      selector: "h3.PersonCard--name"
+      attr: text
+      regex: ',\s*(.+)$'
+    research_interest:
+      selector: 'h2.TextImage--title:-soup-contains("Forschungsinteressen") + div'
+      attr: text
+      transform: normalize_ws
+    bio:
+      selector: 'h2.TextImage--title:-soup-contains("Kurzbio") + div'
+      attr: text
+      transform: normalize_ws

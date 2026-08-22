@@ -1,0 +1,52 @@
+# biochemisches-institut-mnf--1: the Biochemistry Master page lists the research
+# groups that offer Master theses, each linking to a group "Master Theses" page.
+# Each group is modelled as an open Master topic: title = the group, description
+# and the PI's email come from following the group's master-theses page; the
+# supervisor is the group's PI.
+source_id: biochemisches-institut-mnf--1
+page_type: topics
+
+record:
+  container: 'a[href$="/master-theses.html"]'
+  fields:
+    title:
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Biochemistry"
+    source_link:
+      attr: href
+      transform: absolute_url
+    _group_url:                        # the group's page (.../caflisch.html)
+      attr: href
+      transform: [absolute_url, dirname_html]
+
+id_from: [title]
+
+follow:
+  url_field: source_link
+  url_pattern: '.+/master-theses\.html$'
+  fields:
+    topic_description:
+      selector: 'div.TextImage--content.richtext'
+      attr: text
+      transform: normalize_ws
+
+# The PI's full name + email are on the group page (not the master-theses page).
+resolve_supervisors:
+  record_url: _group_url
+  name:
+    selector: "h1"
+    attr: text
+    transform: normalize_ws
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email

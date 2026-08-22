@@ -63,9 +63,24 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             id="posting:1",
             title="MSc thesis: dense retrieval for German text",
             description="Neural search over German corpora.",
-            supervisor="Prof. A. Müller",
-            degree_level="master",
+            supervisors=[{"name": "Prof. A. Müller"}],
+            degree_levels=["bachelor", "master"],
             url="https://uzh.ch/p1",
+        ),
+        # Two supervisors and no level, so the fan-out and the unlabelled case are
+        # both covered by the shared fixture rather than by a special one.
+        ThesisPosting(
+            id="posting:2",
+            title="Co-supervised topic on graph learning",
+            description="Representation learning on graphs.",
+            supervisors=[{"name": "Prof. G. Roth"}, {"name": "Prof. H. Stein"}],
+            url="https://uzh.ch/p2",
+        ),
+        ThesisPosting(
+            id="posting:3",
+            title="Unattributed topic on graph learning",
+            description="Representation learning on graphs.",
+            url="https://uzh.ch/p3",
         ),
     ]
     (sources / "publications.jsonl").write_text(
@@ -99,6 +114,40 @@ def test_degree_level_filter_narrows_postings(retriever: VectorRetriever) -> Non
     matches = retriever.retrieve(query, top_k=5)
     for match in matches:
         assert match.posting_count == 0
+
+
+def test_a_two_level_posting_is_found_by_both_levels(retriever: VectorRetriever) -> None:
+    """The assertion the whole degree_levels change exists for.
+
+    posting:1 is open to bachelor and master. Under the old scalar field it could be
+    stored as only one of them and would have been invisible to the other -- which is
+    121 of 247 real topics, not a corner case.
+    """
+    topic = ["dense retrieval for German text"]
+    for level in ("bachelor", "master"):
+        matches = retriever.retrieve(ParsedQuery(topics=topic, degree_level=level), top_k=5)
+        found = {e.source_id for m in matches for e in m.evidence}
+        assert "posting:1" in found, f"posting:1 unreachable for a {level} query"
+
+
+def test_a_posting_credits_every_named_supervisor(retriever: VectorRetriever) -> None:
+    """Postings fan out like publications; co-supervision is normal."""
+    matches = retriever.retrieve(ParsedQuery(topics=["graph learning"]), top_k=5)
+    credited = {
+        m.supervisor for m in matches if any(e.source_id == "posting:2" for e in m.evidence)
+    }
+    assert credited == {"Prof. G. Roth", "Prof. H. Stein"}
+
+
+def test_a_posting_naming_nobody_credits_nobody(retriever: VectorRetriever) -> None:
+    """Documented rather than desirable: posting:3 cannot become a recommendation.
+
+    There is nobody to recommend, so it is correctly absent from the grouped results.
+    It stays visible in the index -- `has_supervisor` is false on it -- which is what
+    a future ranking pass would need to surface it some other way.
+    """
+    matches = retriever.retrieve(ParsedQuery(topics=["graph learning"]), top_k=5)
+    assert not any(e.source_id == "posting:3" for m in matches for e in m.evidence)
 
 
 def test_evidence_points_back_to_source_ids(retriever: VectorRetriever) -> None:

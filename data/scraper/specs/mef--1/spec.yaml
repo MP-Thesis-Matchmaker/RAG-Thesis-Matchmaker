@@ -1,0 +1,9 @@
+# mef--1: the Medical Faculty's central Masterarbeit page (Human- und
+# Zahnmedizin). Process/contact-only: it describes the thesis as a requirement
+# for the federal exam, points to the VAM platform's internal "Online-Themenbörse"
+# (topic exchange, behind login — no public open topics), lists the
+# Masterarbeitskommission composition and the plagiarism policy, and gives the
+# Studiendekanat contact. Summarized by the LLM.
+source_id: mef--1
+page_type: process
+degree_level: "Master"

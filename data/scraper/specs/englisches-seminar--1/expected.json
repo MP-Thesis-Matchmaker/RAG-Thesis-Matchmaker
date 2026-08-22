@@ -1,0 +1,33 @@
+{
+  "source_id": "englisches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "f5883585039fb28eba9c0cdcf79db8f0a29a8adc",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Master’s theses are usually supervised by a professor; other PhD-holding staff may supervise but are not obliged to. To find a supervisor, consult instructors’ homepages (links via the UZH English Department Staff List) and contact a potential supervisor before booking the thesis online—ideally at the end of the preceding semester, but no later than August 5 for a two-semester fall booking or January 5 for a two-semester spring booking. You must book the Master Thesis online during the module booking period and cannot book without a supervisor. Final submission deadlines are December 1 (fall) and June 1 (spring). Typical length is ~20,000–30,000 words (excl. bibliography); a template cover and discipline-specific guides (Linguistics manual, Literature Guide) and the general module description provide official guidelines. If a supervisor does not reply, send a reminder after one week and, if still unanswered a week after a second message, contact the study advisor at englishstudies@es.uzh.ch.",
+      "relevant_links": [
+        {
+          "url": "https://www.es.uzh.ch/dam/jcr:87b36b35-9669-4cb4-85a0-717c1851588a/Template%20Cover%20Master%20Thesis%20(English).docx",
+          "description": "Template Cover Master Thesis (English) (DOCX, 56 KB)"
+        },
+        {
+          "url": "https://www.es.uzh.ch/dam/jcr:8d44b19f-07a3-4227-aa20-b82ee6827443/Manual%20for%20Papers%20in%20English%20Linguistics_2023.pdf",
+          "description": "Manual for Writers of Papers in English Linguistics (PDF, 3 MB)"
+        },
+        {
+          "url": "https://www.es.uzh.ch/dam/jcr:6c7e6382-cba9-468c-a862-afe6bb3f8d59/Literature%20Guide%20(2024).pdf",
+          "description": "Literature Guide (PDF, 515 KB)"
+        }
+      ],
+      "source_url": "https://www.es.uzh.ch/en/studies/master/master-thesis.html",
+      "source_id": "englisches-seminar--1",
+      "scraped_at": "2026-07-25T06:11:10.132727+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

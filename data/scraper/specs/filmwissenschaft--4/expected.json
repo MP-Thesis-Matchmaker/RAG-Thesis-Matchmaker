@@ -1,0 +1,25 @@
+{
+  "source_id": "filmwissenschaft--4",
+  "page_type": "process",
+  "verified_content_sha1": "ce9c43ad5f3e354d67112fa8f85b4552d6fc01ec",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Masterstudierende der MA‑Studienrichtung schreiben eine Masterarbeit (30 ETCS Credits). Vor der formellen Buchung des Moduls muss frühzeitig Kontakt mit der gewünschten Betreuungsperson aufgenommen werden; nach der Buchung stehen zwei Semester für die Arbeit zur Verfügung. Der Besuch des begleitenden Kolloquiums für Masterarbeiten ist während beider Semester obligatorisch und bereitet auf Präsentation und Verteidigung vor. Formale Vorgaben: Sprache Deutsch (in Ausnahmefällen Französisch, Englisch oder Italienisch), Umfang 60–80 Seiten, zeitliche Limitierung zwei Semester. Für die Anmeldung zum Abschluss, detaillierte Merkblätter und Leitfäden sowie alle relevanten Informationen ist die Homepage des Studiendekanats bzw. die Seite «Anmeldung zum Abschluss» zuständig.",
+      "relevant_links": [
+        {
+          "url": "https://www.film.uzh.ch/de/studies/studienprogrammangebot/MA/abschluss/anmeldungabschluss.html",
+          "description": "Anmeldung zum Abschluss."
+        }
+      ],
+      "source_url": "https://www.film.uzh.ch/de/studies/studienprogrammangebot/MA/abschluss/thesis.html",
+      "source_id": "filmwissenschaft--4",
+      "scraped_at": "2026-07-31T14:20:37.279001+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

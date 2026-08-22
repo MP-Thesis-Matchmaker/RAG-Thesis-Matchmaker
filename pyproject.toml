@@ -57,6 +57,41 @@ embeddings = [
 mcp = [
     "mcp>=2.0",
 ]
+# Posting scraper. Its dependency set is almost disjoint from the core's -- the
+# core speaks httpx / psycopg / dspace-rest-client, this speaks requests / bs4 /
+# PyYAML / pypdf / openai -- which is why it is an extra and why the scraper gets
+# its own image rather than riding along in the harvester's. See the Images
+# section of docs/deployment.md.
+#
+# requests rather than the httpx the rest of the repository uses: the fetch layer
+# entangles it with the politeness delay and the Playwright fallback, and the 131
+# tests that make this port trustworthy all replay through it. Converting it is a
+# follow-up, not a port step. requests and PyYAML were already in uv.lock as
+# transitive dependencies before this extra existed; naming them here makes them
+# direct, which is what lets a floor or a source override apply to them at all.
+#
+# The openai floor spans three majors, and that needed checking rather than
+# assuming: >=1.30 resolves to 3.3.1 today, which is the same shape as the mcp>=1.2
+# range that silently resolved to 2.0.0 and broke the MCP adapter. It is not the
+# same problem. Verified against 3.3.1 -- every symbol scraper/llm.py imports still
+# exists (OpenAI plus the five error classes), the constructor still takes
+# api_key/timeout/max_retries/base_url, and chat.completions.create still takes
+# model and messages. The Responses API arrived in 2.x alongside that surface, not
+# in place of it. Re-check on a major bump: nothing in the test suite would notice,
+# because every LLM call is stubbed.
+scraping = [
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "PyYAML>=6.0",
+    "pypdf>=4.0",
+    "openai>=1.30",
+]
+# JS-rendered pages. Separate from `scraping` because installing it downloads a
+# browser: `python -m playwright install chromium`. fetch.py imports it lazily and
+# degrades to the static fetch when it is absent, so most runs never need it.
+render = [
+    "playwright>=1.40",
+]
 
 # Test tooling is not an optional feature of the distribution -- nobody
 # installing thesis-matchmaker wants our test runner -- so it is a PEP 735

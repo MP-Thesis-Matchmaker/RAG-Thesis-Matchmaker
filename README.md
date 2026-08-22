@@ -22,9 +22,10 @@ own through the CLI.
 
 ![Architecture](docs/architecture.png)
 
-*Target state. The REST API, the web scraper, the application-process summaries,
-and the multi-signal ranking box are not implemented yet — the per-package
-READMEs linked under [Layout](#layout) say what actually exists.*
+*Target state. The REST API and the multi-signal ranking box are not implemented
+yet, and the application-process summaries are scraped and stored but not yet
+surfaced — the per-package READMEs linked under [Layout](#layout) say what
+actually exists.*
 
 ## How it works
 
@@ -33,9 +34,11 @@ READMEs linked under [Layout](#layout) say what actually exists.*
    contracts in `src/thesis_matchmaker/contracts`. Harvesting is live and writes
    rows into the `publication` table —
    [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md), roughly
-   22.5k records for the faculty scope currently configured. The scraper is
-   **not built yet**, so thesis postings are still the synthetic
-   `theses.jsonl` sample in `data/samples/`.
+   22.5k records for the faculty scope currently configured. Scraping is live
+   too — [`python -m thesis_matchmaker.scraper.main`](src/thesis_matchmaker/scraper/README.md)
+   reads 103 curated departmental pages and writes the `posting` table, so
+   thesis postings are real rather than the synthetic `theses.jsonl` sample that
+   `data/samples/` still carries for offline runs.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash
@@ -93,7 +96,8 @@ with its public API, data flow, configuration, and known gaps.
 | Package | What it does |
 |---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to source data. |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to `publication`. |
+| [`scraper/`](src/thesis_matchmaker/scraper/README.md) | Scrapes thesis postings, profiles and application procedures from 103 UZH pages. Owns all writes to `posting`. |
 | [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → Postgres/pgvector. No chunking. |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |

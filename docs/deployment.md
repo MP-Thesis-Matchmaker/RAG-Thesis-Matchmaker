@@ -25,6 +25,7 @@ a committed manifest is worse than an obvious blank.
 | `thesis_matchmaker.zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
 | `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — image exists (`docker/indexer/`) |
 | `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`docker/serving/`) |
+| `thesis_matchmaker.scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`docker/scraper/`) |
 
 The last two rows now lack only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
@@ -51,7 +52,7 @@ done yet.
 
 ## Images
 
-**One image per deployable role, not one image for everything.** Four are planned;
+**One image per deployable role, not one image for everything.** All four now exist;
 `docker/<role>/Dockerfile` is where each lives.
 
 | Image | Role | Runtime | Extras it needs | Exists |
@@ -59,14 +60,30 @@ done yet.
 | `docker/zora/` | ZORA harvester | `CronJob` | none | **yes** |
 | `docker/indexer/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
 | `docker/serving/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
-| — | posting scraper | `CronJob` | its own set | no — still a separate repo |
+| `docker/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
 image from roughly 200 MB to a few GB; a harvester pod that imports neither would
 otherwise pull all of it on every scheduled run. The posting scraper is the sharper
-case: it is `requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, disjoint
-from this repo's `httpx` / `psycopg` / `dspace-rest-client` apart from pydantic and
-dotenv. One image for both means each ships the other's dependency tree.
+case, and now a measured one rather than a prediction: the `[scraping]` extra is
+`requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and it intersects the
+core's `httpx` / `psycopg` / `dspace-rest-client` only at pydantic and dotenv. One
+image for both means each ships the other's dependency tree.
+
+The scraper image also carries chromium's headless shell (`[render]` +
+`playwright install --with-deps --only-shell`), which moves it from the ~250 MB
+class to 1.64 GB uncompressed (measured; mostly the `--with-deps` OS libraries).
+That passes the compliance policy's "absolut notwendigen
+Komponenten" test rather than straining it: `ibw--1` and `ivw--4` serve their
+listings JS-only and `iff--3`'s profile pages render client-side, so without a
+browser three sources are permanently unreadable. The browser is baked in at build
+time — a CronJob must not download 100 MB from a CDN on every scheduled run.
+
+The scraper image also carries something none of the others do: `data/scraper/`.
+`uv sync --no-editable` builds the project into a wheel, so nothing outside
+`src/thesis_matchmaker/` survives on its own — and the 103 `spec.yaml` files are read
+at *runtime*, not just by tests. Without that COPY the image starts and finds nothing
+to scrape.
 
 The indexer and the serving adapter both need `[embeddings]` — the query has to be
 embedded with the same model as the corpus — so splitting them buys lifecycle
@@ -129,9 +146,19 @@ installs `retrieval` cannot import it, and the boundary stops depending on revie
 It also means four `pyproject.toml` files, a regenerated `uv.lock`, every import
 path rewritten, and the whole test suite relocated.
 
-**Trigger for deciding: the scraper migration.** With one producer and a prototype,
-the seam between them is a guess; with two real producers it is observable. Not
-before.
+**Trigger for deciding was the scraper migration, and it has now happened.** The
+scraper landed as `src/thesis_matchmaker/scraper/` — a peer of `zora/`, in the same
+flat tree — deliberately *without* taking the workspace question with it. Splitting
+`src/` and porting 5,000 lines in one change would have meant one commit answering
+two questions, with no way to tell which one had gone wrong if either did.
+
+So the seam is now observable, which is what this section asked for. What it shows:
+the two producers share `contracts/`, `config.py` and `db.py` and nothing else, and
+their dependency sets are disjoint apart from pydantic and dotenv. That is a clean
+enough boundary that a workspace would buy import-time *enforcement* rather than
+decoupling — real, but a different and smaller claim than the one made before there
+was anything to look at. Decide it together with the `ingestion/` parent question,
+which is the same question at a different granularity.
 
 ## Deploying
 

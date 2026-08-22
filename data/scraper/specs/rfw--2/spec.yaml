@@ -1,0 +1,6 @@
+# rfw--2: the RWF thesis-process page covers BOTH Bachelor and Master (the
+# registry URL just anchors to #Bachelorarbeit, which biased the auto-detected
+# degree). Force the degree level.
+source_id: rfw--2
+page_type: process
+degree_level: "Bachelor, Master"

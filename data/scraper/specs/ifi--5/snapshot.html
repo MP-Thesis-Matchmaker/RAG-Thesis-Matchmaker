@@ -1,0 +1,1768 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-template="st04">
+  
+
+    
+    
+  
+ 
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBTG Student Projects | Department of Informatics  | UZH</title>
+    <link rel="stylesheet" href="/.resources/uzh-wcms-frontend/2.10.0/assets/css/main.css">
+    <link rel="modulepreload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/js/ui.mjs">
+    <link href="https://www.ifi.uzh.ch/en/dbtg/teaching/theses.html" rel="canonical">
+    <link href="https://www.uzh.ch" rel="alternate" hreflang="x-default">
+    <link rel="preload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/fonts/WOFF2/SourceSans3-Regular.otf.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="preload" href="/.resources/uzh-wcms-frontend/2.10.0/assets/fonts/WOFF2/SourceSans3-Semibold.otf.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+   
+    <link rel="apple-touch-icon" sizes="180x180" href="/docroot/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/docroot/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/docroot/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/docroot/favicons/site.webmanifest">
+    <link rel="shortcut icon" href="/docroot/favicons/favicon.ico">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-config" content="/docroot/favicons/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+  
+      <meta name="description" content=" ">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.ifi.uzh.ch/en/dbtg/teaching/theses.html">
+    <meta property="og:title" content="DBTG Student Projects">
+   
+      <meta property="og:description" content=" "/>
+    
+    
+    <!-- 
+    <meta property="twitter:url" content="/pages/layouts/default.html">
+    <meta property="twitter:title" content="Default Layout (content area only)">
+    <meta property="twitter:description" content="Page description">
+    <meta property="twitter:image" content="../../dummy/shareimage_example_1200x630.jpg">
+    <meta property="twitter:dnt" content="on">
+    -->
+    
+    
+    
+ 
+    
+    
+    
+    
+    
+
+   
+      <script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(['setAPIUrl', "https://webstats.uzh.ch/"]);
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//webstats.uzh.ch/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', 59]);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<script type="text/javascript">
+  function messageReceive(evt) {
+       if ((evt.origin == 'http://www.merlin.uzh.ch') || (evt.origin == 'https://www.merlin.uzh.ch')) {
+           var jsonObj = jQuery.parseJSON(evt.data);
+           $('#iframe_merlin').height(jsonObj.height);
+       } else if ((evt.origin == 'http://mim.ifi.uzh.ch') || (evt.origin == 'https://mim.ifi.uzh.ch')) {
+           var jsonObj = jQuery.parseJSON(evt.data);
+          $("iframe[src*='mim.ifi.uzh.ch']").height(jsonObj.height);
+       } else if (evt.origin == 'http://mim-integration.ifi.uzh.ch') {
+           var jsonObj = jQuery.parseJSON(evt.data);
+          $("iframe[src*='mim-integration.ifi.uzh.ch']").height(jsonObj.height);
+       } else {
+            //alert('unexpected message from origin '+evt.origin);
+       }
+   }
+   window.addEventListener('message', messageReceive, false);
+</script>
+<style>
+.mod-teaser a.facebook, .mod-teaser a.linkedin, .mod-teaser a.xing,
+.mod-teaser a.twitter, .mod-teaser a.instagram, .mod-teaser a.youtube
+{
+    width: 21px;
+    height: 21px;
+    display: inline-block;
+    overflow: hidden;
+    margin-right: 3px;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    content: "";
+    display: inline-block;
+    text-decoration: none;
+}
+
+.mod-teaser a.facebook
+{
+    background-image:
+    url("https://www.uzh.ch/dam/jcr:00000000-7c02-9358-ffff-ffffea416301/facebook.png");
+}
+.mod-teaser a.twitter
+{
+    background-image:
+    url("https://www.uzh.ch/dam/jcr:00000000-7c02-9358-ffff-ffff92e7d42e/twitter.png");
+}
+.mod-teaser a.instagram
+{
+    background-image:
+    url("https://www.uzh.ch/dam/jcr:e0c04bf2-6feb-4925-8043-56aa9cf31214/instagram.png");
+}
+.mod-teaser a.linkedin
+{
+    background-image:
+    url("https://www.uzh.ch/dam/jcr:00000000-7c02-9358-ffff-ffff9fff7d39/linkedin.png");
+}
+.mod-teaser a.youtube 
+{
+    background-image: 
+    url("https://www.uzh.ch/dam/jcr:00000000-7c02-9358-ffff-fffffb597cde/youtube.png");
+} 
+.mod-teaser a.xing
+{
+    background-image:
+    url("https://www.uzh.ch/dam/jcr:39299e70-175a-4d90-b67e-9944a01bddb2/xing.png");
+}
+</style> 
+  
+    <link rel="stylesheet" href="/.resources/uzh-wcms-frontend/webresources/2.10.0/css/main.css">
+    <script type="module" src="/.resources/uzh-wcms-frontend/webresources/2.10.0/js/main.js"></script>
+
+    <script src="/docroot/jquery/jquery-3.7.1.min.js"></script>
+    <script src="/docroot/jquery/jquery-migrate-3.5.2.min.js"></script>
+    
+   
+     
+</head>
+
+  
+
+  <body class="template-st04">
+   
+    <a id="top"></a>
+    <!-- component: SkipLink -->
+     <div class="SkipLink__container">
+        <!-- component: Link --><a class="Link layout-standalone icon-position-after icon-orientation-down SkipLink js-SkipLink" href="#main-content">Skip navigation<span class="Link--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                        <use xlink:href="#16--link-internal"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- /component: Link -->
+     </div>
+     <!-- /component: SkipLink -->
+ 
+   
+
+
+
+
+
+
+
+<!-- component: Header -->
+<header class="Header js-Header">
+    <p class="visuallyhidden" aria-level="1" role="heading">Header</p>
+    <div class="Header--top">
+        <div class="Header--logo">
+               <a class="Logo" href="https://www.uzh.ch/en">
+                  <svg width="208" height="92" aria-labelledby="logoTitle">
+                      <title id="logoTitle">Logo of the University of Zurich, to homepage</title>
+                      <use href="/docroot/logos/uzh_logo_d_pos.svg#uzh_logo"></use>
+                  </svg>
+               </a>
+        </div>
+        <div class="Header--mobileButtons">
+            <a class="Header--search" href="/en/search.html">
+                  <span class="visuallyhidden">Search</span>
+                  <!-- component: Icon -->
+                  <span class="Icon" data-name="24--search">
+                      <svg>
+                          <use xlink:href="#24--search">
+                          </use>
+                      </svg>
+                  </span>
+                  <!-- /component: Icon -->
+            </a>
+          
+          <button class="Header--burger js-Header--burger" type="button" aria-controls="main-nav" aria-expanded="false">
+            <span class="visuallyhidden">Open/Close Navigation</span>
+            <span class="Header--burger--open">
+                <!-- component: Icon -->
+                <span class="Icon" data-name="24--menu">
+                    <svg>
+                        <use xlink:href="#24--menu">
+                        </use>
+                    </svg>
+                </span>
+                <!-- /component: Icon -->
+            </span>
+            <span class="Header--burger--close">
+                <!-- component: Icon -->
+                <span class="Icon" data-name="24--close">
+                    <svg>
+                        <use xlink:href="#24--close">
+                        </use>
+                    </svg>
+                </span>
+                <!-- /component: Icon -->
+            </span>
+          </button>
+        </div>
+        
+      
+          <div class="Header--department">
+             
+              
+              <a class="Header--department--link" href="/en.html">Department of Informatics </a> 
+                  <a class="Header--subDepartment--link" href="/en/dbtg.html">Database Technology</a>
+          </div>
+          
+        
+    </div>
+    <div class="Header--bottom js-Header--bottom">
+        <div class="Header--bottom--inner">
+<!-- component: MainNav -->
+<div class="MainNav js-MainNav" id="main-nav" data-mode="lazy">
+    
+
+<div class="MainNav--service js-Header--service">
+
+  
+
+  <!-- component: ServiceNav -->
+ 	<h2 class="visuallyhidden">Quicklinks</h2>
+  <nav class="ServiceNav">
+      <ul class="ServiceNav--list">
+          <li class="ServiceNav--list--item">
+              <a class="ServiceNav--link " href="/en/dbtg.html">Home</a>
+         </li>
+         
+         
+           <li class="ServiceNav--list--item">   
+              <a class="ServiceNav--link " href="/en/dbtg/contact.html">Contact</a>
+           </li>
+         
+     </ul>
+  </nav>
+  <!-- /component: ServiceNav -->
+  
+  
+ 
+    <!-- component: SearchTrigger -->
+    <a class="SearchTrigger" href="/en/search.html" data-js-search-trigger="">
+        <!-- component: Icon -->
+        <span class="Icon" data-name="24--search">
+            <svg>
+                <use xlink:href="#24--search">
+                </use>
+            </svg>
+        </span>
+        <!-- /component: Icon -->
+        <span class="text">Search</span>
+    </a>
+    <!-- /component: SearchTrigger -->
+</div>       
+    <h2 class="visuallyhidden">Main navigation</h2>
+    <nav class="MainNav--inner">
+        <ul class="MainNav--list js-MainNav--list">
+            <!-- Begin: loop through top-level items-->
+            
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/dbtg/dbtgRSS.html">News</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-0">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/dbtgRSS.html">
+                                          <span class="visuallyhidden">News</span>
+                                          News
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_a41dc2e6-215a-4dbf-a3da-7a8d2abba39b" aria-expanded="false"> 
+                      People  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-1">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/Staff.html">
+                                          <span class="visuallyhidden">People</span>
+                                          People
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_5faba860-fcb0-44a0-a57b-555b0ba8aa36" aria-expanded="false"> 
+                      Research  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-2">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/research.html">
+                                          <span class="visuallyhidden">Research</span>
+                                          Research
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/dbtg/publications.html">Publications</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-3">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/publications.html">
+                                          <span class="visuallyhidden">Publications</span>
+                                          Publications
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item is-active">
+                  
+                  <!-- Button if there are subitems, link if there aren’t-->
+                  <button class="MainNav--link js-MainNav--link" type="button" aria-controls="main-nav_overlay_b9f74b77-6f67-47b4-b3de-d3eddbc18aab" aria-expanded="false"> 
+                      Teaching  
+                      <div class="MainNav--icon">
+                          <!-- component: Icon -->
+                          <span class="Icon" data-name="16--link-arrow-sm-right">
+                              <svg>
+                                  <use xlink:href="#16--link-arrow-sm-right">
+                                  </use>
+                              </svg>
+                          </span>
+                          <!-- /component: Icon -->
+                      </div>
+                  </button>
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-4">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/teaching.html">
+                                          <span class="visuallyhidden">Teaching</span>
+                                          Teaching
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/dbtg/sw.html">Internal</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-5">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/sw.html">
+                                          <span class="visuallyhidden">Internal</span>
+                                          Internal
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/dbtg/contact.html">Contact</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-6">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/contact.html">
+                                          <span class="visuallyhidden">Contact</span>
+                                          Contact
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+       
+             
+              <li class="MainNav--list--item js-MainNav--item ">
+                  
+                      <a class="MainNav--link" href="/en/dbtg/Positions.html">PhD Position</a>
+                  
+                  
+                  <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-7">
+                      <div class="MainNav--overlay--scroller">
+                          <div class="MainNav--overlay--inner">
+                              <!-- Set data-mainnav-index to the level of nesting-->
+                              <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                                  <div class="MainNav--sub--back">
+                                      <!-- component: Button -->
+                                      <button class="Button js-MainNav--back" type="button">
+                                          <span class="Button--inner">Zurück</span>
+                                          <span class="Button--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-arrow-sm-right">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-arrow-sm-right">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </button>
+                                      <!-- /component: Button -->
+                                  </div>
+                                  <div class="MainNav--sub--title">
+                                      <!-- component: Link -->
+                                      <a class="Link layout-standalone size-small" href="/en/dbtg/Positions.html">
+                                          <span class="visuallyhidden">PhD Position</span>
+                                          PhD Position
+                                          <span class="Link--icon">
+                                              <!-- component: Icon -->
+                                              <span class="Icon" data-name="16--link-internal">
+                                                  <svg>
+                                                      <use xlink:href="#16--link-internal">
+                                                      </use>
+                                                  </svg>
+                                              </span>
+                                              <!-- /component: Icon -->
+                                          </span>
+                                      </a>
+                                      <!-- /component: Link -->
+                                  </div> 
+                                  <ul class="MainNav--sub--list js-MainNav--overflow">
+                                  </ul>
+                                  <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </li>
+              
+              
+        </ul>
+        <!-- Begin: empty container for items that don't fit viewport-->
+        <!-- Must always be there, items are added via JS-->
+        <ul class="MainNav--list more js-MainNav--more">
+            <li class="MainNav--list--item js-MainNav--item more">
+                <button class="MainNav--link js-MainNav--link" aria-controls="main-nav_overlay_uid-4" aria-expanded="false" type="button">
+                    More
+                    <div class="MainNav--icon">
+                        <!-- component: Icon -->
+                        <span class="Icon" data-name="16--menu">
+                            <svg>
+                                <use xlink:href="#16--menu">
+                                </use>
+                            </svg>
+                        </span>
+                        <!-- /component: Icon -->
+                    </div>
+                </button>
+                <div class="MainNav--overlay js-MainNav--overlay" id="main-nav_overlay_uid-4">
+                    <div class="MainNav--overlay--scroller">
+                        <div class="MainNav--overlay--inner">
+                            <!-- data-mainnav-index must be 0 within this placeholder container-->
+                            <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="0">
+                                <ul class="MainNav--sub--list js-MainNav--overflow">
+                                </ul>
+                                <button class="js-MainNav--close FocusOnly">Menü schliessen</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <!-- End: empty container for items that don't fit viewport-->
+        </ul>
+    </nav>
+</div>
+<!-- /component: MainNav -->        </div>
+    </div>
+</header>
+<!-- /component: Header -->
+    
+   
+     
+
+ <main id="main-content">
+ 
+ 
+             
+
+ 
+  <!-- component: Breadcrumb -->
+  <nav class="Breadcrumb js-Breadcrumb">
+      <ol class="Breadcrumb--list js-Breadcrumb--list" data-js-scroll-style="{&quot;horizontal&quot;:true}" aria-label="Breadcrumb">
+   
+             
+                
+                 <li class="Breadcrumb--list--item">
+                   <a class="Breadcrumb--link" href="/en.html">Home</a>
+                   <!-- component: Icon -->
+                   <span class="Icon" data-name="16--breadcrumb-separator">
+                     <svg>
+                       <use xlink:href="#16--breadcrumb-separator">
+                       </use>
+                     </svg>
+                   </span>
+                   <!-- /component: Icon -->
+                 </li>
+                
+             
+                
+                 <li class="Breadcrumb--list--item">
+                   <a class="Breadcrumb--link" href="/en/dbtg.html">Database Technology Group</a>
+                   <!-- component: Icon -->
+                   <span class="Icon" data-name="16--breadcrumb-separator">
+                     <svg>
+                       <use xlink:href="#16--breadcrumb-separator">
+                       </use>
+                     </svg>
+                   </span>
+                   <!-- /component: Icon -->
+                 </li>
+             
+                
+                 <li class="Breadcrumb--list--item">
+                   <a class="Breadcrumb--link" href="/en/dbtg/teaching.html">Teaching</a>
+                   <!-- component: Icon -->
+                   <span class="Icon" data-name="16--breadcrumb-separator">
+                     <svg>
+                       <use xlink:href="#16--breadcrumb-separator">
+                       </use>
+                     </svg>
+                   </span>
+                   <!-- /component: Icon -->
+                 </li>
+             
+                
+        
+              <li class="Breadcrumb--list--item">
+              
+                
+                  <!-- start: current page with list of child pages-->
+                  <button class="Breadcrumb--btn js-Breadcrumb--btn" type="button" aria-controls="breadcrumb_flyout-1" aria-expanded="false" aria-current="page">
+                    Open Theses and Projects
+                    <span class="visuallyhidden">Show Subpages</span>
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--breadcrumb-arrow">
+                        <svg>
+                            <use xlink:href="#16--breadcrumb-arrow">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                  </button>
+                  
+                   <div class="Breadcrumb--flyout js-Breadcrumb--flyout" id="breadcrumb_flyout-1">
+                    <div class="Breadcrumb--flyout--inner">
+                        <ul class="Breadcrumb--flyout--list"> 
+                           
+                              <li class="Breadcrumb--flyout--item">
+                                  <a class="Breadcrumb--flyout--link" href="/en/dbtg/teaching/theses/mscprojects.html">MSc Projects</a>
+                              </li>
+                        </ul>
+                        <button class="js-Breadcrumb--close FocusOnly">Unterseiten-Menü schliessen</button>
+                    </div>
+                </div>
+                <!-- end: current page with list of child pages-->
+          </li>
+         
+      </ol>
+  </nav>
+  <!-- /component: Breadcrumb -->
+
+
+
+  <section class="Intro">
+      <div class="Intro--inner">
+      
+      
+          <div class="Intro--content">
+          </div>
+          
+          <div class="Intro--top">
+                  <h1 class="Intro--title richtext">DBTG Student Projects</h1>
+              
+          </div>
+          
+  
+  
+  
+  
+      </div>
+  </section>
+<section class="ContentArea">
+   
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <p>In the Database Technology Group, we offer students the possibility to work on any of the available types of theses (BSc thesis, MSc Basismodul, MSc project, MSc thesis). This page contains selected proposals based on the research interesets of each member of our group. The status of each project is indicated on the right and the workload of most can be adapted based on the kind of thesis you would like to conduct. In case you are not interested in those proposals but you would still like to work in the area of database technologies, feel free to contact one of the people in the group or <a href="/en/dbtg/Staff/Boehlen.html">Prof. M. Böhlen</a>.</p>
+<p>In the table below, we provide information on the steps needed for the completion and evaluation of each thesis. In addition, it is important to have in mind that the MSc projects are always performed in small groups and not individually.</p>
+<table class="grid">
+ <tbody>
+  <tr>
+   <td style="width:1%"><strong>Assignment </strong></td>
+   <td style="width:1%"><strong>Report </strong></td>
+   <td style="width:1%"><strong>Oral Exam </strong></td>
+   <td style="width:1%"><strong>Presentation (20 minutes)</strong></td>
+  </tr>
+  <tr>
+   <td style="width:1%"><strong>MSc Basismodul </strong></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✘ </span></td>
+  </tr>
+  <tr>
+   <td style="width:1%"><strong>BSc Thesis </strong></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✘ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+  </tr>
+  <tr>
+   <td style="width:1%"><strong>MSc Project </strong></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✘ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✘ </span></td>
+  </tr>
+  <tr>
+   <td style="width:1%"><strong>MSc Thesis </strong></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✘ </span></td>
+   <td style="width:1%"><span style="font-family:arial unicode ms,lucida grande">✔ </span></td>
+  </tr>
+ </tbody>
+</table> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><strong>November 3, 2021</strong><span style="color:Green; float:right"> </span><span style="color:red; float:right">Taken</span><span style="color:Green; float:right"> </span></h3>
+<p><strong>Optimization of Lempel-Ziv Algorithm for Entropy Rate Estimation of Numerical Time series:</strong></p>
+<p>The Lempel-Ziv algorithm is&nbsp; a well known universal lossless compression algorithm used for example in the GIF image format. The naive implementation of this algorithm has a time complexity of O(n<sup>2</sup>). If the series is symbolic implementations based on hash or dictionary data structure reduce the computational complexity to O(n). But this is not straightforward to apply when the series is numeric. So, the objective of the project is to implement solutions which are better than the naive solution for numeric series. Moreover, the project includes an experimentation task where the students are required to develop time series prediction models to study correlation between prediction performance and estimated entropy rate.</p>
+<p>Supervisor: <a href="https://www.ifi.uzh.ch/en/dbtg/Staff/Jamal.html">Jamal Mohammed</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="od"></a>Matrix Operations with Gathering in MonetDB<span style="color:Green; float:right">&nbsp;</span><span style="color:red; float:right">Taken</span><span style="color:Green; float:right"> </span></h3>
+<p><a href="/dam/jcr:085fe67b-0a65-47e2-b2c8-1879677bb31b/Project_description.pdf">Detailed project description (PDF, 85 KB)</a></p>
+<p>Supervisor: <a href="/en/dbtg/Staff/dolmatova.html" target="_blank">Oksana Dolmatova</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="od"></a>Integration of matrix operations from a third-party library into MEMON<span style="color:red; float:right">Taken</span><span style="color:Green; float:right"> </span></h3>
+<p>MEMON is an extension of MonetDB with matrix operations defined over relations and performed over internal MonetDB data structure. There are exist many highly-tuned efficient libraries to compute matrix operations such as LAPACK/BLAS/Eigen/Armadillo. The goal of this project is to implement and evaluate an efficient extension of MEMON where execution of matrix operations is delegated to a third-party library. Evaluation step consists of comparison of implemented extension with MEMON and with state-of-the-art statistical packages such as Pandas and R.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/dolmatova.html" target="_blank">Oksana Dolmatova</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="od"></a> Efficient implementation of Join over transposed relations<span style="color:Green; float:right"> </span><span style="color:red; float:right">Taken</span><span style="color:Green; float:right"> </span></h3>
+<p>One of the main issues that prevents seamless integration of matrix operations into a DBMS is inability of all main DBMS to handle relations with large number of attributes, which can be results of certain matrix operations. For instance, transpose operation often used in matrix expressions (e.g., outer and cross products) applied to a relation with 1 Million of tuples returns a relation with 1 Million of attributes. The focus of this project is to tackle the issue on the example of performing join operation over relation that was previously transposed: r<sup>t</sup>&nbsp;⋈&nbsp;s. In order to avoid the materialization of relation with huge number of attributes, physical transposition is avoided, and join algorithm is adjusted.</p>
+<p>The goal of the project is to implement and evaluate adjusted join algorithm over pseudotransposed relations (i.e., relations that supposed to be transposed, but stored in a non-transposed manner) in MonetDB.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/dolmatova.html" target="_blank">Oksana Dolmatova</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="od"></a> QR decomposition integration into column-store DBSM <span style="color:red; float:right"> Taken </span></h3>
+<p>The column-store approach in DBMSs has become popular and a number of hybrid or pure column-store systems, such as MonetDB or Apache Cassandra, is available. Column-oriented systems have a lot of advantages compared to row-stores and offer a great flexibility for analyt- ical workloads. Among others, column-stores allow to implement linear operations better and more efficiently. For instance, the computation of the Singular Value Decomposition is based on matrix Q from QR decomposition computed with the Gram-Schmidt algorithm. However, the QR decomposition, as any linear operation, is defined over matrices but not relations. A relation should be adjusted in order to be suitable for QR decomposition. Current approach of the adjustment consists of a relation partitioning and ordering. The goal of this project is to integrate QR decomposition operation into MonetDB system using the suggested approach.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/dolmatova.html" target="_blank">Oksana Dolmatova</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="ym3"></a> Integration of Generally Valid Predicates into PostgreSQL <span style="color:red; float:right"> Taken </span></h3>
+<p>Ongoing time points, such as <em>now</em>, are common in relations that include a valid-time attribute. The end point of the valid time is equal to <em>now</em> if a tuple is valid until the present time. Since the present time continuously changes, the valid time of a tuple does so as well. As a consequence, evaluating queries on relations with ongoing time points leads to results that change when time passes by. A key challenge is the evaluation of the queries’ conditions to results that remain valid because the conditions might evaluate to true at some times and to false at others.</p>
+<p>In this project, we focus on implementing generally valid logical connectives and predicates for time points and time intervals into the kernel of the widely-used open-source database system PostgreSQL. Then, the results of the predicates and connectives remain valid as time passes by and the connectives and predicates can be used to formulate arbitrarily complex conditions.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/muelle.html" target="_blank">Yvonne Mülle</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="ym1"></a> Realizing The Concept of <em>NOW</em> In Now-Relative Databases <span style="color:red; float:right"> Taken </span></h3>
+<p>Temporal databases allow keeping track of time-varying data. In valid-time databases, the information can be stored when each tuple is valid in the real-world. The time range can either be in the past, present, or future. The concept of <em>NOW</em> allows modeling that a tuple is currently valid, i.e., its end point is unknown. As <em>NOW</em> is a concept rather than a concrete value, the question arises how <em>NOW</em> can be integrated into a database management system and how queries can and should be answered in the presence of <em>NOW</em>.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/muelle.html" target="_blank">Yvonne Mülle</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3>Development of a dynamic web application<span style="font-size:1.04em"> [Software Project]&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </span><span style="color:red; float:right; font-size:1.04em">Taken</span></h3>
+<p>The <a href="http://feedbase.ch" alt="External Link">Swiss Feed Database</a> contains historical data about 100 feed types and 900 nutrients. A web application is provided allowing users to define a set of selection criteria (e.g., nutrient and feed types, temporal and geographical information about feed samples), retrieve nutrient content data, and overview results in various intuitive forms. This project aims at<br>
+  developing Swiss Feed Database v2.0 following the Model-view-controller design pattern that separates data management (model), interface (view), and business logic (controller) of the application. The goals of this re-implementation are:</p>
+<ul>
+ <li>to end up with a codebase that complies with the MVC design pattern principles.</li>
+ <li>to design a star schema for the database that satisfies referential integrities and controls redundancy</li>
+ <li>to optimize how much time is spent on server and client side, respectively, document the results, and implement a web application that asynchronously load data.</li>
+ <li>to design a user interface that follows a responsive web design approach and extend the functionality (e.g., new selection criteria).</li>
+</ul>
+<p><a href="/dam/jcr:b39e4f39-60ff-414f-8b69-ee886d721a6e/sw_project_ggarmpis_24_7_2017.pdf">detailed project description (PDF, 115 KB)</a></p><!-- <p><strong>Imporant Note: </strong> Tis project is suitable for a BSc Thesis and could be extended to match the needs of an MSc Thesis or an MSc Project. Moreover, it could be combined with a Vertiefung, a Facharbeit or a Bassismodul, depending on the level of the student.</p>-->
+<p>Supervisor: <a href="/en/dbtg/Staff/ggarmpis.html">Georgios Garmpis</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="ym2"></a> Integrity Constraints In Now-Relative Databases <span style="color:red; float:right;"> Taken </span></h3>
+<p>Temporal databases consist of one or two of the following time dimensions: valid time and transaction time. Valid time describes when a tuple is valid in the real-world; transaction time describes when a tuple is valid within the database. The concept of <i>NOW</i> represents that a tuple is currently valid, i.e., that its end point is unknown. As a consequence, the instantiation of <i>NOW</i> changes when time is evolving. <br>
+  Integrity constraints like primary keys and foreign keys are fundamental concepts in a DBMS. Adding a temporal component to a database already changes the way how these constraints are ensured. However, these extended check mechanisms are not sufficient anymore in the presence of tuples containing <i>NOW</i>. The reason is that data changes not only through modification statements (insert, update, and delete), but also because time passes by. Thus, new mechanisms are necessary in order to be able to still ensure integrity constraints in now-relative databases.</p>
+<p>Supervisor: <a target="_blank" href="/en/dbtg/Staff/muelle.html">Yvonne Mülle</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="kp1"></a><span style="font-size:1.04em"> Implementing Conflict-Free Replicated Data Types (CRDTs) [BSc Vertiefungsarbeit] &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</span><span style="color:red; float:right; font-size:1.04em">Taken</span></h3>
+<p>The massive increase in data in recent years put a lot of pressure on database vendors to make their systems highly distributed and scalable to very large amounts of data. Usually, distributed databases replicate data over many nodes in the system to improve access time and protect against accidental data loss. However, keeping the replicas consistent (i.e. having the same value on each replica all the time) across the entire system is a difficult problem. Conflict-Free Replicated Data Types (CRDTs) offer a novel approach to solve this problem. They guarantee that data on different replicas converge to a common and predictable state. In this project the student is asked to implement the Observed Remove Set CRDT.</p>
+<p>Supervisor: <a href="/en/dbtg/Staff/papaio.html" target="_blank">Kevin Wellenzohn</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <!--<h3><a name="42mB"></a> Explorative Data Analysis with Hadoop and Spark <span style="color:grey; float:right">Not available</span></h3>
+
+<p><a href="https://42matters.com">42matters</a> is a rapidly growing start​ up, leading the development of next generation mobile user modeling technology. Their solutions are used by big brand companies within the mobile advertising market to serve mobile users intelligently targeted content. The data about mobile devices is stored in an online transaction processing system based on MongoDB and Couchbase, which does not support the required data analytics tasks. The goal of the project is to set up a system that allows offline data analytics based on Hadoop and Spark. The solution will be implemented on Amazon AWS. The main activities are:</p>
+
+<ul class="type1">
+	<li>Load data from the online system into Hadoop and Spark</li>
+	<li>Structure and prepare the data to be suitable for required data analytics tasks.</li>
+	<li>Implement and run data analytics tasks.</li>
+</ul>
+
+<p><a class="download" href="/dam/jcr:ffffffff-b44d-3326-0000-00001e9e9dd6/SP1CA.pdf">detailed project description (PDF, 174 KB)</a></p>
+
+<p>Supervisor: Christian Ammendola (42matters)</p>
+-->
+<p><!--<p>As of today on Google Play there exist about 1 million apps. Few of them have many installations and a vast amount of them only few. The goal of the project is to implement an algorithm for discovering which apps are frequently installed together on mobile devices. A challenge in implementing the algorithm is to handle the large amount of app&shy;pairs which in worst case can be 1 million squared. The final result will then be a list of app&shy;pairs, for only those pairs which occur frequently on mobile devices (not for all app&shy;pairs). The algorithm has to be implemented using Hadoop/Spark/Python on Amazon AWS.</p>
+
+<p><a class="download" href="/dam/jcr:ffffffff-b44d-3326-0000-00005384d917/SP2CA.pdf">detailed project description (PDF, 170 KB)</a></p>
+
+<p>Supervisor: Christian Ammendola (42matters)</p>
+Apps Frequently Installed Together Taken --></p>
+<h3><a name="gg1"></a> Implementing a disk-resident spatial index structure (Quadtree) <span style="color:red; float:right"> Taken </span></h3>
+<p>This project gives you an in depth understanding of file management and index structures, in the context of spatially extended DBMS. Spatial DBMS are database systems that are optimized to store and query data that represents objects defined in a geometric space (e.g., a point in a Cartesian coordinate system, geometry of Zurich on a world map). For spatial DBMS specific kind of indexes (called spatial indexes) are used that can handle two (or more) dimensional data. The most commonly used spatial indexes are: Quadtree, R-Tree, Spatial hash index. The goal of this project is to implement a disk-resident spatial index, namely a Quadtree.</p>
+<p><a class="download" href="/dam/jcr:ffffffff-b44d-3326-0000-000016c91b9d/implementing_a_spatial_index.pdf">detailed project description (PDF, 47 KB)</a></p>
+<p>Supervisor: <a href="/en/dbtg/Staff/ggarmpis.html" target="_blank">Georgios Garmpis</a></p> 
+      </div>
+     
+        <div class="TextImage--topLink">
+            <!-- component: Link -->
+            <a class="Link layout-standalone size-copy-xs icon-orientation-up" href="#top">
+                Top
+                <span class="Link--icon">
+                    <!-- component: Icon -->
+                    <span class="Icon" data-name="16--link-internal">
+                        <svg>
+                            <use xlink:href="#16--link-internal">
+                            </use>
+                        </svg>
+                    </span>
+                    <!-- /component: Icon -->
+                </span>
+            </a>
+            <!-- /component: Link -->
+        </div>
+   </div>
+</div>
+<!-- /component: TextImage -->
+
+
+
+
+        
+
+   
+
+
+<!-- component: TextImage -->
+<div class="TextImage">
+    
+    
+    <div class="TextImage--inner">
+     
+      <div class="TextImage--content richtext">
+         <h3><a name="gg2"></a>Interlinking the Swiss Feed Database with Linked Open Data Cloud <span style="color:red; float:right;"> Taken </span></h3>
+<p>Goal of this project is to get familiar with Semantic Web and Linked Data technologies and relevant tools, and use them in order to link the Swiss Feed Database with the Linked Open Data Cloud. For this purpose an OWL ontology should be constructed that describes properties of the <a href="/en/dbtg/research/sfdb.html">Swiss Feed Database</a>. Then, data of the Swiss Feed Database should be transformed into RDF (according to the OWL ontology) and be interlinked with a dataset of the Linked Open Data Cloud (e.g., GeoNames). Finally, the utility of these new RDF datasets will be demonstrated using SPARQL queries and their results.</p>
+<p><a class="download" href="/dam/jcr:ffffffff-b44d-3326-ffff-ffff92765b31/swiss_feed_database_to_rdf.pdf">detailed project description (PDF, 80 KB)</a></p>
+<p>Supervisor: <a target="_blank" href="/en/dbtg/Staff/ggarmpis.html">Georgios Garmpis</a></p> 
+      </div>
+     
+   </div>
+</div>
+<!-- /component: TextImage -->
+  
+ </section>
+
+
+
+  
+  
+  <section class="SectionNavigation">
+      <h2 class="visuallyhidden">Section navigation</h2>
+      <div class="SectionNavigation--card">
+          <nav class="SectionNavigation--breadcrumb">
+              <!-- Set class "truncated" here if the current page ist nested deeper than two levels in the page tree.-->
+              <ol class="SectionNavigation--breadcrumb--list " aria-label="Breadcrumb">
+                  <li class="SectionNavigation--breadcrumb--item">
+                      <!-- component: Icon -->
+                      <span class="Icon" data-name="16--breadcrumb-separator">
+                      <svg>
+                          <use xlink:href="#16--breadcrumb-separator">
+                          </use>
+                      </svg>
+                  </span>
+                      <!-- /component: Icon -->
+                      <a class="SectionNavigation--breadcrumb--link"
+                         href="/en/dbtg.html">Database Technology Group</a>
+                  </li>
+                  
+                 <li class="SectionNavigation--breadcrumb--item">
+                      <!-- component: Icon -->
+                      <span class="Icon" data-name="16--breadcrumb-separator">
+                      <svg>
+                          <use xlink:href="#16--breadcrumb-separator">
+                          </use>
+                      </svg>
+                  </span>
+                      <!-- /component: Icon -->
+                      <a class="SectionNavigation--breadcrumb--link"
+                         href="/en/dbtg/teaching.html">Teaching</a>
+                  </li>
+              </ol>
+          </nav>
+          <h3 class="SectionNavigation--title">
+              <span class="visuallyhidden">Subpages of </span> Open Theses and Projects
+          </h3>
+          <ul class="SectionNavigation--linkList">
+                      <li>
+                          <!-- component: Link -->
+                          <a class="SectionNavigation--link" href="/en/dbtg/teaching/theses/mscprojects.html">MSc Projects
+                               <span class="SectionNavigation--linkIcon">
+                                  <!-- component: Icon -->
+                                  <span class="Icon" data-name="16--link-arrow-sm-right">
+                                      <svg>
+                                          <use xlink:href="#16--link-arrow-sm-right">
+                                          </use>
+                                      </svg>
+                                  </span>
+                                  <!-- /component: Icon -->
+                              </span>
+                          
+                          </a>
+                          <!-- /component: Link -->
+                      </li>
+          </ul>
+      </div>
+  </section>
+ 
+ 
+    <!-- component: CrawlerLinks -->
+      <div class="CrawlerLinks">
+          <ul>
+          
+          
+              
+                <li>
+                    <a rel=”dofollow” href="/en/dbtg/teaching/theses/mscprojects.html">MSc Projects</a>
+                </li>
+                
+              
+          </ul>
+      </div>
+      <!-- /component: CrawlerLinks -->
+    
+ </main>    
+       
+<footer class="Footer">
+    <!--  -->
+    <div class="Footer--bottom">
+        <h2 class="visuallyhidden">Additional links</h2>
+        <div class="Footer--logos">
+        
+        
+              <div class="Footer--logos--list">
+                <!-- div if single entry, li if multiple-->
+                <div class="Footer--logos--item">
+                    <a class="Footer--logo" href="https://www.uzh.ch/en.html">
+                        <img src="/docroot/logos/uzh_logo_d_pos.svg" alt="Logo of the University of Zurich, to homepage">
+                    </a>
+                </div>
+              </div>
+           
+        </div>
+        <!-- component: FooterMeta -->
+        <div class="FooterMeta ">
+            <p class="FooterMeta--copyright">&copy;&nbsp;2023 Universität Zürich </p>
+            <nav class="FooterMeta--nav">
+                <ul class="FooterMeta--linkList">
+                      <li>
+                        <a class="FooterMeta--link" href="/en/impressum.html">About this site</a>
+                      </li>
+                    
+                      <li>
+                        <a class="FooterMeta--link" href="/en/dbtg/contact.html">Contact</a>
+                      </li>
+                   
+                   
+                      <li>
+                         <a  class="FooterMeta--link" href="https://www.uzh.ch/en/privacy.html">Data Protection Statement</a>
+                      </li>
+                </ul>
+
+            </nav>
+        <!-- /component: FooterMeta -->
+    </div>
+   
+    
+    
+</footer>    
+    
+    <!-- place Footer component here-->
+    <script src="/.resources/uzh-wcms-frontend/2.10.0/assets/js/ui.mjs" type="module"></script>
+    <template id="template-lightbox">
+        <!-- component: Lightbox -->
+        <div class="Lightbox">
+            <div class="Lightbox--inner"><img src="" alt="" /><button class="Lightbox--close js-Lightbox--close" type="button">
+                    <!-- component: Icon --><span class="Icon" data-name="lightbox-close"><svg>
+                            <use xlink:href="#lightbox-close"></use>
+                        </svg></span><!-- /component: Icon --><span class="visuallyhidden">Close Image Overlay</span>
+                </button></div>
+        </div><!-- /component: Lightbox -->
+    </template>
+    <template id="template-lightbox-video">
+        <!-- component: LightboxVideo -->
+        <div class="Lightbox">
+            <div class="Lightbox--inner"><video src="" autoplay="autoplay" playsinline="playsinline"></video><button class="Lightbox--close js-Lightbox--close" type="button">
+                    <!-- component: Icon --><span class="Icon" data-name="lightbox-close"><svg>
+                            <use xlink:href="#lightbox-close"></use>
+                        </svg></span><!-- /component: Icon --><span class="visuallyhidden">Close Video Overlay</span>
+                </button></div>
+        </div><!-- /component: LightboxVideo -->
+    </template>
+    
+    <template id="main-nav-link">
+        <!-- component: MainNav--link --><a class="MainNav--link js-MainNav--link" href="[%=href%]" aria-current="[%=ariaCurrent%]">[%=content%]</a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-link-plain">
+        <!-- component: MainNav--link --><a class="MainNav--link" href="[%=href%]" aria-current="[%=ariaCurrent%]">[%=content%]</a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-button">
+        <!-- component: MainNav--link --><a class="MainNav--link js-MainNav--link" role="button" href="[%=href%]" aria-current="[%=ariaCurrent%]" aria-controls="[%=ariaControls%]" aria-expanded="false">[%=content%]<span class="MainNav--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                        <use xlink:href="#16--link-arrow-sm-right"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- /component: MainNav--link -->
+    </template>
+    <template id="main-nav-overlay">
+        <!-- component: MainNav--overlay -->
+        <div class="MainNav--overlay js-MainNav--overlay" id="[%=id%]">
+            <div class="MainNav--overlay--scroller">
+                <div class="MainNav--overlay--inner">
+                    <!-- Set data-mainnav-index to the level of nesting-->
+                    <div class="MainNav--sub js-MainNav--sub" data-mainnav-index="1">
+                        <div class="MainNav--sub--back">
+                            <!-- component: Button --><button class="Button js-MainNav--back" type="button"><span class="Button--inner">back</span><span class="Button--icon">
+                                    <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                                            <use xlink:href="#16--link-arrow-sm-right"></use>
+                                        </svg></span><!-- /component: Icon -->
+                                </span></button><!-- /component: Button -->
+                        </div>
+                        <div class="MainNav--sub--title">
+                            <!-- component: Link --><a class="Link layout-standalone size-small" href="[%=href%]"><span class="visuallyhidden">Overview Page</span>[%=text%]<span class="Link--icon">
+                                    <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                                            <use xlink:href="#16--link-internal"></use>
+                                        </svg></span><!-- /component: Icon -->
+                                </span></a><!-- /component: Link -->
+                        </div>
+                        <ul class="MainNav--sub--list">[%=content%]</ul><button class="js-MainNav--close FocusOnly" type="button">Close Menu</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /component: MainNav--overlay -->
+    </template>
+    <template id="main-nav-subitem">
+        <!-- component: MainNavSubItem -->
+        <!-- Button if there are nested subitems, link if there aren’t-->
+        <!-- Add aria-current="page" if this is the currently active page--><a class="MainNav--link js-MainNav--sublink" href="[%=href%]" aria-controls="[%=id%]" aria-expanded="false" role="button">[%=text%]<span class="MainNav--icon">
+                <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                        <use xlink:href="#16--link-arrow-sm-right"></use>
+                    </svg></span><!-- /component: Icon -->
+            </span></a><!-- Set data-mainnav-index to the level of nesting-->
+        <div class="MainNav--sub js-MainNav--sub" id="[%=id%]" data-mainnav-index="[%=index%]">
+            <div class="MainNav--sub--back">
+                <!-- component: Button --><button class="Button js-MainNav--back" type="button"><span class="Button--inner">back</span><span class="Button--icon">
+                        <!-- component: Icon --><span class="Icon" data-name="16--link-arrow-sm-right"><svg>
+                                <use xlink:href="#16--link-arrow-sm-right"></use>
+                            </svg></span><!-- /component: Icon -->
+                    </span></button><!-- /component: Button -->
+            </div>
+            <div class="MainNav--sub--title">
+                <!-- component: Link --><a class="Link layout-standalone size-small" href="[%=href%]">[%=text%]<span class="Link--icon">
+                        <!-- component: Icon --><span class="Icon" data-name="16--link-internal"><svg>
+                                <use xlink:href="#16--link-internal"></use>
+                            </svg></span><!-- /component: Icon -->
+                    </span></a><!-- /component: Link -->
+            </div>
+            <ul class="MainNav--sub--list">[%=content%]</ul>
+        </div><!-- /component: MainNavSubItem -->
+    </template>
+    
+    
+    
+    <script>
+        (function(url, revision) {
+            function init(delayed) {
+                var svgEl = document.getElementById('svgsprite');
+                svgEl && svgEl.parentNode.removeChild(svgEl);
+
+                var svg = storage.svgicons.replace('<svg ', '<svg id="svgsprite" style="display: none"');
+                document.body.insertAdjacentHTML('beforeend', svg);
+            }
+
+            function fetchSprite(path, callback) {
+                var httpRequest = new XMLHttpRequest();
+                httpRequest.onreadystatechange = function() {
+                    if (httpRequest.readyState === 4 && httpRequest.status === 200 && callback) {
+                        callback(httpRequest.responseText);
+                    }
+                };
+                httpRequest.open('GET', path);
+                httpRequest.send();
+            }
+
+            var storage = window.localStorage || {};
+
+            if (!storage.svgicons || storage.svgicons_revision != revision) {
+                fetchSprite(url, function(data) {
+                    storage.svgicons = data;
+                    storage.svgicons_revision = revision;
+
+                    init(true);
+                });
+            }
+
+            if (storage.svgicons) {
+                init();
+            }
+        })("/.resources/uzh-wcms-frontend/2.10.0/assets/icons/sprite.svg", "b36a0d20815810cb45c1cdffa4d31e36");
+
+        // Important for backend implementation: The revision (second parameter) should change whenever the svg sprite changes, e.g. you can use the modification timestamp of the svg file.
+    </script>
+    
+   
+       
+       
+       <script>  
+          window.uzh_nav =  [{"href":"/en/dbtg/dbtgRSS.html","text":"News"},{"subitems":[{"href":"/en/dbtg/Staff/Boehlen.html","text":"Prof. Dr. Michael Böhlen"},{"href":"/en/dbtg/Staff/baertschi.html","text":"Daniela Bärtschi"},{"subitems":[{"href":"/en/dbtg/Staff/helmer/Publications.html","text":"Publications"},{"href":"/en/dbtg/Staff/helmer/Services.html","text":"Academic Services and Memberships"},{"href":"/en/dbtg/Staff/helmer/Awards.html","text":"Awards and Keynote Talks"}],"href":"/en/dbtg/Staff/helmer.html","text":"Prof. Dr. Sven Helmer <br/>(Titularprofessor)"},{"href":"/en/dbtg/Staff/qing.html","text":"Qing Chen"},{"href":"/en/dbtg/Staff/Jamal.html","text":"Jamal Mohammed"},{"href":"/en/dbtg/Staff/Running.html","text":"Running Hou"},{"href":"/en/dbtg/Staff/Mateo.html","text":"Mateo Dujić"},{"href":"/en/dbtg/Staff/Xinyu-.html","text":"Xinyu Zhu"},{"href":"/en/dbtg/Staff/zixiao.html","text":"Zixiao Ye"},{"href":"/en/dbtg/Staff/aanikoo.html","text":"AmirReza Alizade Nikoo"},{"href":"/en/dbtg/Staff/saad.html","text":"Muhammad Saad"}],"href":"/en/dbtg/Staff.html","text":"People"},{"subitems":[{"href":"/en/dbtg/research/sequenced.html","text":"Sequenced Queries"},{"href":"/en/dbtg/research/tpset.html","text":"Negation in Databases with Time and Probability"},{"subitems":[{"href":"/en/dbtg/research/sfdb/development.html","text":"Development"},{"href":"/en/dbtg/research/sfdb/SwissFeedDatabase-StudentProjects.html","text":"Student Projects"},{"href":"/en/dbtg/research/sfdb/SwissFeedDatabase-Meetings.html","text":"Meetings"},{"href":"/en/dbtg/research/sfdb/SwissFeedDatabase-Resources.html","text":"Resources"},{"href":"/en/dbtg/research/sfdb/publications.html","text":"Publications"}],"href":"/en/dbtg/research/sfdb.html","text":"Swiss Feed Database"},{"subitems":[{"subitems":[{"href":"/en/dbtg/research/amv/proto/rebom.html","text":"REBOM"},{"href":"/en/dbtg/research/amv/proto/cdrec.html","text":"CDRec"}],"href":"/en/dbtg/research/amv/proto.html","text":"Prototypes"},{"href":"/en/dbtg/research/amv/proj.html","text":"Student Projects"}],"href":"/en/dbtg/research/amv.html","text":"ReviVal"},{"href":"/en/dbtg/research/qvestor.html","text":"Qvestor"},{"href":"/en/dbtg/research/smile.html","text":"Oshiya - Declarative Scheduling"},{"href":"/en/dbtg/research/perm.html","text":"Perm"},{"href":"/en/dbtg/research/Ongoing.html","text":"Databases with Ongoing Time Intervals"}],"href":"/en/dbtg/research.html","text":"Research"},{"href":"/en/dbtg/publications.html","text":"Publications"},{"subitems":[{"subitems":[{"href":"/en/dbtg/teaching/courses/infoII.html","text":"Informatics II"},{"href":"/en/dbtg/teaching/courses/DBS.html","text":"Database Systems"},{"href":"/en/dbtg/teaching/courses/SysDS.html","text":"Systems for Data Science"},{"subitems":[{"subitems":[{"href":"/en/dbtg/teaching/courses/DatabaseLab/uebungen/sqlexercises.html","text":"SQL Exercises"}],"href":"/en/dbtg/teaching/courses/DatabaseLab/uebungen.html","text":"Übungen / Exercises"},{"href":"/en/dbtg/teaching/courses/DatabaseLab/links.html","text":"Links"}],"href":"/en/dbtg/teaching/courses/DatabaseLab.html","text":"Database Lab"},{"href":"/en/dbtg/teaching/courses/xmlanddatabases.html","text":"XML and Databases"},{"href":"/en/dbtg/teaching/courses/NDBS.html","text":"Temporal and Spatial Data Management"}],"href":"/en/dbtg/teaching/courses.html","text":"Courses"},{"subitems":[{"href":"/en/dbtg/teaching/theses/mscprojects.html","text":"MSc Projects"}],"href":"/en/dbtg/teaching/theses.html","text":"Open Theses and Projects"},{"subitems":[{"href":"/en/dbtg/teaching/thesesarch/2026.html","text":"Student Projects 2026"},{"href":"/en/dbtg/teaching/thesesarch/2025.html","text":"Student Projects 2025"},{"href":"/en/dbtg/teaching/thesesarch/2024.html","text":"Student Projects 2024"},{"href":"/en/dbtg/teaching/thesesarch/2023.html","text":"Student Projects 2023"},{"href":"/en/dbtg/teaching/thesesarch/2022.html","text":"Student Projects 2022"},{"href":"/en/dbtg/teaching/thesesarch/2021.html","text":"Student Projects 2021"},{"href":"/en/dbtg/teaching/thesesarch/2020.html","text":"Student Projects 2020"},{"href":"/en/dbtg/teaching/thesesarch/2019.html","text":"Student Projects 2019"},{"href":"/en/dbtg/teaching/thesesarch/2018.html","text":"Student Projects 2018"},{"href":"/en/dbtg/teaching/thesesarch/2017.html","text":"Student Projects 2017"},{"href":"/en/dbtg/teaching/thesesarch/2016.html","text":"Student Projects 2016"},{"href":"/en/dbtg/teaching/thesesarch/2015.html","text":"Student Projects 2015"},{"href":"/en/dbtg/teaching/thesesarch/2014.html","text":"Student Projects 2014"},{"href":"/en/dbtg/teaching/thesesarch/2013.html","text":"Student Projects 2013"},{"href":"/en/dbtg/teaching/thesesarch/2012.html","text":"Student Projects 2012"},{"href":"/en/dbtg/teaching/thesesarch/2011.html","text":"Student Projects 2011"}],"href":"/en/dbtg/teaching/thesesarch.html","text":"Student Projects"},{"subitems":[{"href":"/en/dbtg/teaching/tapositions/tasInfoII.html","text":"Informatics II"},{"href":"/en/dbtg/teaching/tapositions/tasDBS.html","text":"Database Systems"}],"href":"/en/dbtg/teaching/tapositions.html","text":"TA Positions"},{"subitems":[{"href":"/en/dbtg/teaching/tutorpositions/tutorsInfoII.html","text":"Informatics II"},{"href":"/en/dbtg/teaching/tutorpositions/tutorsDBS.html","text":"Database Systems"}],"href":"/en/dbtg/teaching/tutorpositions.html","text":"Tutor Positions"}],"href":"/en/dbtg/teaching.html","text":"Teaching"},{"href":"/en/dbtg/sw.html","text":"Internal"},{"href":"/en/dbtg/contact.html","text":"Contact"},{"href":"/en/dbtg/Positions.html","text":"PhD Position"}]
+       </script>
+
+    
+    
+</body>
+
+</html>

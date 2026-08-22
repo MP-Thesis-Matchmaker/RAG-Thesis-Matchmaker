@@ -1,0 +1,455 @@
+{
+  "source_id": "ifi--17",
+  "page_type": "topics",
+  "verified_content_sha1": "b2bec9aa86e0dcba75da95b4450b985d6c665bad",
+  "records": [
+    {
+      "title": "Blockchain Data Collection and Visualisation",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Yu Gao"
+        },
+        {
+          "name": "Matija Piškorec"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/dam/jcr:de2b3a09-ec96-4390-8a5b-741dccdd5b89/Master%20Thesis%20Proposal_Yu%20Gao.pdf",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "5e4a657bae051f0c94365634ee76c1eb8a160af8"
+    },
+    {
+      "title": "indenpendent-studay-p2p-dashboard",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Yu Gao"
+        },
+        {
+          "name": "Matija Piškorec"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/dam/jcr:698d2564-450d-49de-8808-7b106d87bec7/indenpendent-studay-p2p-dashboard.pdf",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "18b5b0e73d994e6b3d6300794dba57c3d6fe102f"
+    },
+    {
+      "title": "Data indexing and evaluation framework of on-chain Governance",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Guangyao Li"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/dam/jcr:297ee0c2-9013-4d84-a78b-539c918de180/Data%20indexing%20and%20evaluation%20framework%20of%20on-chain%20Governance.pdf",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "b4c91ff27c6809cfe2f31a7f726e67e916a87c73"
+    },
+    {
+      "title": "Agent-based modeling of Tendermint consensus protocol",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Matija Piškorec"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/MP-Agent-based-modeling-of-Tendermint-consensus-protocol-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "74b1d3954632c96982a7d39c91d11af7b1747026"
+    },
+    {
+      "title": "Security of Aggregation Layers across Rollups",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Krzysztof Gogol"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/KG-Security-of-Aggregation-Layers-across-Rollups.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "0108100c6b29377c24fb6d00bf1d2f607f58104d"
+    },
+    {
+      "title": "AI Agents for Decentralized Finance",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Krzysztof Gogol"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/KG-AI-Agents-for-Decentralized-Finance.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "cf40055d50cd42e46dab5afea50e55286fdb4038"
+    },
+    {
+      "title": "Token Engineering for decentralized autonomous organization",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Mark C. Ballandies"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/MB-Token-Engineering-for-decentralized-autonomous-organization-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "fbd45d9fe1a7c9cf2578254c3daa3aaf325161ba"
+    },
+    {
+      "title": "Quantifying Collective Intelligence in Decentralized AI",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Mark C. Ballandies"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/MB-Quantifying-Collective-Intelligence-in-Decentralized-AI.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "d512b1e0f6488c17a7ece6783336f56209826bf1"
+    },
+    {
+      "title": "AI-in-Weather-and-Tokenomics-II--Exploring-Explainable-AI-for-Data-Valuation",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Mark C. Ballandies"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/MB-AI-in-Weather-and-Tokenomics-II--Exploring-Explainable-AI-for-Data-Valuation.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "fcffac49c2c8a9e90095491c33c5ad1de198a139"
+    },
+    {
+      "title": "Simulation of Opinion and Voting Dynamics in Decentralized Governance",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Mark C. Ballandies"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/MB-Simulation-of-Opinion-and-Voting-Dynamics-in-Decentralized-Governance-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "6f1290716220f41751eec343154af84b611bbd72"
+    },
+    {
+      "title": "Analysing the Governance and Coordination Properties of DAOs Managing Physical Assets",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Parminder Kaur Makode"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/PKM-Analysing-the-Governance-and-Coordination-Properties-of-DAOs-Managing-Physical-Assets.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "9f7c9ed002dc3eea33688e48d4a255b60fea3c2a"
+    },
+    {
+      "title": "Behavior-Based Address Clustering in Account-Based Blockchains",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Syed Muhammad Yasir"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/SMY-Behavior-Based-Address-Clustering-in-Account-Based-Blockchains.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "b3bbb7caedaadc464e2ac798e517da851085fa4a"
+    },
+    {
+      "title": "A Reproducible Polygon Dataset for Address Clustering",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Syed Muhammad Yasir"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/SMY-A-Reproducible-Polygon-Dataset-for-Address-Clustering.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "43b2e13ab45e63a455d2fd4355ab6aa8d8c16a34"
+    },
+    {
+      "title": "Blockchain-based Airspace Reservation System",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Qianyu Liu"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/QL-Blockchain-based-Airspace-Reservation-System.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "b9e2187e6de287b4b9adf3df69042ec32497b8f0"
+    },
+    {
+      "title": "A Generalized Pipeline for Blockchain Data ETL",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Tao Yan"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/TY-A-Generalized-Pipeline-for-Blockchain-Data-ETL.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "e4950dec595aae7bc0e4decf92882aef3b3c957b"
+    },
+    {
+      "title": "Asset Quality and On-chain Liquidity Risk of Real World Asset (RWA)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Tao Yan"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/TY-Asset-Quality-and-On-chain-Liquidity-Risk-of-Real-World-Asset-%28RWA%29-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "a04c05dcd9d55bcda6cdb58a7914f6267a96caab"
+    },
+    {
+      "title": "Detecting Cross-Chain Transactions and Anomalies on EVM-Compatible",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Tao Yan"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/TY-Detecting-Cross-Chain-Transactions-and-Anomalies-on-EVM-Compatible.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "e226a4164c770d59504b0e2aecd613ba9f4d98aa"
+    },
+    {
+      "title": "Stablecoin Supply, Liquidity, and Safe-Haven Role",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Tao Yan"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/TY-Stablecoin-Supply%2C-Liquidity%2C-and-Safe-Haven-Role-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "8e53c2d750a846c0c9c3d6dbbf0327a1ca565644"
+    },
+    {
+      "title": "Blockchain Forensic Toolkits and Applications",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Tao Yan"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/TY-Blockchain-Forensic-Toolkits-and-Applications-.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "d6f924e3b09e16d58db19fff69203370d9408d2b"
+    },
+    {
+      "title": "Cryptocurrency Portfolio Strategies with Machine Learning",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Yu Zhang"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/YZ-Cryptocurrency-Portfolio-Strategies-with-Machine-Learning.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "0a1c963cb32ab97b9980967c57735a9ee164ea84"
+    },
+    {
+      "title": "A Taxonomy of Proof-of-Stake Consensus Mechanisms: Classification, Security, and Economic Implications",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Sheng Nan Li"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/SNL-A-Taxonomy-of-Proof-of-Stake-Consensus-Mechanisms--Classification%2C-Security%2C-and-Economic-Implications.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "a5f1f9c303fa575db5b5bfd9a2a3433b8d1b9a29"
+    },
+    {
+      "title": "Incentive Design for Enhancing the Performance of Bitcoin SV’s Overlay Network",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Sheng Nan Li"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/SNL-Incentive-Design-for-Enhancing-the-Performance-of-Bitcoin-SV%E2%80%99s-Overlay-Network.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "ffe0dc9cdb6cfa4e5dd57b63e32de0ce8cc79591"
+    },
+    {
+      "title": "Large transactions in Bitcoin",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Benjamin Kraner"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/BK-Large-transactions-in-Bitcoin.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "d788ce62d3d5ddbc0d70be05ae26f6b0a487fa61"
+    },
+    {
+      "title": "Valuation and Risk in Restaking Networks",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Benjamin Kraner"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/BK-Valuation-and-Risk-in-Restaking-Networks.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "622db2e9cb13bfef6bdc332a157663ee3be9fc8e"
+    },
+    {
+      "title": "Ethereum Issuance and Liquid Staking (Monetary Policy)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Benjamin Kraner"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/BK-Ethereum-Issuance-and-Liquid-Staking-%28Monetary-Policy%29.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "5304669a9ad67546b8c13f7ae8c018d4d44273ae"
+    },
+    {
+      "title": "Agent-Based Modeling of Proposer-Builder Separation in Ethereum",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Benjamin Kraner"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/bdlt/Thesis/BK-Agent-Based-Modeling-of-Proposer-Builder-Separation-in-Ethereum.html",
+      "source_id": "ifi--17",
+      "scraped_at": "2026-07-22T21:29:36.961114+00:00",
+      "topic_id": "a70550821a7d0007b7569d063b911019a8f4c1db"
+    }
+  ]
+}

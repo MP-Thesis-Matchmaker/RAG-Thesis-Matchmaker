@@ -1,0 +1,33 @@
+{
+  "source_id": "filmwissenschaft--2",
+  "page_type": "process",
+  "verified_content_sha1": "11809feeb283b49a4cb1610fdf4f0a2b911e9eea",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "This unit supervises Bachelor theses for students in the Filmwissenschaft Major (120 ECTS). Choose a realistic film‑scholarship topic early, contact a prüfungsberechtigte Betreuungsperson (professors, postdocs, Oberassistierende or Privatdozierende listed on the FIWI team page), send an idea sketch and arrange a meeting before booking the “Bachelorarbeit” module; timing of the booking is agreed with the supervisor. Work proceeds via a concept phase (short concept, max ~5 pages with summary, question, theory, thesis, method, provisional structure, bibliography/filmography), a writing phase (allow ≥1 month for first draft and ≥2 weeks for revision) and final submission to the supervisor within the deadline. Formals: 35–40 pages (70’000–80’000 characters), normally in German (English/French by agreement). Official guidelines and templates: FIWI Download/Bildung (Studium) and the Faculty module page (https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html).",
+      "relevant_links": [
+        {
+          "url": "https://www.film.uzh.ch/dam/jcr:b6e09f75-50b9-4f08-9c55-153f5b52aab7/2026_Merkblatt_Bachelorarbeit_Abschluss_FIWI.pdf",
+          "description": "BA thesis process pdf"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.film.uzh.ch/de/team.html",
+          "description": "referenced in document"
+        }
+      ],
+      "source_url": "https://www.film.uzh.ch/dam/jcr:b6e09f75-50b9-4f08-9c55-153f5b52aab7/2026_Merkblatt_Bachelorarbeit_Abschluss_FIWI.pdf",
+      "source_id": "filmwissenschaft--2",
+      "scraped_at": "2026-07-31T14:20:01.236275+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

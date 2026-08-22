@@ -1,0 +1,8 @@
+# ifi--1 is a process-only chair page (ZEST). It carries no extraction template
+# (process pages are summarized by the LLM), only the chair/group assignment so
+# its process record nests under unit.groups.zest.
+source_id: ifi--1
+page_type: process
+group:
+  id: zest
+  name: ZEST

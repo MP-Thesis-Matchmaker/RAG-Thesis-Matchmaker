@@ -1,0 +1,1040 @@
+{
+  "generated_from": "archive/scraping_source_pages.xlsx / Full structure crawl (visible rows only)",
+  "units": [
+    {
+      "unit_id": "ivw",
+      "faculty_code": "WWF",
+      "faculty": "Wirtschaftswissenschaftliche Fakultät",
+      "unit": "Institut für Volkswirtschaftslehre (IVW) / Department of Economics",
+      "section_on_faculty_page": "Institute und Zentren",
+      "unit_homepage": "https://www.econ.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "BA/MA thesis guidance exists; no public central list of open thesis topics found in the crawl. Need to apply via professors directly.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "ivw--1",
+          "url": "https://www.econ.uzh.ch/en/study/undergraduate/ba.html",
+          "notes": "BA thesis process page, follow the second pdf link for the BA thesis guidelines to check whether source id ivw--3 url is still valid"
+        },
+        {
+          "source_id": "ivw--2",
+          "url": "https://www.econ.uzh.ch/en/study/undergraduate/ma.html",
+          "notes": "MA thesis process page, follow the second pdf link for the MA thesis guidelines to check whether source id ivw--3 url is still valid"
+        },
+        {
+          "source_id": "ivw--3",
+          "url": "https://www.econ.uzh.ch/dam/jcr:c800f7eb-31a0-4618-9b4b-3ff2ceb8503c/for%20students%20-%202023-%20%20BA_MA%20thesis%20guidelines%20ECON%20Department.pdf",
+          "notes": "BA/MA thesis process page"
+        },
+        {
+          "source_id": "ivw--4",
+          "url": "https://www.econ.uzh.ch/en/people/faculty.html",
+          "notes": "People page with professors for thesis supervision"
+        }
+      ]
+    },
+    {
+      "unit_id": "ibw",
+      "faculty_code": "WWF",
+      "faculty": "Wirtschaftswissenschaftliche Fakultät",
+      "unit": "Institut für Betriebswirtschaftslehre (IBW) / Department of Business Administration",
+      "section_on_faculty_page": "Institute und Zentren",
+      "unit_homepage": "https://www.business.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Central thesis page / thesis market. Supervisors can publish topics; students can also propose topics.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "ibw--1",
+          "url": "https://www.business.uzh.ch/en/teaching/theses.html",
+          "notes": "Theses process page and people page with professors for thesis supervision"
+        },
+        {
+          "source_id": "ibw--2",
+          "url": "https://theses.business.uzh.ch/2eb0a3d5-d549-4983-8953-971e3a44135e",
+          "notes": "Thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "iff",
+      "faculty_code": "WWF",
+      "faculty": "Wirtschaftswissenschaftliche Fakultät",
+      "unit": "Institut für Finance (IFF) / Department of Finance",
+      "section_on_faculty_page": "Institute und Zentren",
+      "unit_homepage": "https://www.df.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Central thesis page / thesis market. Supervisors can publish topics; students can also propose topics.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "iff--1",
+          "url": "https://www.df.uzh.ch/en/studies/bachelor-master/thesis.html",
+          "notes": "Theses process page/people page with professors for thesis supervision"
+        },
+        {
+          "source_id": "iff--2",
+          "url": "https://theses.df.uzh.ch/",
+          "notes": "Thesis topics page"
+        },
+        {
+          "source_id": "iff--3",
+          "url": "https://www.df.uzh.ch/en/people/professors.html",
+          "notes": "People page with professors for thesis supervision"
+        }
+      ]
+    },
+    {
+      "unit_id": "ifi",
+      "faculty_code": "WWF",
+      "faculty": "Wirtschaftswissenschaftliche Fakultät",
+      "unit": "Institut für Informatik (IFI) / Department of Informatics",
+      "section_on_faculty_page": "Institute und Zentren",
+      "unit_homepage": "https://www.ifi.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Some pages list open BSc/MSc thesis and master project topics; other pages provide general thesis process/forms information",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "ifi--18",
+          "url": "https://www.ifi.uzh.ch/en/department/people.html",
+          "notes": "People page"
+        },
+        {
+          "source_id": "ifi--19",
+          "url": "https://www.ifi.uzh.ch/en/studies/bsc-info.html",
+          "notes": "Process page"
+        },
+        {
+          "source_id": "ifi--20",
+          "url": "https://www.ifi.uzh.ch/en/studies/msc-info.html",
+          "notes": "Process page"
+        },
+        {
+          "source_id": "ifi--1",
+          "url": "https://www.ifi.uzh.ch/en/zest/theses.html",
+          "notes": "Process page"
+        },
+        {
+          "source_id": "ifi--2",
+          "url": "https://www.ifi.uzh.ch/en/ivda/open-positions/students/theses.html",
+          "notes": "Process page and open-topics page"
+        },
+        {
+          "source_id": "ifi--3",
+          "url": "https://www.ifi.uzh.ch/en/ddis/theses/topics.html",
+          "notes": "Process page and open-topics page"
+        },
+        {
+          "source_id": "ifi--4",
+          "url": "https://www.ifi.uzh.ch/en/hise/Theses/Bachelor-and-master-theses.html",
+          "notes": "Open-topics page"
+        },
+        {
+          "source_id": "ifi--5",
+          "url": "https://www.ifi.uzh.ch/en/dbtg/teaching/theses.html",
+          "notes": "Process page and open-topics page"
+        },
+        {
+          "source_id": "ifi--6",
+          "url": "https://www.ifi.uzh.ch/en/spins/Prospective-MS-and-BS-Thesis-Students.html",
+          "notes": "Process page"
+        },
+        {
+          "source_id": "ifi--7",
+          "url": "https://hasel.dev/teaching/",
+          "notes": "Process page and open-topics page"
+        },
+        {
+          "source_id": "ifi--8",
+          "urls": ["https://www.ifi.uzh.ch/en/seal/teaching/master/theses.html", "https://www.ifi.uzh.ch/en/seal/teaching/bachelor/theses.html"],
+          "notes": "Process pages and people pages"
+        },
+        {
+          "source_id": "ifi--9",
+          "url": "https://www.ifi.uzh.ch/en/scg/projects.html",
+          "notes": "Process and open-topics page"
+        },
+        {
+          "source_id": "ifi--10",
+          "urls": ["https://www.cl.uzh.ch/en/studies/studies-BA-MA/teaching/BaMasterArbeit.html", "https://www.cl.uzh.ch/de/about-us/people.html"],
+          "notes": "Open-topics page and people page"
+        },
+        {
+          "source_id": "ifi--11",
+          "url": "https://www.ifi.uzh.ch/en/dast/projects.html",
+          "notes": "Process page"
+        },
+        {
+          "source_id": "ifi--12",
+          "url": "https://www.ifi.uzh.ch/en/vmml/teaching/student-projects.html",
+          "notes": "Process and open-topics page"
+        },
+        {
+          "source_id": "ifi--13",
+          "url": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+          "notes": "Process and open-topics page"
+        },
+        {
+          "source_id": "ifi--14",
+          "url": "https://rpg.ifi.uzh.ch/student_projects.php",
+          "notes": "Process and open-topics page"
+        },
+        {
+          "source_id": "ifi--15",
+          "urls": ["https://www.ifi.uzh.ch/en/imrg/theses/master-theses.html", "https://www.ifi.uzh.ch/en/imrg/theses/bachelor-theses.html"],
+          "notes": "Process pages and open-topics pages"
+        },
+        {
+          "source_id": "ifi--16",
+          "url": "https://www.csg.uzh.ch/csg/en/theses.html",
+          "notes": "Open-topics page"
+        },
+        {
+          "source_id": "ifi--17",
+          "url": "https://www.ifi.uzh.ch/en/bdlt/Thesis.html",
+          "notes": "Open-topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "asien-orient-institut",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Asien-Orient-Institut",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.aoi.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Final theses / Abschlussarbeiten guidance page; no public open topic board found. Need to apply via one of the professors.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "asien-orient-institut--1",
+          "url": "https://www.aoi.uzh.ch/de/studies/studyorganization/completion/finaltheses.html",
+          "notes": "Final theses guidance page"
+        },
+        {
+          "source_id": "asien-orient-institut--2",
+          "url": "https://www.aoi.uzh.ch/en/institut/personen.html",
+          "notes": "People page"
+        },
+        {
+          "source_id": "asien-orient-institut--3",
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "notes": "Thesis process overview page for faculty of philosophy"
+        }
+      ]
+    },
+    {
+      "unit_id": "deutsches-seminar",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Deutsches Seminar",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.ds.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Supervision / Betreuung page for BA/MA theses; no central topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "deutsches-seminar--1",
+          "url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ma.php?get=s",
+          "notes": "Process page and form for MA thesis supervision"
+        },
+        {
+          "source_id": "deutsches-seminar--2",
+          "url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ba.php?get=s",
+          "notes": "Process page and form for BA thesis supervision"
+        },
+        {
+          "source_id": "deutsches-seminar--3",
+          "url": "https://www.ds.uzh.ch/de/studium/bachelor/info_bachelorstudium/abschluss_bachelor.html#Die_Bachelorarbeit_am_Deutschen_Seminar",
+          "notes": "Process page for BA thesis supervision"
+        },
+        {
+          "source_id": "deutsches-seminar--4",
+          "url": "https://www.ds.uzh.ch/de/studium/master/info_masterstudium/abschluss_master.html",
+          "notes": "Process page for MA thesis supervision"
+        },
+        {
+          "source_id": "deutsches-seminar--5",
+          "url": "https://www.ds.uzh.ch/apps/cms/pfs/personen.php",
+          "notes": "People page"
+        }
+      ]
+    },
+    {
+      "unit_id": "englisches-seminar",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Englisches Seminar",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.es.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Bachelor/Master thesis pages found; procedural information rather than open topics.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "englisches-seminar--1",
+          "url": "https://www.es.uzh.ch/en/studies/master/master-thesis.html",
+          "notes": "Process page for MA thesis supervision"
+        },
+        {
+          "source_id": "englisches-seminar--2",
+          "url": "https://www.es.uzh.ch/en/studies/bachelor/bachelor-thesis.html",
+          "notes": "Process page for BA thesis supervision"
+        },
+        {
+          "source_id": "englisches-seminar--3",
+          "url": "https://www.es.uzh.ch/en/department/people.html",
+          "notes": "People page, extract all with 'Prof' or 'Dr.' in title"
+        }
+      ]
+    },
+    {
+      "unit_id": "historisches-seminar",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Historisches Seminar",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.hist.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Degree-completion and bachelor-thesis guidance; no central topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "historisches-seminar--1",
+          "url": "https://www.hist.uzh.ch/de/studium/studienstufen/master/aufbau/abschluss.html",
+          "notes": "Process page for MA thesis supervision"
+        },
+        {
+          "source_id": "historisches-seminar--2",
+          "url": "https://www.hist.uzh.ch/de/studium/studienstufen/bachelor/aufbau/abschluss/bachelorarbeit.html",
+          "notes": "Process page for BA thesis supervision"
+        },
+        {
+          "source_id": "historisches-seminar--3",
+          "url": "https://www.hist.uzh.ch/de/personen.html",
+          "notes": "People page, extract all Professor:innen, Privatdozierende / Titularprofessor:innen"
+        }
+      ]
+    },
+    {
+      "unit_id": "iaka",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Archäologie, Klassische Philologie und Altertumswissenschaften (IAKA)",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.iaka.uzh.ch",
+      "classification": "No public BSc/MSc thesis page found",
+      "concrete_public_topics": "No",
+      "notes": "Official institute homepage identified; no public central BA/MA topic/process page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "iaka--1",
+          "url": "https://www.iaka.uzh.ch/dam/jcr:466b1f32-db04-4570-9991-2018fbcb40d7/Hinweise_schriftliche_Arbeiten_HS24.pdf",
+          "notes": "Process pdf for BA/MA thesis"
+        }
+      ]
+    },
+    {
+      "unit_id": "computerlinguistik",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Computerlinguistik",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.cl.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Dedicated qualification/final theses page with open-topic section.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "computerlinguistik--1",
+          "url": "https://www.cl.uzh.ch/en/studium/theses.html",
+          "notes": "The same as ifi--10 but under a different faculty"
+        }
+      ]
+    },
+    {
+      "unit_id": "erziehungswissenschaft",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Erziehungswissenschaft",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.ife.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Master thesis information/supervision pages found; no institute-wide public topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "erziehungswissenschaft--1",
+          "url": "https://www.ife.uzh.ch/de/study/Master/Module/Master-Arbeit.html",
+          "notes": "Process page for MA thesis supervision"
+        },
+        {
+          "source_id": "erziehungswissenschaft--2",
+          "url": "https://www.ife.uzh.ch/dam/jcr:5c0e99fe-d5b0-427e-b311-88d59cd7cf43/Merkblatt%20BA-Arbeit.pdf",
+          "notes": "Process pdf for BA thesis"
+        },
+        {
+          "source_id": "erziehungswissenschaft--3",
+          "url": "https://www.ife.uzh.ch/de/study/Bachelor/Module/Bachelorarbeit.html",
+          "notes": "Process page for BA thesis"
+        },
+        {
+          "source_id": "erziehungswissenschaft--4",
+          "url": "https://www.ife.uzh.ch/dam/jcr:f959d90e-2b98-4f1b-bdd8-c626da957ceb/Merkblatt%20MA-Arbeit.pdf",
+          "notes": "Process pdf for MA thesis"
+        }
+      ]
+    },
+    {
+      "unit_id": "isle",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Interdisziplinäre Sprachevolutionswissenschaft (ISLE)",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.isle.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "No",
+      "notes": "Official institute homepage identified; no public central BA/MA topic/process page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "isle--1",
+          "url": "https://lms.uzh.ch/auth/RepositoryEntry/5930090496/CourseNode/86108106742130",
+          "notes": "Course page with thesis information; requires UZH login"
+        },
+        {
+          "source_id": "isle--2",
+          "url": "https://www.isle.uzh.ch/de/staff.html",
+          "notes": "People page, extract all Professors"
+        }
+      ]
+    },
+    {
+      "unit_id": "kommunikationswissenschaft-und-medienforschung-ikm",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Kommunikationswissenschaft und Medienforschung (IKMZ/IPMZ)",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.ipmz.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Official institute homepage identified; no central open thesis-topic page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--1",
+          "url": "https://www.ikmz.uzh.ch/de/studies/graduation/bachelor.html",
+          "notes": "BA process page"
+        },
+        {
+          "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--2",
+          "url": "https://www.ikmz.uzh.ch/de/studies/graduation/master.html",
+          "notes": "MA process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "ipz",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Politikwissenschaft (IPZ)",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.ipz.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Master-thesis topic announcements page with current/archived topics.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "ipz--1",
+          "url": "https://www.ipz.uzh.ch/de/studium/master/themenausschreibung.html",
+          "notes": "MA thesis topics page"
+        },
+        {
+          "source_id": "ipz--2",
+          "url": "https://www.ipz.uzh.ch/de/ueber-uns/personen/mitarbeitende.html",
+          "notes": "People page, extract all Professors"
+        },
+        {
+          "source_id": "ipz--3",
+          "url": "https://www.ipz.uzh.ch/de/studium/bachelor.html",
+          "notes": "BA process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "slavistik-und-osteuropastudien",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Slavistik und Osteuropastudien",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.isos.uzh.ch",
+      "classification": "No public BSc/MSc thesis page found",
+      "concrete_public_topics": "No",
+      "notes": "Official institute homepage identified; no public central thesis-topic/process page found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "slavistik-und-osteuropastudien--1",
+          "url": "https://www.isos.uzh.ch/de/institut/mitarbeitende.html", 
+          "notes": "People page, extract all Professors and Doctors, skip \"Institutsleitung und Administration\""
+        }
+      ]
+    },
+    {
+      "unit_id": "isek",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Institut für Sozialanthropologie und Empirische Kulturwissenschaft (ISEK)",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.isek.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Pages include MA research/project announcements / Masterarbeit information.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "isek--1",
+          "url": "https://www.isek.uzh.ch/de/ethnologie/studium/master/maforschung.html",
+          "notes": "MA topics and process page"
+        },
+        {
+          "source_id": "isek--2",
+          "url": "https://www.isek.uzh.ch/de/ethnologie/studium/bachelor/Bachelorarbeiten.html",
+          "notes": "BA process and people page, extract all listed people"
+        }
+      ]
+    },
+    {
+      "unit_id": "kunsthistorisches-institut",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Kunsthistorisches Institut",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.khist.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Bachelor/Master completion guidance; no public topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "kunsthistorisches-institut--1",
+          "url": "https://www.khist.uzh.ch/de/studies/Studienorganisation/bachelor/Abschluss-des-Studiums.html",
+          "notes": "BA process page"
+        },
+        {
+          "source_id": "kunsthistorisches-institut--2",
+          "url": "https://www.khist.uzh.ch/de/studies/Studienorganisation/master/Abschluss-des-Studiums.html",
+          "notes": "MA process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "musikwissenschaftliches-institut",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Musikwissenschaftliches Institut",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.musik.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Study/written-work guidance surfaced; no central public BA/MA topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "musikwissenschaftliches-institut--1",
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "notes": "Thesis process overview page for faculty of philosophy"
+        },
+        {
+          "source_id": "musikwissenschaftliches-institut--2",
+          "url": "https://www.musik.uzh.ch/de/mitarbeiter.html",
+          "notes": "Skip this page"
+        }
+      ]
+    },
+    {
+      "unit_id": "philosophisches-seminar",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Philosophisches Seminar",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.philosophie.uzh.ch",
+      "classification": "No public BSc/MSc thesis page found",
+      "concrete_public_topics": "No",
+      "notes": "Study/advisory pages surfaced; no central thesis-topic list found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "philosophisches-seminar--1",
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "notes": "Thesis process overview page for faculty of philosophy"
+
+        }
+      ]
+    },
+    {
+      "unit_id": "psychologisches-institut",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Psychologisches Institut",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.psychologie.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Current Master and Bachelor thesis pages list available works/topics.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "psychologisches-institut--1",
+          "url": "https://www.psychologie.uzh.ch/de/studium/bscmsc/master/abschluss/arbeit/aktuelle-arbeiten.html",
+          "notes": "MA thesis topics page, only directory"
+        },
+        {
+          "source_id": "psychologisches-institut--2",
+          "url": "https://www.psychologie.uzh.ch/de/studium/bscmsc/bachelor/aufbau/bachelorarbeit/aktuelle-bachelorarbeiten.html",
+          "notes": "BA thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "romanisches-seminar",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Romanisches Seminar",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.rose.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Booking / Buchung pages for BA/MA theses; no central topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "romanisches-seminar--1",
+          "url": "https://www.rose.uzh.ch/de/studium/infos/buchung-ba.html",
+          "notes": "BA thesis process page"
+        },
+        {
+          "source_id": "romanisches-seminar--2",
+          "url": "https://www.rose.uzh.ch/de/seminar/personen.html",
+          "notes": "People page for Romanisches Seminar, extract only \"ordentliche und ausserordentliche Professor*innen sowie Assistenzprofessor*innen, Titularprofessor*innen sowie Privatdozierende\""
+        },
+        {
+          "source_id": "romanisches-seminar--3",
+          "url": "https://www.rose.uzh.ch/de/studium/infos/buchung-ma.html",
+          "notes": "MA thesis process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "filmwissenschaft",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Seminar für Filmwissenschaft",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.film.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "BA/MA completion pages; no central open topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "filmwissenschaft--1",
+          "url": "https://www.film.uzh.ch/de/studies/studienprogrammangebot/BA/abschluss.html",
+          "notes": "BA thesis process page"
+        },
+        {
+          "source_id": "filmwissenschaft--2",
+          "url": "https://www.film.uzh.ch/dam/jcr:b6e09f75-50b9-4f08-9c55-153f5b52aab7/2026_Merkblatt_Bachelorarbeit_Abschluss_FIWI.pdf",
+          "notes": "BA thesis process pdf"
+        },
+        {
+          "source_id": "filmwissenschaft--3",
+          "url": "https://www.film.uzh.ch/dam/jcr:e9bd773c-2fda-4e83-93c5-f2e469818a9d/2026_Merkblatt_Masterarbeit_Abschluss_FIWI.pdf",
+          "notes": "MA thesis process pdf"
+        },
+        {
+          "source_id": "filmwissenschaft--4",
+          "url": "https://www.film.uzh.ch/de/studies/studienprogrammangebot/MA/abschluss/thesis.html",
+          "notes": "MA thesis process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "soziologisches-institut",
+      "faculty_code": "PhF",
+      "faculty": "Philosophische Fakultät",
+      "unit": "Soziologisches Institut",
+      "section_on_faculty_page": "Institute und Seminare",
+      "unit_homepage": "https://www.suz.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Downloads / thesis-guidance PDF found; no central open topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": 
+      [
+        {
+          "source_id": "soziologisches-institut--1",
+          "url": "https://www.suz.uzh.ch/de/master/abschluss.html",
+          "notes": "MA thesis process page"
+        },
+        {
+          "source_id": "soziologisches-institut--2",
+          "url": "https://www.suz.uzh.ch/de/bachelor/abschluss.html",
+          "notes": "BA thesis process page"
+        },
+        {
+          "source_id": "soziologisches-institut--3",
+          "url": "https://www.suz.uzh.ch/dam/jcr:b5b92ece-6b67-4649-803a-5246909cf86b/Merkblatt%20BA_2601.pdf",
+          "notes": "BA thesis process pdf"
+        },
+        {
+          "source_id": "soziologisches-institut--4",
+          "url": "https://www.suz.uzh.ch/de/institut/aboutus.html",
+          "notes": "People page, extract all people listed under source id 1"
+        }
+      ]
+    },
+    {
+      "unit_id": "rfw",
+      "faculty_code": "RWF",
+      "faculty": "Rechtswissenschaftliche Fakultät",
+      "unit": "RWF",
+      "section_on_faculty_page": "Institute und Zentren",
+      "unit_homepage": "https://www.ius.uzh.ch/",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "RWF uses a faculty-level page for written works; Bachelor/Master work is handled via seminars, Studierendenportal requests, or individual agreements. No unit-specific open topic board found in crawl.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "rfw--1",
+          "url": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+          "notes": "People pages with professors/chairs for thesis supervision"
+        },
+        {
+          "source_id": "rfw--2",
+          "url": "https://www.ius.uzh.ch/de/studies/during-studies/modules-records/thesis-papers.html#Bachelorarbeit",
+          "notes": "Process page for BA and MA theses"
+        }
+      ]
+    },
+    {
+      "unit_id": "theologisches-seminar",
+      "faculty_code": "TRF",
+      "faculty": "Theologische und Religionswissenschaftliche Fakultät",
+      "unit": "Theologisches Seminar",
+      "section_on_faculty_page": "Seminare, Institute und Zentren",
+      "unit_homepage": "https://www.theologie.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Masterarbeit guidance page; no central open topic board found. No info for bachelor theses.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "theologisches-seminar--1",
+          "url": "https://www.theologie.uzh.ch/de/studium/studierende/Masterarbeit.html",
+          "notes": "MA process page"
+        },
+        {
+          "source_id": "theologisches-seminar--2",
+          "url": "https://www.trf.uzh.ch/de/ueber_uns/professuren.html",
+          "notes": "People page"
+        }
+      ]
+    },
+    {
+      "unit_id": "religionswissenschaftliches-seminar",
+      "faculty_code": "TRF",
+      "faculty": "Theologische und Religionswissenschaftliche Fakultät",
+      "unit": "Religionswissenschaftliches Seminar",
+      "section_on_faculty_page": "Seminare, Institute und Zentren",
+      "unit_homepage": "https://www.religionswissenschaft.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "TRF master-thesis guidance; no central open topic board found. No info for bachelor theses.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "religionswissenschaftliches-seminar--1",
+          "url": "https://www.religionswissenschaft.uzh.ch/de/studium/studienorganisation/bachelorarbeit.html",
+          "notes": "BA process page"
+        },
+        {
+          "source_id": "religionswissenschaftliches-seminar--2",
+          "url": "https://www.religionswissenschaft.uzh.ch/de/studium/studienorganisation/masterarbeit.html",
+          "notes": "MA process page"
+        },
+        {
+          "source_id": "religionswissenschaftliches-seminar--3",
+          "url": "https://www.trf.uzh.ch/de/ueber_uns/professuren.html",
+          "notes": "People page"
+        }
+      ]
+    },
+    {
+      "unit_id": "astrophysics",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Astrophysics / Institut für Astrophysik",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.astro.uzh.ch",
+      "classification": "No public BSc/MSc thesis page found",
+      "concrete_public_topics": "No",
+      "notes": "Official MNF department homepage identified; no public central thesis-topic/process page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "astrophysics--1",
+          "url": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+          "notes": "BA and MA thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "biochemisches-institut-mnf",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Biochemisches Institut",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.bioc.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Joint MeF/MNF institute; Master/thesis form/process information found, no open topic board. Topics on each research group page.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "biochemisches-institut-mnf--1",
+          "url": "https://www.bioc.uzh.ch/en/teaching/study-overview/master.html",
+          "notes": "Master thesis research groups"
+        },
+        {
+          "source_id": "biochemisches-institut-mnf--2",
+          "url": "https://www.bioc.uzh.ch/en/research/research-groups.html",
+          "notes": "Research groups page"
+        }
+      ]
+    },
+    {
+      "unit_id": "chemistry",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Chemistry",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.chem.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Open Bachelor/Master/PhD theses and internships page.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "chemistry--1",
+          "url": "https://www.chem.uzh.ch/de/Studium/theses.html",
+          "notes": "BA/MA thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "ieu",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Evolutionary Biology and Environmental Studies (IEU)",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.ieu.uzh.ch",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "Yes",
+      "notes": "Master's projects page lists concrete project offers.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "ieu--1",
+          "url": "https://www.ieu.uzh.ch/en/teaching/ma_projects_evolutionary_biology.html",
+          "notes": "MA thesis topics page"
+        },
+        {
+          "source_id": "ieu--2",
+          "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmQFNe2bI3Neso18NZ6RSg-abAJIm_7CE-CcZifEGPWRnly2FEkO4sMAd_rFtzKHaJ_CHjoVXaDFoo/pubhtml",
+          "notes": "MA thesis topics spreadsheet"
+        },
+        {
+          "source_id": "ieu--3",
+          "url": "https://www.ieu.uzh.ch/en/teaching/ma_projects_animal_behaviour.html",
+          "notes": "MA thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "geography",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Geography",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.geo.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Master thesis/exam guidance and faculty-member contact page; no central public open-topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "geography--1",
+          "url": "https://www.geo.uzh.ch/en/studying/master/master_thesis_exam/faculty_members.html", 
+          "notes": "People page"
+        },
+        {
+          "source_id": "geography--2",
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam.html",
+          "notes": "Process page for MA thesis"
+        },
+        {
+          "source_id": "geography--3",
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/bachelor-thesis.html",
+          "notes": "Process page for BA thesis, follow links and extract the important information"
+        }
+      ]
+    },
+    {
+      "unit_id": "mathematics",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Mathematics",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.math.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Masterarbeit page found; no central public open-topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "mathematics--1",
+          "url": "https://www.math.uzh.ch/en/studium/masterarbeit",
+          "notes": "MA thesis topics page"
+        },
+        {
+          "source_id": "mathematics--2",
+          "url": "https://www.math.uzh.ch/en/professuren",
+          "notes": "People page, extract all Professors"
+        }
+      ]
+    },
+    {
+      "unit_id": "paleontology",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Paleontology / Paläontologisches Institut und Museum",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.pim.uzh.ch/en.html",
+      "classification": "Concrete topics listed",
+      "concrete_public_topics": "No",
+      "notes": "Official department homepage identified; public central thesis-topic/process page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "paleontology--1",
+          "url": "https://www.pim.uzh.ch/de/studium/msc/msc-arbeitsthemen.html",
+          "notes": "MA thesis topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "physics",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Department of Physics",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.physik.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Official department homepage identified; public central BA/MA  page surfaced in the crawl. Contact research groups.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "physics--1",
+          "url": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+          "notes": "BA/MA thesis topics page"
+        },
+        {
+          "source_id": "physics--2",
+          "url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/master-/masterarbeit.html",
+          "notes": "MA process page"
+        },
+        {
+          "source_id": "physics--3",
+          "url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/bachelorstudiengang/Bachelorarbeit-und-Abschluss.html",
+          "notes": "BA process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "imcr",
+      "faculty_code": "MNF",
+      "faculty": "Mathematisch-naturwissenschaftliche Fakultät",
+      "unit": "Institut für Molekulare Krebsforschung (IMCR)",
+      "section_on_faculty_page": "Institute und Doppelinstitute",
+      "unit_homepage": "https://www.imcr.uzh.ch/en.html",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Joint MeF/MNF institute according to MeF list; no public central topic page surfaced.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "imcr--1",
+          "url": "https://www.biologie.uzh.ch/de/Studium/Masterstudium/MasterStudies/CancerBiology.html",
+          "notes": "MA topics page"
+        }
+      ]
+    },
+    {
+      "unit_id": "mef",
+      "faculty_code": "MeF",
+      "faculty": "Medizinische Fakultät",
+      "unit": "Anatomisches Institut",
+      "section_on_faculty_page": "Institute der Medizinischen Fakultät",
+      "unit_homepage": "https://www.anatomy.uzh.ch",
+      "classification": "Process/contact-only (central/internal topics exchange)",
+      "concrete_public_topics": "No",
+      "notes": "MeF public Masterarbeit page points to an internal VAM online topic exchange; no public unit-specific open topic page found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "mef--1",
+          "url": "https://www.med.uzh.ch/de/studium/masterarbeit.html",
+          "notes": "MeF MA process page"
+        }
+      ]
+    },
+    {
+      "unit_id": "vsf",
+      "faculty_code": "VSF",
+      "faculty": "Vetsuisse-Fakultät",
+      "unit": "Institut für Molekulare Mechanismen bei Krankheiten",
+      "section_on_faculty_page": "Institute",
+      "unit_homepage": "https://www.dmmd.uzh.ch",
+      "classification": "Process/contact-only",
+      "concrete_public_topics": "No",
+      "notes": "Vetsuisse study page states students complete a Masterarbeit; no public institute-specific thesis-topic board found.",
+      "last_checked": "2026-07-07",
+      "thesis_sources": [
+        {
+          "source_id": "vsf--1",
+          "url": "https://www.vet.uzh.ch/de/dozierende/MasterarbeitThemenboerse.html",
+          "notes": "MA process page"    
+        }
+      ]
+    }
+  ]
+}

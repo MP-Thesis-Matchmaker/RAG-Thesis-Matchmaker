@@ -1,0 +1,25 @@
+{
+  "source_id": "deutsches-seminar--3",
+  "page_type": "process",
+  "verified_content_sha1": "503c2ecf1e3da1ee2b3cec05db53bf910e20b118",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Bachelorarbeit (konkret beschrieben): Für den Erwerb des BA müssen Studierende im Major eine selbständige wissenschaftliche Arbeit (90'000–120'000 Zeichen inkl. Leerzeichen ≙ ca. 30–40 Seiten, 15 ECTS) verfassen. Voraussetzungen: Sie können sich zum Abschluss anmelden, sobald Sie die Bestehensvoraussetzungen erfüllen (Fristen auf der Studiendekanats‑Website). Betreuung: Angehörige des Deutschen Seminars (ordentliche/ausserordentliche Professor:innen, Assistenzprofessor:innen, Titularprofessor:innen, Privatdozierende und promovierter wissenschaftlicher Nachwuchs) können betreuen. Vorgehen: frühzeitig Verfügbarkeit klären und Thema/Titel in der Sprechstunde vereinbaren; während der Buchungsfrist DS‑Webformular zur Betreuungsvereinbarung ausfüllen; nach Betreuungsbestätigung das Modul „Bachelorarbeit“ im Studierendenportal buchen (zuerst Betreuung, dann Buchung, vgl. §26 Studienordnung). Abgabe: 1. Dezember (HS) bzw. 1. Juni (FS), digital oder auf Papier; Fristerstreckung max. 1 Monat mit Begründung (siehe Verhinderungsgrund). Offizielle Details auf der Studiendekanats‑ und Fakultätswebsite. Masterarbeit: auf dieser Seite keine konkrete Prozessbeschreibung, verweist auf separate Informationen.",
+      "relevant_links": [
+        {
+          "url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ba.php",
+          "description": "Betreuungsvereinbarung für die Bachelorarbeit"
+        }
+      ],
+      "source_url": "https://www.ds.uzh.ch/de/studium/bachelor/info_bachelorstudium/abschluss_bachelor.html#Die_Bachelorarbeit_am_Deutschen_Seminar",
+      "source_id": "deutsches-seminar--3",
+      "scraped_at": "2026-07-25T05:47:10.047090+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

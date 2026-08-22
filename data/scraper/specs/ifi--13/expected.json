@@ -1,0 +1,72 @@
+{
+  "source_id": "ifi--13",
+  "page_type": "topics",
+  "verified_content_sha1": "f7f477328c3a9da9c5fd323244d7647145878eef",
+  "records": [
+    {
+      "title": "Inverse Reinforcement Learning from sub-optimal agents",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Autonomous Learning and Predictive Intelligence",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+      "source_id": "ifi--13",
+      "scraped_at": "2026-07-22T19:55:26.570510+00:00",
+      "topic_id": "4363c0f93a6dc5145560cf747bec5111e875d02d"
+    },
+    {
+      "title": "Imitation Learning and preference-based RL",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Autonomous Learning and Predictive Intelligence",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+      "source_id": "ifi--13",
+      "scraped_at": "2026-07-22T19:55:26.570510+00:00",
+      "topic_id": "d76572a2c95a6df0555dcc8b69a7f58a62802c33"
+    },
+    {
+      "title": "Constrained cooperative games",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Autonomous Learning and Predictive Intelligence",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+      "source_id": "ifi--13",
+      "scraped_at": "2026-07-22T19:55:26.570510+00:00",
+      "topic_id": "598751e304b9af9fe6723be1495abda735d3b3c4"
+    },
+    {
+      "title": "Safety in multi-agent Reinforcement Learning",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Autonomous Learning and Predictive Intelligence",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+      "source_id": "ifi--13",
+      "scraped_at": "2026-07-22T19:55:26.570510+00:00",
+      "topic_id": "0032c538ea3ae7d6e783804f503eb2f7ada33252"
+    },
+    {
+      "title": "Offline Reinforcement Learning",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Autonomous Learning and Predictive Intelligence",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+      "source_id": "ifi--13",
+      "scraped_at": "2026-07-22T19:55:26.570510+00:00",
+      "topic_id": "9266a0e5c168b8e5e07ff9bf28de2851a2574943"
+    }
+  ]
+}

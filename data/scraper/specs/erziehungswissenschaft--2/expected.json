@@ -1,0 +1,25 @@
+{
+  "source_id": "erziehungswissenschaft--2",
+  "page_type": "process",
+  "verified_content_sha1": "6f534a304d4fdedc3469ac11113648ce93aa3903",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "The Bachelorarbeit (15 ECTS, ~450 h) is obligatory for students in the Major Erziehungswissenschaft and the Major Fachwissenschaft Pädagogik und Psychologie (writing a BA in Psychology is excluded). Topics are negotiated with a teaching staff member involved in the BA programme (professors, assistant professors, titular/privatdozierende, (senior) assistants, scientific staff, or specified research units). Students should approach a desired supervisor early (preferably the prior semester) by e‑mail or in office hours with a topic proposal and a short concept. Before booking, a binding supervision confirmation and an accepted concept (research question, disposition, sources/literature) are required (§26). Book the BA module during UZH’s regular booking periods; after booking enter the provisional title and supervisor in the PhF Thesis Title Tool. Formals: 35–45 pages (excl. front matter/refs/appendix), graded, single‑authorship only (§19). Submission deadlines: to supervisor by 1 December (autumn) or 1 June (spring) or the work is failed. Follow the IfE Study‑web lehrstuhl‑specific guidelines, the IfE Merkblätter (e.g. Plagiat, KI use) and relevant UZH study regulations and booking webpages for official rules and deadlines.",
+      "relevant_links": [
+        {
+          "url": "https://www.ife.uzh.ch/dam/jcr:5c0e99fe-d5b0-427e-b311-88d59cd7cf43/Merkblatt%20BA-Arbeit.pdf",
+          "description": "Process pdf for BA thesis"
+        }
+      ],
+      "source_url": "https://www.ife.uzh.ch/dam/jcr:5c0e99fe-d5b0-427e-b311-88d59cd7cf43/Merkblatt%20BA-Arbeit.pdf",
+      "source_id": "erziehungswissenschaft--2",
+      "scraped_at": "2026-07-30T08:20:29.311038+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

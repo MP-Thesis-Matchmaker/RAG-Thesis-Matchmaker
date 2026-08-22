@@ -1,0 +1,41 @@
+# slavistik-und-osteuropastudien--1: the ISOS people page is only a directory of
+# category subpages; the actual people live on those. Per the brief, extract all
+# Professors and Doctors, skipping "Institutsleitung und Administration" — so the
+# two admin subpages (leitung-admin, personen-admin) are omitted and the seven
+# content subpages are scraped (multi-page) and merged by name. Each person is a
+# PersonCard; only cards whose name carries "Prof." or "Dr." are kept.
+source_id: slavistik-und-osteuropastudien--1
+page_type: people
+merge_by: name
+
+pages:
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-litwiss.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-medienwissenschaft.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-moderne-osteuropastudien.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-oeg.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-sprachlektorate.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/personen-sprachwissenschaft.html"
+  - url: "https://www.isos.uzh.ch/de/institut/mitarbeitende/emeriti-ehemalige.html"
+
+record:
+  container: 'div.PersonCard--content:has(h3.PersonCard--name:-soup-contains("Prof.")), div.PersonCard--content:has(h3.PersonCard--name:-soup-contains("Dr."))'
+  drop_if_contains: "†"                # skip deceased entries
+
+  fields:
+    name:
+      selector: "h3.PersonCard--name"
+      attr: text
+      transform: [normalize_ws, strip_titles]
+    role:                              # the title after the comma
+      selector: "h3.PersonCard--name"
+      attr: text
+      regex: ',\s*(.+)$'
+      transform: normalize_ws
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+    _profile_url:
+      selector: 'a[href*="/mitarbeitende/"]'
+      attr: href
+      transform: absolute_url

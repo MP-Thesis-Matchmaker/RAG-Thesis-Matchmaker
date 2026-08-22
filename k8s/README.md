@@ -39,7 +39,15 @@ granted before either could run: the namespace ceiling is `limits.memory: 4Gi` a
 bge-m3 does not leave room for two pods holding it, and the Harbor project defaults
 to 10 GB for all our images together.
 
-The posting scraper is a third case: it is still a separate repository.
+The posting scraper is a third case, and a smaller one now: the code is in this
+repository and `docker/scraper/Dockerfile` builds it, so what it lacks is only a
+manifest. It wants the same treatment as the harvester — a CronJob, plus a PVC for
+`data/scraper/cache/` so a scheduled run does not re-fetch 103 pages it already has,
+plus one for `data/scraper/var/` (`state.json` is the only record of which sources
+are onboarded; with an empty volume `run` refuses loudly and does nothing). Its image
+carries chromium's headless shell for the three JS-only sources, and chromium wants a
+real `/dev/shm`: give the pod an `emptyDir` with `medium: Memory` mounted there, or
+heavy pages can crash the renderer.
 
 ## Before applying: replace every TODO(ci)
 

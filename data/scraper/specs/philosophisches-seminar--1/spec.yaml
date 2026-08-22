@@ -1,0 +1,7 @@
+# philosophisches-seminar--1: again the shared Faculty-of-Philosophy thesis-
+# process page (phil.uzh.ch/.../module.html), same as asien-orient-institut--3
+# and musikwissenschaftliches-institut--1. Routed to the faculty level; dedup by
+# URL keeps the faculty at ONE process entry, crediting this source too.
+source_id: philosophisches-seminar--1
+page_type: process
+scope: faculty

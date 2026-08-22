@@ -1,0 +1,52 @@
+# mathematics--2: the Institute of Mathematics "Professuren" page. People are
+# rendered as article.person-card blocks grouped under h2 section headings
+# (Professors | Visiting Professors | Professors & Adjunct Professors Emeriti).
+# Only the active "Professors" section is kept — those who supervise Master's
+# theses. Each card carries name, room, a mailto, a "Personal Homepage" link
+# (which points to the institutional /member/ profile, kept as _profile_url) and
+# a "Research Field:" line. Sectioned extraction assigns each card to its
+# nearest preceding h2.
+source_id: mathematics--2
+page_type: people
+source_type: sectioned_people
+
+sections:
+  heading: 'h2'
+  person: 'article.person-card'
+  include: ["Professors"]
+  fields:
+    role:
+      value: "Professor"
+    name:
+      selector: 'h3.name'
+      attr: text
+      transform: strip_titles          # runs first: drops leading "Prof. Dr."
+      regex: '^(.*?)\s+(?:Room|Email)'  # then cut the trailing card metadata
+    email:
+      selector: 'a.link[href^="mailto"]'
+      attr: href
+      transform: mailto_email
+    research_field:
+      selector: '.details div:-soup-contains("Research Field")'
+      attr: text
+      regex: 'Research Field:\s*(.+)'
+    _profile_url:
+      selector: '.links a[href*="/member/"]'
+      attr: href
+      transform: absolute_url
+
+id_from: [name]
+
+# Follow each institutional /member/ profile one step for a genuine personal
+# homepage (many professors keep a user.math.uzh.ch page). Matched by a
+# homepage-labelled link; left null when the profile carries none.
+follow:
+  url_field: _profile_url
+  url_pattern: '^https://www\.math\.uzh\.ch/en/member/.+$'
+  profile:
+    fields:
+      personal_website:
+        selector: 'main a[href]'
+        contains_i: ["personal homepage", "homepage", "personal website", "personal page"]
+        attr: href
+        transform: absolute_url

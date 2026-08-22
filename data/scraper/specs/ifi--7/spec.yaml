@@ -1,0 +1,64 @@
+# ifi--7: HASEL (Human Aspects of Software Engineering Lab, hasel.dev — an
+# external non-UZH site). Dual page: teaching/guidance process text + an "Open
+# Student Projects" tile list. Titles are prefixed "Project/Thesis –" (or
+# "Private: …" for reserved ones). Detail pages exist only for the pretty
+# /teachings/<slug> URLs (the ?p=NNNN links 404), so only those are followed.
+# No per-topic supervisor email is published on these pages.
+source_id: ifi--7
+page_type: topics
+also_process: true
+group:
+  id: hasel
+  name: HASEL
+  full_name: Human Aspects of Software Engineering Lab
+
+record:
+  container: 'section:has(h2:-soup-contains("Open Student Projects")) .uzhsl-tile-container a[href]'
+  fields:
+    title:
+      attr: text
+      regex: '–\s*(.+)$'          # after the en-dash separator
+    status:
+      attr: text
+      transform: lower
+      regex: '^(private)'          # "Private: …" -> private; else open
+      default: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      value: "Software Engineering"
+    source_link:
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+follow:
+  url_field: source_link
+  url_pattern: '^https://hasel\.dev/teachings/.+'   # skips the 404-ing ?p= links
+  fields:
+    topic_description:
+      selector: ".uzhsl-section-standard"           # the description section
+      attr: text
+      exclude: [".section__title"]                  # drop the repeated title
+      transform: normalize_ws
+    # Detail pages list supervisors as team tiles (name role email-as-text);
+    # take the first (the topic's primary supervisor).
+    supervisor_name:
+      selector: '.uzhsl-section-publication-slider a.uzhsl-tile-team'
+      attr: text
+      regex: '^(.+?),?\s+(?:Research|Senior|Associate|Professor|PhD|Dr\.|Prof)'
+    supervisor_email:
+      selector: '.uzhsl-section-publication-slider a.uzhsl-tile-team'
+      attr: text
+      regex: '([\w.\-]+@[\w.\-]+\.\w+)'
+    # Full list of the topic's supervisors (one object per team tile).
+    supervisors:
+      each: '.uzhsl-section-publication-slider a.uzhsl-tile-team'
+      fields:
+        name:
+          attr: text
+          regex: '^(.+?),?\s+(?:Research|Senior|Associate|Professor|PhD|Dr\.|Prof)'
+        email:
+          attr: text
+          regex: '([\w.\-]+@[\w.\-]+\.\w+)'

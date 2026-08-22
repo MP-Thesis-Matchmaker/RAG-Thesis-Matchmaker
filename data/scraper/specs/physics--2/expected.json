@@ -1,0 +1,57 @@
+{
+  "source_id": "physics--2",
+  "page_type": "process",
+  "verified_content_sha1": "beb8ceda859b4a07db6ec272ff06bd99d2fda2cf",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Eligible students: enrolled Master’s students in Physics. Find a supervisor via the posted list of thesis topics or by contacting research groups directly; external internships are possible but require a UZH physics lecturer to accept formal responsibility and approve coursework. Register: record a Learning Agreement on studentadmin.mnf.uz.ch at the start of the Master’s and finalize it with your supervisor before starting the thesis. Sign up for the Masterprüfung by submitting the “Anmeldung Masterprüfung” form (signed by the supervisor) to studium@physik.uzh.ch at least 2 weeks before the desired Thursday seminar slot (Seminar für Bachelor- und Mastervorträge, Thu 15–17). Deadlines: the thesis must be handed to the supervisor at least 2 weeks before the exam. Requirements: 30 or 50 ECTS (≈6 or 10 months), public seminar + private oral exam (~30 min each), final grade = 2/3 written report + 1/3 oral; both components must be ≥4.0. Declare any AI tools used in References or the independence statement. Templates, forms and official guidelines are on the department pages (studentadmin.mnf.uz.ch and the department’s forms page).",
+      "relevant_links": [
+        {
+          "url": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit.html",
+          "description": "Liste mit Themenvorschlägen"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:e1b75cd3-a1e5-4e87-aa39-e7ca873ddfcb/thesis.zip",
+          "description": "Latex Vorlage (ZIP, 802 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:97135af4-0d2b-4612-a2e8-96f079744cd9/main.pdf",
+          "description": "Bachelor oder Masterarbeit (PDF, 430 KB)"
+        },
+        {
+          "url": "http://www.physik.uzh.ch/de/studium/studienberatung/formulare.html",
+          "description": "http://www.physik.uzh.ch/de/studium/studienberatung/formulare.html"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:2148aab1-5145-4311-8f97-98e9a821a0fb/MSc_Registration_Exam_PHY.pdf",
+          "description": "Anmeldung Masterprüfung (PDF, 115 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:b7731ada-d377-4f22-8081-a6aa67f012b3/grading_criteria_thesis.pdf",
+          "description": "Bewertungsschema (PDF, 142 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:37a61588-324e-402c-83d6-aa220d48e392/attendance_seminars.pdf",
+          "description": "Seminarvorrträgen (PDF, 37 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/master-/masterarbeit.html",
+          "description": "Ablauf Masterarbeit und Abschluss"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/master-/Beratung--Formulare.html",
+          "description": "Beratung & Formulare"
+        }
+      ],
+      "source_url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/master-/masterarbeit.html",
+      "source_id": "physics--2",
+      "scraped_at": "2026-08-05T13:14:17.788633+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

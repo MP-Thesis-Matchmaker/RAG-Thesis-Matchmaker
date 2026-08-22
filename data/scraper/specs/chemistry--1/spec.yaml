@@ -1,0 +1,47 @@
+# chemistry--1: "Open Bachelor / Master / PhD Theses" — tables of open theses per
+# level. Each row: title (linking to a PDF), supervisor(s), and a listing date.
+# Only Bachelor/Master theses are taken (stop_before the "PhD Theses" heading,
+# which also drops the Assistants/Internships section). Degree is read from the
+# title (most say "MSc"/"Master" or "BSc"/"Bachelor").
+source_id: chemistry--1
+page_type: topics
+
+record:
+  container: 'table tr:has(td a[href])'
+  stop_before: 'h2:-soup-contains("PhD"), h3:-soup-contains("PhD")'
+  fields:
+    title:
+      - selector: "td:nth-child(1)"    # drop the trailing "(PDF, NN KB)"
+        attr: text
+        regex: '^(.+?)\s*\(PDF'
+        transform: normalize_ws
+      - selector: "td:nth-child(1)"
+        attr: text
+        transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      selector: "td:nth-child(1)"
+      attr: text
+      transform: degree_from_text
+    research_area:
+      value: "Chemistry"
+    supervisors:
+      selector: "td:nth-child(3)"
+      attr: text
+      transform: supervisor_list
+    date_of_listing:
+      selector: "td:nth-child(5)"
+      attr: text
+      transform: normalize_ws
+    source_link:
+      selector: 'td:nth-child(1) a[href]'
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+# Each topic links to a PDF description; summarise it (LLM) into the description.
+pdf_enrich:
+  url_field: source_link
+  summary_into: topic_description

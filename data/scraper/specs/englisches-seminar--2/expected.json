@@ -1,0 +1,25 @@
+{
+  "source_id": "englisches-seminar--2",
+  "page_type": "process",
+  "verified_content_sha1": "a93a7a8e6f8a4ddfe94dcea17d3413b694f3752d",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Eligible students: any Bachelor student who has completed the module group \"Introduction to English Literature and Linguistics\" (ideally in their final semester; completion of a Bachelor Seminar in Linguistics is strongly recommended). Choosing/approaching a supervisor: prepare a draft outline, email a prospective supervisor, and book the thesis module with them; do not reuse exactly the same seminar-paper topic (related topics in the same field are allowed). Deadlines to contact a supervisor: by 30 April for a fall submission, by 30 November for a spring submission. Registering: book the Bachelor Thesis early via UZH’s module booking tool (booking deadlines in the course catalog). Outline due: first week of October (fall) or first week of March (spring). Submission: Dec 1 (fall) or June 1 (spring). Length: Linguistics 8,000 words (±10%); Literature 10,000 words (±10%). Submit print + PDF unless supervisor specifies otherwise. For non-response from a supervisor, send a one-week reminder, then contact englishstudies@es.uzh.ch. Official guidelines and templates are on the department website (Bachelor Thesis Guidelines; Writing Your Bachelor Thesis in Literature; module description).",
+      "relevant_links": [
+        {
+          "url": "https://www.es.uzh.ch/dam/jcr:7360cb3c-205e-4435-970c-43d564a210e5/Writing%20Your%20Bachelor%20Thesis%20in%20Literature%20(March%202025).pdf",
+          "description": "Writing Your Bachelor Thesis in Literature (March 2025) (PDF, 115 KB)"
+        }
+      ],
+      "source_url": "https://www.es.uzh.ch/en/studies/bachelor/bachelor-thesis.html",
+      "source_id": "englisches-seminar--2",
+      "scraped_at": "2026-07-25T06:10:37.370392+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

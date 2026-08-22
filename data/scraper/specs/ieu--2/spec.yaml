@@ -1,0 +1,41 @@
+# ieu--2: a published Google Sheet ("Biodiversity Masters Projects"). The
+# registry /pubhtml URL is a JS shell, but each sheet's data is served as an HTML
+# table at /pubhtml/sheet?gid=<id>. Both sheets are scraped (multi-page). Columns:
+# General Field | Project Title | Post Date | Contact | Institute | Link.
+source_id: ieu--2
+page_type: topics
+
+pages:
+  - url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmQFNe2bI3Neso18NZ6RSg-abAJIm_7CE-CcZifEGPWRnly2FEkO4sMAd_rFtzKHaJ_CHjoVXaDFoo/pubhtml/sheet?headers=false&gid=528367583"
+  - url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmQFNe2bI3Neso18NZ6RSg-abAJIm_7CE-CcZifEGPWRnly2FEkO4sMAd_rFtzKHaJ_CHjoVXaDFoo/pubhtml/sheet?headers=false&gid=697161202"
+
+record:
+  container: 'table.waffle tr:has(td)'
+  drop_if_contains: "Project Title"          # the header row
+  fields:
+    title:
+      selector: "td:nth-child(3)"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: normalize_ws
+    date_of_listing:
+      selector: "td:nth-child(4)"
+      attr: text
+      transform: normalize_ws
+    supervisors:
+      selector: "td:nth-child(5)"
+      attr: text
+      transform: contact_supervisors
+    source_link:
+      selector: "td:nth-child(7)"
+      attr: text
+      regex: '(https?://\S+)'
+
+id_from: [title]

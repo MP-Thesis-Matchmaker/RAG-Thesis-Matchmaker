@@ -11,17 +11,19 @@ first**; AI Buddy integration via MCP is a downstream possibility, never a depen
 Because this is graded work: never fabricate results, citations, data, or evaluation numbers. When
 a decision is unmade or a fact is unknown, say so explicitly.
 
-## Current repo state (as of 2026-08-21)
+## Current repo state (as of 2026-08-22)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 9 packages, ~3,470 LOC, 173 tests.
+`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,197 LOC,
+317 test functions in 26 files (344 pass with a database, 308 pass / 36 skip offline).
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
-(target state — the REST API, scraper, and multi-signal ranking in it are not built yet).
+(target state — the REST API and multi-signal ranking in it are not built yet).
 
 | Package | Status | Concern |
 |---|---|---|
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication` |
+| [`scraper/`](src/thesis_matchmaker/scraper/README.md) | ported, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | implemented | Free text → `ParsedQuery`; rule-based baseline, optional LLM |
@@ -29,9 +31,14 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 | [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | implemented, thin | Application-service functions the adapters call |
 | [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP done, REST design-only | Thin front doors; no business logic |
 
-Not built: the **web scraper** (`ThesisPosting` has no producer — sample data only; work sits on
-the unmerged `origin/webscraping` branch) and a **`ranking` package** (`pipeline/`'s docstring
-claims a rank step; in reality ranking is `score = max(hit.score)` inside `VectorRetriever`).
+Not built: a **`ranking` package** (`pipeline/`'s docstring claims a rank step; in reality
+ranking is `score = max(hit.score)` inside `VectorRetriever`).
+
+The **web scraper now exists** — ported in from `Webscraping-Prototype` as
+[`scraper/`](src/thesis_matchmaker/scraper/README.md), so `ThesisPosting` has a real producer for
+the first time. Two of its three record kinds are stored and unread: `researcher_profile` (565
+rows) and `application_process` (57) have tables but no consumer. Only `posting` reaches the
+index.
 
 **Repository-wide idiom — respect it.** `parsing/`, `indexing/`, `retrieval/`, `synthesis/` each
 have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
@@ -55,15 +62,17 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
 corpus lives in the `publication` table — **214,685 publications** as of 2026-08-21, of which
-**91,673 (42.7%)** have at least one UZH author. `--source db` indexes only those: a publication
+**91,673 (42.7%)** pass the UZH-author filter — a figure the `uzh_authors` ORCID conflation
+inflates by 38,157 records; see the first known gap in
+[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes only those: a publication
 with no UZH author cannot yield a supervisor recommendation, and `retrieval/` already filtered it
 out at query time, so embedding it was work spent on unreachable vectors.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
 longer tracked.
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (173 tests /
-20 files; 25 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (344 tests /
+26 files; 36 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
@@ -93,9 +102,12 @@ still missing:
   → **shipped as `contracts/`**
 - `ingestion` — **owns all writes**; sub-packages for ZORA and the scraper, plus a store layer;
   includes a scheduled ingest runner
-  → **shipped as `zora/`** (harvester only; the cluster's CronJobs own scheduling).
-    **The scraper sub-package does not exist yet**;
-  when it lands, decide whether it joins `zora/` under a shared `ingestion/` parent
+  → **shipped as two peer packages, `zora/` and `scraper/`** (the cluster's CronJobs own
+  scheduling). Whether they should sit under a shared `ingestion/` parent is **still open** and
+  was deliberately not decided by the scraper port: the move would rename every
+  `thesis_matchmaker.zora.*` import plus the harvester image's ENTRYPOINT, both CronJobs and
+  `tests/zora/`, for no functional gain. Decide it together with the `projects/` workspace
+  question, which is the same kind of question.
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped
 - `ranking` — multi-signal scoring over retrieved candidates; read-only

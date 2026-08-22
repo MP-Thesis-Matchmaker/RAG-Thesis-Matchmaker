@@ -1,0 +1,42 @@
+# romanisches-seminar--2: the people page is an alphabetical index; each person
+# link is "Lastname, Firstname, Title". Per the brief, keep only the professorial
+# ranks — ordentliche/ausserordentliche, Assistenz- and Titularprofessor*innen
+# plus Privatdozierende — i.e. links whose title carries "Prof" or "PD". Only the
+# current (Aktuell) people are under /seminar/personen/ (former ones use other
+# paths), so that path scopes to current. keep_if applies the Prof/PD filter;
+# each kept profile is followed for the email.
+source_id: romanisches-seminar--2
+page_type: people
+
+record:
+  # current people link to /seminar/personen/ or (AVL section) /avl/team-avl/;
+  # stop_before the "Ehemalig" heading drops the former-people table (which reuses
+  # the /team-avl/ path).
+  container: 'a[href*="/seminar/personen/"], a[href*="/avl/team-avl/"]'
+  stop_before: 'h2:-soup-contains("Ehemalig"), h3:-soup-contains("Ehemalig")'
+  fields:
+    name:
+      attr: text
+      transform: [normalize_ws, strip_titles]
+    role:                              # trailing title suffix (e.g. "Prof. Dr.")
+      attr: text
+      regex: ',\s*([^,]+)$'
+    _profile_url:
+      attr: href
+      transform: absolute_url
+
+keep_if:
+  field: role
+  contains_any: ["prof", "pd"]
+
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://www\.rose\.uzh\.ch/.+\.html$'
+  fields:
+    email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email

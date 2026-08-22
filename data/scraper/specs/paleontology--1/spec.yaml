@@ -1,0 +1,41 @@
+# paleontology--1: the Paläontologisches Institut MSc thesis-topic board
+# ("Themenvorschläge für eine Masterarbeit"). Each proposal is a div.TextImage
+# with an h2 title, a description paragraph, and a "Kontaktpersonen und
+# Betreuung" / "Contact person" list of supervisor links (apps/p profiles). The
+# profiles expose e-mail only via a contact form, so supervisors carry a name +
+# profile _url but no address.
+source_id: paleontology--1
+page_type: topics
+
+record:
+  container: 'div.TextImage:has(h2.TextImage--title)'
+  fields:
+    title:
+      selector: 'h2.TextImage--title'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Palaeontology"
+    topic_description:
+      selector: 'div.TextImage--content'
+      attr: text
+      exclude:
+        - "h2"
+        - "h4"
+        - 'a[href*="/apps/p/"]'
+      transform: normalize_ws
+    supervisors:
+      each: 'div.TextImage--content a[href*="/apps/p/"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+        _url:
+          attr: href
+          transform: absolute_url
+
+id_from: [title]

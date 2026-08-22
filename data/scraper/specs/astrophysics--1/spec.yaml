@@ -1,0 +1,42 @@
+# astrophysics--1: "Available Master & Bachelor projects". Three research-area
+# toggles (Galaxy Formation, Planet formation, Theoretical Astrophysics), each
+# listing several projects as flat paragraphs: a bold title, a description, and a
+# "Contact:" supervisor (linked to the UZH phonebook). split_on carves out one
+# record per project (bold-title paragraph up to the next), tagging its research
+# area via section_heading.
+source_id: astrophysics--1
+page_type: topics
+
+record:
+  split_on: 'div.TextImage--content.richtext p:has(strong)'
+  section_heading: 'h2.TextImage--title.toggle'
+  fields:
+    title:
+      selector: "strong"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      selector: "span._section"
+      attr: text
+    topic_description:
+      attr: text
+      exclude:
+        - "strong"
+        - "span"
+        - 'p:-soup-contains("Contact")'
+      transform: normalize_ws
+    supervisors:
+      each: 'p:-soup-contains("Contact") a[href]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+        contact_url:                   # UZH phonebook entry (no scrapable email)
+          attr: href
+          transform: absolute_url
+
+id_from: [title]

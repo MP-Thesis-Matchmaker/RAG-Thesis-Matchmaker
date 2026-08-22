@@ -1,0 +1,29 @@
+{
+  "source_id": "asien-orient-institut--1",
+  "page_type": "process",
+  "verified_content_sha1": "a432f66aa25dfc1cad87c4fc243926ddf38e559d",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Students must independently register their Bachelor or Master thesis in the university’s online module booking tool. Before booking, contact and agree supervision with a chosen supervisor; both Bachelor and Master candidates must complete a written Betreuungsvereinbarung (supervision agreement) using the provided PDF forms. For Master theses, explicitly clarify supervision takeover with the chosen supervisor. The page does not specify eligibility criteria, submission deadlines, formatting or assessment rules. Additional important Master’s information is referenced on the Philosophische Fakultät study pages. Official documents are the Betreuungsvereinbarung PDFs linked on the page and the faculty study pages; for questions contact your programme’s student advising or the AOI study administration.",
+      "relevant_links": [
+        {
+          "url": "https://www.aoi.uzh.ch/dam/jcr:0fd8c61e-0b0e-4bc9-80e1-1b7d1506ad94/Bologna2020_AOI_Betreuungsvereinbarung_Ba-Arbeit_UZH.pdf",
+          "description": "Formular Betreuungsvereinbarung Bachelorarbeit (PDF, 76 KB)"
+        },
+        {
+          "url": "https://www.aoi.uzh.ch/dam/jcr:4b85b376-019f-4ce6-b973-083f262b53a5/Bologna2020_AOI_Betreuungsvereinbarung_Ma-Arbeit_UZH.pdf",
+          "description": "Formular Betreuungsvereinbarung Masterarbeit (PDF, 82 KB)"
+        }
+      ],
+      "source_url": "https://www.aoi.uzh.ch/de/studies/studyorganization/completion/finaltheses.html",
+      "source_id": "asien-orient-institut--1",
+      "scraped_at": "2026-07-25T04:51:13.370372+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

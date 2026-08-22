@@ -1,0 +1,57 @@
+{
+  "source_id": "physics--3",
+  "page_type": "process",
+  "verified_content_sha1": "b0ecd1cfd342a991b57c792818ee8ed21978d89b",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Die Bachelorarbeit wird in der Regel im letzten Bachelorsemester durchgeführt und ist Voraussetzung für ein Masterstudium. Themen und Betreuende finden Sie über regelmässige Informationsveranstaltungen der Forschungsgruppen, über die auf der Seite gelisteten Themenvorschläge oder durch direkte Kontaktaufnahme mit Forschungsgruppen; die Arbeit ist aktive Mitarbeit in einer Forschungsgruppe (experimentell oder theoretisch). Anmeldung: Formular \"Anmeldung Bachelorarbeit\" (siehe Formulare und Merkblätter) ausfüllen und als PDF an studium@physik.uzh.ch senden. Umfang: 12 oder 8 ECTS (je nach Studienvariante), entspricht etwa 9 bzw. 6 Wochen Vollzeit; Zeitplan (Anfang, verbindliches Ende) wird schriftlich mit der/s Betreuer/in vereinbart. Abgabe: spätestens 2 Wochen vor der Bachelorprüfung; Betreuer erhält Exemplar, Studienkoordination ein PDF. Abschluss: 25‑min Vortrag im \"Seminar für Bachelor- und Mastervorträge\" (Betreuer anwesend), danach Notenblatt unterschreiben und bei Studienkoordination einreichen; Abschluss beantragen via Student-Admin. Vorgaben, Bewertungsbogen, Anmeldung und LaTeX‑Vorlage sind auf der Seite Formulare/Merkblätter verlinkt. KI‑Nutzung ist in Referenzen oder der Selbständigkeitserklärung anzugeben.",
+      "relevant_links": [
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:8eaa3d56-9c3f-4ab3-b8e7-24f698018600/BSc_Registration%20_PHY_E_20250623.pdf",
+          "description": "Anmeldung der Bachelorarbeit (PDF, 107 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:b7731ada-d377-4f22-8081-a6aa67f012b3/grading_criteria_thesis.pdf",
+          "description": "Bewertungsschema BSc (PDF, 142 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/dam/jcr:e5aa5aa4-bfb6-4b8c-9123-d5b3d5e579e6/BSc_Grade%20sheet_PHY_20250623_E.pdf",
+          "description": "Notenblatt Bachelorarbeit (PDF, 112 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/de/studium/studienberatung/wegleitung/Masterstudiengang.html",
+          "description": "Masterstudium"
+        },
+        {
+          "url": "https://cmsauth.uzh.ch/physik/de/studium/Themen-Bachelor-Masterarbeit.html",
+          "description": "hier."
+        },
+        {
+          "url": "https://cmsauth.uzh.ch/physik/de/studium/studienberatung/formulare.html",
+          "description": "Formulare und Merkblätter"
+        },
+        {
+          "url": "https://cmsauth.uzh.ch/physik/dam/jcr:e1b75cd3-a1e5-4e87-aa39-e7ca873ddfcb/thesis.zip",
+          "description": "Latex template (ZIP, 802 KB)"
+        },
+        {
+          "url": "https://cmsauth.uzh.ch/physik/dam/jcr:97135af4-0d2b-4612-a2e8-96f079744cd9/main.pdf",
+          "description": "Bachelor oder Masterarbeit (PDF, 430 KB)"
+        },
+        {
+          "url": "https://www.physik.uzh.ch/de/studium/studienberatung/formulare.html",
+          "description": "Merkblätter und Anmeldeformulare"
+        }
+      ],
+      "source_url": "https://www.physik.uzh.ch/de/studium/Studienprogramme/bachelorstudiengang/Bachelorarbeit-und-Abschluss.html",
+      "source_id": "physics--3",
+      "scraped_at": "2026-08-05T13:14:31.632938+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

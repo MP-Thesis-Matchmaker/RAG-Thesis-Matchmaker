@@ -1,0 +1,57 @@
+# rfw--1: RWF (law faculty) "Professuren nach Fachgruppenzugehörigkeit". Law has
+# no concrete thesis topics — students pick a subject area (Fachgruppe) and a
+# professor in it. So each Fachgruppe is modelled as an open TOPIC whose
+# supervisors are all the professors of that group (enriched with their chair and
+# profile link; emails resolved from each profile). One topic per Fachgruppe.
+source_id: rfw--1
+page_type: topics
+
+record:
+  container: 'div.TextImage:has(table)'          # one per Fachgruppe (h2 + table)
+  fields:
+    title:
+      selector: 'h2.TextImage--title'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      selector: 'h2.TextImage--title'
+      attr: text
+      transform: normalize_ws
+    supervisors:
+      each: 'table tr:has(td)'
+      fields:
+        name:                                    # between title and the chair
+          selector: 'td:nth-child(1)'
+          attr: text
+          transform: [normalize_ws, strip_titles]
+          regex: '^(.+?)\s+(?:Lehrstuhl|Professor(?:in)?|Assistenzprof\w*|Ordinari\w*|Extraordinari\w*|Titularprof\w*)'
+        chair:
+          selector: 'td:nth-child(1)'
+          attr: text
+          transform: normalize_ws
+          regex: '((?:Lehrstuhl|Professor(?:in)?|Assistenzprof\w*|Ordinari\w*|Extraordinari\w*|Titularprof\w*).+)$'
+        profile_url:
+          selector: 'td:nth-child(2) a:-soup-contains("Kontakt")'
+          attr: href
+          transform: absolute_url
+        _url:                                    # followed for the email
+          selector: 'td:nth-child(2) a:-soup-contains("Kontakt")'
+          attr: href
+          transform: absolute_url
+
+id_from: [title]
+
+resolve_supervisors:
+  list_field: supervisors
+  url_key: _url
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email

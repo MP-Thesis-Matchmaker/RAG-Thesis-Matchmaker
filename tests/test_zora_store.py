@@ -154,8 +154,6 @@ def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) 
     assert records[0].author_authority_map == {"A. Müller": "uuid-1", "X. External": None}
     assert records[0].keywords == ["retrieval", "german"]
     assert reader.invalid_records == 0
-    # No scraper exists, so there is no posting table to read yet.
-    assert list(reader.postings()) == []
 
 
 def test_first_ever_run_is_full_and_still_stamps_both_modes(clean_db: str) -> None:

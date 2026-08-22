@@ -1,0 +1,38 @@
+# soziologisches-institut--4: the SUZ "Über uns" people page (PersonCards with
+# name+title, inline email, profile link). Per the brief, keep only the people
+# listed under source --1 (the MA page's "Betreuungsberechtigte" — the thesis
+# supervisors). Their names are run together in three <p>s (Fakultätsmitglieder /
+# Titularprofessuren / Privatdozierende), split out by names_regex; the roster
+# then filters this page's people to those. Unit level.
+source_id: soziologisches-institut--4
+page_type: people
+
+record:
+  container: "div.PersonCard--content"
+  fields:
+    name:                              # the part before the comma (title varies)
+      - selector: "h3.PersonCard--name"
+        attr: text
+        regex: '^\s*(.+?)\s*,'
+      - selector: "h3.PersonCard--name"
+        attr: text
+        transform: normalize_ws
+    role:
+      selector: "h3.PersonCard--name"
+      attr: text
+      regex: ',\s*(.+)$'
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+    _profile_url:
+      selector: 'a[href*="/aboutus/"]'
+      attr: href
+      transform: absolute_url
+
+roster:
+  match: name
+  sources:
+    - url: "https://www.suz.uzh.ch/de/master/abschluss.html"
+      selector: 'h3:-soup-contains("Fakultätsmitglieder") + p, h3:-soup-contains("Titularprofessuren") + p, h3:-soup-contains("Privatdozierende") + p'
+      names_regex: '(?:Prof\.|PD)\s*Dr\.(?:\s*Dr\.)?(?:\s*h\.c\.)?\s*([A-ZÄÖÜ][A-Za-zäöüß.-]+(?:\s+[A-ZÄÖÜ][A-Za-zäöüß.-]+)+?)(?=\s+(?:Prof\.|PD)\s*Dr\.|$)'

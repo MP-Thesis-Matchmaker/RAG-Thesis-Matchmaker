@@ -1,0 +1,29 @@
+{
+  "source_id": "ivw--1",
+  "page_type": "process",
+  "verified_content_sha1": "4b3847b09a8518be735e1bfe479621d8b2249172",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "The page does not describe a concrete process for obtaining or completing a BA/MA thesis; it only links to a PDF with further information (including a cover-page template and declaration) and refers students to the Dean's Office and studies@econ.uzh.ch for registration and questions.",
+      "relevant_links": [
+        {
+          "url": "https://www.econ.uzh.ch/dam/jcr:2d9768e6-c701-4d2c-b1c1-f05cd7337fbe/SIT_Flyer_2019_WWF_VWL_Auflage500.pdf",
+          "description": "flyer (PDF, 572 KB)"
+        },
+        {
+          "url": "https://www.econ.uzh.ch/dam/jcr:c800f7eb-31a0-4618-9b4b-3ff2ceb8503c/for%20students%20-%202023-%20%20BA_MA%20thesis%20guidelines%20ECON%20Department.pdf",
+          "description": "here (PDF, 338 KB)"
+        }
+      ],
+      "source_url": "https://www.econ.uzh.ch/en/study/undergraduate/ba.html",
+      "source_id": "ivw--1",
+      "scraped_at": "2026-07-17T16:55:54.675592+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}
