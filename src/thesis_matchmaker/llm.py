@@ -18,6 +18,14 @@ class LLMError(RuntimeError):
     """Raised when the chat endpoint is unreachable or returns something odd."""
 
 
+# Which optional request fields an endpoint refuses, keyed by (url, model).
+# Module-level rather than per instance because it is a property of the endpoint,
+# not of the object asking: the query parser and the synthesiser build separate
+# clients against the same endpoint, and per-instance memory made each of them
+# pay its own doomed request before it learned anything.
+_UNSUPPORTED_FIELDS: dict[tuple[str, str], set[str]] = {}
+
+
 class LLMClient:
     """Thin wrapper over the OpenAI-compatible /chat/completions endpoint."""
 
@@ -35,11 +43,13 @@ class LLMClient:
         if api_key:
             self._headers["Authorization"] = f"Bearer {api_key}"
         self._timeout = timeout
-        # Request fields this endpoint has already rejected, so the doomed
-        # request is paid once per process instead of once per call. Learned
-        # rather than configured: the same code talks to OpenAI, LibreChat and
-        # Ollama, and they disagree about which fields exist.
-        self._unsupported: set[str] = set()
+        # Fields this endpoint has already rejected, shared with every other
+        # client against the same endpoint and model (see _UNSUPPORTED_FIELDS),
+        # so the doomed request is paid once per process rather than once per
+        # client or -- as it was originally -- once per call. Learned rather
+        # than configured: the same code talks to OpenAI, LibreChat and Ollama,
+        # and they disagree about which fields exist.
+        self._unsupported = _UNSUPPORTED_FIELDS.setdefault((self._url, model), set())
         # Reasoning models spend most of their wall-clock time on hidden
         # reasoning tokens before emitting a single word of the answer, which is
         # enough to blow past `timeout` on a request that would otherwise be

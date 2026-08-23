@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from thesis_matchmaker import db, schema
+from thesis_matchmaker import db, llm, schema
 from thesis_matchmaker.indexing.store import PgVectorStore
 
 _ALLOW_DESTRUCTIVE = "THESIS_MATCHMAKER_ALLOW_DESTRUCTIVE_TESTS"
@@ -43,6 +43,19 @@ def dsn() -> str:
     schema.apply(configured)
     return configured
 
+
+
+@pytest.fixture(autouse=True)
+def _forget_endpoint_capabilities() -> None:
+    """Clear the learned "this endpoint refuses that field" cache between tests.
+
+    It is module-level on purpose (one endpoint, many clients), which makes it
+    leak across tests: one test teaching it that "m" refuses temperature would
+    silently change what the next test's first request even contains.
+    """
+    llm._UNSUPPORTED_FIELDS.clear()
+    yield
+    llm._UNSUPPORTED_FIELDS.clear()
 
 @pytest.fixture(scope="session", autouse=True)
 def _close_pools() -> None:

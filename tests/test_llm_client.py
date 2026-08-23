@@ -226,3 +226,33 @@ def test_an_unhelpful_rejection_still_drops_everything(recorder):
     rec = recorder([400, 200], {"detail": "Bad Request"})
     LLMClient(_URL, "m", reasoning_effort="none").chat("sys", "user", json_mode=True)
     assert rec.payloads[1].keys() == {"model", "messages"}
+
+
+def test_a_second_client_inherits_what_the_first_learned(recorder):
+    """The parser and the synthesiser are separate clients on one endpoint.
+
+    Observed in a live REPL session: two 400s on the first query, one per
+    client, each logging "endpoint rejected temperature". The endpoint's
+    capabilities do not depend on which object asks, so the second client must
+    not have to find out for itself.
+    """
+    rec = recorder([400, 200], _openai_temperature_error())
+    parser = LLMClient(_URL, "gpt-5-mini")
+    parser.chat("sys", "parse this", json_mode=True)
+    assert rec.payloads[0]["temperature"] == 0  # the one doomed request
+
+    synthesiser = LLMClient(_URL, "gpt-5-mini")
+    synthesiser.chat("sys", "write prose")
+    assert len(rec.payloads) == 3  # no second rejection to pay for
+    assert "temperature" not in rec.payloads[2]
+
+
+def test_a_different_endpoint_learns_for_itself(recorder):
+    """The cache is keyed by endpoint and model, not shared globally.
+
+    Ollama accepting temperature must not be inferred from OpenAI refusing it.
+    """
+    rec = recorder([400, 200], _openai_temperature_error())
+    LLMClient(_URL, "gpt-5-mini").chat("sys", "user")
+    LLMClient("http://elsewhere/v1", "llama3.1").chat("sys", "user")
+    assert rec.payloads[2]["temperature"] == 0
