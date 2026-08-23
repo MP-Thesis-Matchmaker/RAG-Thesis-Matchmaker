@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import os
+import sys
+import types
 from pathlib import Path
 
 import pytest
 
 from thesis_matchmaker.indexing.embedder import (
     HashEmbedder,
+    SentenceTransformerEmbedder,
     _limit_thread_pools,
     cpu_limit,
 )
@@ -114,3 +117,42 @@ def test_hash_embedder_has_no_token_window() -> None:
     assert embedder.max_seq_length is None
     embedder.embed_documents(["a much longer document " * 500])
     assert embedder.last_truncated == 0
+
+
+class _FakeSentenceTransformer:
+    """Records how it was constructed; no torch, no weights, no download."""
+
+    constructed: list[dict] = []
+
+    def __init__(self, model_name, device=None, **kwargs) -> None:
+        type(self).constructed.append({"model_name": model_name, "device": device})
+        self.max_seq_length = 8192
+
+
+def _stub_sentence_transformers(monkeypatch: pytest.MonkeyPatch) -> type:
+    """Install a fake `sentence_transformers` module for the lazy import in _load."""
+    module = types.ModuleType("sentence_transformers")
+    fake = type("_Recorded", (_FakeSentenceTransformer,), {"constructed": []})
+    module.SentenceTransformer = fake
+    monkeypatch.setitem(sys.modules, "sentence_transformers", module)
+    return fake
+
+
+def test_device_reaches_the_model_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """EMBEDDING_DEVICE=cpu is the escape hatch from an MPS abort.
+
+    On a Mac sentence-transformers auto-detects mps, and moving bge-m3's weights
+    into unified memory aborts the process (SIGABRT, no traceback) when the
+    machine is short of memory. Nothing can catch that, so choosing the device
+    has to work.
+    """
+    fake = _stub_sentence_transformers(monkeypatch)
+    SentenceTransformerEmbedder("BAAI/bge-m3", device="cpu")._load()
+    assert fake.constructed == [{"model_name": "BAAI/bge-m3", "device": "cpu"}]
+
+
+def test_no_device_configured_leaves_auto_detect_alone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """None is sentence-transformers' own "auto-detect", i.e. today's behaviour."""
+    fake = _stub_sentence_transformers(monkeypatch)
+    SentenceTransformerEmbedder("BAAI/bge-m3")._load()
+    assert fake.constructed[0]["device"] is None

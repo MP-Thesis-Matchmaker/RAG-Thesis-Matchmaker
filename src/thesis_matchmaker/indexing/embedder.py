@@ -203,10 +203,12 @@ class SentenceTransformerEmbedder:
         model_name: str,
         max_seq_length: int = 1024,
         batch_size: int = 16,
+        device: str | None = None,
     ) -> None:
         self._model_name = model_name
         self._max_seq_length = max_seq_length
         self._batch_size = batch_size
+        self._device = device
         self._model = None
         self._last_truncated = 0
 
@@ -259,7 +261,14 @@ class SentenceTransformerEmbedder:
                     limit,
                     torch.get_num_threads(),
                 )
-            model = SentenceTransformer(self._model_name)
+            # device=None is this constructor's own "auto-detect" (it calls
+            # get_device_name() itself), so passing it through unconditionally
+            # keeps today's behaviour when nothing is configured. Configuring it
+            # matters on a Mac: auto-detect picks mps, and mps aborts the process
+            # rather than raising when the machine is short of memory.
+            if self._device:
+                logger.info("loading %s on device %s", self._model_name, self._device)
+            model = SentenceTransformer(self._model_name, device=self._device)
             # bge-m3 reports 8192 here. Left alone, the attention buffer is
             # batch x heads x seq^2, and encode() batches longest-first, so the one
             # 6822-token abstract in the corpus sized the very first batch at

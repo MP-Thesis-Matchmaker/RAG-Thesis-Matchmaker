@@ -249,3 +249,10 @@ data/state.json
 data/scraper/cache/
 data/scraper/var/
 data/scraper/output/
+
+# Supervisor demo bundle
+#   demo/ carries a 1.6 GB database dump plus a runbook for handing the system
+#   to someone who should not have to harvest or index anything. Machine-sized
+#   data, personal data (researcher names), and a moving snapshot -- none of it
+#   belongs in history. demo/README.md documents how to run it.
+/demo/

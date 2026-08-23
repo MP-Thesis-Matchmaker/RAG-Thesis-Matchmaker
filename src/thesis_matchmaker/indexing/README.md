@@ -200,6 +200,7 @@ Malformed JSONL lines are counted and skipped, not fatal.
 | `sources_path` | `SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
 | `embedding_max_seq_length` | `EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap per document. Recorded in the manifest and guarded: changing it needs `--rebuild`. |
 | `embedding_batch_size` | `EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer together with the cap; cannot replace it. |
+| `embedding_device` | `EMBEDDING_DEVICE` | unset | Torch device the model loads onto; unset means auto-detect. Deliberately *not* manifest-guarded -- unlike the token cap it changes neither the model nor which text is embedded. Set `cpu` on a Mac if a run dies with no message: auto-detect picks `mps`, and a short-of-memory `mps` load aborts the process instead of raising. |
 | `index_chunk_size` | `INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Lower it to cut peak memory. |
 
 > **Watch out:** `sources_path` still defaults to `data/samples`, so a bare

@@ -42,3 +42,10 @@ def test_build_indexer_and_retriever_share_config(tmp_path: Path) -> None:
     assert isinstance(retriever, VectorRetriever)
     assert isinstance(indexer.store, PgVectorStore)
     assert indexer.store.dsn == _DSN
+
+
+def test_embedding_device_setting_reaches_the_embedder(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    settings.embedding_model = "BAAI/bge-m3"
+    settings.embedding_device = "cpu"
+    assert build_embedder(settings)._device == "cpu"

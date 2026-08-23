@@ -41,6 +41,7 @@ def build_embedder(settings: Settings) -> Embedder:
         settings.embedding_model,
         max_seq_length=settings.embedding_max_seq_length,
         batch_size=settings.embedding_batch_size,
+        device=settings.embedding_device,
     )
 
 
