@@ -72,6 +72,17 @@ class Settings(BaseSettings):
     # batch of 8 asks for 22 GiB.
     embedding_batch_size: int = 16
 
+    # Which torch device the embedding model loads onto. Unset means
+    # sentence-transformers auto-detects, which is right nearly always and is
+    # what the cluster (CPU-only nodes) gets anyway. The escape hatch exists
+    # because of one failure mode: on a Mac auto-detect picks "mps", and moving
+    # the model's 2.27 GB of weights into unified memory does not raise when the
+    # machine is short of it -- Metal aborts the process, so the whole run dies
+    # with a bare SIGABRT and no traceback that Python could have caught. Set
+    # "cpu" and the same query answers in about a second. Passed through
+    # verbatim, so "cpu", "mps", "cuda", "cuda:1" all work.
+    embedding_device: str | None = None
+
     # Documents embedded and committed per round trip. The indexer streams in
     # chunks of this size rather than embedding the whole corpus before its first
     # write, which is what keeps peak memory flat and makes an interrupted run
