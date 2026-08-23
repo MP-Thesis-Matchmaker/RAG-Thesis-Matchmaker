@@ -44,7 +44,6 @@ def dsn() -> str:
     return configured
 
 
-
 @pytest.fixture(autouse=True)
 def _forget_endpoint_capabilities() -> None:
     """Clear the learned "this endpoint refuses that field" cache between tests.
@@ -56,6 +55,7 @@ def _forget_endpoint_capabilities() -> None:
     llm._UNSUPPORTED_FIELDS.clear()
     yield
     llm._UNSUPPORTED_FIELDS.clear()
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _close_pools() -> None:
