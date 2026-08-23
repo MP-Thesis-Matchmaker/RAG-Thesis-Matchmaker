@@ -71,3 +71,53 @@ def test_match_without_index_falls_back_to_fake(
     main(["match", "anything"])
     out = capsys.readouterr().out
     assert "fake retriever" in out
+
+
+def _feed_input(monkeypatch: pytest.MonkeyPatch, lines: list[str]) -> None:
+    """Replace input() with a scripted session; EOFError after the last line."""
+    it = iter(lines)
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(it))
+
+
+def test_repl_answers_and_exits(
+    offline_env: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main(["index"])
+    capsys.readouterr()
+    _feed_input(monkeypatch, ["dense retrieval for text", "exit"])
+    main(["repl", "--top-k", "3"])
+    out = capsys.readouterr().out
+    assert "Prof. A. Müller" in out
+
+
+def test_repl_survives_a_query_error(
+    offline_env: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One bad query prints an error and the session keeps going -- it must not die."""
+    main(["index"])
+    capsys.readouterr()
+
+    def _boom(self: object, raw_query: str, top_k: int = 5) -> list:
+        raise ValueError("retrieval exploded")
+
+    from thesis_matchmaker.pipeline import Pipeline
+
+    monkeypatch.setattr(Pipeline, "run", _boom)
+    _feed_input(monkeypatch, ["anything", "exit"])
+    main(["repl"])
+    out = capsys.readouterr().out
+    assert "error: ValueError: retrieval exploded" in out
+
+
+def test_repl_eof_exits_cleanly(
+    offline_env: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ctrl-D with no input at all is a normal way to leave, not a crash."""
+
+    def _eof(_prompt: str = "") -> str:
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", _eof)
+    main(["repl"])
+    out = capsys.readouterr().out
+    assert "thesis-matchmaker repl" in out

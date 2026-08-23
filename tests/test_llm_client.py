@@ -76,19 +76,34 @@ def test_rejected_json_mode_is_still_retried_without_it(recorder):
     assert "response_format" not in rec.payloads[1]
 
 
-def test_retry_drops_both_optional_fields_at_once(recorder):
+def test_retry_drops_all_optional_fields_at_once(recorder):
     rec = recorder([400, 200])
     LLMClient(_URL, "m", reasoning_effort="none").chat("sys", "user", json_mode=True)
     assert "reasoning_effort" not in rec.payloads[1]
     assert "response_format" not in rec.payloads[1]
+    assert "temperature" not in rec.payloads[1]
 
 
-def test_a_plain_request_rejected_is_an_error_not_a_retry_loop(recorder):
-    """With no optional field to blame, a 400 is the endpoint's real answer."""
-    rec = recorder([400])
+def test_rejected_temperature_is_retried_without_it(recorder):
+    """OpenAI's gpt-5/o-series answer 400 to any temperature but the default.
+
+    The live incident: gpt-5-mini rejected temperature=0, and because the old
+    retry only fired for json_mode/reasoning_effort, both the parser and the
+    synthesiser silently degraded to their offline paths.
+    """
+    rec = recorder([400, 200])
+    assert LLMClient(_URL, "gpt-5-mini").chat("sys", "user") == "ok"
+    assert rec.payloads[0]["temperature"] == 0
+    assert "temperature" not in rec.payloads[1]
+
+
+def test_a_stripped_request_rejected_is_an_error_not_a_retry_loop(recorder):
+    """Once every optional field is gone, a 400 is the endpoint's real answer."""
+    rec = recorder([400, 400])
     with pytest.raises(LLMError):
         LLMClient(_URL, "m").chat("sys", "user")
-    assert len(rec.payloads) == 1
+    assert len(rec.payloads) == 2
+    assert "temperature" not in rec.payloads[1]
 
 
 def test_retry_happens_at_most_once(recorder):

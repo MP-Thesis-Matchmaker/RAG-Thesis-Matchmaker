@@ -1,14 +1,17 @@
 """Command line entry point.
 
-Three subcommands: `init-db` applies the database schema, `index` builds or
-refreshes the vector index from the ingested JSONL files, and `match` runs a
-query against it and writes a recommendation. When no index has been built yet,
-`match` falls back to the fake retriever so the output shape stays visible.
+Four subcommands: `init-db` applies the database schema, `index` builds or
+refreshes the vector index from the ingested JSONL files, `match` runs one
+query against it and writes a recommendation, and `repl` keeps a session open
+for many queries -- the embedding model and connection pool load once instead
+of per invocation. When no index has been built yet, `match` and `repl` fall
+back to the fake retriever so the output shape stays visible.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
@@ -82,19 +85,74 @@ def _run_index(settings: Settings, args: argparse.Namespace) -> None:
         )
 
 
-def _run_match(settings: Settings, args: argparse.Namespace) -> None:
+def _build_pipeline(settings: Settings) -> Pipeline:
+    """Pipeline over the real retriever if an index exists, else the fake one."""
     if _index_exists(settings):
-        pipeline = Pipeline(retriever=build_retriever(settings))
-    else:
-        pipeline = Pipeline()
-        print("no index found - run 'thesis-matchmaker index' first.")
-        print("(results are canned for now, from the fake retriever)\n")
-    matches = pipeline.run(args.query, top_k=args.top_k)
-    answer = pipeline.synthesizer.synthesize(args.query, matches)
-    print(f"query: {args.query}\n")
+        return Pipeline(retriever=build_retriever(settings))
+    print("no index found - run 'thesis-matchmaker index' first.")
+    print("(results are canned for now, from the fake retriever)\n")
+    return Pipeline()
+
+
+def _answer(pipeline: Pipeline, query: str, top_k: int) -> None:
+    """One query through the full flow: recommendation prose, then the detail table."""
+    matches = pipeline.run(query, top_k=top_k)
+    answer = pipeline.synthesizer.synthesize(query, matches)
+    print(f"query: {query}\n")
     print(answer)
     print("\nmatches (retrieval detail):")
     _print_matches(matches)
+
+
+def _run_match(settings: Settings, args: argparse.Namespace) -> None:
+    _answer(_build_pipeline(settings), args.query, args.top_k)
+
+
+def _run_repl(settings: Settings, args: argparse.Namespace) -> None:
+    """Interactive local session: build the pipeline once, answer until EOF.
+
+    Purely stdin/stdout -- nothing listens on a port, so "local only" holds by
+    construction. Deployed instances are served through the MCP adapter; this
+    exists so a human can poke at the pipeline without paying the model load
+    (and, with real embeddings, a 2 GB weight read) on every single query.
+    """
+    # Arrow-key history for free where the stdlib provides it; the loop works
+    # identically without it.
+    with contextlib.suppress(ImportError):
+        import readline  # noqa: F401
+
+    endpoint = settings.llm_base_url or "offline (rule-based parser, template prose)"
+    print("thesis-matchmaker repl -- type a research interest, 'exit' to leave,")
+    print("':k N' to change how many matches are shown.")
+    print(f"  llm endpoint:    {endpoint}")
+    print(f"  embedding model: {settings.embedding_model}")
+    print(f"  database:        {_redacted_dsn(settings.database_url)}")
+    print(f"  index:           {_index_status(settings)}\n")
+
+    pipeline = _build_pipeline(settings)
+    top_k = args.top_k
+    while True:
+        try:
+            query = input("match> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not query:
+            continue
+        if query.lower() in {"exit", "quit", ":q"}:
+            break
+        if query.startswith(":k"):
+            try:
+                top_k = int(query[2:])
+                print(f"top-k set to {top_k}")
+            except ValueError:
+                print(f"usage: :k N  (currently {top_k})")
+            continue
+        try:
+            _answer(pipeline, query, top_k)
+        except Exception as exc:  # noqa: BLE001 -- a bad query must not end the session
+            print(f"error: {exc.__class__.__name__}: {exc}")
+        print()
 
 
 def _redacted_dsn(dsn: str) -> str:
@@ -130,6 +188,12 @@ def main(argv: list[str] | None = None) -> None:
     match_parser = subparsers.add_parser("match", help="find supervisors for a query")
     match_parser.add_argument("query", help="describe your research interests")
     match_parser.add_argument("--top-k", type=int, default=5, help="how many matches to show")
+
+    repl_parser = subparsers.add_parser(
+        "repl",
+        help="interactive local session (deployed instances use the MCP server instead)",
+    )
+    repl_parser.add_argument("--top-k", type=int, default=5, help="how many matches to show")
 
     index_parser = subparsers.add_parser("index", help="build or refresh the vector index")
     index_parser.add_argument(
@@ -176,6 +240,8 @@ def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
         _run_index(settings, args)
     elif args.command == "match":
         _run_match(settings, args)
+    elif args.command == "repl":
+        _run_repl(settings, args)
     else:
         endpoint = settings.llm_base_url or "offline (rule-based parser)"
         print("thesis-matchmaker")

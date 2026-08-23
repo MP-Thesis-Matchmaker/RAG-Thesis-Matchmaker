@@ -49,6 +49,7 @@ class LLMClient:
             user,
             json_mode=json_mode,
             reasoning_effort=self._reasoning_effort,
+            temperature=True,
             allow_retry=True,
         )
 
@@ -59,6 +60,7 @@ class LLMClient:
         *,
         json_mode: bool,
         reasoning_effort: str | None,
+        temperature: bool,
         allow_retry: bool,
     ) -> str:
         payload: dict = {
@@ -67,8 +69,12 @@ class LLMClient:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": 0,
         }
+        # Determinism where the model supports it. Optional like the fields
+        # below: OpenAI's gpt-5/o-series reject any temperature but the default
+        # with a 400, so the retry strips it rather than losing the whole call.
+        if temperature:
+            payload["temperature"] = 0
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
         if reasoning_effort:
@@ -79,18 +85,24 @@ class LLMClient:
             )
         except httpx.HTTPError as exc:
             raise LLMError(str(exc)) from exc
-        # Both optional fields are extensions some endpoints do not implement, and
-        # a 400/422 is how they say so. Retry once with a plain request rather
-        # than failing: a worse-shaped answer beats no answer.
-        if response.status_code in (400, 422) and allow_retry and (json_mode or reasoning_effort):
+        # All three optional fields are extensions some endpoints do not
+        # implement, and a 400/422 is how they say so. Retry once with a plain
+        # request rather than failing: a worse-shaped answer beats no answer.
+        if response.status_code in (400, 422) and allow_retry:
             logger.debug(
-                "endpoint rejected optional fields (json_mode=%s, reasoning_effort=%s); "
-                "retrying without them",
+                "endpoint rejected the request (json_mode=%s, reasoning_effort=%s, "
+                "temperature=%s); retrying without optional fields",
                 json_mode,
                 reasoning_effort,
+                temperature,
             )
             return self._post(
-                system, user, json_mode=False, reasoning_effort=None, allow_retry=False
+                system,
+                user,
+                json_mode=False,
+                reasoning_effort=None,
+                temperature=False,
+                allow_retry=False,
             )
         try:
             response.raise_for_status()
