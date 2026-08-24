@@ -1,5 +1,5 @@
 from thesis_matchmaker.zora import config
-from thesis_matchmaker.zora.normalize import normalize_item
+from thesis_matchmaker.zora.normalize import normalize_item, normalize_org_unit, normalize_person
 
 from .fake_dso import FakeDSO
 
@@ -285,7 +285,7 @@ def test_author_authority_map_includes_all_authors():
 
     assert record["author_authority_map"] == {
         "External, Alice": None,
-        "Schmutzler, Armin": "f45b3ec1-cf2a-43ae-85d4-528afff07a40",
+        "Schmutzler, Armin": {"type": "cris", "id": "f45b3ec1-cf2a-43ae-85d4-528afff07a40"},
     }
 
 
@@ -311,8 +311,8 @@ def test_language_none_when_missing():
     assert record["language"] is None
 
 
-def test_author_authority_map_strips_orcid_placeholder():
-    """author_authority_map strips the 'will be referenced::ORCID::' prefix."""
+def test_author_authority_map_types_orcid_placeholder():
+    """The 'will be referenced::ORCID::' marker becomes an orcid-typed entry."""
     dso = FakeDSO(
         handle="h",
         uuid="u",
@@ -328,6 +328,191 @@ def test_author_authority_map_strips_orcid_placeholder():
 
     assert record["author_authority_map"] == {
         "External, Alice": None,
-        "Theile, Gudrun": "0000-0002-9454-3617",
+        "Theile, Gudrun": {"type": "orcid", "id": "0000-0002-9454-3617"},
     }
     assert record["uzh_authors"] == ["Theile, Gudrun"]
+
+
+def test_author_authority_map_types_by_marker_not_id_shape():
+    """A cris entry stays cris even if its value looks nothing like a UUID.
+
+    Classification must come from DSpace's marker, never from pattern-matching
+    the id — 20 upstream ORCIDs are malformed and would misfile.
+    """
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_AUTHOR: ["Odd, Case"]},
+        authorities={config.FIELD_AUTHOR: ["0000-0002-8070-773"]},  # truncated, no marker
+    )
+
+    record = normalize_item(dso)
+
+    assert record["author_authority_map"] == {
+        "Odd, Case": {"type": "cris", "id": "0000-0002-8070-773"},
+    }
+
+
+# --- owning_collection_uuid ---
+
+
+def test_owning_collection_uuid_extracted():
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_TITLE: ["A paper"]},
+        embedded={
+            "owningCollection": {
+                "uuid": "f61a17ca-109f-481a-bbc3-3f410fa6ef57",
+                "name": "Publications of Department of Informatics",
+            }
+        },
+    )
+
+    record = normalize_item(dso)
+
+    assert record["owning_collection_uuid"] == "f61a17ca-109f-481a-bbc3-3f410fa6ef57"
+    assert record["department"] == "Department of Informatics"
+
+
+def test_owning_collection_uuid_from_mapped_fallback():
+    """Name and uuid come from the same mapped collection when owningCollection is absent."""
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_TITLE: ["A paper"]},
+        embedded={
+            "mappedCollections": {
+                "_embedded": {
+                    "mappedCollections": [
+                        {
+                            "uuid": "aaaa17ca-109f-481a-bbc3-3f410fa6ef57",
+                            "name": "Publications of Institute of Psychology",
+                        }
+                    ]
+                }
+            }
+        },
+    )
+
+    record = normalize_item(dso)
+
+    assert record["owning_collection_uuid"] == "aaaa17ca-109f-481a-bbc3-3f410fa6ef57"
+    assert record["department"] == "Institute of Psychology"
+
+
+def test_owning_collection_uuid_none_when_no_collections():
+    dso = FakeDSO(handle="h", uuid="u", fields={config.FIELD_TITLE: ["A paper"]})
+
+    record = normalize_item(dso)
+
+    assert record["owning_collection_uuid"] is None
+
+
+# --- normalize_person ---
+
+
+def test_normalize_person_extracts_all_fields():
+    dso = FakeDSO(
+        handle="20.500.14742/239047",
+        uuid="00d53153-03a6-4fd3-a581-de9a75a0015a",
+        fields={
+            config.FIELD_TITLE: ["Runge, Jan-Niklas"],
+            config.FIELD_PERSON_FAMILY: ["Runge"],
+            config.FIELD_PERSON_GIVEN: ["Jan-Niklas"],
+            config.FIELD_PERSON_ORCID: ["0000-0002-0450-9897"],
+            config.FIELD_URI: ["https://www.zora.uzh.ch/handle/20.500.14742/239047"],
+            config.FIELD_DATE_ACCESSIONED: ["2025-12-08T16:28:41Z"],
+        },
+    )
+
+    record = normalize_person(dso)
+
+    assert record == {
+        "uuid": "00d53153-03a6-4fd3-a581-de9a75a0015a",
+        "display_name": "Runge, Jan-Niklas",
+        "family_name": "Runge",
+        "given_name": "Jan-Niklas",
+        "orcid": "0000-0002-0450-9897",
+        "handle": "20.500.14742/239047",
+        "url": "https://www.zora.uzh.ch/handle/20.500.14742/239047",
+        "accessioned": "2025-12-08T16:28:41Z",
+    }
+
+
+def test_normalize_person_strips_orcid_url_prefix():
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0002-0450-9897"]},
+    )
+
+    record = normalize_person(dso)
+
+    assert record["orcid"] == "0000-0002-0450-9897"
+
+
+def test_normalize_person_missing_fields_do_not_crash():
+    dso = FakeDSO(handle="h", uuid="u", fields={})
+
+    record = normalize_person(dso)
+
+    assert record["uuid"] == "u"
+    assert record["display_name"] is None
+    assert record["orcid"] is None
+
+
+# --- normalize_org_unit ---
+
+
+def _community(uuid: str, name: str, subject_id: str | None = None) -> dict:
+    metadata = {}
+    if subject_id:
+        metadata[config.FIELD_ORG_SUBJECT_ID] = [{"value": subject_id}]
+    return {"uuid": uuid, "name": name, "handle": f"20.500.14742/{uuid[:2]}", "metadata": metadata}
+
+
+def test_normalize_org_unit_picks_publications_collection():
+    community = _community("c-1", "03 Faculty of Economics", subject_id="10232")
+    collections = [
+        {"uuid": "x-1", "name": "Some other collection"},
+        {"uuid": "x-2", "name": "Publications of Faculty of Economics"},
+    ]
+
+    record = normalize_org_unit(community, "root-uuid", 1, "c-1", collections)
+
+    assert record == {
+        "uuid": "c-1",
+        "name": "03 Faculty of Economics",
+        "parent_uuid": "root-uuid",
+        "faculty_uuid": "c-1",
+        "depth": 1,
+        "handle": "20.500.14742/c-",
+        "subject_id": "10232",
+        "collection_uuid": "x-2",
+        "collection_name": "Publications of Faculty of Economics",
+    }
+
+
+def test_normalize_org_unit_without_publications_collection():
+    community = _community("c-2", "Some grouping node")
+
+    record = normalize_org_unit(community, "root-uuid", 1, "c-2", [])
+
+    assert record["collection_uuid"] is None
+    assert record["collection_name"] is None
+    assert record["subject_id"] is None
+
+
+def test_normalize_org_unit_warns_and_keeps_first_on_multiple_collections(caplog):
+    community = _community("c-3", "Institute of Ambiguity")
+    collections = [
+        {"uuid": "x-1", "name": "Publications of Institute of Ambiguity"},
+        {"uuid": "x-2", "name": "Publications of Institute of Ambiguity (old)"},
+    ]
+
+    with caplog.at_level("WARNING"):
+        record = normalize_org_unit(community, "f-uuid", 2, "f-uuid", collections)
+
+    assert record["collection_uuid"] == "x-1"
+    assert "Publications of" in caplog.text or "collections" in caplog.text

@@ -25,52 +25,55 @@ def _values(dso: Any, field: str) -> list[str]:
     return [entry["value"] for entry in raw if entry.get("value")]
 
 
-def _first_orcid(dso: Any) -> str | None:
-    """Try each candidate ORCID field in order, return the first hit.
+def _strip_orcid_url(raw: str) -> str:
+    """UZH stores ORCIDs as full URLs (https://orcid.org/0000-...); strip to a bare ID."""
+    if raw.startswith("https://orcid.org/"):
+        return raw[len("https://orcid.org/") :]
+    if raw.startswith("http://orcid.org/"):
+        return raw[len("http://orcid.org/") :]
+    return raw
 
-    UZH stores ORCIDs as full URLs (https://orcid.org/0000-...); we strip
-    the prefix to store a bare ID.
-    """
+
+def _first_orcid(dso: Any) -> str | None:
+    """Try each candidate ORCID field in order, return the first hit."""
     for field in config.FIELD_ORCID_CANDIDATES:
         values = _values(dso, field)
         if values:
-            raw = values[0]
-            # Strip URL prefix if present
-            if raw.startswith("https://orcid.org/"):
-                return raw[len("https://orcid.org/") :]
-            if raw.startswith("http://orcid.org/"):
-                return raw[len("http://orcid.org/") :]
-            return raw
+            return _strip_orcid_url(values[0])
     return None
 
 
-def _get_department(dso: Any) -> str | None:
-    """Resolve the department name from the item's embedded owningCollection or mappedCollections.
+def _department_name(name: str) -> str | None:
+    """A collection's display name minus the "Publications of " prefix."""
+    if name.startswith(config.PUBLICATIONS_COLLECTION_PREFIX):
+        return name[len(config.PUBLICATIONS_COLLECTION_PREFIX) :]
+    return name if name else None
 
-    Parses the collection name, stripping the "Publications of " prefix if present.
-    Falls back to the first mapped collection if the owning collection has no name.
+
+def _get_owning_collection(dso: Any) -> tuple[str | None, str | None]:
+    """Resolve (department name, collection uuid) from the item's embedded collections.
+
+    The owningCollection wins; the first mappedCollections entry is the
+    fallback. Name and uuid always come from the *same* collection, so the
+    parsed department string and the persisted uuid can never describe two
+    different org units.
     """
     embedded = getattr(dso, "embedded", None) or {}
 
-    # 1. Parse the owningCollection name
     owning_collection = embedded.get("owningCollection")
     if owning_collection:
-        name = owning_collection.get("name", "")
-        if name.startswith("Publications of "):
-            return name[len("Publications of ") :]
-        return name if name else None
+        return (
+            _department_name(owning_collection.get("name", "")),
+            owning_collection.get("uuid"),
+        )
 
-    # 2. Fall back to the first mapped collection name
     mapped_collections_data = embedded.get("mappedCollections")
     if isinstance(mapped_collections_data, dict):
         colls = mapped_collections_data.get("_embedded", {}).get("mappedCollections", [])
         if colls:
-            name = colls[0].get("name", "")
-            if name.startswith("Publications of "):
-                return name[len("Publications of ") :]
-            return name if name else None
+            return _department_name(colls[0].get("name", "")), colls[0].get("uuid")
 
-    return None
+    return None, None
 
 
 def _get_uzh_authors(dso: Any) -> list[str]:
@@ -82,25 +85,36 @@ def _get_uzh_authors(dso: Any) -> list[str]:
     return [entry["value"] for entry in raw if entry.get("value") and entry.get("authority")]
 
 
-def _clean_authority(authority: str | None) -> str | None:
-    """Strip DSpace placeholder prefix 'will be referenced::ORCID::' if present."""
+def _typed_authority(authority: str | None) -> dict | None:
+    """Classify a raw authority value into {"type": "cris"|"orcid", "id": ...}.
+
+    DSpace-CRIS stores two different things in `authority`, and the marker is
+    the only reliable way to tell them apart:
+      - a bare value is a CRIS Person item UUID — an actual researcher record
+        that resolves in the `person` table;
+      - 'will be referenced::ORCID::<orcid>' means the authority does NOT
+        resolve to a local Person: the ORCID is known but the affiliation is
+        not. 20 upstream ORCIDs are malformed, so classifying by id shape
+        instead of by this marker would misfile them.
+    """
     if not authority:
         return None
     prefix = "will be referenced::ORCID::"
     if authority.startswith(prefix):
-        return authority[len(prefix) :]
-    return authority
+        return {"type": "orcid", "id": authority[len(prefix) :]}
+    return {"type": "cris", "id": authority}
 
 
-def _get_author_authority_map(dso: Any) -> dict[str, str | None]:
-    """Build a dict mapping each author name → their CRIS Person UUID or bare ORCID (or None).
+def _get_author_authority_map(dso: Any) -> dict[str, dict | None]:
+    """Build a dict mapping each author name → typed authority (or None).
 
-    This provides full provenance: UZH-affiliated authors have a UUID or ORCID,
-    external co-authors have None.
+    Full provenance: a cris-typed entry is a registered UZH researcher, an
+    orcid-typed entry is an author of unknown affiliation, None is an author
+    with no identifier at all.
     """
     raw = dso.get_metadata_values(config.FIELD_AUTHOR)
     return {
-        entry["value"]: _clean_authority(entry.get("authority"))
+        entry["value"]: _typed_authority(entry.get("authority"))
         for entry in raw
         if entry.get("value")
     }
@@ -116,6 +130,7 @@ def normalize_item(dso: Any) -> dict:
     """
     titles = _values(dso, config.FIELD_TITLE)
     years = _values(dso, config.FIELD_DATE_ISSUED)
+    department, owning_collection_uuid = _get_owning_collection(dso)
 
     return {
         "handle": dso.handle,
@@ -128,7 +143,8 @@ def normalize_item(dso: Any) -> dict:
         "abstract": next(iter(_values(dso, config.FIELD_ABSTRACT)), None),
         "year": _extract_year(years[0]) if years else None,
         "type": next(iter(_values(dso, config.FIELD_TYPE)), None),
-        "department": _get_department(dso),
+        "department": department,
+        "owning_collection_uuid": owning_collection_uuid,
         "language": next(iter(_values(dso, config.FIELD_LANGUAGE)), None),
         "doi": next(iter(_values(dso, config.FIELD_DOI)), None),
         "uri": next(iter(_values(dso, config.FIELD_URI)), None),
@@ -163,3 +179,81 @@ def _collect_keywords(dso: Any) -> list[str]:
                 seen.add(val)
                 result.append(val)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Entity mirrors: Person items and the community (org unit) tree
+# ---------------------------------------------------------------------------
+
+
+def normalize_person(dso: Any) -> dict:
+    """Turn one DSpace-CRIS Person item into a flat person record.
+
+    Everything a Person item carries is here — upstream has no affiliation,
+    department, or email on these items (probed 2026-08-24), so person-to-org
+    attribution has to come from publications, not from this record.
+    """
+    titles = _values(dso, config.FIELD_TITLE)
+    orcids = _values(dso, config.FIELD_PERSON_ORCID)
+
+    return {
+        "uuid": dso.uuid,
+        "display_name": titles[0] if titles else None,
+        "family_name": next(iter(_values(dso, config.FIELD_PERSON_FAMILY)), None),
+        "given_name": next(iter(_values(dso, config.FIELD_PERSON_GIVEN)), None),
+        "orcid": _strip_orcid_url(orcids[0]) if orcids else None,
+        "handle": dso.handle,
+        "url": next(iter(_values(dso, config.FIELD_URI)), None),
+        "accessioned": next(iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None),
+    }
+
+
+def _community_metadata_value(community: dict, field: str) -> str | None:
+    """First non-empty metadata value of a raw community JSON object."""
+    entries = (community.get("metadata") or {}).get(field) or []
+    for entry in entries:
+        if entry.get("value"):
+            return entry["value"]
+    return None
+
+
+def normalize_org_unit(
+    community: dict,
+    parent_uuid: str | None,
+    depth: int,
+    faculty_uuid: str | None,
+    collections: list[dict],
+) -> dict:
+    """Turn one community (plus its collections) into a flat org_unit record.
+
+    The publications collection is the one whose name carries the
+    "Publications of " prefix. More than one would mean the one-collection-
+    per-unit assumption broke upstream: warn and take the first rather than
+    guessing, so the run still commits and the anomaly is visible in the log.
+    """
+    publication_collections = [
+        c
+        for c in collections
+        if (c.get("name") or "").startswith(config.PUBLICATIONS_COLLECTION_PREFIX)
+    ]
+    if len(publication_collections) > 1:
+        logger.warning(
+            "Community %s (%s) has %d 'Publications of' collections; keeping the first (%s)",
+            community.get("uuid"),
+            community.get("name"),
+            len(publication_collections),
+            publication_collections[0].get("uuid"),
+        )
+    collection = publication_collections[0] if publication_collections else None
+
+    return {
+        "uuid": community["uuid"],
+        "name": community.get("name") or "",
+        "parent_uuid": parent_uuid,
+        "faculty_uuid": faculty_uuid,
+        "depth": depth,
+        "handle": community.get("handle"),
+        "subject_id": _community_metadata_value(community, config.FIELD_ORG_SUBJECT_ID),
+        "collection_uuid": collection.get("uuid") if collection else None,
+        "collection_name": collection.get("name") if collection else None,
+    }

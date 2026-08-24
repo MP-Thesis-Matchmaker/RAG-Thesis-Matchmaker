@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from thesis_matchmaker import db
+from thesis_matchmaker.contracts import AuthorAuthority
 from thesis_matchmaker.indexing.sources import PostgresSourceReader
 from thesis_matchmaker.zora import store
 
@@ -23,10 +24,14 @@ def _row(pub_id: str, **overrides) -> dict:
         "abstract": "We study dense retrieval.",
         "authors": ["A. Müller", "X. External"],
         "uzh_authors": ["A. Müller"],
-        "author_authority_map": {"A. Müller": "uuid-1", "X. External": None},
+        "author_authority_map": {
+            "A. Müller": {"type": "cris", "id": "uuid-1"},
+            "X. External": None,
+        },
         "year": 2024,
         "publication_type": "article",
         "department": "Department of Informatics",
+        "owning_collection_uuid": "coll-uuid-1",
         "language": "eng",
         "keywords": ["retrieval", "german"],
         "url": f"https://www.zora.uzh.ch/{pub_id}",
@@ -40,6 +45,8 @@ def _row(pub_id: str, **overrides) -> dict:
 def clean_db(dsn: str) -> str:
     with db.connection(dsn) as conn:
         conn.execute("TRUNCATE publication")
+        conn.execute("TRUNCATE person")
+        conn.execute("TRUNCATE org_unit")
         conn.execute("DELETE FROM harvest_state")
     return dsn
 
@@ -151,7 +158,10 @@ def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) 
     records = list(reader.publications())
     assert [r.id for r in records] == ["zora:1", "zora:2"]
     assert records[0].uzh_authors == ["A. Müller"]
-    assert records[0].author_authority_map == {"A. Müller": "uuid-1", "X. External": None}
+    assert records[0].author_authority_map == {
+        "A. Müller": AuthorAuthority(type="cris", id="uuid-1"),
+        "X. External": None,
+    }
     assert records[0].keywords == ["retrieval", "german"]
     assert reader.invalid_records == 0
 
@@ -196,3 +206,92 @@ def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db
     )
     reader = PostgresSourceReader(dsn=clean_db)
     assert [r.id for r in reader.publications()] == ["zora:1"]
+
+
+# --- Entity mirrors: person and org_unit ---
+
+
+def _person(uuid: str, **overrides) -> dict:
+    base = {
+        "uuid": uuid,
+        "display_name": f"Person {uuid}",
+        "family_name": "Person",
+        "given_name": uuid,
+        "orcid": f"0000-0000-0000-{uuid[-4:].zfill(4)}",
+        "handle": f"20.500.14742/{uuid}",
+        "url": f"https://www.zora.uzh.ch/handle/20.500.14742/{uuid}",
+        "accessioned": "2025-12-08T16:28:41Z",
+    }
+    base.update(overrides)
+    return base
+
+
+def _org_unit(uuid: str, **overrides) -> dict:
+    base = {
+        "uuid": uuid,
+        "name": f"Institute {uuid}",
+        "parent_uuid": "root",
+        "faculty_uuid": "faculty-1",
+        "depth": 2,
+        "handle": f"20.500.14742/{uuid}",
+        "subject_id": None,
+        "collection_uuid": f"coll-{uuid}",
+        "collection_name": f"Publications of Institute {uuid}",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_write_persons_snapshot_replaces(clean_db: str) -> None:
+    first = store.write_persons([_person("p1"), _person("p2")], dsn=clean_db)
+    assert (first.total, first.upserted, first.deleted, first.aborted) == (2, 2, 0, False)
+
+    # The next snapshot no longer contains p2: it must be pruned.
+    second = store.write_persons([_person("p1", orcid="0000-0001-0001-0001")], dsn=clean_db)
+    assert (second.total, second.deleted, second.aborted) == (1, 1, False)
+
+    with db.connection(clean_db) as conn:
+        row = conn.execute("SELECT orcid FROM person WHERE uuid = 'p1'").fetchone()
+    assert row[0] == "0000-0001-0001-0001"
+
+
+def test_write_persons_refuses_empty_snapshot_over_existing_rows(clean_db: str) -> None:
+    store.write_persons([_person("p1")], dsn=clean_db)
+    result = store.write_persons([], dsn=clean_db)
+    assert result.aborted is True
+    with db.connection(clean_db) as conn:
+        assert conn.execute("SELECT count(*) FROM person").fetchone()[0] == 1
+
+
+def test_write_persons_empty_snapshot_on_empty_table_is_fine(clean_db: str) -> None:
+    result = store.write_persons([], dsn=clean_db)
+    assert result.aborted is False
+    assert result.total == 0
+
+
+def test_write_org_units_snapshot_replaces(clean_db: str) -> None:
+    first = store.write_org_units(
+        [
+            _org_unit("root", parent_uuid=None, faculty_uuid=None, depth=0, collection_uuid=None),
+            _org_unit("faculty-1", parent_uuid="root", depth=1),
+            _org_unit("inst-1"),
+        ],
+        dsn=clean_db,
+    )
+    assert (first.total, first.aborted) == (3, False)
+
+    second = store.write_org_units(
+        [
+            _org_unit("root", parent_uuid=None, faculty_uuid=None, depth=0, collection_uuid=None),
+            _org_unit("faculty-1", parent_uuid="root", depth=1),
+        ],
+        dsn=clean_db,
+    )
+    assert (second.total, second.deleted) == (2, 1)
+
+
+def test_write_org_units_is_idempotent(clean_db: str) -> None:
+    rows = [_org_unit("inst-1"), _org_unit("inst-2")]
+    store.write_org_units(rows, dsn=clean_db)
+    again = store.write_org_units(rows, dsn=clean_db)
+    assert (again.total, again.deleted, again.aborted) == (2, 0, False)

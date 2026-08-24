@@ -1,14 +1,25 @@
-"""Contracts for the two raw data sources: ZORA publications and thesis postings.
+"""Contracts for the raw data sources: ZORA (publications, researchers, org units)
+and scraped thesis postings.
 
 These are the shapes the data-retrieval and scraping components must produce.
 Both sides code against these so the pieces plug together without reading each
 other's internals.
+
+**Every data model lives here, including the harvester's own output shapes.** That
+is not a style preference: `zora/` used to keep a parallel set (`ZoraPublication`,
+`ZoraPerson`, `ZoraOrgUnit`, a second `AuthorAuthority`) whose docstring claimed
+field-alignment with this file, and the two drifted in three ways at once -- a
+`title` that was optional on one side and required on the other, an
+`owning_collection_uuid` that existed on only one, and a duplicated authority type
+that nothing pinned together. One model per shape is what makes that class of bug
+impossible rather than merely documented.
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -64,15 +75,37 @@ class Supervisor(BaseModel):
     chair: str | None = Field(default=None, description="Research group or chair, when given.")
 
 
-class ZoraRecord(BaseModel):
-    """A single publication retrieved from ZORA.
+class AuthorAuthority(BaseModel):
+    """One author's typed identifier, as DSpace's authority marker classifies it.
 
-    One object per publication. Working out who publishes how much on a topic
-    happens later in ranking, not here.
+    cris:  id is a CRIS Person item UUID — a registered UZH researcher; it
+           resolves in the `person` table.
+    orcid: id is a bare ORCID with no local CRIS Person record. The honest
+           reading is *unknown affiliation*, not external: CRIS coverage is
+           sparse (~2,000 Person entities), so "no UUID" does not mean
+           "not UZH".
     """
 
-    id: str = Field(description="ZORA record id, unique and stable.")
-    title: str
+    type: Literal["cris", "orcid"]
+    id: str
+
+
+class ZoraPublication(BaseModel):
+    """A single publication retrieved from ZORA.
+
+    One object per publication -- persons and org units are ZORA records too, which
+    is why this name says which kind. Working out who publishes how much on a topic
+    happens later in ranking, not here.
+
+    This is also exactly what the harvester writes: one `publication` row per
+    instance, validated once on the way in.
+    """
+
+    id: str = Field(description="ZORA handle, unique and stable across harvests.")
+    # Optional because the column is. ZORA does have title-less items, and the
+    # alternative -- a required field the Postgres reader satisfied with `or ""` --
+    # meant the index quietly held publications whose title was the empty string.
+    title: str | None = None
     abstract: str | None = Field(default=None, description="Abstract text if ZORA has one.")
     authors: list[str] = Field(
         default_factory=list, description="Every author name as listed on the publication."
@@ -80,18 +113,22 @@ class ZoraRecord(BaseModel):
     uzh_authors: list[str] = Field(
         default_factory=list,
         description=(
-            "Subset of authors with a CRIS authority key — i.e. registered "
-            "UZH researchers. These are the candidate people for supervisor "
-            "matching; the rest of authors[] are external collaborators."
+            "Authors carrying *any* DSpace authority key — a CRIS Person UUID or "
+            "an ORCID-only placeholder. Known gap: that admits co-authors of "
+            "unknown affiliation, so this is wider than 'registered UZH "
+            "researcher' despite being the current supervisor-eligibility "
+            "signal. `author_authority_map` is what distinguishes the two kinds; "
+            "see the Known gaps section of zora/README.md."
         ),
     )
-    author_authority_map: dict[str, str | None] = Field(
+    author_authority_map: dict[str, AuthorAuthority | None] = Field(
         default_factory=dict,
         description=(
-            "author name -> stable UZH researcher id, or None for external "
-            "co-authors. Stable across a person's publications, so it's "
-            "also the right join key for any future researcher-level "
-            "rollup. Position in the author list alone isn't a reliable "
+            "author name -> typed authority ({type: cris|orcid, id}), or None "
+            "for authors with no identifier at all. The id is stable across a "
+            "person's publications, so it's also the right join key for any "
+            "future researcher-level rollup — cris ids resolve in the person "
+            "table. Position in the author list alone isn't a reliable "
             "stand-in for this — it's not a seniority signal in every "
             "field (economics, for instance, defaults to alphabetical "
             "ordering by surname)."
@@ -108,7 +145,18 @@ class ZoraRecord(BaseModel):
     )
     department: str | None = Field(
         default=None,
-        description="UZH department or center, if known.",
+        description=(
+            "UZH department or center, if known. The display name of the owning "
+            "collection; `owning_collection_uuid` is the same unit as a join key."
+        ),
+    )
+    owning_collection_uuid: str | None = Field(
+        default=None,
+        description=(
+            "UUID of the 'Publications of X' collection this item belongs to. "
+            "Joins to org_unit.collection_uuid — publications belong to "
+            "collections, never directly to the communities that model org units."
+        ),
     )
     language: str | None = Field(
         default=None, description="ISO 639 code from dc.language.iso, e.g. 'eng', 'deu'."
@@ -118,6 +166,79 @@ class ZoraRecord(BaseModel):
     )
     doi: str | None = None
     url: str | None = Field(default=None, description="Link to the ZORA landing page.")
+    accessioned: str | None = Field(
+        default=None,
+        description=(
+            "dc.date.accessioned verbatim, as ZORA reports it. Text rather than a "
+            "datetime because it is fed back into a Solr range query unchanged, and "
+            "part of the contract rather than harvester-internal because it is "
+            "written to the row: the incremental watermark is recomputed from the "
+            "data instead of being trusted blindly."
+        ),
+    )
+
+
+class ZoraPerson(BaseModel):
+    """A researcher as DSpace-CRIS records them: one `dspace.entity.type:Person` item.
+
+    Distinct from `ResearcherProfile`, which is the same kind of human described by
+    their own department page. This one is what a cris-typed `AuthorAuthority.id`
+    resolves to, and it carries no affiliation at all: probed 2026-08-24, Person
+    items have names, an ORCID and a handle, and nothing else. Department attribution
+    has to come from the publications, not from here.
+
+    Coverage is sparse (~2,000 items against ~58,000 distinct author names), so
+    absent-from-here does **not** mean not-UZH.
+    """
+
+    uuid: str = Field(description="CRIS item UUID, stable across harvests.")
+    display_name: str | None = Field(default=None, description='dc.title, "Family, Given".')
+    family_name: str | None = None
+    given_name: str | None = None
+    orcid: str | None = Field(
+        default=None, description="Bare ORCID, any URL prefix stripped by the normaliser."
+    )
+    handle: str | None = None
+    url: str | None = Field(default=None, description="Link to the ZORA landing page.")
+    accessioned: str | None = None
+
+
+class ZoraOrgUnit(BaseModel):
+    """One node of the UZH community tree: a faculty, institute or center.
+
+    ZORA's own OrgUnit entity type is empty upstream (0 items, probed 2026-08-24) --
+    the org structure is modelled as communities, so that is what this mirrors. The
+    tree is walked breadth-first from the UZH root, which is where `parent_uuid`,
+    `depth` and `faculty_uuid` come from; none of the three is a metadata field.
+    """
+
+    uuid: str = Field(description="Community UUID, stable across harvests.")
+    name: str = Field(
+        description='Verbatim, including the ordering prefix ("03 Faculty of Economics").'
+    )
+    parent_uuid: str | None = Field(default=None, description="None only for the UZH root.")
+    faculty_uuid: str | None = Field(
+        default=None,
+        description=(
+            "The depth-1 ancestor, or itself for a faculty; None for the root. Rolls "
+            "an institute up to its faculty without a recursive query."
+        ),
+    )
+    depth: int = Field(description="0 = UZH root, 1 = faculty, 2+ = institute or clinic.")
+    handle: str | None = None
+    subject_id: str | None = Field(
+        default=None,
+        description="dc.zora.subjectid — UZH's own numeric org id, independent of DSpace.",
+    )
+    collection_uuid: str | None = Field(
+        default=None,
+        description=(
+            "The attached 'Publications of X' collection, i.e. what "
+            "ZoraPublication.owning_collection_uuid joins against. None for units "
+            "that only group other units."
+        ),
+    )
+    collection_name: str | None = None
 
 
 class ThesisPosting(BaseModel):
@@ -130,7 +251,9 @@ class ThesisPosting(BaseModel):
     """
 
     id: str = Field(description="Stable id for the posting, e.g. a hash of the source url.")
-    title: str
+    # Optional for the same reason as ZoraPublication.title: the column is nullable,
+    # and a required field only meant the reader substituted "" and moved on.
+    title: str | None = None
     description: str | None = None
     supervisors: list[Supervisor] = Field(
         default_factory=list,
@@ -158,8 +281,18 @@ class ThesisPosting(BaseModel):
         default=None, description="open / assigned / pending, when the page says."
     )
     keywords: list[str] = Field(default_factory=list)
-    language: str | None = Field(default=None, description="Two-letter code, e.g. 'de' or 'en'.")
-    url: str = Field(description="Source page the posting was scraped from.")
+    language: str | None = Field(
+        default=None,
+        description=(
+            "Two-letter code, e.g. 'de' or 'en'. Currently always None: the column, "
+            "this field and the reader all exist, but scraper/normalize.py::to_posting "
+            "never sets it — see the Known gaps section of scraper/README.md."
+        ),
+    )
+    url: str | None = Field(
+        default=None,
+        description="Source page the posting was scraped from, when the page gave one.",
+    )
     listed_on: date | None = Field(
         default=None, description="Date the page gives for the listing, if any."
     )

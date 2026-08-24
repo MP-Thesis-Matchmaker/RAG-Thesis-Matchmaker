@@ -21,8 +21,8 @@ this section.** Architecture diagram: [`docs/architecture.png`](docs/architectur
 
 | Package | Status | Concern |
 |---|---|---|
-| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication` |
+| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | **Every** data model, harvester output shapes included; imports nothing of ours |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
 | [`scraper/`](src/thesis_matchmaker/scraper/README.md) | ported, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
@@ -69,6 +69,16 @@ with no UZH author cannot yield a supervisor recommendation, and `retrieval/` al
 out at query time, so embedding it was work spent on unreachable vectors.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
 longer tracked.
+
+**Pending schema reset (2026-08-24):** `schema.sql` gained the `person` and `org_unit`
+entity mirrors (refreshed at the start of every `zora.harvest` run — persons, then org
+units, then publications; `--no-persons` / `--no-org-units` / `--no-publications` opt out),
+plus `publication.owning_collection_uuid` and a typed `author_authority_map`
+(`{"type": "cris"|"orcid", "id": ...}` — the CRIS-vs-ORCID distinction the known
+`uzh_authors` gap needed). The fingerprint changed, so existing databases need
+`init-db --reset` **and a fresh `harvest --mode full`** (old dumps lack the new
+fields). Deliberately not run yet — posting-side follow-up changes land first, then one
+single reset. Details: [`zora/README.md`](src/thesis_matchmaker/zora/README.md).
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
 (`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (344 tests /

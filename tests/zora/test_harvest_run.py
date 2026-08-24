@@ -15,7 +15,7 @@ import os
 import pytest
 
 from thesis_matchmaker import db
-from thesis_matchmaker.zora import config, harvest, store, zora_client
+from thesis_matchmaker.zora import config, entities, harvest, store, zora_client
 
 from .fake_dso import FakeDSO
 
@@ -34,17 +34,24 @@ def _dso(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z") -> FakeDSO:
 
 
 class _Spy:
-    """Records the calls `run()` makes into the store, and what it passed."""
+    """Records the calls `run()` makes into the store and the entity steps."""
 
     def __init__(self, state: store.HarvestState) -> None:
         self.state = state
         self.write_calls: list[dict] = []
         self.save_calls: list[tuple] = []
+        # Which steps ran, in order. `run()` promises persons -> org units ->
+        # publications, and the order is the point: the mirrors are what a
+        # publication's authorities and owning collection resolve against.
+        self.steps: list[str] = []
+        self.entity_limits: list[int | None] = []
+        self.aborted_step: str | None = None
 
     def load_state(self, dsn: str | None = None) -> store.HarvestState:
         return self.state
 
     def write_harvest(self, rows, **kwargs) -> store.HarvestWriteResult:
+        self.steps.append("publications")
         self.write_calls.append({"rows": rows, **kwargs})
         return store.HarvestWriteResult(
             total=len(rows), upserted=len(rows), deleted=0, aborted=False
@@ -53,14 +60,30 @@ class _Spy:
     def save_state(self, last_accessioned, total, mode, dsn=None) -> None:
         self.save_calls.append((last_accessioned, total, mode))
 
+    def _entity_step(self, name: str):
+        def step(client, limit=None) -> store.EntityWriteResult:
+            self.steps.append(name)
+            self.entity_limits.append(limit)
+            return store.EntityWriteResult(
+                total=2, upserted=2, deleted=0, aborted=self.aborted_step == name
+            )
+
+        return step
+
 
 @pytest.fixture
 def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
-    """Wire `run()` up to fake ZORA items and an in-memory store."""
+    """Wire `run()` up to fake ZORA items, fake entity steps and an in-memory store.
+
+    The entity steps are stubbed rather than disabled, so every publication test
+    below still exercises the real default path -- all three capabilities on.
+    """
     s = _Spy(store.HarvestState(last_accessioned="2025-06-01", last_total_publications=22541))
     monkeypatch.setattr(store, "load_state", s.load_state)
     monkeypatch.setattr(store, "write_harvest", s.write_harvest)
     monkeypatch.setattr(store, "save_state", s.save_state)
+    monkeypatch.setattr(entities, "harvest_persons", s._entity_step("persons"))
+    monkeypatch.setattr(entities, "harvest_org_units", s._entity_step("org_units"))
     monkeypatch.setattr(zora_client, "get_client", lambda: object())
     monkeypatch.setattr(
         zora_client,
@@ -69,6 +92,104 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
     )
     monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
     return s
+
+
+# ---------------------------------------------------------------------------
+# Orchestration: three capabilities, entities first
+# ---------------------------------------------------------------------------
+
+
+def test_default_run_harvests_all_three_entities_first(spy: _Spy) -> None:
+    assert harvest.run("full") == 0
+    assert spy.steps == ["persons", "org_units", "publications"]
+
+
+def test_each_capability_can_be_opted_out(spy: _Spy) -> None:
+    assert harvest.run("full", persons=False) == 0
+    assert spy.steps == ["org_units", "publications"]
+
+    spy.steps.clear()
+    assert harvest.run("full", org_units=False) == 0
+    assert spy.steps == ["persons", "publications"]
+
+    spy.steps.clear()
+    assert harvest.run("full", publications=False) == 0
+    assert spy.steps == ["persons", "org_units"]
+
+
+def test_no_publications_leaves_the_watermark_untouched(spy: _Spy) -> None:
+    """Only the publication step owns harvest_state."""
+    assert harvest.run("full", publications=False) == 0
+    assert spy.write_calls == []
+    assert spy.save_calls == []
+
+
+def test_limit_applies_to_the_entity_steps_too(spy: _Spy) -> None:
+    assert harvest.run("full", limit=5) == 0
+    assert spy.entity_limits == [5, 5]
+
+
+def test_an_aborted_entity_snapshot_stops_before_publications(spy: _Spy) -> None:
+    """The expensive half must not run once a cheap step already went wrong."""
+    spy.aborted_step = "persons"
+
+    assert harvest.run("full") == 1
+    assert spy.steps == ["persons"]
+    assert spy.write_calls == []
+    assert spy.save_calls == []
+
+
+def test_an_aborted_org_unit_snapshot_also_stops_the_run(spy: _Spy) -> None:
+    spy.aborted_step = "org_units"
+
+    assert harvest.run("full") == 1
+    assert spy.steps == ["persons", "org_units"]
+    assert spy.write_calls == []
+
+
+def test_an_entity_step_failure_surfaces_as_a_clean_exit(
+    spy: _Spy, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A broken tree walk raises RuntimeError; main turns it into exit 1, no traceback."""
+
+    def boom(client, limit=None):
+        raise RuntimeError("Failed to fetch .../subcommunities page 0")
+
+    monkeypatch.setattr(entities, "harvest_org_units", boom)
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full"])
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 1
+    assert spy.write_calls == []
+
+
+def test_main_maps_the_no_flags_onto_run(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--no-persons", "--no-org-units"])
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 0
+    assert spy.steps == ["publications"]
+
+
+def test_disabling_all_three_is_a_usage_error(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["harvest", "--no-persons", "--no-org-units", "--no-publications"],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    # argparse.error() exits 2, and nothing ran.
+    assert exc.value.code == 2
+    assert spy.steps == []
 
 
 def test_full_harvest_passes_previous_total_from_state(spy: _Spy) -> None:
@@ -136,7 +257,7 @@ def _record(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z", **overrid
         "abstract": "We study dense retrieval.",
         "authors": ["Doe, Jane"],
         "uzh_authors": ["Doe, Jane"],
-        "author_authority_map": {"Doe, Jane": "cris-person-1"},
+        "author_authority_map": {"Doe, Jane": {"type": "cris", "id": "cris-person-1"}},
         "author_orcid": None,
         "year": 2024,
         "type": "article",
@@ -185,10 +306,24 @@ def test_from_dump_replays_without_contacting_zora(
     assert len(spy.write_calls) == 1
     rows = spy.write_calls[0]["rows"]
     assert [row["id"] for row in rows] == ["123/1", "123/2"]
-    # to_output ran, so the normalized keys were mapped to the output shape.
+    # mapping.to_publication ran, so the normalized keys were renamed.
     assert rows[0]["publication_type"] == "article"
     assert rows[0]["url"] == "https://www.zora.uzh.ch/id/eprint/123/1"
+    # accessioned is part of the validated model now, not spliced on afterwards.
+    assert rows[0]["accessioned"] == "2026-01-01T00:00:00Z"
     assert spy.write_calls[0]["previous_total"] == 22541
+
+
+def test_from_dump_implies_no_entity_steps(spy: _Spy, dump: str, monkeypatch) -> None:
+    """A replay exists to avoid the API; fetching 2,500 entity records would defeat it."""
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--from-dump", dump])
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 0
+    assert spy.steps == ["publications"]
 
 
 def test_from_dump_does_not_write_another_raw_dump(spy: _Spy, dump: str) -> None:

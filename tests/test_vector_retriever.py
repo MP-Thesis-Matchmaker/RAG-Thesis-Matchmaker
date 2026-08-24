@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraPublication
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer
 from thesis_matchmaker.indexing.sources import JsonlSourceReader
@@ -19,7 +19,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
     sources = tmp_path / "src"
     sources.mkdir()
     publications = [
-        ZoraRecord(
+        ZoraPublication(
             id="zora:1",
             title="Dense retrieval for German text",
             abstract="Neural search over German corpora.",
@@ -28,7 +28,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             year=2024,
             department="Department of Computational Linguistics",
         ),
-        ZoraRecord(
+        ZoraPublication(
             id="zora:2",
             title="Medieval trade routes of the Alps",
             abstract="Archival study of alpine commerce.",
@@ -38,7 +38,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             department="Department of History",
         ),
         # External-only author list: indexed, but never supervisor-eligible.
-        ZoraRecord(
+        ZoraPublication(
             id="zora:3",
             title="Dense retrieval for German text, external edition",
             abstract="Neural search over German corpora.",
@@ -48,7 +48,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             department="Department of Computational Linguistics",
         ),
         # Two UZH co-authors on one publication: both get credited.
-        ZoraRecord(
+        ZoraPublication(
             id="zora:4",
             title="Sleep and risk-seeking behaviour",
             abstract="Sleep intensity and risk decisions.",

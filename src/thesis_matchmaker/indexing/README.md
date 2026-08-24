@@ -36,7 +36,7 @@ SourceReader (publication table, or JSONL files)
 | `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
 | `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table, **UZH-authored publications only**. What a deployed indexer uses. |
 | `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
-| `zora_to_document` | `documents.py` | `ZoraRecord` → `Document`. |
+| `zora_to_document` | `documents.py` | `ZoraPublication` → `Document`. |
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
 | `VectorStore` | `store.py` | Protocol: `upsert`, `delete`, `existing_hashes`, `query`, `read_manifest`, `write_manifest`, `clear`. |
 | `ScoredHit` | `store.py` | One retrieved document plus its similarity score. |
@@ -69,7 +69,7 @@ Postgres at `DATABASE_URL`.
 **No chunking. One record = one embedding.** Title, abstract/description, and
 keywords are joined into a single text blob and embedded whole. Publication
 abstracts are short enough that this holds, and it keeps the id space identical to
-the record space — a `Document.id` *is* a `ZoraRecord.id`, which is what makes the
+the record space — a `Document.id` *is* a `ZoraPublication.id`, which is what makes the
 content-hash diff and the evidence back-references trivial. Introducing chunking
 would break that 1:1 assumption in `retrieval/` as well as here.
 

@@ -19,7 +19,7 @@ from typing import Protocol
 from pydantic import BaseModel, ValidationError
 
 from thesis_matchmaker import db
-from thesis_matchmaker.contracts import Supervisor, ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import Supervisor, ThesisPosting, ZoraPublication
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,8 @@ ORDER BY id
 
 _SELECT_PUBLICATIONS = """
 SELECT id, title, abstract, authors, uzh_authors, author_authority_map, year,
-       keywords, department, language, publication_type, doi, url
+       keywords, department, owning_collection_uuid, language, publication_type,
+       doi, url, accessioned
 FROM publication
 WHERE cardinality(uzh_authors) > 0
 ORDER BY id
@@ -83,7 +84,7 @@ class SourceReader(Protocol):
         """Records that could not be parsed. Populated while reading."""
         ...
 
-    def publications(self) -> Iterator[ZoraRecord]:
+    def publications(self) -> Iterator[ZoraPublication]:
         """Every harvested publication."""
         ...
 
@@ -111,8 +112,8 @@ class JsonlSourceReader:
     def invalid_records(self) -> int:
         return self._invalid
 
-    def publications(self) -> Iterator[ZoraRecord]:
-        yield from self._read(PUBLICATIONS_FILE, ZoraRecord)
+    def publications(self) -> Iterator[ZoraPublication]:
+        yield from self._read(PUBLICATIONS_FILE, ZoraPublication)
 
     def postings(self) -> Iterator[ThesisPosting]:
         yield from self._read(THESES_FILE, ThesisPosting)
@@ -152,12 +153,16 @@ class PostgresSourceReader:
     def invalid_records(self) -> int:
         return 0
 
-    def publications(self) -> Iterator[ZoraRecord]:
+    def publications(self) -> Iterator[ZoraPublication]:
         with db.connection(self.dsn) as conn:
             for row in conn.execute(_SELECT_PUBLICATIONS):
-                yield ZoraRecord(
+                yield ZoraPublication(
                     id=row[0],
-                    title=row[1] or "",
+                    # No `or ""` on title: the column is nullable and so is the
+                    # contract field. Substituting an empty string here used to
+                    # satisfy a required field by inventing a value, which put
+                    # publications with a blank title into the index.
+                    title=row[1],
                     abstract=row[2],
                     authors=list(row[3] or []),
                     uzh_authors=list(row[4] or []),
@@ -165,10 +170,12 @@ class PostgresSourceReader:
                     year=row[6],
                     keywords=list(row[7] or []),
                     department=row[8],
-                    language=row[9],
-                    publication_type=row[10],
-                    doi=row[11],
-                    url=row[12],
+                    owning_collection_uuid=row[9],
+                    language=row[10],
+                    publication_type=row[11],
+                    doi=row[12],
+                    url=row[13],
+                    accessioned=row[14],
                 )
 
     def postings(self) -> Iterator[ThesisPosting]:
@@ -176,7 +183,9 @@ class PostgresSourceReader:
             for row in conn.execute(_SELECT_POSTINGS):
                 yield ThesisPosting(
                     id=row[0],
-                    title=row[1] or "",
+                    # Nullable column, nullable field -- see the note on
+                    # publications above.
+                    title=row[1],
                     description=row[2],
                     # jsonb comes back already decoded, so these are dicts.
                     supervisors=[Supervisor.model_validate(s) for s in (row[3] or [])],
@@ -186,7 +195,7 @@ class PostgresSourceReader:
                     status=row[7],
                     keywords=list(row[8] or []),
                     language=row[9],
-                    url=row[10] or "",
+                    url=row[10],
                     listed_on=row[11],
                     source_id=row[12],
                     scraped_at=row[13],

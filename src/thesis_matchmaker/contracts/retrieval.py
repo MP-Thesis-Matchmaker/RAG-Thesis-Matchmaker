@@ -37,7 +37,7 @@ class Evidence(BaseModel):
     """
 
     source_type: Literal["publication", "thesis_posting"]
-    source_id: str = Field(description="Id of the ZoraRecord or ThesisPosting.")
+    source_id: str = Field(description="Id of the ZoraPublication or ThesisPosting.")
     title: str
     url: str | None = None
     year: int | None = None

@@ -1,21 +1,117 @@
 """Tests for the data contracts."""
 
+import pytest
+from pydantic import ValidationError
+
 from thesis_matchmaker.contracts import (
+    AuthorAuthority,
     DegreeLevel,
     Evidence,
     PostingStatus,
     SupervisorMatch,
     ThesisPosting,
-    ZoraRecord,
+    ZoraOrgUnit,
+    ZoraPerson,
+    ZoraPublication,
 )
 
 
-def test_zora_record_defaults():
-    r = ZoraRecord(id="zora:1", title="A paper")
+def test_zora_publication_defaults():
+    r = ZoraPublication(id="zora:1", title="A paper")
     assert r.authors == []
     assert r.uzh_authors == []
     assert r.author_authority_map == {}
     assert r.abstract is None
+    assert r.owning_collection_uuid is None
+    assert r.accessioned is None
+
+
+def test_zora_publication_title_may_be_absent():
+    """The column is nullable, so the contract is too -- ZORA has title-less items.
+
+    A required field here meant the Postgres reader satisfied it with `or ""`,
+    which put publications with a blank title into the index instead of surfacing
+    them as what they are.
+    """
+    assert ZoraPublication(id="zora:1").title is None
+
+
+def test_zora_publication_carries_accessioned_and_owning_collection():
+    r = ZoraPublication(
+        id="zora:1",
+        title="A paper",
+        owning_collection_uuid="coll-1",
+        accessioned="2026-01-01T00:00:00Z",
+    )
+    assert r.owning_collection_uuid == "coll-1"
+    assert r.accessioned == "2026-01-01T00:00:00Z"
+
+
+# --- AuthorAuthority: the cris/orcid distinction the whole uzh_authors gap turns on ---
+
+
+def test_author_authority_map_accepts_both_kinds_and_none():
+    r = ZoraPublication(
+        id="zora:1",
+        title="A paper",
+        author_authority_map={
+            "Registered, Rita": {"type": "cris", "id": "3991287f-eb76-4f2c-9b98-cde42e6f4a65"},
+            "Unknown, Ursula": {"type": "orcid", "id": "0000-0002-9454-3617"},
+            "Anonymous, Alex": None,
+        },
+    )
+    assert r.author_authority_map["Registered, Rita"].type == "cris"
+    assert r.author_authority_map["Unknown, Ursula"].id == "0000-0002-9454-3617"
+    assert r.author_authority_map["Anonymous, Alex"] is None
+
+
+def test_author_authority_rejects_any_other_kind():
+    """The Literal is the point: a third kind would silently break every rule built on it."""
+    with pytest.raises(ValidationError):
+        AuthorAuthority(type="scopus", id="whatever")
+
+
+def test_author_authority_does_not_infer_the_kind_from_the_id():
+    """Classification comes from DSpace's marker, never from the id's shape.
+
+    20 upstream authority values are malformed ORCIDs, so a shape-sniffing model
+    would file them under the wrong kind.
+    """
+    truncated_orcid_as_cris = AuthorAuthority(type="cris", id="0000-0002-8070-773")
+    assert truncated_orcid_as_cris.type == "cris"
+
+
+# --- the two entity mirrors ---
+
+
+def test_zora_person_requires_only_a_uuid():
+    """Person items carry no affiliation upstream, so almost everything is optional."""
+    p = ZoraPerson(uuid="00d53153-03a6-4fd3-a581-de9a75a0015a")
+    assert p.display_name is None
+    assert p.orcid is None
+
+
+def test_zora_org_unit_root_shape():
+    """Depth 0 with no parent is the UZH root; a faculty is its own faculty_uuid."""
+    root = ZoraOrgUnit(uuid="root", name="University of Zurich", depth=0)
+    assert root.parent_uuid is None
+    assert root.faculty_uuid is None
+    assert root.collection_uuid is None
+
+    faculty = ZoraOrgUnit(
+        uuid="fac-1",
+        name="03 Faculty of Economics",
+        parent_uuid="root",
+        faculty_uuid="fac-1",
+        depth=1,
+        collection_uuid="coll-1",
+    )
+    assert faculty.faculty_uuid == faculty.uuid
+
+
+def test_zora_org_unit_requires_a_name_and_depth():
+    with pytest.raises(ValidationError):
+        ZoraOrgUnit(uuid="only-a-uuid")
 
 
 def test_thesis_posting_coerces_degree_levels():

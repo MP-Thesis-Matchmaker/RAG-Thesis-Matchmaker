@@ -97,15 +97,27 @@ CREATE TABLE publication (
     -- Real arrays rather than JSON strings: unlike the index's metadata blob,
     -- these are queryable (see the GIN index below).
     authors              text[] NOT NULL DEFAULT '{}',
-    -- Authors carrying a CRIS authority key, i.e. registered UZH researchers.
-    -- Only these are supervisor-eligible.
+    -- Authors carrying any authority key. Known gap: this admits ORCID-only
+    -- external co-authors as well as CRIS-registered UZH researchers -- see
+    -- zora/README.md. The typed map below is what separates the two.
     uzh_authors          text[] NOT NULL DEFAULT '{}',
-    -- author name -> CRIS Person UUID, null for external co-authors. A map, so
-    -- jsonb rather than an array.
+    -- author name -> typed authority, null for authors with no authority at all:
+    --   {"type": "cris",  "id": "<Person item UUID>"}  -- resolves in person.uuid
+    --   {"type": "orcid", "id": "<bare ORCID>"}        -- no CRIS Person record;
+    --                                                     affiliation unknown
+    -- The type comes from DSpace's own "will be referenced::ORCID::" marker at
+    -- fetch time, never from pattern-matching the id (malformed ORCIDs exist
+    -- upstream). A map, so jsonb rather than an array.
     author_authority_map jsonb NOT NULL DEFAULT '{}'::jsonb,
     year                 int,
     publication_type     text,
     department           text,
+    -- UUID of the "Publications of X" collection this item lives in (or the
+    -- first mapped collection when the owning one is unnamed -- same precedence
+    -- as `department`, which is the parsed display name of the same collection).
+    -- Joins to org_unit.collection_uuid at query time; a re-walk of the
+    -- community tree never invalidates publication rows.
+    owning_collection_uuid text,
     language             text,
     keywords             text[] NOT NULL DEFAULT '{}',
     url                  text,
@@ -116,6 +128,8 @@ CREATE TABLE publication (
 );
 
 CREATE INDEX publication_department ON publication (department);
+
+CREATE INDEX publication_owning_collection ON publication (owning_collection_uuid);
 
 -- Answers "which publications is this researcher on?" without a table scan.
 -- This is the join key a future researcher-level rollup or the ranking package
@@ -140,6 +154,79 @@ CREATE TABLE harvest_state (
     last_incremental_run_at   timestamptz,
     last_full_run_at          timestamptz
 );
+
+-- ---------------------------------------------------------------------------
+-- ZORA entity mirrors: researchers and organizational units.
+-- Written only by thesis_matchmaker.zora (invariant 1), by
+-- `python -m thesis_matchmaker.zora.harvest_entities`. Both are pure API
+-- mirrors, refreshed as full snapshots -- no watermark, no incremental mode.
+-- ---------------------------------------------------------------------------
+
+-- DSpace-CRIS Person entities (~2,017 as of 2026-08-24). These are the
+-- researchers with a CRIS profile -- what a cris-typed entry in
+-- publication.author_authority_map points at. Sparse by construction: most
+-- UZH authors have no CRIS record, so "not in this table" does not mean
+-- "not UZH". Upstream carries no affiliation, department or email on these
+-- items; person-to-org-unit attribution has to come from publications.
+CREATE TABLE person (
+    -- CRIS item UUID: the join key cris-typed author_authority_map ids carry.
+    uuid         text PRIMARY KEY,
+    -- dc.title, "Family, Given" -- the same string publication.authors uses,
+    -- which is what makes name-level joins possible at all.
+    display_name text,
+    family_name  text,
+    given_name   text,
+    -- Bare ORCID (URL prefix stripped). The join key for orcid-typed
+    -- author_authority_map entries that belong to a person who *also* has a
+    -- CRIS record -- the "seen both ways" cases.
+    orcid        text,
+    handle       text,
+    url          text,
+    accessioned  text,
+    harvested_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX person_orcid ON person (orcid);
+
+-- The ZORA community tree under the UZH root community. ZORA's OrgUnit entity
+-- type is empty upstream (0 items, probed 2026-08-24); the org structure lives
+-- in communities: root -> 13 faculties -> institutes/clinics, each org unit
+-- with an attached "Publications of X" collection that publications actually
+-- belong to.
+CREATE TABLE org_unit (
+    -- Community UUID.
+    uuid            text PRIMARY KEY,
+    -- Verbatim, including the "03 " ordering prefix ("03 Faculty of
+    -- Economics") -- it is a stable sort key, and stripping it is a display
+    -- concern for consumers.
+    name            text NOT NULL,
+    -- NULL only for the UZH root.
+    parent_uuid     text,
+    -- The depth-1 ancestor (itself for a faculty), NULL for the root. Rolls an
+    -- institute up to its faculty without a recursive query.
+    faculty_uuid    text,
+    -- 0 = UZH root, 1 = faculty, 2+ = institute/clinic.
+    depth           int  NOT NULL,
+    handle          text,
+    -- dc.zora.subjectid: UZH's own numeric org-unit id, a second stable
+    -- identifier independent of DSpace.
+    subject_id      text,
+    -- The attached "Publications of X" collection. This -- not the community
+    -- uuid -- is what publication.owning_collection_uuid joins against,
+    -- because publications belong to collections, never to communities.
+    -- NULL for non-leaf units that only group others.
+    collection_uuid text,
+    collection_name text,
+    harvested_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX org_unit_parent ON org_unit (parent_uuid);
+
+-- Unique partial index: one org unit per publications collection. If ZORA ever
+-- attaches one collection to two communities, the harvest fails loudly here
+-- rather than silently double-attributing every publication in it.
+CREATE UNIQUE INDEX org_unit_collection ON org_unit (collection_uuid)
+    WHERE collection_uuid IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- Scraped thesis postings

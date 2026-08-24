@@ -106,9 +106,14 @@ docker compose run --rm harvester --mode incremental
 
 ## Output
 
-Each harvested record becomes one row in the `publication` table (schema in
-`src/thesis_matchmaker/schema.sql`, written only by `zora/store.py` — invariant 1). The row shape is
-whatever `output_schema.to_output` emits, so as JSON one row looks like:
+A run writes three tables (schema in `src/thesis_matchmaker/schema.sql`, all written
+only by `zora/store.py` — invariant 1): `person` and `org_unit` first, as full
+snapshots, then `publication`. Skip any of them with `--no-persons`,
+`--no-org-units`, `--no-publications`.
+
+Each harvested publication becomes one row shaped exactly like
+`contracts.ZoraPublication`, which `mapping.to_publication` validates on the way
+in, so as JSON one row looks like:
 
 ```json
 {
@@ -149,10 +154,15 @@ indexer reads the `publication` table with `thesis-matchmaker index --source db`
 src/thesis_matchmaker/zora/
 ├── config.py           # constants — API endpoint, field names, raw-cache path
 ├── zora_client.py      # thin wrapper around dspace_rest_client
-├── normalize.py        # raw DSpace item → flat publication dict
-├── output_schema.py    # THE file to edit when output shape changes
-├── store.py            # the only writer: publication + harvest_state
-├── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)
-└── schema/
-    └── zora_publication.schema.json
+├── normalize.py        # raw DSpace item → flat dict (publications, persons, org units)
+├── mapping.py          # flat dict → validated contracts model (edit for shape changes)
+├── raw_dump.py         # the data/raw/ JSONL cache, written per step
+├── entities.py         # the person + org_unit mirror steps (NOT runnable on its own)
+├── store.py            # the only writer: publication, harvest_state, person, org_unit
+└── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)
 ```
+
+The data models are **not** in this package — they live in
+`src/thesis_matchmaker/contracts/sources.py` (`ZoraPublication`, `ZoraPerson`,
+`ZoraOrgUnit`, `AuthorAuthority`), so the harvester and the indexer cannot drift
+apart.

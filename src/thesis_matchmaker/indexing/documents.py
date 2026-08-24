@@ -14,13 +14,15 @@ import re
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts import DegreeLevel, ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import DegreeLevel, ThesisPosting, ZoraPublication
 
 # The store keeps metadata in a jsonb column, so lists and maps are stored as
 # themselves. Filters are still flat equality over scalars -- that is all
 # retrieval asks for, and it maps onto one jsonb containment predicate.
+# The nested-dict variant exists solely for author_authority_map, whose values
+# are typed authorities ({"type": "cris"|"orcid", "id": ...}) or None.
 MetadataScalar = str | int | float | bool
-MetadataValue = MetadataScalar | list[str] | dict[str, str | None]
+MetadataValue = MetadataScalar | list[str] | dict[str, dict[str, str] | str | None]
 
 
 class Document(BaseModel):
@@ -74,7 +76,7 @@ def _build(
     return Document(id=doc_id, text=text, metadata=clean_meta, content_hash=content_hash)
 
 
-def zora_to_document(record: ZoraRecord) -> Document:
+def zora_to_document(record: ZoraPublication) -> Document:
     """Compose a publication into one embeddable document."""
     return _build(
         record.id,
@@ -82,12 +84,21 @@ def zora_to_document(record: ZoraRecord) -> Document:
         {
             "source_type": "publication",
             "department": record.department,
+            # The join key to `org_unit.collection_uuid`. `department` is the same
+            # unit as a display string; this is the one a query can group on
+            # without depending on how a collection happens to be named.
+            "owning_collection_uuid": record.owning_collection_uuid,
             "year": record.year,
             "language": record.language,
             "url": record.url,
             "authors": record.authors,
             "uzh_authors": record.uzh_authors,
-            "author_authority_map": record.author_authority_map,
+            # Dumped to plain dicts: metadata goes through json.dumps for the
+            # content hash, which does not serialize pydantic models.
+            "author_authority_map": {
+                name: (authority.model_dump() if authority else None)
+                for name, authority in record.author_authority_map.items()
+            },
             "keywords": record.keywords,
             # Query-time eligibility filter: only publications with at least one
             # registered UZH researcher can lead to a supervisor match. Kept as
