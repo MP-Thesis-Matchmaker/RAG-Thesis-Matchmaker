@@ -95,6 +95,7 @@ with its public API, data flow, configuration, and known gaps.
 
 | Package | What it does |
 |---|---|
+| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
 | [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to `publication`. |
 | [`scraper/`](src/thesis_matchmaker/scraper/README.md) | Scrapes thesis postings, profiles and application procedures from 103 UZH pages. Owns all writes to `posting`. |
@@ -103,7 +104,6 @@ with its public API, data flow, configuration, and known gaps.
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
 | [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | The application-service functions the adapters call. |
-| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
 
 Plus `cli.py`, `config.py` (pydantic-settings), and `llm.py` (OpenAI-compatible
 client).
