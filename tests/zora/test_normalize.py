@@ -238,22 +238,31 @@ def test_department_extracted_from_mapped_collections():
     assert record["department"] == "Department of Informatics"
 
 
-def test_uzh_authors_filters_by_authority_key():
-    """uzh_authors includes only authors with a non-null authority key."""
+def test_uzh_authors_admits_only_cris_authorities():
+    """uzh_authors holds authors with a CRIS Person UUID, not merely any authority.
+
+    The three authors are the three cases that exist upstream: no authority at
+    all, a CRIS Person UUID, and an ORCID placeholder. Only the middle one is a
+    registered UZH researcher.
+    """
     dso = FakeDSO(
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin", "Other, Bob"],
+            config.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin", "Foreign, Bob"],
         },
         authorities={
-            config.FIELD_AUTHOR: [None, "f45b3ec1-cf2a-43ae-85d4-528afff07a40", None],
+            config.FIELD_AUTHOR: [
+                None,
+                "f45b3ec1-cf2a-43ae-85d4-528afff07a40",
+                "will be referenced::ORCID::0000-0002-1825-0097",
+            ],
         },
     )
 
     record = normalize_item(dso)
 
-    assert record["authors"] == ["External, Alice", "Schmutzler, Armin", "Other, Bob"]
+    assert record["authors"] == ["External, Alice", "Schmutzler, Armin", "Foreign, Bob"]
     assert record["uzh_authors"] == ["Schmutzler, Armin"]
 
 
@@ -332,27 +341,90 @@ def test_author_authority_map_types_orcid_placeholder():
         "External, Alice": None,
         "Theile, Gudrun": {"type": "orcid", "id": "0000-0002-9454-3617"},
     }
-    assert record["uzh_authors"] == ["Theile, Gudrun"]
+    # Present in the map (full provenance) but NOT eligible: the marker says this
+    # item is not linked to a local Person, so the affiliation is unknown.
+    assert record["uzh_authors"] == []
 
 
-def test_author_authority_map_types_by_marker_not_id_shape():
-    """A cris entry stays cris even if its value looks nothing like a UUID.
+def test_a_marked_authority_stays_orcid_however_malformed_its_payload():
+    """The marker outranks the id's shape — the half of the rule that never moved.
 
-    Classification must come from DSpace's marker, never from pattern-matching
-    the id — 20 upstream ORCIDs are malformed and would misfile.
+    Upstream ORCIDs are frequently broken. If a malformed payload could demote a
+    marked entry to `cris`, those authors would become phantom UZH researchers,
+    which is exactly the failure the marker exists to prevent.
     """
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Odd, Case"]},
-        authorities={config.FIELD_AUTHOR: ["0000-0002-8070-773"]},  # truncated, no marker
+        fields={config.FIELD_AUTHOR: ["Broken, Bea"]},
+        authorities={config.FIELD_AUTHOR: ["will be referenced::ORCID::not-an-orcid-at-all"]},
     )
 
     record = normalize_item(dso)
 
     assert record["author_authority_map"] == {
-        "Odd, Case": {"type": "cris", "id": "0000-0002-8070-773"},
+        "Broken, Bea": {"type": "orcid", "id": "not-an-orcid-at-all"},
     }
+
+
+def test_an_unmarked_but_well_formed_orcid_is_typed_orcid():
+    """Shape decides when there is no marker, because `cris` is the wrong default there.
+
+    One real record does this (`20.500.14742/59205`): upstream omitted the marker,
+    so the old fall-through filed a bare ORCID as a CRIS Person id — a supervisor
+    candidate that joins to nothing in `person` and still counted as eligible.
+    """
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_AUTHOR: ["Phantom, Phil"]},
+        authorities={config.FIELD_AUTHOR: ["0000-0002-7695-501X"]},  # no marker
+    )
+
+    record = normalize_item(dso)
+
+    assert record["author_authority_map"] == {
+        "Phantom, Phil": {"type": "orcid", "id": "0000-0002-7695-501X"},
+    }
+    assert record["uzh_authors"] == []
+
+
+def test_an_unmarked_orcid_is_canonicalised_before_the_shape_test():
+    """A lowercase check digit is still an ORCID; testing the raw value would miss it."""
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_AUTHOR: ["Lower, Lena"]},
+        authorities={config.FIELD_AUTHOR: ["0000-0001-5644-045x"]},  # no marker, lowercase x
+    )
+
+    record = normalize_item(dso)
+
+    assert record["author_authority_map"] == {
+        "Lower, Lena": {"type": "orcid", "id": "0000-0001-5644-045X"},
+    }
+
+
+def test_a_cris_uuid_survives_the_shape_test_byte_for_byte():
+    """The regression the throwaway-variable design exists to prevent.
+
+    `_normalize_orcid` uppercases. A CRIS id is a lowercase-hex UUID and the
+    `person.uuid` join is exact, so normalising one in place would silently break
+    every author-to-researcher link in the corpus. The normalised value has to be
+    used as a *test* and then discarded.
+    """
+    uuid = "f45b3ec1-cf2a-43ae-85d4-528afff07a40"
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_AUTHOR: ["Real, Researcher"]},
+        authorities={config.FIELD_AUTHOR: [uuid]},
+    )
+
+    record = normalize_item(dso)
+
+    assert record["author_authority_map"] == {"Real, Researcher": {"type": "cris", "id": uuid}}
+    assert record["uzh_authors"] == ["Real, Researcher"]
 
 
 # --- owning_collection_uuid ---

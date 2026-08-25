@@ -294,13 +294,22 @@ def run(
             result.deleted,
         )
 
-    if not publications:
+    if publications:
+        exit_code = _harvest_publications(
+            client_factory, mode, since_override, limit, _publication_dump(dumps)
+        )
+        if exit_code != 0:
+            return exit_code
+    else:
         logger.info("Skipping the publication harvest%s", _because(replaying))
-        return 0
 
-    return _harvest_publications(
-        client_factory, mode, since_override, limit, _publication_dump(dumps)
-    )
+    # Last, and unconditionally on success: eligibility is derived from columns
+    # this run may have just rewritten, and from a `person` mirror it may have
+    # just refreshed. Running it here rather than inside the publication step is
+    # what makes `--no-publications` worth doing on its own -- a mirror refresh
+    # alone can change which authors qualify across the whole existing corpus.
+    store.reconcile_uzh_authors()
+    return 0
 
 
 def main() -> None:

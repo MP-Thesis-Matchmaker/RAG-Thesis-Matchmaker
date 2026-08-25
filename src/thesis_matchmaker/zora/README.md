@@ -71,6 +71,7 @@ The mirrors come first because they are what a publication's author authorities
 | `normalize_person(dso)` / `normalize_org_unit(...)` | `normalize.py` | Raw API objects → flat person / org-unit dicts. |
 | `to_person(record)` / `to_org_unit(record)` | `mapping.py` | Flat dicts → validated `contracts.ZoraPerson` / `ZoraOrgUnit` rows. |
 | `harvest_persons(client, limit)` / `harvest_org_units(client, limit)` | `entities.py` | One entity mirror each: fetch → normalize → dump → validate → snapshot write. Called by `harvest.run`; **not runnable on their own**. |
+| `reconcile_uzh_authors()` | `store.py` | Recomputes `uzh_authors` for every publication from `authors` + `author_authority_map`. Returns rows changed; idempotent. How an eligibility-rule change reaches the existing corpus without a re-harvest. |
 | `write_persons(rows)` / `write_org_units(rows)` | `store.py` | Snapshot-replace of the mirror tables (upsert + prune in one transaction). Refuse an empty snapshot over a non-empty table. |
 | `write_raw_dump(records, kind)` / `read_raw_dump(path)` | `raw_dump.py` | The per-step JSONL cache under `data/raw/`. Its own module because both `harvest.py` and `entities.py` write dumps. |
 | `dump_kind(path)` | `raw_dump.py` | Which step a dump feeds, read off its filename. Raises rather than guessing when the name says nothing. |
@@ -100,7 +101,7 @@ the retention check counts rows inside the same transaction.
 | `last_accessioned` | The watermark — highest `dc.date.accessioned` seen. |
 | `last_total_publications` | Row count after the last successful run; the retention check's baseline. |
 | `last_run_at` | Any successful run. |
-| `last_incremental_run_at` / `last_full_run_at` | Per-mode stamps. Both are stamped by a full run, because a full harvest supersedes an incremental one. Nothing reads them now that the CronJobs own the cadence, but they are not dead: a CronJob's own history records that a pod *fired*, whereas these record that a harvest *committed*, and the retention rail can roll a run back while the pod still exits 0. `schema.sql` calls them redundant — that comment is wrong, and is frozen in place because `schema.py` fingerprints the file's raw text, comments included. |
+| `last_incremental_run_at` / `last_full_run_at` | Per-mode stamps. Both are stamped by a full run, because a full harvest supersedes an incremental one. Nothing reads them now that the CronJobs own the cadence, but they are not dead: a CronJob's own history records that a pod *fired*, whereas these record that a harvest *committed*, and the retention rail can roll a run back while the pod still exits 0. `schema.sql` used to call them redundant; that comment was wrong and stayed wrong while a fix cost a full reset, and was corrected once `schema.py` began fingerprinting the DDL rather than the file. |
 
 ### Incremental harvesting
 
@@ -292,6 +293,13 @@ without the indexer noticing. The DSpace field names are all isolated in
   `config.py`, and shows per-author `authority` keys. Run with
   `export ZORA_UZH_API_KEY=... && python -m scripts.zora_inspect_fields 5`.
   Use it before changing any `FIELD_*` constant.
+- **`scripts/zora_authority_audit.py`** — measures the candidate `uzh_authors`
+  eligibility rules (first Known gap below) against the harvested corpus, so the
+  rule is chosen from data rather than from estimates. Postgres only: no API, no
+  token, and it writes nothing but a session-scoped TEMP table. Needs the current
+  schema *and* a completed `--mode full` run, since it reads
+  `author_authority_map`, `owning_collection_uuid` and the `person` mirror.
+  Run with `python -m scripts.zora_authority_audit`.
 
 ## Field mapping
 
@@ -376,67 +384,85 @@ behaviour, so the untested surface went away without anything new being verified
 
 ## Known gaps
 
-- **`uzh_authors` admits non-UZH co-authors, so most of what we index carries no UZH
-  person at all.** `_get_uzh_authors` accepts any non-empty `authority`.
-  DSpace-CRIS stores two different kinds of value there: a bare UUID is a CRIS
-  Person record — an actual UZH researcher — while `will be referenced::ORCID::…`
-  means the authority does **not** resolve to a local Person, i.e. an author of
-  unknown affiliation whose ORCID happens to be known. An ORCID is a global
-  identifier; every researcher on earth can have one. *The data-loss half of this
-  gap is fixed as of 2026-08-24*: `_typed_authority` preserves the marker as
-  `{"type": "cris"|"orcid", "id": …}` in `author_authority_map`, and the `person`
-  / `org_unit` mirrors give the cris ids something to resolve against. What
-  remains open is the **eligibility rule itself** — `uzh_authors` (and with it
-  the index-time and query-time filters) still uses any-authority. Measured on
-  the full 214,685-record harvest (2026-08-21):
+- **`uzh_authors` now means "registered UZH researcher"** — resolved 2026-08-25.
+  `_get_uzh_authors` used to admit any non-empty `authority`, conflating the two
+  kinds DSpace-CRIS stores there: a bare UUID is a CRIS Person record (an actual UZH
+  researcher), while `will be referenced::ORCID::…` means DSpace did not link *this
+  item* to a local Person. An ORCID is a global identifier; every researcher on earth
+  can have one. The defect was visible in output — a `match` on medical imaging
+  returned Oxford, Birmingham and Belfast co-authors of a single UZH paper as
+  candidate supervisors.
 
-  | | |
-  |---|---:|
-  | publications with any authority — what `cardinality(uzh_authors) > 0` selects | 91,668 |
-  | of those, with at least one CRIS Person UUID | 53,511 |
-  | **with authorities but ORCID-only: no UZH person on the record** | **38,157** |
-  | distinct names the current rule presents as eligible supervisors | **58,092** |
-  | distinct names holding a CRIS UUID | 2,941 |
-  | names seen both ways (UUID on one record, ORCID on another) | 55 |
-
-  58,092 eligible supervisors is not a plausible figure for one university, and only
-  55 names appear both ways — so the authority kind is a property of the person, not
-  an artefact of the record. The defect is visible in output: a `match` on medical
-  imaging returned Oxford, Birmingham and Belfast co-authors of a single UZH paper as
-  candidate supervisors, which is exactly what the UZH filter exists to prevent.
-
-  **Requiring a UUID is not simply the fix**, which is why this is still open. ZORA
-  exposes only ~2,016 Person entities, so CRIS coverage is sparse and "no UUID" does
-  not mean "not UZH": ~5,800 sole-author publications sit in genuine org-unit
-  collections (Institute of Psychology 375, Theology 316, Education 257, Political
-  Science 239) — single-author humanities output by UZH staff with no CRIS record.
-  Dissertations are only 1,235 of the 38,157, so the excluded population is not
-  mostly students. Candidate rules, measured:
+  Measured over the whole 214,756-record corpus with
+  `scripts/zora_authority_audit.py`:
 
   | rule | publications | eligible names |
   |---|---:|---:|
-  | any authority (today) | 91,668 | 58,092 |
-  | require a CRIS Person UUID | 53,511 | 2,941 |
-  | UUID, or sole-authored in an org-unit collection | 58,082 | 4,059 |
+  | any authority (the bug) | 91,729 | 58,218 |
+  | **cris-typed only (adopted)** | **53,544** | **2,943** |
+  | cris, or ORCID resolving in `person` | 53,544 | 2,943 |
+  | cris/ORCID, or sole-author in an org collection | 108,258 | 22,964 |
+  | the above minus dissertations | 94,721 | 11,085 |
 
-  The honest reading of an ORCID-only author is **unknown affiliation**, not
-  *external*, so what to do with unknown is a product decision rather than a bug fix:
-  exclude it, admit it under the sole-author rule, or index both and let `ranking`
-  prefer UUID-backed candidates. Every candidate rule is now computable from the
-  persisted typed map. Whatever is decided propagates:
-  `indexing/sources.py` no longer filters at all (since 2026-08-25 the whole corpus
-  is indexed), and `retrieval/vector.py` filters on `has_uzh_author` only when
-  `RETRIEVAL_REQUIRE_UZH_AUTHOR` is set — so whatever is decided is a settings and
-  ranking question now, not a re-index. Measured on the 2026-08-25 harvest: 91,734
-  publications pass the current any-authority rule but only 53,544 carry a
-  CRIS-backed author, so ~38,190 qualify on an ORCID placeholder alone. Both loose ends are now measured against the typed map:
-  **1,807 of 1,970 distinct cris-typed ids (91.7%) resolve in `person`**, so ~163 name
-  something the Person entity query does not expose; and exactly **one** cris-typed
-  entry holds a bare ORCID rather than a UUID (`0000-0002-7695-501X`, on
-  `20.500.14742/59205`) — upstream omitted the marker there, and classifying by shape
-  instead would misfile far more than it fixed, so it stays as-is. The 20 malformed
-  ORCID **values** are gone: `_normalize_orcid` canonicalises them at harvest and the
-  existing rows were backfilled on 2026-08-25.
+  Two candidates died on the numbers. **Resolving ORCIDs against the mirror adds
+  nothing**: 0 of 51,226 distinct ORCID authorities match any of the 1,990 populated
+  `person.orcid` values — which is exactly what the marker asserts, so the two
+  populations are disjoint by construction rather than by accident. (A digits-only
+  comparison finds 2, a formatting artefact fixed by `_normalize_orcid`, which
+  canonicalises at harvest; the 20 malformed values were backfilled the same day.)
+  And the **"sole-author in an org-unit collection" clause does not discriminate**:
+  all 214,756 publications join an org unit and none lacks an
+  `owning_collection_uuid`, so the clause selects everything and the rule collapses
+  to "sole-authored" — which admits *more* records than the bug it was meant to
+  replace, including an entire `UZH Dissertations` collection (1,809 publications,
+  1,809 names, all dissertations) and non-persons such as `RAPID Consensus ISLS 2023
+  Zurich Collabo`.
+
+  Adopting the strict rule was safe only because excluding is no longer the cost it
+  was. Since `8590d7c` the whole corpus is indexed, `RETRIEVAL_REQUIRE_UZH_AUTHOR`
+  defaults off, and `vector.py::_persons` falls back to `authors` — so a narrower
+  `uzh_authors` **demotes rather than excludes**. The ~38,190 records that lost their
+  ORCID-only entries stay searchable and stay creditable, ranked below CRIS-backed
+  candidates by `uzh_first`.
+
+  Applied in two places, because they fix different populations:
+  `normalize._get_uzh_authors` decides eligibility for records a harvest is writing,
+  and `store.reconcile_uzh_authors()` recomputes the column for records already
+  stored — `authors` plus `author_authority_map` are a complete input for the rule,
+  so a rule change reaches 215k rows in seconds instead of costing a re-harvest.
+  `harvest.run` calls it at the end of every run, `--no-publications` included.
+
+  The rule is a shade wider than "cris-typed", and deliberately so.
+  `reconcile_uzh_authors` also admits an **ORCID-typed authority whose ORCID matches
+  a harvested `person` row** — the marker says DSpace did not link *that item* to a
+  Person, which is not the same as no Person existing. `normalize` cannot make that
+  call (one item at a time, no database); the reconciliation can, and running last
+  in every harvest is what keeps the column at the wider rule. Measured 2026-08-25:
+  **2 publications, 0 additional names** — both researchers already qualify through
+  CRIS-typed entries elsewhere, so it adds evidence to existing candidates rather
+  than new ones. A floor rather than a ceiling: it grows on its own as ZORA links
+  more ORCIDs, with no code change and no re-harvest.
+
+  Corpus after the change: **53,545 of 214,756 publications (24.9%), 2,942 distinct
+  names**, against 91,734 and 58,218 under the old rule.
+
+  Residual, all small and all measured:
+  - **1,807 of 1,969 distinct cris-typed ids (91.8%) resolve in `person`.** The other
+    ~162 name something the Person entity query does not expose, and still count as
+    eligible.
+  - **The unmarked bare ORCID is fixed** (`0000-0002-7695-501X` on
+    `20.500.14742/59205` — Amsler, Claude). Upstream omitted the marker, so the old
+    unconditional `cris` fall-through made it a phantom researcher joining to nothing
+    in `person`. `_typed_authority` now lets shape decide *unmarked* values only: it
+    tests a `_normalize_orcid` throwaway and stores the original, so a lowercase-hex
+    Person UUID can never be uppercased into a broken join. The marker still wins
+    wherever it exists, so a malformed marked payload is never demoted to `cris`.
+    Stored rows were repaired by `scripts/backfill_orcid_authorities.py`, which is
+    also why **0 malformed ORCID values** now remain (was 20).
+  - **2,942 eligible names resolve to only 1,969 distinct ids**, so ~49% of candidate
+    names are spelling variants of someone already counted. `_group_by_person` keys
+    on the display string, so `person` remains a table nothing reads. That is the
+    person-keying work, not this gap.
 - **A dump can never repopulate a field the normalizer did not extract when it was
   written.** The 2026-08-24 schema change (`person`, `org_unit`,
   `owning_collection_uuid`, the typed `author_authority_map`) was applied on

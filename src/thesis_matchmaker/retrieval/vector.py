@@ -113,9 +113,18 @@ class VectorRetriever:
         Publications fall back from `uzh_authors` to `authors`. Without that fallback
         the whole permissive default is inert: a publication with no UZH author
         credits nobody, so it is grouped into nothing and vanishes after being
-        embedded and retrieved. 118,110 of the corpus's 123,022 unaffiliated
+        embedded and retrieved. 156,300 of the corpus's 161,212 unaffiliated
         publications name authors and become reachable this way; the remaining 4,912
         name nobody at all and stay unreachable, because there is no one to credit.
+
+        Those totals grew on 2026-08-25, when `uzh_authors` narrowed to CRIS-backed
+        authors only: unaffiliated went from 123,022 to 161,212. So this fallback
+        carries more weight than it used to, and it changes who gets credited on the
+        records that moved. Where a publication's only authorities were ORCIDs,
+        `uzh_authors` is now empty, so *every* author is credited rather than only
+        the ORCID-holders. That is intended -- they are all equally of unknown
+        affiliation and all land in the demoted tier -- but the credited set on those
+        records is genuinely wider than before, not merely re-ranked.
         """
         if hit.metadata["source_type"] == "thesis_posting":
             return VectorRetriever._names(hit, "supervisors")

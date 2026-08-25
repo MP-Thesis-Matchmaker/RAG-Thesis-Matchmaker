@@ -53,6 +53,13 @@ def _strip_orcid_url(raw: str) -> str:
 # end, so trailing junk (a stray full stop) falls off instead of failing the match.
 _ORCID_RE = re.compile(r"^(\d{4}-\d{4}-\d{4}-\d{3})([\dX]?)")
 
+# The same shape, but whole and with the check digit required. `_ORCID_RE` is
+# deliberately loose -- start-anchored, check digit optional -- because it parses a
+# value already known to be an ORCID. Deciding whether an *unmarked* value is one
+# needs the strict form: it is the only test standing between a bare ORCID and
+# being filed as a CRIS Person id.
+_ORCID_CANONICAL_RE = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
+
 
 def _orcid_checksum(fifteen: str) -> str:
     """The 16th ORCID character, derived from the first 15 digits (ISO 7064 MOD 11-2).
@@ -154,10 +161,29 @@ def _get_owning_collection(dso: Any) -> tuple[str | None, str | None]:
 def _get_uzh_authors(dso: Any) -> list[str]:
     """Return only those authors who have a CRIS authority key (= UZH researchers).
 
-    External co-authors have authority=None in the metadata entry and are excluded.
+    An ORCID-typed authority does NOT qualify. The marker says this *item* is not
+    linked to a local Person, so the author's affiliation is unknown rather than
+    confirmed -- and an ORCID is a global identifier that every researcher on
+    earth can hold. Accepting any authority made 58,218 names supervisor-eligible
+    against 2,943 CRIS-backed ones (measured over the whole corpus 2026-08-25),
+    and put Oxford and Belfast co-authors of single UZH papers in front of
+    students as candidate supervisors.
+
+    Excluded is not dropped: those authors stay in `author_authority_map`, their
+    publications stay indexed, and `retrieval` still credits them through its
+    `authors` fallback. What changes is rank, not reachability -- `has_uzh_author`
+    becomes truthful, so `uzh_first` sorts them below actual UZH researchers.
+
+    Classification goes through `_typed_authority` rather than re-testing the
+    marker here, so the two can never disagree about what an authority means.
     """
     raw = dso.get_metadata_values(config.FIELD_AUTHOR)
-    return [entry["value"] for entry in raw if entry.get("value") and entry.get("authority")]
+    return [
+        entry["value"]
+        for entry in raw
+        if entry.get("value")
+        and (_typed_authority(entry.get("authority")) or {}).get("type") == "cris"
+    ]
 
 
 def _typed_authority(authority: str | None) -> dict | None:
@@ -166,32 +192,47 @@ def _typed_authority(authority: str | None) -> dict | None:
     DSpace-CRIS stores two different things in `authority`:
       - a bare value is a CRIS Person item UUID — an actual researcher record
         that resolves in the `person` table;
-      - 'will be referenced::ORCID::<orcid>' means the authority does NOT
-        resolve to a local Person: the ORCID is known but the affiliation is
-        not.
+      - 'will be referenced::ORCID::<orcid>' means DSpace did not link THIS
+        item to a local Person: the ORCID is known but the affiliation is not.
+        Record-level, not person-level -- a Person entity carrying the same
+        ORCID can still exist, so this must not be read as "no CRIS record
+        exists for this human".
 
-    The marker is the primary signal, and an id's *shape* is never used as one:
-    upstream ORCIDs are frequently malformed (a stripped check digit, a trailing
-    full stop), so a strict pattern test would fail exactly the broken ones and
-    file them as CRIS researchers who resolve to nobody.
+    **The marker wins wherever it exists; shape decides only where there is none.**
+    A marked value stays `orcid` however broken its payload: upstream ORCIDs are
+    frequently malformed, and letting a bad payload demote one to `cris` would file
+    it as a researcher who resolves to nobody.
 
-    An explicit orcid.org URL is the one other signal that is trusted, and it is
-    not a shape inference — the value says what it is, and a CRIS UUID can never
-    take that form. Every URL seen so far arrived *with* the marker, so this
-    branch is defensive rather than load-bearing (0 rows in the 2026-08-25
-    corpus). It exists because the failure it prevents is silent: an unmarked URL
-    typed as `cris` becomes a phantom UZH researcher that joins to nothing in
-    `person` and still counts toward eligibility.
+    Where no marker exists, `cris` used to be the unconditional default, and that
+    was the same bug pointing the other way. One real record
+    (`20.500.14742/59205`) carries a bare `0000-0002-7695-501X` with the marker
+    omitted upstream, so a plain ORCID was filed as a Person id — a supervisor
+    candidate that joins to nothing in `person` and still counted toward
+    eligibility. An explicit orcid.org URL was already trusted for exactly this
+    reason; a canonical ORCID declares itself just as plainly.
+
+    Deciding that by shape is safe in one direction only, which is why the test is
+    written the way it is. `_normalize_orcid` uppercases, while a CRIS id is a
+    lowercase-hex UUID that `person.uuid` is joined on exactly — so its output is
+    used as a *test* and then discarded, never stored unless the value really is an
+    ORCID. A UUID cannot pass that test in any case: `_ORCID_RE` needs a hyphen at
+    index 4 and a UUID's first group is eight hex characters, so the two shapes are
+    disjoint rather than merely unlikely to collide.
     """
     if not authority:
         return None
     prefix = "will be referenced::ORCID::"
     if authority.startswith(prefix):
         return {"type": "orcid", "id": _normalize_orcid(authority[len(prefix) :])}
+    # Ahead of the shape test: a URL carrying a malformed payload normalizes to
+    # itself and would fail it. The URL is a declaration, not an inference.
     if _is_orcid_url(authority):
         return {"type": "orcid", "id": _normalize_orcid(authority)}
-    # NOT normalized: a CRIS id is a lowercase-hex UUID that joins to person.uuid,
-    # and _normalize_orcid uppercases. Running it here would corrupt every one.
+    canonical = _normalize_orcid(authority)
+    if _ORCID_CANONICAL_RE.fullmatch(canonical):
+        return {"type": "orcid", "id": canonical}
+    # `authority`, not `canonical` -- this is the branch where the throwaway is
+    # thrown away, and storing the uppercased form would break the person.uuid join.
     return {"type": "cris", "id": authority}
 
 

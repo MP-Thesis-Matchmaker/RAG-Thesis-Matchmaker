@@ -303,3 +303,120 @@ def test_write_org_units_is_idempotent(clean_db: str) -> None:
     store.write_org_units(rows, dsn=clean_db)
     again = store.write_org_units(rows, dsn=clean_db)
     assert (again.total, again.deleted, again.aborted) == (2, 0, False)
+
+
+def test_reconcile_uzh_authors_keeps_only_cris_backed_authors(clean_db: str) -> None:
+    """The rule is recomputed from what is stored, with author order preserved.
+
+    This is what lets an eligibility change reach the existing corpus without a
+    re-harvest: `authors` plus `author_authority_map` are a complete input.
+    """
+    _write(
+        clean_db,
+        [
+            _row(
+                "mixed",
+                authors=["Cris, Clara", "Orcid, Otto", "Nobody, Nina", "Cris, Carl"],
+                # Deliberately wrong on the way in -- the any-authority rule this
+                # replaces would have written exactly this.
+                uzh_authors=["Cris, Clara", "Orcid, Otto", "Cris, Carl"],
+                author_authority_map={
+                    "Cris, Clara": {"type": "cris", "id": "uuid-clara"},
+                    "Orcid, Otto": {"type": "orcid", "id": "0000-0002-1825-0097"},
+                    "Nobody, Nina": None,
+                    "Cris, Carl": {"type": "cris", "id": "uuid-carl"},
+                },
+            ),
+            _row(
+                "orcid-only",
+                authors=["Orcid, Olga"],
+                uzh_authors=["Orcid, Olga"],
+                author_authority_map={
+                    "Orcid, Olga": {"type": "orcid", "id": "0000-0003-1111-1111"}
+                },
+            ),
+        ],
+        mode="full",
+    )
+
+    assert store.reconcile_uzh_authors(dsn=clean_db) == 2
+
+    with db.connection(clean_db) as conn:
+        rows = dict(conn.execute("SELECT id, uzh_authors FROM publication").fetchall())
+
+    # Order follows `authors`, not the jsonb key order the map would have given.
+    assert rows["mixed"] == ["Cris, Clara", "Cris, Carl"]
+    assert rows["orcid-only"] == []
+
+
+def test_reconcile_uzh_authors_resolves_an_orcid_against_the_person_mirror(
+    clean_db: str,
+) -> None:
+    """An ORCID-typed authority still counts when it names a harvested Person.
+
+    DSpace's marker is a statement about the *record* -- "this item is not linked
+    to a local Person" -- not about the human. Where the mirror holds someone with
+    that ORCID, they are a UZH researcher whatever the record says. `normalize`
+    cannot see this (no database at fetch time), which is why it lands here.
+    """
+    store.write_persons(
+        [
+            {
+                "uuid": "uuid-known",
+                "display_name": "Known, Kim",
+                "family_name": "Known",
+                "given_name": "Kim",
+                "orcid": "0000-0002-1825-0097",
+                "handle": None,
+                "url": None,
+                "accessioned": None,
+            }
+        ],
+        dsn=clean_db,
+    )
+    _write(
+        clean_db,
+        [
+            _row(
+                "resolves",
+                authors=["Known, Kim", "Stranger, Sam"],
+                uzh_authors=[],
+                author_authority_map={
+                    # Same person, referenced by ORCID rather than by Person UUID.
+                    "Known, Kim": {"type": "orcid", "id": "0000-0002-1825-0097"},
+                    # An ORCID the mirror has never seen: unknown affiliation.
+                    "Stranger, Sam": {"type": "orcid", "id": "0000-0003-9999-9999"},
+                },
+            )
+        ],
+        mode="full",
+    )
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+
+    with db.connection(clean_db) as conn:
+        eligible = conn.execute("SELECT uzh_authors FROM publication").fetchone()[0]
+
+    assert eligible == ["Known, Kim"]
+
+
+def test_reconcile_uzh_authors_is_idempotent(clean_db: str) -> None:
+    """A second run changes nothing, because the UPDATE skips already-correct rows."""
+    _write(clean_db, [_row("a"), _row("b")], mode="full")
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+    assert store.reconcile_uzh_authors(dsn=clean_db) == 0
+
+
+def test_reconcile_uzh_authors_leaves_authorless_publications_alone(clean_db: str) -> None:
+    """No authors at all yields an empty array rather than a NULL or a crash."""
+    _write(
+        clean_db,
+        [_row("empty", authors=[], uzh_authors=[], author_authority_map={})],
+        mode="full",
+    )
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+
+    with db.connection(clean_db) as conn:
+        assert conn.execute("SELECT uzh_authors FROM publication").fetchone()[0] == []
