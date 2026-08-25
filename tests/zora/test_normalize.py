@@ -596,6 +596,30 @@ def test_an_unrecognisable_orcid_is_preserved_not_blanked() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "https://orcid.org/0009-0005-4380-7204",
+        "http://orcid.org/0009-0005-4380-7204",
+        # Malformed payload behind the prefix: still unambiguously an ORCID, and
+        # still repaired. The URL is the declaration; the shape is not consulted.
+        "https://orcid.org/0000-0002-8070-773",
+    ],
+)
+def test_an_unmarked_orcid_url_is_still_typed_orcid(raw: str) -> None:
+    """Defensive branch: an orcid.org URL declares itself, marker or no marker.
+
+    Every URL observed so far carried the marker too, so this changes no existing
+    row. It exists because the alternative failure is silent -- an unmarked URL
+    typed `cris` is a phantom UZH researcher that resolves to nobody in `person`
+    and still counts toward eligibility.
+    """
+    result = _authority_map(raw)
+
+    assert result["type"] == "orcid"
+    assert not result["id"].startswith("http")
+
+
 def test_a_cris_authority_is_never_orcid_normalised() -> None:
     """The one constraint that would corrupt the corpus if it were wrong.
 

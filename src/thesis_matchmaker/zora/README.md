@@ -337,6 +337,16 @@ a wrong ORCID attributed to a named researcher. All three real cases (`773`, `16
 **cris ids never go through it.** They are lowercase-hex UUIDs joining to
 `person.uuid`, and the pipeline uppercases; running it there would break every join.
 
+Classification uses two signals, never an id's shape. The
+`will be referenced::ORCID::` marker is the primary one. An explicit `orcid.org`
+URL is the second, and it is not a shape inference — the value declares what it is,
+and a CRIS UUID can never take that form. That branch is defensive: every URL seen
+so far arrived with the marker as well (0 rows in the 2026-08-25 corpus depend on
+it), but the failure it prevents is silent — an unmarked URL typed `cris` is a
+phantom UZH researcher that resolves to nobody in `person` while still counting
+toward eligibility. Shape itself stays untrusted because upstream ORCIDs are often
+malformed, so a strict pattern test would misfile exactly the broken ones.
+
 Rows harvested before this landed were repaired by
 `scripts/backfill_orcid_authorities.py`, which calls the same function rather than
 re-implementing the rule in SQL.

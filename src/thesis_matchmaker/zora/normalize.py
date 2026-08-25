@@ -26,12 +26,25 @@ def _values(dso: Any, field: str) -> list[str]:
     return [entry["value"] for entry in raw if entry.get("value")]
 
 
+_ORCID_URL_PREFIXES = ("https://orcid.org/", "http://orcid.org/")
+
+
+def _is_orcid_url(raw: str) -> bool:
+    """Whether a value declares itself an ORCID by being an orcid.org URL.
+
+    Not the same as inferring from an id's shape, which `_typed_authority`
+    refuses to do: a CRIS Person UUID can never take this form, so there is
+    nothing to infer. Whether the payload after the prefix is well-formed is
+    `_normalize_orcid`'s problem, not this function's.
+    """
+    return raw.startswith(_ORCID_URL_PREFIXES)
+
+
 def _strip_orcid_url(raw: str) -> str:
     """UZH stores ORCIDs as full URLs (https://orcid.org/0000-...); strip to a bare ID."""
-    if raw.startswith("https://orcid.org/"):
-        return raw[len("https://orcid.org/") :]
-    if raw.startswith("http://orcid.org/"):
-        return raw[len("http://orcid.org/") :]
+    for prefix in _ORCID_URL_PREFIXES:
+        if raw.startswith(prefix):
+            return raw[len(prefix) :]
     return raw
 
 
@@ -150,20 +163,33 @@ def _get_uzh_authors(dso: Any) -> list[str]:
 def _typed_authority(authority: str | None) -> dict | None:
     """Classify a raw authority value into {"type": "cris"|"orcid", "id": ...}.
 
-    DSpace-CRIS stores two different things in `authority`, and the marker is
-    the only reliable way to tell them apart:
+    DSpace-CRIS stores two different things in `authority`:
       - a bare value is a CRIS Person item UUID — an actual researcher record
         that resolves in the `person` table;
       - 'will be referenced::ORCID::<orcid>' means the authority does NOT
         resolve to a local Person: the ORCID is known but the affiliation is
-        not. Upstream ORCIDs are frequently malformed, so classifying by id shape
-        instead of by this marker would misfile them.
+        not.
+
+    The marker is the primary signal, and an id's *shape* is never used as one:
+    upstream ORCIDs are frequently malformed (a stripped check digit, a trailing
+    full stop), so a strict pattern test would fail exactly the broken ones and
+    file them as CRIS researchers who resolve to nobody.
+
+    An explicit orcid.org URL is the one other signal that is trusted, and it is
+    not a shape inference — the value says what it is, and a CRIS UUID can never
+    take that form. Every URL seen so far arrived *with* the marker, so this
+    branch is defensive rather than load-bearing (0 rows in the 2026-08-25
+    corpus). It exists because the failure it prevents is silent: an unmarked URL
+    typed as `cris` becomes a phantom UZH researcher that joins to nothing in
+    `person` and still counts toward eligibility.
     """
     if not authority:
         return None
     prefix = "will be referenced::ORCID::"
     if authority.startswith(prefix):
         return {"type": "orcid", "id": _normalize_orcid(authority[len(prefix) :])}
+    if _is_orcid_url(authority):
+        return {"type": "orcid", "id": _normalize_orcid(authority)}
     # NOT normalized: a CRIS id is a lowercase-hex UUID that joins to person.uuid,
     # and _normalize_orcid uppercases. Running it here would corrupt every one.
     return {"type": "cris", "id": authority}
