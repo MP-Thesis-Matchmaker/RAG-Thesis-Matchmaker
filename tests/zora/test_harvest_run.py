@@ -14,7 +14,7 @@ import os
 
 import pytest
 
-from thesis_matchmaker import db
+from thesis_matchmaker import db, schema
 from thesis_matchmaker.zora import config, entities, harvest, store, zora_client
 
 from .fake_dso import FakeDSO
@@ -45,6 +45,10 @@ class _Spy:
         # publication's authorities and owning collection resolve against.
         self.steps: list[str] = []
         self.entity_limits: list[int | None] = []
+        # Which dump each entity step was handed, if any -- the replay path passes
+        # a path and no client, so this is where "no API request" is observable.
+        self.entity_dumps: list[str | None] = []
+        self.entity_clients: list[object] = []
         self.aborted_step: str | None = None
 
     def load_state(self, dsn: str | None = None) -> store.HarvestState:
@@ -61,9 +65,11 @@ class _Spy:
         self.save_calls.append((last_accessioned, total, mode))
 
     def _entity_step(self, name: str):
-        def step(client, limit=None) -> store.EntityWriteResult:
+        def step(client, limit=None, from_dump=None) -> store.EntityWriteResult:
             self.steps.append(name)
             self.entity_limits.append(limit)
+            self.entity_dumps.append(from_dump)
+            self.entity_clients.append(client)
             return store.EntityWriteResult(
                 total=2, upserted=2, deleted=0, aborted=self.aborted_step == name
             )
@@ -91,6 +97,10 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
         lambda client, since=None: iter([_dso("123/1"), _dso("123/2", accessioned="2026-02-02")]),
     )
     monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
+    # The preflight is the one part of `run()` that needs a real database. It has
+    # its own tests in tests/test_schema.py; here it would only mean every
+    # orchestration test required Postgres.
+    monkeypatch.setattr(schema, "require_current", lambda dsn: None)
     return s
 
 
@@ -152,7 +162,7 @@ def test_an_entity_step_failure_surfaces_as_a_clean_exit(
 ) -> None:
     """A broken tree walk raises RuntimeError; main turns it into exit 1, no traceback."""
 
-    def boom(client, limit=None):
+    def boom(client, limit=None, from_dump=None):
         raise RuntimeError("Failed to fetch .../subcommunities page 0")
 
     monkeypatch.setattr(entities, "harvest_org_units", boom)
@@ -314,8 +324,15 @@ def test_from_dump_replays_without_contacting_zora(
     assert spy.write_calls[0]["previous_total"] == 22541
 
 
-def test_from_dump_implies_no_entity_steps(spy: _Spy, dump: str, monkeypatch) -> None:
-    """A replay exists to avoid the API; fetching 2,500 entity records would defeat it."""
+def test_a_lone_publication_dump_runs_only_the_publication_step(
+    spy: _Spy, dump: str, monkeypatch
+) -> None:
+    """A replay exists to avoid the API; fetching 2,500 entity records would defeat it.
+
+    The general rule is "a step with a dump replays it, a step without one is
+    skipped". This is its most common case, and the one that has to keep behaving
+    exactly as it did before dumps became repeatable.
+    """
     monkeypatch.setattr(db, "close_pools", lambda: None)
     monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--from-dump", dump])
 
@@ -324,6 +341,106 @@ def test_from_dump_implies_no_entity_steps(spy: _Spy, dump: str, monkeypatch) ->
 
     assert exc.value.code == 0
     assert spy.steps == ["publications"]
+
+
+# ---------------------------------------------------------------------------
+# Several dumps at once: routing by kind
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def persons_dump(tmp_path) -> str:
+    path = tmp_path / "20260825T091305Z_persons.jsonl"
+    path.write_text(
+        json.dumps({"uuid": "p1", "display_name": "Doe, Jane"}) + "\n", encoding="utf-8"
+    )
+    return str(path)
+
+
+def test_a_persons_dump_replays_only_that_mirror(spy: _Spy, persons_dump: str) -> None:
+    """The case the stranded 2,018-record dump could not be loaded for."""
+    assert harvest.run("full", from_dump=persons_dump) == 0
+    assert spy.steps == ["persons"]
+    # The path reached the step, and no client was built for it.
+    assert spy.entity_dumps == [persons_dump]
+    assert spy.entity_clients == [None]
+
+
+def test_two_dumps_replay_two_steps_and_skip_the_third(
+    spy: _Spy, persons_dump: str, dump: str
+) -> None:
+    assert harvest.run("full", from_dump={"persons": persons_dump, "full": dump}) == 0
+    assert spy.steps == ["persons", "publications"]
+
+
+def test_dumps_that_feed_no_enabled_step_is_a_failure_not_a_silent_pass(
+    spy: _Spy, persons_dump: str
+) -> None:
+    """Exit 1 rather than 0: the operator asked for work that did not happen."""
+    assert harvest.run("full", from_dump=persons_dump, persons=False) == 1
+    assert spy.steps == []
+
+
+def test_a_dump_for_a_disabled_step_is_a_usage_error(
+    spy: _Spy, persons_dump: str, monkeypatch
+) -> None:
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", persons_dump, "--no-persons"])
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 2
+    assert spy.steps == []
+
+
+def test_two_dumps_of_one_kind_is_a_usage_error(spy: _Spy, tmp_path, monkeypatch) -> None:
+    """A step replays one file, so two candidates is a question only the operator can settle."""
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    first = _write_dump(tmp_path / "a_full.jsonl", [_record("123/1")])
+    second = _write_dump(tmp_path / "b_full.jsonl", [_record("123/2")])
+    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", first, "--from-dump", second])
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 2
+
+
+def test_an_unroutable_name_is_rejected_and_dump_kind_fixes_it(
+    spy: _Spy, tmp_path, monkeypatch
+) -> None:
+    """A renamed or hand-copied dump: guessing would defer the failure, not avoid it."""
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    path = _write_dump(tmp_path / "copy.jsonl", [_record("123/1")])
+
+    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", path])
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+    assert exc.value.code == 2
+    assert spy.steps == []
+
+    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", path, "--dump-kind", "full"])
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+    assert exc.value.code == 0
+    assert spy.steps == ["publications"]
+
+
+def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> None:
+    """One override cannot name the kind of two files."""
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    first = _write_dump(tmp_path / "a_full.jsonl", [_record("123/1")])
+    second = _write_dump(tmp_path / "b_persons.jsonl", [_record("123/2")])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["harvest", "--from-dump", first, "--from-dump", second, "--dump-kind", "full"],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        harvest.main()
+
+    assert exc.value.code == 2
 
 
 def test_from_dump_does_not_write_another_raw_dump(spy: _Spy, dump: str) -> None:
@@ -355,7 +472,8 @@ def test_watermark_is_the_last_record_seen_not_the_maximum(spy: _Spy, tmp_path) 
             _record("123/2", accessioned="2026-01-01T00:00:00Z"),
         ],
     )
-    assert harvest.run("full", from_dump=path) == 0
+    # Named for what it tests, not for a harvest step, so the kind is explicit.
+    assert harvest.run("full", from_dump={"full": path}) == 0
     assert spy.save_calls == [("2026-01-01T00:00:00Z", 2, "full")]
 
 
@@ -370,7 +488,7 @@ def test_from_dump_skips_records_without_a_handle(spy: _Spy, tmp_path) -> None:
         tmp_path / "dump.jsonl",
         [_record("123/1"), {**_record("ignored"), "handle": None}, _record("123/3")],
     )
-    assert harvest.run("full", from_dump=path) == 0
+    assert harvest.run("full", from_dump={"full": path}) == 0
     assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/3"]
 
 
@@ -380,7 +498,7 @@ def test_from_dump_tolerates_blank_lines(spy: _Spy, tmp_path) -> None:
         json.dumps(_record("123/1")) + "\n\n" + json.dumps(_record("123/2")) + "\n",
         encoding="utf-8",
     )
-    assert harvest.run("full", from_dump=str(path)) == 0
+    assert harvest.run("full", from_dump={"full": str(path)}) == 0
     assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/2"]
 
 
@@ -415,7 +533,7 @@ def test_missing_dump_fails_cleanly_without_a_traceback(
     """A typo'd path is a config mistake, so it gets the RuntimeError treatment."""
     monkeypatch.setattr(db, "close_pools", lambda: None)
     monkeypatch.setattr(
-        "sys.argv", ["harvest", "--mode", "full", "--from-dump", str(tmp_path / "nope.jsonl")]
+        "sys.argv", ["harvest", "--mode", "full", "--from-dump", str(tmp_path / "nope_full.jsonl")]
     )
 
     with pytest.raises(SystemExit) as exc:

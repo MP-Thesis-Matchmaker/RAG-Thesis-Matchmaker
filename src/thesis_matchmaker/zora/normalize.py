@@ -12,6 +12,7 @@ expected — this was caught by reading models.py directly, not assumed.
 """
 
 import logging
+import re
 from typing import Any
 
 from . import config
@@ -25,13 +26,87 @@ def _values(dso: Any, field: str) -> list[str]:
     return [entry["value"] for entry in raw if entry.get("value")]
 
 
+_ORCID_URL_PREFIXES = ("https://orcid.org/", "http://orcid.org/")
+
+
+def _is_orcid_url(raw: str) -> bool:
+    """Whether a value declares itself an ORCID by being an orcid.org URL.
+
+    Not the same as inferring from an id's shape, which `_typed_authority`
+    refuses to do: a CRIS Person UUID can never take this form, so there is
+    nothing to infer. Whether the payload after the prefix is well-formed is
+    `_normalize_orcid`'s problem, not this function's.
+    """
+    return raw.startswith(_ORCID_URL_PREFIXES)
+
+
 def _strip_orcid_url(raw: str) -> str:
     """UZH stores ORCIDs as full URLs (https://orcid.org/0000-...); strip to a bare ID."""
-    if raw.startswith("https://orcid.org/"):
-        return raw[len("https://orcid.org/") :]
-    if raw.startswith("http://orcid.org/"):
-        return raw[len("http://orcid.org/") :]
+    for prefix in _ORCID_URL_PREFIXES:
+        if raw.startswith(prefix):
+            return raw[len(prefix) :]
     return raw
+
+
+# The leading ORCID-shaped run of a string: three digit groups, then 3 digits and
+# an optional 16th character. Anchored at the start and deliberately not at the
+# end, so trailing junk (a stray full stop) falls off instead of failing the match.
+_ORCID_RE = re.compile(r"^(\d{4}-\d{4}-\d{4}-\d{3})([\dX]?)")
+
+
+def _orcid_checksum(fifteen: str) -> str:
+    """The 16th ORCID character, derived from the first 15 digits (ISO 7064 MOD 11-2).
+
+    An ORCID's last character is a check digit over the other fifteen, so it is
+    computable rather than merely conventional. That is what lets
+    `_normalize_orcid` repair a truncated id without guessing -- and what lets it
+    decline to, when the arithmetic does not support the repair.
+    """
+    total = 0
+    for char in fifteen:
+        total = (total + int(char)) * 2
+    remainder = (12 - total % 11) % 11
+    return "X" if remainder == 10 else str(remainder)
+
+
+def _normalize_orcid(raw: str) -> str:
+    """Reduce an upstream ORCID to its canonical 0000-0000-0000-000X form.
+
+    ZORA emits four corruptions of this field, all rare and all seen in the
+    2026-08-25 corpus (20 entries of 157,800):
+
+      https://orcid.org/0009-0005-4380-7204   full URL
+      0000-0001-5644-045x                     lowercase check digit
+      0000-0002-3148-0954.                    trailing punctuation
+      0000-0002-8070-773                      check digit missing entirely
+
+    The first three are unambiguous cleanups. The fourth is a repair, and it is
+    guarded, because a 3-character final group has two possible causes: a stripped
+    `X` (systems coercing the field to numeric drop the one non-numeric character)
+    or a dropped leading zero. Both readings of `0000-0002-8070-773` --
+    `...-773X` and `...-0773` -- satisfy the checksum, so the arithmetic alone
+    cannot separate them.
+
+    So the missing character is appended ONLY when the computed checksum is `X`,
+    which is the sole case where the stripped-X explanation actually holds. When it
+    computes to a digit, the corruption is something else and the value is left
+    exactly as it came in: an id that stays visibly broken is recoverable, whereas
+    a fabricated one that passes validation is a wrong ORCID silently attributed to
+    a named researcher. (Verified against the three real cases -- 773, 166, 993 --
+    which all compute to X and match the values a manual ORCID lookup returns.)
+
+    Anything that is not ORCID-shaped at all comes back untouched, for the same
+    reason: bad data should stay visible rather than be blanked.
+    """
+    candidate = _strip_orcid_url(raw.strip()).upper()
+    match = _ORCID_RE.match(candidate)
+    if not match:
+        return raw
+    body, check = match.groups()
+    if check:
+        return f"{body}{check}"
+    computed = _orcid_checksum(body.replace("-", ""))
+    return f"{body}X" if computed == "X" else raw
 
 
 def _first_orcid(dso: Any) -> str | None:
@@ -39,7 +114,7 @@ def _first_orcid(dso: Any) -> str | None:
     for field in config.FIELD_ORCID_CANDIDATES:
         values = _values(dso, field)
         if values:
-            return _strip_orcid_url(values[0])
+            return _normalize_orcid(values[0])
     return None
 
 
@@ -88,20 +163,35 @@ def _get_uzh_authors(dso: Any) -> list[str]:
 def _typed_authority(authority: str | None) -> dict | None:
     """Classify a raw authority value into {"type": "cris"|"orcid", "id": ...}.
 
-    DSpace-CRIS stores two different things in `authority`, and the marker is
-    the only reliable way to tell them apart:
+    DSpace-CRIS stores two different things in `authority`:
       - a bare value is a CRIS Person item UUID — an actual researcher record
         that resolves in the `person` table;
       - 'will be referenced::ORCID::<orcid>' means the authority does NOT
         resolve to a local Person: the ORCID is known but the affiliation is
-        not. 20 upstream ORCIDs are malformed, so classifying by id shape
-        instead of by this marker would misfile them.
+        not.
+
+    The marker is the primary signal, and an id's *shape* is never used as one:
+    upstream ORCIDs are frequently malformed (a stripped check digit, a trailing
+    full stop), so a strict pattern test would fail exactly the broken ones and
+    file them as CRIS researchers who resolve to nobody.
+
+    An explicit orcid.org URL is the one other signal that is trusted, and it is
+    not a shape inference — the value says what it is, and a CRIS UUID can never
+    take that form. Every URL seen so far arrived *with* the marker, so this
+    branch is defensive rather than load-bearing (0 rows in the 2026-08-25
+    corpus). It exists because the failure it prevents is silent: an unmarked URL
+    typed as `cris` becomes a phantom UZH researcher that joins to nothing in
+    `person` and still counts toward eligibility.
     """
     if not authority:
         return None
     prefix = "will be referenced::ORCID::"
     if authority.startswith(prefix):
-        return {"type": "orcid", "id": authority[len(prefix) :]}
+        return {"type": "orcid", "id": _normalize_orcid(authority[len(prefix) :])}
+    if _is_orcid_url(authority):
+        return {"type": "orcid", "id": _normalize_orcid(authority)}
+    # NOT normalized: a CRIS id is a lowercase-hex UUID that joins to person.uuid,
+    # and _normalize_orcid uppercases. Running it here would corrupt every one.
     return {"type": "cris", "id": authority}
 
 
@@ -201,7 +291,7 @@ def normalize_person(dso: Any) -> dict:
         "display_name": titles[0] if titles else None,
         "family_name": next(iter(_values(dso, config.FIELD_PERSON_FAMILY)), None),
         "given_name": next(iter(_values(dso, config.FIELD_PERSON_GIVEN)), None),
-        "orcid": _strip_orcid_url(orcids[0]) if orcids else None,
+        "orcid": _normalize_orcid(orcids[0]) if orcids else None,
         "handle": dso.handle,
         "url": next(iter(_values(dso, config.FIELD_URI)), None),
         "accessioned": next(iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None),

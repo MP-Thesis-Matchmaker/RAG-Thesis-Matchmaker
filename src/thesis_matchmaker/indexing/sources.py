@@ -26,33 +26,32 @@ logger = logging.getLogger(__name__)
 PUBLICATIONS_FILE = "publications.jsonl"
 THESES_FILE = "theses.jsonl"
 
-# The WHERE clause is the product definition, not a tuning choice, which is why it
-# is hardcoded rather than exposed as a setting: this system recommends UZH
-# supervisors, and a publication with no registered UZH author cannot produce one
-# because nobody on it works here. A student could not write a thesis with them.
+# Indexing takes NO position on UZH authorship, deliberately.
 #
-# It is an OPTIMISATION, not the enforcement. The enforcement is
-# retrieval/vector.py's `has_uzh_author: True`, which every publication query
-# already carried -- so these records were never reachable, they were merely
-# embedded first and discarded at query time. Measured on the harvest: 123,012 of
-# 214,685 rows, ~57% of the embedding work and roughly 500 MB of vectors, spent to
-# produce something no query could return. Filtering here means they never leave
-# Postgres.
+# It used to: `WHERE cardinality(uzh_authors) > 0` kept ineligible publications out
+# of the index entirely, on the reasoning that retrieval hardcoded
+# `has_uzh_author: True` and so could never return them -- 123,012 of 214,685 rows
+# embedded to produce vectors no query could reach.
 #
-# The two filters are complementary rather than duplicated. JsonlSourceReader is
-# deliberately NOT filtered -- data/samples is fixture data whose 30 publications
-# all qualify anyway, and data/publications.jsonl is a legacy pre-Postgres artefact
-# -- so the query-time filter remains the invariant covering every source.
+# That reasoning held only while eligibility was a constant. It is now
+# `retrieval_require_uzh_author`, defaulting to off, with
+# `retrieval_ranking_strategy` demoting the ineligible rather than excluding them.
+# A filter here would make that setting unflippable: turning it off would silently
+# return nothing extra until someone re-embedded the whole corpus, which is hours of
+# work triggered by an environment variable. Paying ~2.3x the embedding cost once
+# buys the ability to change the rule without paying it again.
 #
-# cardinality() over array_length(uzh_authors, 1) reads as the intent. Both treat a
-# NULL array the same way: the comparison yields NULL, so the row is excluded, which
-# is what we want. (In the current corpus there are no NULLs -- the 123,012
-# ineligible rows are all empty arrays -- but the harvester does not guarantee that.)
-# Postings the scraper wrote. `status` is filtered here rather than at query time
-# because an assigned topic is not a recommendation under any query -- the same
-# reasoning as the UZH-author clause above, applied to availability instead of
-# eligibility. NULL status is kept: 8 of 247 scraped topics say nothing about
-# availability, and "the page did not say" is not the same claim as "taken".
+# The cost is real and worth naming: 214,756 publications instead of 91,734, roughly
+# 500 MB of additional vectors. It is also what makes the pending uzh_authors
+# eligibility decision (CRIS-vs-ORCID authorities) a configuration change rather
+# than another re-index.
+
+# Postings the scraper wrote. `status` IS filtered here, and the contrast with the
+# publications above is the point: availability is not eligibility. A topic already
+# assigned to a student is not a recommendation under any query, from any user, under
+# any setting -- there is no configuration in which returning it would be correct, so
+# it stays a query rather than a knob. NULL status is kept: 12 of 713 scraped topics
+# say nothing about availability, and "the page did not say" is not "taken".
 _SELECT_POSTINGS = """
 SELECT id, title, description, supervisors, faculty, department, degree_levels,
        status, keywords, language, url, listed_on, source_id, scraped_at
@@ -66,7 +65,6 @@ SELECT id, title, abstract, authors, uzh_authors, author_authority_map, year,
        keywords, department, owning_collection_uuid, language, publication_type,
        doi, url, accessioned
 FROM publication
-WHERE cardinality(uzh_authors) > 0
 ORDER BY id
 """
 

@@ -73,6 +73,7 @@ The mirrors come first because they are what a publication's author authorities
 | `harvest_persons(client, limit)` / `harvest_org_units(client, limit)` | `entities.py` | One entity mirror each: fetch → normalize → dump → validate → snapshot write. Called by `harvest.run`; **not runnable on their own**. |
 | `write_persons(rows)` / `write_org_units(rows)` | `store.py` | Snapshot-replace of the mirror tables (upsert + prune in one transaction). Refuse an empty snapshot over a non-empty table. |
 | `write_raw_dump(records, kind)` / `read_raw_dump(path)` | `raw_dump.py` | The per-step JSONL cache under `data/raw/`. Its own module because both `harvest.py` and `entities.py` write dumps. |
+| `dump_kind(path)` | `raw_dump.py` | Which step a dump feeds, read off its filename. Raises rather than guessing when the name says nothing. |
 
 **The models are not here.** `contracts.ZoraPublication`, `ZoraPerson`,
 `ZoraOrgUnit` and `AuthorAuthority` live in
@@ -141,7 +142,8 @@ python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_f
 | `--mode {incremental,full}` | `incremental` | See above. **Publication step only** — the mirrors are always full snapshots. |
 | `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from `harvest_state`. Also ignored with `--from-dump`, where the filter was already applied at fetch time, and with `--no-publications`. |
 | `--limit N` | none | Stop after N items **per step**. For smoke tests. |
-| `--from-dump PATH` | none | Replay a `data/raw/` publication dump instead of calling ZORA. Implies `--no-persons --no-org-units`. |
+| `--from-dump PATH` | none | Replay a `data/raw/` dump instead of calling ZORA. **Repeatable**, once per kind; which step it feeds comes from the filename. |
+| `--dump-kind KIND` | none | The kind of a `--from-dump` file whose name does not say (renamed, hand-copied). One dump only. |
 | `--no-persons` | off | Skip the `person` mirror. |
 | `--no-org-units` | off | Skip the `org_unit` mirror. |
 | `--no-publications` | off | Skip the publication harvest; refresh only the mirrors. Nothing writes `harvest_state` in that case. |
@@ -156,12 +158,49 @@ records, and replaying it re-runs only the validate/upsert half of the pipeline.
 No API token is needed (no client is built), and no second dump is written, since
 the source file already *is* the cache. Everything downstream is unchanged — same
 `mapping.to_publication` validation, same single transaction, same retention rail,
-same watermark. The implication onto `--no-persons --no-org-units` is applied
-inside `run()`, not just in argparse, so "no API request" holds for programmatic
-callers too.
+same watermark.
+
+Every step writes a dump, so every step can replay one. `write_raw_dump` puts the
+kind in the filename and `dump_kind` reads it back out; `--from-dump` is repeatable,
+once per kind. One rule covers the lot:
+
+> **If any dump is given, no API request is made. A step with a dump replays from
+> it; a step without one is skipped.**
+
+A lone `<ts>_full.jsonl` therefore behaves as it always did — publications only,
+neither mirror — which is the old "implies `--no-persons --no-org-units`" rule as a
+special case rather than a separate one. Enforced inside `run()`, not just in
+argparse, so it holds for programmatic callers; a replaying step is handed `None`
+where the client goes, so "no API request" is structural rather than a promise.
+
+Contradictions are usage errors, not precedence questions: a dump whose step is
+disabled by its own `--no-*` flag, two dumps of one kind, or `--dump-kind` with
+anything other than exactly one dump. A name carrying no kind is likewise refused
+up front — guessing would only defer the failure to the validator, with a worse
+message — and `--dump-kind` is the way to replay a renamed or hand-copied file.
+
+**A dump's ceiling is what the normalizer extracted when it was written.** It cannot
+supply fields a later `normalize.py` change added, which is why the 2026-08-21
+publication dump cannot stand in for a re-harvest: it predates
+`owning_collection_uuid` and the typed `author_authority_map`, and fails validation
+against the current contract.
 
 Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
 `thesis-matchmaker-mcp`, the harvester has no console-script entry point.
+
+### The schema preflight
+
+`run()` calls `schema.require_current(database_url)` before it builds a client, so a
+database whose schema predates the code fails in one round-trip instead of at
+whichever relation the first query happened to touch. That is not hypothetical: a
+`--no-publications` run once fetched 2,018 person records before finding out
+`person` did not exist, because the mirrors had been added to `schema.sql` and
+`init-db --reset` had not been run yet.
+
+The check applies to **every** path, a `--from-dump` replay included — a replay skips
+the API, not Postgres. The message names both fingerprints and the command that
+fixes it. `psycopg` errors reach `main`'s one-line handler too (`db.DB_ERRORS`), so a
+dead or out-of-date database is reported rather than traced.
 
 ### Entity mirrors: `person` and `org_unit`
 
@@ -270,18 +309,58 @@ The notable, non-obvious mappings (`normalize.py`):
 | `id` | `dso.handle` | Items without a handle are skipped. |
 | `authors` | `uzh.contributor.author` | A **UZH custom field**, not `dc.contributor.author`. |
 | `uzh_authors` | the same entries, filtered to those with a non-empty `authority` | Any authority — which admits ORCID-only co-authors of unknown affiliation; see Known gaps. The typed map below is what separates the kinds. |
-| `author_authority_map` | `{name: {"type": "cris"\|"orcid", "id": ...}}` | The type comes from DSpace's `"will be referenced::ORCID::"` marker at fetch time: `cris` = a Person item UUID (resolves in `person`), `orcid` = a bare ORCID with no local Person record. Authors with no authority at all map to `None`. Never classified by id shape — 20 upstream ORCIDs are malformed. |
+| `author_authority_map` | `{name: {"type": "cris"\|"orcid", "id": ...}}` | The type comes from DSpace's `"will be referenced::ORCID::"` marker at fetch time: `cris` = a Person item UUID (resolves in `person`), `orcid` = a canonical ORCID with no local Person record. Authors with no authority at all map to `None`. Never classified by id shape — malformed values are common enough that shape would misfile them. orcid ids go through `_normalize_orcid`; cris ids never do (see below). |
 | `department` | `_embedded.owningCollection.name`, minus the `"Publications of "` prefix | Not a metadata field — it comes from the collection the item lives in, falling back to the first mapped collection. |
 | `owning_collection_uuid` | `_embedded.owningCollection.uuid` (same fallback) | Always the *same* collection the department name came from. Joins to `org_unit.collection_uuid`. |
 | `keywords` | `dc.subject.ddc` + `uzh.scopus.subjects` + `dc.subject`, order-preserving dedupe | |
 | `publication_type` | `dc.type` | Renamed from the internal key `type` in `to_output`. |
 | `language` | `dc.language.iso` | e.g. `eng`, `deu`. |
-| `accessioned` | `dc.date.accessioned` | Used as the watermark; deliberately **not** part of the output schema. |
+| `accessioned` | `dc.date.accessioned` | The incremental watermark, and part of `ZoraPublication` — so the validated model is exactly what gets written, with no post-validation splice. |
+
+### ORCID normalization
+
+Every ORCID the harvester emits — `author_authority_map` orcid ids, `person.orcid`,
+`author_orcid` — goes through one function, `normalize._normalize_orcid`. ZORA emits
+four corruptions of the field, all rare and all present in the 2026-08-25 corpus (20
+entries of 157,800):
+
+| raw | cause | result |
+|---|---|---|
+| `https://orcid.org/0009-0005-4380-7204` | full URL | prefix stripped |
+| `0000-0001-5644-045x` | lowercase check digit | uppercased |
+| `0000-0002-3148-0954.` | trailing punctuation | truncated to the ORCID |
+| `0000-0002-8070-773` | check digit stripped | `…-773X`, **if** the checksum says so |
+
+The last one is a repair rather than a cleanup, and it is guarded. An ORCID's 16th
+character is a check digit over the first 15 (ISO 7064 MOD 11-2), so it is
+computable — but a 3-character final group has two possible causes, a stripped `X`
+or a dropped leading zero, and for `0000-0002-8070-773` **both** readings are
+checksum-valid (`…-773X` and `…-0773`). The computed digit is therefore appended
+only when it is `X`, the one case the stripped-X explanation covers; when it
+computes to a digit the value is left visibly broken instead of being completed into
+a wrong ORCID attributed to a named researcher. All three real cases (`773`, `166`,
+`993`) compute to `X` and match manual ORCID lookups.
+
+**cris ids never go through it.** They are lowercase-hex UUIDs joining to
+`person.uuid`, and the pipeline uppercases; running it there would break every join.
+
+Classification uses two signals, never an id's shape. The
+`will be referenced::ORCID::` marker is the primary one. An explicit `orcid.org`
+URL is the second, and it is not a shape inference — the value declares what it is,
+and a CRIS UUID can never take that form. That branch is defensive: every URL seen
+so far arrived with the marker as well (0 rows in the 2026-08-25 corpus depend on
+it), but the failure it prevents is silent — an unmarked URL typed `cris` is a
+phantom UZH researcher that resolves to nobody in `person` while still counting
+toward eligibility. Shape itself stays untrusted because upstream ORCIDs are often
+malformed, so a strict pattern test would misfile exactly the broken ones.
+
+Rows harvested before this landed were repaired by
+`scripts/backfill_orcid_authorities.py`, which calls the same function rather than
+re-implementing the rule in SQL.
 
 ## Status
 
-**Implemented and running in production.** The `publication` table currently holds
-22,541 harvested records. Nothing is written back into the repository: the
+**Implemented and running in production.** Nothing is written back into the repository: the
 pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
 the only file a run still leaves behind is its raw-response dump in `data/raw/`.
 
@@ -289,8 +368,10 @@ Test coverage: `tests/zora/test_normalize.py` and `tests/zora/test_mapping.py`
 are thorough on the pure functions; `store.py` is covered from
 `tests/test_zora_store.py` (Postgres-gated); `tests/zora/test_harvest_run.py`
 covers the orchestration — step order, each opt-out, an aborted mirror stopping
-the run, and the `--from-dump` implication — with ZORA and the store faked;
-`tests/zora/test_entities.py` covers the two mirror steps and
+the run, and dump routing across every combination — with ZORA and the store faked;
+`tests/zora/test_raw_dump.py` round-trips `write_raw_dump` through `dump_kind` for
+each kind; `tests/zora/test_entities.py` covers the two mirror steps, fetch and
+replay alike, and
 `tests/zora/test_org_tree.py` the community walk, including pagination and the
 fail-on-a-bad-page rule. `zora_client.get_client` itself (auth, retries,
 timeouts) is still only exercised through `tests/zora/test_config_auth.py`'s token
@@ -350,24 +431,31 @@ behaviour, so the untested surface went away without anything new being verified
   exclude it, admit it under the sole-author rule, or index both and let `ranking`
   prefer UUID-backed candidates. Every candidate rule is now computable from the
   persisted typed map. Whatever is decided propagates:
-  `indexing/sources.py` filters on `cardinality(uzh_authors) > 0` at index time,
-  `retrieval/vector.py` filters on `has_uzh_author` at query time, and CLAUDE.md's
-  "91,673 (42.7%) have at least one UZH author" is inflated by the same 38,157
-  records. Two loose ends: our data holds 2,941 UUID names against ~2,016 exposed
-  Person entities, so some UUIDs may name other entity types — measurable after the
-  re-harvest as `% of cris-typed ids present in person.uuid` — and 20 authority
-  values are malformed — lowercase-`x` checksums, a trailing period, and truncated
-  groups such as `0000-0002-8070-773` (which is why the type comes from the
-  marker, never from the id's shape).
-- **The 2026-08-24 schema change has not been applied to any harvested database
-  yet.** `person`, `org_unit`, `publication.owning_collection_uuid` and the typed
-  `author_authority_map` changed `schema.sql`'s fingerprint, so applying them
-  requires `init-db --reset` — and the new publication fields do not exist in
-  older `data/raw/` dumps (the marker was stripped, the collection uuid never
-  dumped), so repopulating means a fresh `--mode full` API harvest (~215k items,
-  hours). Deliberately deferred: posting-side follow-up changes land first, then
-  one single reset pays for all of it. That reset is likely the last acceptable
-  one before numbered migrations (see `schema.py`).
+  `indexing/sources.py` no longer filters at all (since 2026-08-25 the whole corpus
+  is indexed), and `retrieval/vector.py` filters on `has_uzh_author` only when
+  `RETRIEVAL_REQUIRE_UZH_AUTHOR` is set — so whatever is decided is a settings and
+  ranking question now, not a re-index. Measured on the 2026-08-25 harvest: 91,734
+  publications pass the current any-authority rule but only 53,544 carry a
+  CRIS-backed author, so ~38,190 qualify on an ORCID placeholder alone. Both loose ends are now measured against the typed map:
+  **1,807 of 1,970 distinct cris-typed ids (91.7%) resolve in `person`**, so ~163 name
+  something the Person entity query does not expose; and exactly **one** cris-typed
+  entry holds a bare ORCID rather than a UUID (`0000-0002-7695-501X`, on
+  `20.500.14742/59205`) — upstream omitted the marker there, and classifying by shape
+  instead would misfile far more than it fixed, so it stays as-is. The 20 malformed
+  ORCID **values** are gone: `_normalize_orcid` canonicalises them at harvest and the
+  existing rows were backfilled on 2026-08-25.
+- **A dump can never repopulate a field the normalizer did not extract when it was
+  written.** The 2026-08-24 schema change (`person`, `org_unit`,
+  `owning_collection_uuid`, the typed `author_authority_map`) was applied on
+  2026-08-25 via `init-db --reset` plus a fresh `--mode full` API harvest — and the
+  API was the only option, because older `data/raw/` dumps hold post-normalization
+  records that predate those fields. `--from-dump` replays normalization output, not
+  raw responses, so every normalizer change invalidates every earlier dump. Worth
+  deciding before the UZH-server harvest, where re-fetching stops being cheap:
+  caching raw DSpace JSON instead would cost roughly 3–5x the disk and make dumps
+  survive changes like this one. The next schema change against a database with no
+  replayable dump behind it is where numbered migrations stop being optional (see
+  `schema.py`).
 - **`zora_client.get_client` is untested.** Auth, the retry policy and the
   timeouts are exercised only by running the thing. `iter_org_tree` and the
   harvest orchestration around it are covered now (see Status).
