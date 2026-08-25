@@ -7,6 +7,7 @@ only file that needs to change.
 """
 
 import os
+from pathlib import Path
 
 # --- ZORA scope -------------------------------------------------------
 # Set to a community UUID to restrict to a single faculty, or None to
@@ -20,6 +21,57 @@ DEFAULT_SCOPE_UUID: str | None = None
 
 # --- API endpoint -------------------------------------------------------
 DEFAULT_API_ENDPOINT = "https://www.zora.uzh.ch/server/api"
+
+# --- Auth ---------------------------------------------------------------
+# The ZORA personal API token comes from one of two environment variables:
+#   ZORA_UZH_API_KEY_FILE  path to a file containing the token
+#   ZORA_UZH_API_KEY       the token itself
+# The file wins when both are set. In the cluster the token arrives as a
+# mounted Secret, so a file is the deployed truth, whereas an inline value
+# is usually a stale export in someone's shell.
+#
+# We resolve the token here and assign it to DSpaceClient.api_token (see
+# zora_client.get_client). The vendored client has its own lookup —
+# PERSONAL_API_TOKEN_FILE, then .dspace-personal-api-token.secret in the
+# working and home directories — but our assignment overrides it, so those
+# are not part of the contract and are not documented anywhere else.
+ENV_API_KEY_FILE = "ZORA_UZH_API_KEY_FILE"
+ENV_API_KEY = "ZORA_UZH_API_KEY"
+
+
+def resolve_api_token() -> str:
+    """
+    Return the ZORA personal API token, read from the environment on every
+    call (not at import time, so a test can set the variables itself).
+
+    @raise RuntimeError: if neither variable is set, or if ENV_API_KEY_FILE
+                          points at a file that cannot be read or is empty.
+                          A broken path fails loudly rather than falling back
+                          to the inline token: authenticating with a different
+                          credential than the one asked for hides the mistake.
+    """
+    path = os.environ.get(ENV_API_KEY_FILE, "").strip()
+    if path:
+        try:
+            # .strip() because writing a token with echo or an editor leaves
+            # a trailing newline, which the API rejects as part of the header.
+            token = Path(path).read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            raise RuntimeError(f"{ENV_API_KEY_FILE}={path} could not be read: {exc}") from exc
+        if not token:
+            raise RuntimeError(f"{ENV_API_KEY_FILE}={path} is empty.")
+        return token
+
+    token = os.environ.get(ENV_API_KEY, "").strip()
+    if token:
+        return token
+
+    raise RuntimeError(
+        f"No ZORA API token configured. Set {ENV_API_KEY_FILE} to a file containing "
+        f"the token, or {ENV_API_KEY} to the token itself. {ENV_API_KEY_FILE} takes "
+        f"precedence if both are set."
+    )
+
 
 # --- Dublin Core field names ---------------------------------------------
 # These are the DSpace defaults. UZH's DSpace-CRIS install *may* extend or
@@ -56,10 +108,16 @@ FIELD_ORCID_CANDIDATES = [
 ]
 
 # --- Paths -------------------------------------------------------------
+# Harvest output and the watermark live in Postgres now (see zora/store.py); the
+# only thing still written to disk is the raw-response cache, which keeps
+# ingestion reproducible without re-hitting ZORA.
 DATA_DIR = os.environ.get("ZORA_DATA_DIR", "data")
-PUBLICATIONS_PATH = os.path.join(DATA_DIR, "publications.jsonl")
-STATE_PATH = os.path.join(DATA_DIR, "state.json")
 RAW_DIR = os.path.join(DATA_DIR, "raw")
+
+# Legacy JSONL location. Nothing writes it any more; kept so the standalone
+# validator (`python -m thesis_matchmaker.zora.output_schema`) still has a
+# default target for checking a file harvested before the database existed.
+PUBLICATIONS_PATH = os.path.join(DATA_DIR, "publications.jsonl")
 
 # --- Safety thresholds ---------------------------------------------------
 # If a harvest run returns dramatically fewer publications than the previous
@@ -68,12 +126,3 @@ RAW_DIR = os.path.join(DATA_DIR, "raw")
 # faculty genuinely losing most of its publications overnight. Abort instead
 # of committing a destructive update.
 MIN_RETENTION_RATIO = 0.5  # new total must be >= 50% of previous total
-
-# --- Scheduler timing ----------------------------------------------------
-# Wall-clock hour (UTC) when harvests should fire. The scheduler polls
-# hourly and runs when the current hour >= this target and the run
-# hasn't already happened for the current period.
-HARVEST_HOUR_UTC = int(os.environ.get("HARVEST_HOUR_UTC", 1))
-
-# Day of the week (0=Monday ... 6=Sunday) for the weekly full harvest.
-FULL_HARVEST_WEEKDAY = int(os.environ.get("FULL_HARVEST_WEEKDAY", 0))  # Monday

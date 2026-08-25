@@ -12,7 +12,7 @@ def _match(name: str, title: str, score: float = 0.9) -> SupervisorMatch:
         score=score,
         matched_topics=["nlp"],
         publication_count=3,
-        has_open_position=True,
+        posting_count=1,
         evidence=[Evidence(source_type="publication", source_id="z:1", title=title)],
     )
 
@@ -69,3 +69,32 @@ def test_llm_synthesizer_flags_weak_matches_without_calling_llm():
     assert "strong match" in text.lower()
     assert "Prof. Weak" in text
     assert "long shot" in text
+
+
+def test_template_says_nothing_about_availability_when_no_posting():
+    """Absence of posting data has to render as absence. The old text printed "no
+    open position listed", which asserts that a named academic is not taking
+    students -- something the retriever cannot know, because its posting query is
+    unthresholded and a zero count only means none of theirs reached the top-k."""
+    match = _match("Prof. A", "Paper One").model_copy(update={"posting_count": 0})
+    text = TemplateSynthesizer().synthesize("nlp thesis", [match]).lower()
+    assert "prof. a" in text
+    for phrase in ("open position", "no open", "accepting", "available"):
+        assert phrase not in text
+
+
+def test_template_reports_a_posting_when_there_is_one():
+    text = TemplateSynthesizer().synthesize("nlp thesis", [_match("Prof. A", "Paper One")])
+    assert "1 open thesis posting" in text
+
+
+def test_llm_candidate_block_omits_missing_postings():
+    """The same rule inside the prompt: given "no open position" the model wrote
+    "not currently accepting new students", so the line it must not paraphrase is
+    simply not written."""
+    from thesis_matchmaker.synthesis.llm import _format_candidates
+
+    zero = _match("Prof. A", "Paper One").model_copy(update={"posting_count": 0})
+    block = _format_candidates([zero, _match("Dr. B", "Paper Two")])
+    assert "no open position" not in block
+    assert block.count("open thesis posting") == 1  # only Dr. B has one

@@ -1,0 +1,25 @@
+{
+  "source_id": "soziologisches-institut--2",
+  "page_type": "process",
+  "verified_content_sha1": "262f9ca2298d5389f8ea106d464a8354394a395d",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Bachelor students complete a 15‑ECTS empirical Bachelorarbeit based on a quantitative data analysis. The Bachelorarbeitsmodul bildet den Betreuungsrahmen; die Arbeit wird angeleitet und moderiert durch die Dozierenden des Instituts (i.e., supervision is provided by institute lecturers). Registration, booking, submission and deadlines are not given on this page — you must follow the Philosophische Fakultät – Abschluss webpage for the formal Anmeldung, Fristen and submission procedures. Formal requirements noted here: independent empirical work with quantitative analysis; see the Merkblatt Bachelor‑Arbeit (PDF, Stand 09.01.2026). Official guidelines include the faculty Abschluss page and the Bachelor Studienordnung. Questions: programmkoordination@soziologie.uzh.ch or abschluss@phil.uzh.ch.",
+      "relevant_links": [
+        {
+          "url": "https://www.suz.uzh.ch/dam/jcr:b5b92ece-6b67-4649-803a-5246909cf86b/Merkblatt%20BA_2601.pdf",
+          "description": "Merkblatt Bachelor-Arbeit (PDF, 143 KB)"
+        }
+      ],
+      "source_url": "https://www.suz.uzh.ch/de/bachelor/abschluss.html",
+      "source_id": "soziologisches-institut--2",
+      "scraped_at": "2026-07-31T14:35:10.798615+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

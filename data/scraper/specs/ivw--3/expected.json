@@ -1,0 +1,33 @@
+{
+  "source_id": "ivw--3",
+  "page_type": "process",
+  "verified_content_sha1": "24c842f1b773fa606630ab9691393d7743720da2",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "BA and MA students in Economics (or related departments within the faculty) arrange thesis supervision directly with a professor or contact person; the Department does not allocate topics centrally and has no overview of capacities. Find topics on the faculty list (https://www.oec.uzh.ch/de/studies/general/theses.html) and contact the professor; check the professor’s website for any specific requirements. A BA thesis is 18 ECTS (≈540 h) and an MA thesis 30 ECTS (≈900 h); both have a 6‑month completion period and may start any time by agreement with the supervisor—check graduation/registration deadlines at https://www.oec.uzh.ch/en/studies/general/graduation/degree-deadlines.html. Language, final length (~40 pages), formatting (1.5 spacing, 12pt Times New Roman, 1.5\" margins), a ≤150‑word abstract and a signed declaration of authorship are required; these guidelines are recommendations and supervisors may set specific rules.",
+      "relevant_links": [
+        {
+          "url": "https://www.econ.uzh.ch/dam/jcr:c800f7eb-31a0-4618-9b4b-3ff2ceb8503c/for%20students%20-%202023-%20%20BA_MA%20thesis%20guidelines%20ECON%20Department.pdf",
+          "description": "BA/MA thesis process page"
+        },
+        {
+          "url": "https://www.oec.uzh.ch/de/studies/general/theses.html",
+          "description": "referenced in document"
+        },
+        {
+          "url": "https://www.oec.uzh.ch/en/studies/general/graduation/degree-deadlines.html",
+          "description": "referenced in document"
+        }
+      ],
+      "source_url": "https://www.econ.uzh.ch/dam/jcr:c800f7eb-31a0-4618-9b4b-3ff2ceb8503c/for%20students%20-%202023-%20%20BA_MA%20thesis%20guidelines%20ECON%20Department.pdf",
+      "source_id": "ivw--3",
+      "scraped_at": "2026-07-17T16:56:13.401486+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

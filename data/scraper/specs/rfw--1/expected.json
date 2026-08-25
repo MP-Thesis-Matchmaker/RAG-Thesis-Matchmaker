@@ -1,0 +1,461 @@
+{
+  "source_id": "rfw--1",
+  "page_type": "topics",
+  "verified_content_sha1": "8b39c7013283af1226bf51e766c55e931b989b06",
+  "records": [
+    {
+      "title": "Grundlagenfächer",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Grundlagenfächer",
+      "supervisors": [
+        {
+          "name": "José Luis Alonso",
+          "chair": "Lehrstuhl für Römisches Recht, Juristische Papyrologie und Privatrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/alonso/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/alonso/person.html"
+        },
+        {
+          "name": "Tilmann Altwicker",
+          "chair": "Lehrstuhl für Legal Data Science und Öffentliches Recht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/altwicker/tilmann-altwicker/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/altwicker/tilmann-altwicker/person.html"
+        },
+        {
+          "name": "Ulrike Babusiaux",
+          "chair": "Lehrstuhl für Römisches Recht, Privatrecht und Rechtsvergleichung",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/babusiaux/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/babusiaux/team/person.html"
+        },
+        {
+          "name": "Wolfgang Ernst",
+          "chair": "Professor ad personam für Römisches Recht und Privatrecht (emeritiert per 31. Juli 2021)",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Elisabetta Fiocchi Malaspina",
+          "chair": "Professorin ad personam für Rechtsgeschichte, Juristische Zeitgeschichte, Völkerrechtsgeschichte und Rechtsvergleichung",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/fiocchi/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/fiocchi/person.html"
+        },
+        {
+          "name": "Christoph Beat Graber",
+          "chair": "Professor für Rechtssoziologie mit besonderer Berücksichtigung des Medienrechts (emeritiert per 31. Juli 2025)",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/graber/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/graber/team/person.html"
+        },
+        {
+          "name": "Yoan Hermstrüwer",
+          "chair": "Lehrstuhl für Legal Tech, Law and Economics und Öffentliches Recht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/hermstruewer/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/hermstruewer/team/person.html"
+        },
+        {
+          "name": "Johannes Liebrecht",
+          "chair": "Lehrstuhl für Rechtsgeschichte",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Matthias Mahlmann",
+          "chair": "Lehrstuhl für Philosophie und Theorie des Rechts, Rechtssoziologie und Internationales Öffentliches Recht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/mahlmann/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/mahlmann/team/person.html"
+        },
+        {
+          "name": "Alice Margaria",
+          "chair": "Assistenzprofessorin für Rechtsfragen der Reproduktion und Humangenetik",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Andreas Thier",
+          "chair": "Lehrstuhl für Rechtsgeschichte, Kirchenrecht, Rechtstheorie und Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Nadjma Yassari",
+          "chair": "Lehrstuhl für Islamisches Recht, Internationales Privatrecht und Rechtsvergleichung",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/yassari/prof/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/yassari/prof/person.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+      "source_id": "rfw--1",
+      "scraped_at": "2026-08-04T10:17:23.656245+00:00",
+      "topic_id": "ffd189082bca57f73dfd3eaa4e1bb71f7f8e2a93"
+    },
+    {
+      "title": "Zivilrecht und Zivilverfahrensrecht",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Zivilrecht und Zivilverfahrensrecht",
+      "supervisors": [
+        {
+          "name": "Ruth Arnet",
+          "chair": "Lehrstuhl für Privatrecht mit Schwerpunkt Sachenrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/arnet/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/arnet/team/person.html"
+        },
+        {
+          "name": "Yeşim M. Atamer",
+          "chair": "Lehrstuhl für Privat-, Wirtschafts- und Europarecht sowie Rechtsvergleichung",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/atamer/Team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/atamer/Team/person.html"
+        },
+        {
+          "name": "Samuel P. Baumgartner",
+          "chair": "Lehrstuhl für Zivilprozessrecht, Vergleichendes Zivilprozessrecht, Schuldbetreibungs- und Konkursrecht, Privatrecht und Mediation",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Walter Boente",
+          "chair": "Lehrstuhl für Privatrecht, Schwerpunkt Zivilgesetzbuch",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/boente/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/boente/team/person.html"
+        },
+        {
+          "name": "Alessia Dedual",
+          "chair": "Lehrstuhl für Privatrecht mit Schwerpunkt Obligationenrecht, Rechtsvergleichung, Recht und Ökonomik",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Tanja Domej",
+          "chair": "Lehrstuhl für Zivilverfahrensrecht, Privatrecht, Internationales Privatrecht und Rechtsvergleichung",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Lorenz Droese",
+          "chair": "Lehrstuhl für Zivilverfahrens- und Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Ulrich Haas",
+          "chair": "Professor ad personam für Zivilverfahrens- und Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Helmut Heiss",
+          "chair": "Lehrstuhl für Privatrecht, Rechtsvergleichung und Internationales Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Dominique Jakob",
+          "chair": "Lehrstuhl für Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Leander D. Loacker",
+          "chair": "Lehrstuhl für Privat- und Wirtschaftsrecht, Internationales Privat- und Zivilverfahrensrecht sowie Rechtsvergleichung",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Margot Michel",
+          "chair": "Lehrstuhl für Privatrecht, Rechtsvergleichung, Tierschutzrecht und Rechtsphilosophie",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/michel/m-michel/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/michel/m-michel/person.html"
+        },
+        {
+          "name": "Wolfgang Portmann",
+          "chair": "Lehrstuhl für Privat- und Arbeitsrecht (emeritiert per 31. Juli 2020)",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/portmann/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/portmann/person.html"
+        },
+        {
+          "name": "Roger Rudolph",
+          "chair": "Lehrstuhl für Arbeits- und Privatrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Christiane von Bary",
+          "chair": "Lehrstuhl für Privatrecht mit Schwerpunkt ZGB",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/vonbary/prof/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/vonbary/prof/person.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+      "source_id": "rfw--1",
+      "scraped_at": "2026-08-04T10:17:23.656245+00:00",
+      "topic_id": "e78996b9fe3143acb9c7a82691a653730e3b01ba"
+    },
+    {
+      "title": "Handels- und Wirtschaftsrecht",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Handels- und Wirtschaftsrecht",
+      "supervisors": [
+        {
+          "name": "Kern Alexander",
+          "chair": "Lehrstuhl für Finanzmarktrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Aline Darbellay",
+          "chair": "Lehrstuhl für Handels-, Bank-, Gesellschafts- und Kapitalmarktrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/darbellay/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/darbellay/team/person.html"
+        },
+        {
+          "name": "Marco Dell'Erba",
+          "chair": "Professor ad personam für Finanzmarktrecht und Gesellschaftsrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Andreas Heinemann",
+          "chair": "Lehrstuhl für Handels-, Wirtschafts- und Europarecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/heinemann/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/heinemann/team/person.html"
+        },
+        {
+          "name": "Andreas Kellerhals",
+          "chair": "Professor ad personam für Juristische Weiterbildung, Wirtschaftsrecht, Europarecht und Privatrecht (emeritiert per 31. Juli 2024)",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Julia Nicolussi",
+          "chair": "Lehrstuhl für Handelsrecht, Gesellschaftsrecht, Wirtschaftsrecht und Rechtsvergleichung",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/nicolussi/prof-nicolussi/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/nicolussi/prof-nicolussi/person.html"
+        },
+        {
+          "name": "Peter Picht",
+          "chair": "Lehrstuhl für Wirtschafts-, Wettbewerbs- und Immaterialgüterrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Rolf Sethe",
+          "chair": "Professor für Privat-, Handels- und Wirtschaftsrecht (emeritiert per 31. Juli 2025)",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/sethe/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/sethe/person.html"
+        },
+        {
+          "name": "Florent Thouvenin",
+          "chair": "Lehrstuhl für lnformations- und Kommunikationsrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Hans-Ueli Vogt",
+          "chair": "Lehrstuhl für Privat- und Wirtschaftsrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Rolf H. Weber",
+          "chair": "Lehrstuhl für Privat-, Wirtschafts- und Europarecht (emeritiert per 31. Juli 2016)",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/weberr/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/weberr/team/person.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+      "source_id": "rfw--1",
+      "scraped_at": "2026-08-04T10:17:23.656245+00:00",
+      "topic_id": "8f18a4ca40311db9d3bc7e81a9c297a68f0f3e06"
+    },
+    {
+      "title": "Strafrecht",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Strafrecht",
+      "supervisors": [
+        {
+          "name": "Dirk Baier",
+          "chair": "Professor ad personam für Kriminologie",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Felix Bommer",
+          "chair": "Lehrstuhl für Strafrecht, Strafprozessrecht und Internationales Strafrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/bommer/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/bommer/team/person.html"
+        },
+        {
+          "name": "Gian Ege",
+          "chair": "Assistenzprofessor für Strafrecht und Strafprozessrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/ege/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/ege/person.html"
+        },
+        {
+          "name": "Gunhild Godenzi",
+          "chair": "Lehrstuhl für Strafrecht und Strafprozessrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/godenzi/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/godenzi/team/person.html"
+        },
+        {
+          "name": "Daniel Jositsch",
+          "chair": "Lehrstuhl für Strafrecht und Strafprozessrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/jositsch/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/jositsch/team/person.html"
+        },
+        {
+          "name": "Christian Schwarzenegger",
+          "chair": "Lehrstuhl für Strafrecht, Strafprozessrecht und Kriminologie (emeritiert per 31. Januar 2025)",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Sarah Summers",
+          "chair": "Lehrstuhl für Strafrecht, Strafprozessrecht und Kriminologie",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/summers/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/summers/team/person.html"
+        },
+        {
+          "name": "utr. Brigitte Tag",
+          "chair": "Lehrstuhl für Strafrecht, Strafprozessrecht und Medizinrecht (emeritiert per 31. Januar 2025)",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Marc Thommen",
+          "chair": "Lehrstuhl für Strafrecht und Strafprozessrecht unter Einschluss des Wirtschafts- und Verwaltungsstrafrechts",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Thierry Urwyler",
+          "chair": "Lehrstuhl für Strafrecht und Strafprozessrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/urwyler/urwyler/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/urwyler/urwyler/person.html"
+        },
+        {
+          "name": "Nadine Zurkinden",
+          "chair": "Lehrstuhl für Strafrecht und Strafprozessrecht unter besonderer Berücksichtigung des Internationalen Strafrechts und des Wirtschaftsstrafrechts",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/zurkinden/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/zurkinden/person.html"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+      "source_id": "rfw--1",
+      "scraped_at": "2026-08-04T10:17:23.656245+00:00",
+      "topic_id": "6f8fb673164284ffc3f9fd3d6b60a2388ed606a9"
+    },
+    {
+      "title": "Öffentliches Recht: Staats- Verwaltungs- und Völkerrecht",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Öffentliches Recht: Staats- Verwaltungs- und Völkerrecht",
+      "supervisors": [
+        {
+          "name": "Oliver Diggelmann",
+          "chair": "Lehrstuhl für Völkerrecht, Europarecht, Öffentliches Recht und Staatsphilosophie",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Thomas Gächter",
+          "chair": "Lehrstuhl für Staats-, Verwaltungs- und Sozialversicherungsrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/gaechter/person/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/gaechter/person/person.html"
+        },
+        {
+          "name": "Andreas Glaser",
+          "chair": "Lehrstuhl für Staats-, Verwaltungs- und Europarecht unter besonderer Berücksichtigung von Demokratiefragen",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/glaser/Team/glaser-andreas/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/glaser/Team/glaser-andreas/person.html"
+        },
+        {
+          "name": "Alain Griffel",
+          "chair": "Lehrstuhl für Staats- und Verwaltungsrecht mit Schwerpunkt Raumplanungs-, Bau- und Umweltrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/griffel/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/griffel/team/person.html"
+        },
+        {
+          "name": "Christine Kaufmann",
+          "chair": "Lehrstuhl für Öffentliches Recht, Völker- und Europarecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Helen Keller",
+          "chair": "Lehrstuhl für Öffentliches Recht, Europa- und Völkerrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "publ. Dr. iur. h.c. Andreas Kley",
+          "chair": "Lehrstuhl für Öffentliches Recht, Verfassungsgeschichte sowie Staats- und Rechtsphilosophie (emeritiert per 31. Juli 2024)",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Anne Kühler",
+          "chair": "Lehrstuhl für Öffentliches Recht, Migrationsrecht und Rechtsphilosophie",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Lorenz Langer",
+          "chair": "Assistenzprofessor für Öffentliches Recht und Völkerrecht unter besonderer Berücksichtigung europäischer Demokratiefragen",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "René Matteotti",
+          "chair": "Lehrstuhl für Schweizerisches, Europäisches und Internationales Steuerrecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/matteotti/team/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/matteotti/team/person.html"
+        },
+        {
+          "name": "Daniel Moeckli",
+          "chair": "Lehrstuhl für Öffentliches Recht mit internationaler und rechtsvergleichender Ausrichtung",
+          "profile_url": "http://www.scil.uzh.ch/institutsmitglieder/moeckli/person.html",
+          "_url": "http://www.scil.uzh.ch/institutsmitglieder/moeckli/person.html"
+        },
+        {
+          "name": "Matthias Oesch",
+          "chair": "Lehrstuhl für Öffentliches Recht, Europarecht und Wirtschaftsvölkerrecht",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "Johannes Reich",
+          "chair": "Lehrstuhl für Öffentliches Recht, Umweltrecht und Energierecht",
+          "profile_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/reich/person.html",
+          "_url": "https://www.ius.uzh.ch/de/staff/professorships/alphabetical/reich/person.html"
+        },
+        {
+          "name": "Felix Uhlmann",
+          "chair": "Lehrstuhl für Staats- und Verwaltungsrecht sowie Rechtsetzungslehre",
+          "profile_url": null,
+          "_url": null
+        },
+        {
+          "name": "et Dr. med. Kerstin Noëlle Vokinger",
+          "chair": "Lehrstuhl für Regulierung in Recht, Medizin und Technologie",
+          "profile_url": null,
+          "_url": null
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.ius.uzh.ch/de/staff/professorships/subject-area.html",
+      "source_id": "rfw--1",
+      "scraped_at": "2026-08-04T10:17:23.656245+00:00",
+      "topic_id": "70e7332c6e5505f61546233c6e2d76af360415c1"
+    }
+  ]
+}

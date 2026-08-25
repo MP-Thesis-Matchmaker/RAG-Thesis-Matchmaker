@@ -1,0 +1,32 @@
+# historisches-seminar--3: HS people. The visible page embeds an iframe
+# (personenliste_funktion.php) that lists people grouped by function under h2
+# headings, in flat document order (orphaned-table markup — the lists aren't
+# nested under their heading, so sections are resolved by document position).
+# Per the brief, only "Professor:innen" and "Privatdozierende / Titularprofessor:
+# innen" are kept (NOT the Emeritierte / Pensionierte variants). Each profile is
+# followed for the email. Stored at the institute (unit) level.
+source_id: historisches-seminar--3
+page_type: people
+source_type: sectioned_people
+page_url: "https://www.hist.uzh.ch/static/web_personen2025/personenliste_funktion.php"
+
+sections:
+  heading: "h2"
+  person: 'ul.type4 li a[href*=".html"]'    # real profile links (nav jumps use #)
+  include:
+    - "Professor:innen"
+    - "Privatdozierende / Titularprofessor:innen"
+  section_into: role                         # store the category as the role
+  fields:
+    name:
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      attr: href
+      transform: absolute_url
+
+# Each profile lists several mailtos (personal, secretariat "sek…", assistants,
+# department). Pick the PERSONAL one — matched to the person's name, excluding
+# secretariat prefixes; null if no personal address is published.
+resolve_person_emails:
+  exclude_prefix: ["sek"]

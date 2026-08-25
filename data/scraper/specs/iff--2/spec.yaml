@@ -1,0 +1,28 @@
+# JSON/API-backed topics — Finance's instance of the same tRPC theses portal
+# as ibw--2 (here on theses.df.uzh.ch). Currently 0 open proposals; the spec is
+# verified structurally and will populate when proposals are published.
+source_id: iff--2
+page_type: topics
+source_type: json
+api_url: "https://theses.df.uzh.ch/api/trpc/proposals?batch=1&input=%7B%220%22%3A%7B%22filters%22%3A%7B%22status%22%3A%22OPEN_PROPOSALS%22%7D%7D%7D"
+
+record:
+  path: "0.result.data"
+  fields:
+    title:
+      path: title
+      transform: normalize_ws
+    topic_description:
+      path: description
+      transform: normalize_ws
+    degree_level: studyLevel
+    research_area: topicArea.name
+    supervisor_name: supervisedBy[0].supervisor.name
+    supervisor_email: supervisedBy[0].supervisor.email
+    date_of_listing:
+      path: createdAt
+      transform: date_only
+    source_link:
+      template: "https://theses.df.uzh.ch/{id}"
+
+id_from: [title]

@@ -1,0 +1,113 @@
+{
+  "source_id": "ifi--20",
+  "page_type": "process",
+  "verified_content_sha1": "d961744db4812859d73be86e2af14ecf92777477",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Master’s theses (and BSc theses) at IFI are handled via the department’s fact sheets and registration forms. Eligible students are those enrolled in the relevant BSc/MSc programmes. To find a supervisor use the “Specializations and Topics per Professor” table, the Master Project Market (MPM) or research-group pages and contact professors/groups directly. Register by completing the “Registration form Master’s thesis” (PDF) and submit all registrations and the final thesis electronically from your UZH e‑mail address to studies@ifi.uzh.ch. Follow the Master’s Thesis and “Preparation of BSc/MSc Theses” fact sheets (including the plagiarism fact sheet), respect the required order Master’s Project > Master’s Thesis, and consult the faculty’s framework ordinances/study regulations and the UZH Integrity Ordinance for formal rules and deadlines.",
+      "relevant_links": [
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:1b564225-e6bd-437c-9e20-a07bca1c4df2/Merkblatt-Plagiate_en.pdf",
+          "description": "fact sheet on plagiarism (PDF, 109 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:f7a9e0bd-2a65-402b-882d-4cf72a6bdf81/Merkblatt-Masterprojekt-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet (PDF, 85 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:a7f9f590-4216-4d19-84dc-51e91f9aa3b3/mpm2026-03-30web.pdf",
+          "description": "Master Project Market of 30 March 2026: Slides (PDF, 7 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:e5381fea-b531-45ae-804a-6bf77679a61f/Anmeldung-Masterprojekt-SO26-EN-20260702.pdf",
+          "description": "Registration form Master's project (PDF, 100 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:dbccd306-3981-41ee-839f-e056484287ea/Merkblatt-Independent-Study-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet (PDF, 78 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:5024e3e3-f8b6-49fb-8054-6bc32bdfc76a/Anmeldung-IndependentStudy-SO26-EN-20260702.pdf",
+          "description": "Registration form Independent Study (PDF, 97 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:a8df9bc8-40df-468a-a004-a04bbfeb0c44/Merkblatt-Masterarbeit-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet (PDF, 92 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:e563d185-4fed-46d0-920f-b38c7e84364a/Merkblatt-Ausarbeitung-Thesis-SO26-EN-20260702.pdf",
+          "description": "Fact Sheet: Preparation of BSc/MSc Theses (PDF, 157 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:d38760ed-0651-480f-8c75-0da35bc0763c/Anmeldung-BScMScArbeiten-SO26-EN-20260702.pdf",
+          "description": "Registration form Master's thesis (PDF, 173 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:aeae2658-0bdc-4bbb-99fc-3d435bbaaf2c/MSc%20program%20introduction%202025%20IS%20GS.pdf",
+          "description": "Information Systems (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:a2fc0420-aaf1-45c1-bc98-d5b02249c398/MSc%20program%20introduction%202025%20SoSy%20ABa.pdf",
+          "description": "Software Systems (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:83342e9d-3b1f-4dc7-8a96-e92ad5859c07/MSc%20program%20introduction%202025%20POC%20CW.pdf",
+          "description": "Human-Centered Computing (PDF, 2 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:4bb23413-31f4-4fd9-8aca-f6d6b4bb4652/MSc%20program%20introduction%202025%20DS%20DO.pdf",
+          "description": "Data Science (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:883154cd-26e7-45d2-a74b-147331d75f3a/MSc%20program%20introduction%202025%20AI%20ABe.pdf",
+          "description": "Artificial Intelligence (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/ddis/theses.html",
+          "description": "Abraham Bernstein"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/dbtg/teaching/theses.html",
+          "description": "Michael Böhlen"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/zpac/teaching/theses.html",
+          "description": "Elaine Huang"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/alpi/thesis.html",
+          "description": "Giorgia Ramponi"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/en/imrg/theses.html",
+          "description": "Gerhard Schwabe"
+        },
+        {
+          "url": "http://www.csg.uzh.ch/csg/en/theses.html",
+          "description": "Burkhard Stiller"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:27d457ad-aac4-45a0-bd33-e2c72da666c2/Stellenausschreibung%20Coaching%20HS25.pdf",
+          "description": "more information (PDF, 106 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:40d06422-adc7-4fb0-97c0-ab68165090ac/kodex_layout_en_web.pdf",
+          "description": "Code of conduct for scientific integrity"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:b31db5bc-c980-4571-9eed-fcfb75ec864e/IfI%20MSc%20Welcome%20Event%20HS%202025.pdf",
+          "description": "this semester’s slides"
+        }
+      ],
+      "source_url": "https://www.ifi.uzh.ch/en/studies/msc-info.html",
+      "source_id": "ifi--20",
+      "scraped_at": "2026-07-22T21:46:14.354050+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

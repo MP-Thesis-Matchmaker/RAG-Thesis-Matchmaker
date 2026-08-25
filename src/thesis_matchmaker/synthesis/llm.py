@@ -10,10 +10,14 @@ candidate as a long shot. Falls back to the template synthesiser on any error.
 
 from __future__ import annotations
 
+import logging
+
 from thesis_matchmaker.contracts import SupervisorMatch
 from thesis_matchmaker.llm import LLMClient, LLMError
 from thesis_matchmaker.synthesis.base import Synthesizer
 from thesis_matchmaker.synthesis.template import TemplateSynthesizer
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "You help a student pick a thesis supervisor. Using only the candidates "
@@ -23,7 +27,9 @@ _SYSTEM = (
     "facts that are not in the candidates. If a candidate only partially fits "
     "the student's interests, say so plainly instead of overstating the fit. "
     "If no candidate fits well, open by saying there is no strong match and "
-    "present the closest option as a long shot."
+    "present the closest option as a long shot. Never state or imply whether a "
+    "supervisor is accepting students, has supervision capacity, or is available: "
+    "that information is not in the data."
 )
 
 
@@ -32,12 +38,15 @@ def _format_candidates(matches: list[SupervisorMatch]) -> str:
     for match in matches:
         where = f" ({match.department})" if match.department else ""
         titles = "; ".join(item.title for item in match.evidence) or "no listed work"
-        position = "open position" if match.has_open_position else "no open position"
         topics = ", ".join(match.matched_topics) or "n/a"
-        blocks.append(
-            f"- {match.supervisor}{where}: topics {topics}; "
-            f"{match.publication_count} publications; {position}; work: {titles}"
-        )
+        # Absent data has to reach the prompt as absent. Given "no open position"
+        # the model wrote "not currently accepting new students" about a named
+        # academic; a line it never sees is a line it cannot paraphrase.
+        details = [f"topics {topics}", f"{match.publication_count} publications"]
+        if match.posting_count:
+            details.append(f"{match.posting_count} open thesis posting(s)")
+        details.append(f"work: {titles}")
+        blocks.append(f"- {match.supervisor}{where}: {'; '.join(details)}")
     return "\n".join(blocks)
 
 
@@ -75,5 +84,13 @@ class LLMSynthesizer:
         user = f'Student query: "{query}"\n\nCandidates:\n{_format_candidates(strong)}'
         try:
             return self._client.chat(_SYSTEM, user).strip()
-        except LLMError:
+        except LLMError as exc:
+            # Same reasoning as the parser: the template answer is a fine
+            # degradation but an invisible one, so say that the LLM was tried
+            # and lost rather than letting it pass for the offline path.
+            logger.warning(
+                "LLM synthesis failed (%s: %s) - falling back to the template synthesiser",
+                type(exc).__name__,
+                exc,
+            )
             return self._fallback.synthesize(query, strong)

@@ -1,0 +1,11 @@
+# The scraper's frozen page snapshots are evidence, not source. Git normalising
+# their line endings on checkout would change the bytes of a file whose whole
+# purpose is to be the exact page a spec was verified against.
+#
+# Measured: extraction output is currently byte-identical under CRLF and LF across
+# all 50 replayable sources, so this changes no test result today. It is here so
+# that stays true if anything ever hashes these files -- cache.py already computes
+# a content_sha1 over freshly fetched pages, and expected.json records a
+# verified_content_sha1, so the machinery to make a checkout matter exists.
+data/scraper/specs/**/snapshot.html -text
+data/scraper/specs/**/page.pdf      -text binary

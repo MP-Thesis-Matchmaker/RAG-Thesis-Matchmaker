@@ -59,7 +59,14 @@ class SupervisorMatch(BaseModel):
     publication_count: int = Field(
         default=0, description="Supporting publications, one of the ranking signals."
     )
-    has_open_position: bool = False
+    posting_count: int = Field(
+        default=0,
+        description=(
+            "Thesis postings retrieved for this person by this query. Says nothing "
+            "about whether they accept students: the posting query is unthresholded, "
+            "so 0 means none of theirs reached the top-k, not that none exist."
+        ),
+    )
     evidence: list[Evidence] = Field(
         default_factory=list, description="Publications and postings behind the match."
     )

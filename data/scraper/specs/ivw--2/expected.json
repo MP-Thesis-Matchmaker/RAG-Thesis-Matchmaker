@@ -1,0 +1,29 @@
+{
+  "source_id": "ivw--2",
+  "page_type": "process",
+  "verified_content_sha1": "24e8ef6d991af2ad051756819ad8b39b1d9216bb",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "The page does not describe a concrete process for obtaining and completing a BA/MA thesis; it only links to a PDF with more information and templates and refers students to the Dean’s Office website and studies@econ.uzh.ch for registration and official guidelines.",
+      "relevant_links": [
+        {
+          "url": "https://www.econ.uzh.ch/dam/jcr:62140c7a-f859-4754-ae1b-4a4546037d55/MIE%20Flyer%202019_Economics_EN.pdf",
+          "description": "flyer (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.econ.uzh.ch/dam/jcr:c800f7eb-31a0-4618-9b4b-3ff2ceb8503c/for%20students%20-%202023-%20%20BA_MA%20thesis%20guidelines%20ECON%20Department.pdf",
+          "description": "here. (PDF, 338 KB)"
+        }
+      ],
+      "source_url": "https://www.econ.uzh.ch/en/study/undergraduate/ma.html",
+      "source_id": "ivw--2",
+      "scraped_at": "2026-07-17T16:56:03.135525+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

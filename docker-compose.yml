@@ -1,0 +1,153 @@
+# Local mirror of the cluster: the same Postgres extension, the same schema
+# step, and the harvester as a one-shot job rather than a long-running process.
+#
+# A scheduled harvest in the cluster is one container invocation with a --mode
+# flag, so reproducing it here is the same invocation:
+#
+#   docker compose run --rm harvester --mode incremental
+#
+# For real timing locally the timer belongs to the host, not the app -- see
+# docs/deployment.md for the two crontab lines matching the CronJob schedules.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: matchmaker
+      POSTGRES_PASSWORD: matchmaker
+      POSTGRES_DB: matchmaker
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Runs once, on first initialisation of an empty data volume.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matchmaker -d matchmaker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  init-db:
+    build:
+      context: .
+      dockerfile: docker/zora/Dockerfile
+    entrypoint: ["thesis-matchmaker", "init-db"]
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # One-shot: it runs, writes, and exits. A schedule is the host's job (or the
+  # cluster's), never the application's.
+  harvester:
+    build:
+      context: .
+      dockerfile: docker/zora/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+      # Mirrors the cluster: the token arrives as a mounted file. Running
+      # the harvester on the host instead accepts ZORA_UZH_API_KEY inline.
+      ZORA_UZH_API_KEY_FILE: /run/secrets/zora-token
+    volumes:
+      - ./token.secret:/run/secrets/zora-token:ro
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # One-shot, like the harvester: it runs, writes, and exits. In the cluster this
+  # is a CronJob fired after each harvest. --source db is the image default, so a
+  # bare `docker compose run --rm indexer` indexes the harvested publication
+  # table; pass `--source data/samples` to index the 50 checked-in samples
+  # instead (the ./data mount below is what makes that path exist in-container).
+  #
+  # EMBEDDING_MODEL is deliberately NOT set here. The image exists to run the
+  # real model, so it inherits config.py's BAAI/bge-m3 default; set
+  # EMBEDDING_MODEL=hash-fake on the command line for a fast structural check
+  # that skips the 2.27 GB download.
+  indexer:
+    build:
+      context: .
+      dockerfile: docker/indexer/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    volumes:
+      - ./data:/app/data:ro
+      # The compose stand-in for the RWX PVC: the model downloads once and
+      # survives `--rm`, instead of being re-fetched on every run.
+      - hfcache:/var/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # Long-lived, unlike every other service here: a Deployment plus a Service in
+  # the cluster. Shares hfcache with the indexer on purpose -- the query has to
+  # be embedded with the same model as the corpus, and that sharing is why the
+  # cluster storage class has to support RWX.
+  #
+  # The image already sets MCP_HOST=0.0.0.0; binding to config.py's 127.0.0.1
+  # default would make the port unreachable from outside the container.
+  serving:
+    build:
+      context: .
+      dockerfile: docker/serving/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    ports:
+      - "8000:8000"
+    volumes:
+      - hfcache:/var/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # One-shot, like the harvester. Two invocations rather than one: `fetch` is the
+  # stage that talks to uzh.ch and is deliberately polite, `run` only reads the
+  # cache, so they are kept separable.
+  #
+  #   docker compose run --rm scraper fetch --resume
+  #   docker compose run --rm scraper run --resume
+  #
+  # SCRAPER_CONTACT has no default and the scraper refuses to fetch without one:
+  # it goes out in the User-Agent so a site owner can reach a human.
+  scraper:
+    build:
+      context: .
+      dockerfile: docker/scraper/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+      SCRAPER_CONTACT: ${SCRAPER_CONTACT:-}
+      SCRAPER_LLM_API_KEY: ${SCRAPER_LLM_API_KEY:-}
+    volumes:
+      # The compose stand-in for a PVC: the page cache survives `--rm`, so a rerun
+      # does not re-fetch 103 pages.
+      - scrapercache:/app/data/scraper/cache
+      - scrapervar:/app/data/scraper/var
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # Don't forget to load the models:
+  # docker compose exec ollama ollama pull qwen3:8b
+  # docker compose exec ollama ollama pull qwen3-embedding:4b
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  pgdata:
+  # Written by the scraper at runtime; machine output, never the repository's.
+  scrapercache:
+  scrapervar:
+  ollama:
+  # Shared by indexer and serving, mirroring the single RWX PVC in the cluster.
+  hfcache:

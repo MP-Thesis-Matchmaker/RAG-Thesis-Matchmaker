@@ -1,0 +1,9 @@
+# ifi--6: SPINS group — a process-only page (application requirements for
+# BS/MS theses & projects). No extraction template; carries only the group
+# assignment so its process record nests under unit.groups.spins.
+source_id: ifi--6
+page_type: process
+group:
+  id: spins
+  name: SPINS
+  full_name: Security and Privacy of Information, Networks, and Systems

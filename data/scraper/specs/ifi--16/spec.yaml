@@ -1,0 +1,64 @@
+# ifi--16: CSG (Communication Systems Group), on its own domain csg.uzh.ch.
+# The theses page has a "General Information"/"Important Notes" process (summarised
+# via LLM under the group) and two tables: "Open Theses and Projects" and
+# "Assigned". Only the Open table is scraped. Each row is Title | Type | Supervisor,
+# the title linking to a detail page. The detail page carries the full
+# description, the published date, and — crucially — the supervisor emails
+# aligned with the names, which are paired back by local-part / position.
+source_id: ifi--16
+page_type: topics
+also_process: true
+group:
+  id: csg
+  name: CSG
+  full_name: Communication Systems Group
+
+record:
+  # rows of the Open table only (its section shares a TextImage with the h2);
+  # a thesis link on the row excludes the header row.
+  container: 'div.TextImage:has(h2:-soup-contains("Open Theses")) table.grid tr:has(a[href*="/theses/"])'
+  fields:
+    title:
+      selector: 'td:nth-child(1) a'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: degree_from_type
+    source_link:
+      selector: 'td:nth-child(1) a'
+      attr: href
+      transform: absolute_url
+    supervisors:
+      each: 'td:nth-child(3) a[href*="/staff/"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles]
+
+id_from: [title]
+
+# Follow each detail page for the full description, the published date, and the
+# supervisor emails (a whitespace-joined list, aligned with the names).
+follow:
+  url_field: source_link
+  url_pattern: '^https?://www\.csg\.uzh\.ch/(csg/)?en/theses/.+\.html$'
+  fields:
+    topic_description:
+      selector: 'div.TextImage:has(table) + div.TextImage div.richtext'
+      attr: text
+      transform: normalize_ws
+    date_of_listing:
+      selector: 'table tr:nth-of-type(2) td:nth-child(3)'
+      attr: text
+      transform: normalize_ws
+    _emails:
+      selector: 'table tr:nth-of-type(2) td:nth-child(5)'
+      attr: text
+      transform: split_emails
+
+pair_supervisor_emails:
+  emails_field: _emails

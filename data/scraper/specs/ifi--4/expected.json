@@ -1,0 +1,63 @@
+{
+  "source_id": "ifi--4",
+  "page_type": "topics",
+  "verified_content_sha1": "deca70ac68989d1eddd96041e9ae683c8fe70d81",
+  "records": [
+    {
+      "title": "AI-based Group Support to Improve Shared Understanding",
+      "status": null,
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Human-centered Information Systems Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/hise/Theses/Bachelor-and-master-theses/ai-based-group-support-shared-understanding.html",
+      "source_id": "ifi--4",
+      "scraped_at": "2026-07-18T10:03:54.453105+00:00",
+      "topic_id": "01b59038583b8c24b58f43c7a37be8b85f089302"
+    },
+    {
+      "title": "Feedback in the Age of GenAI: Skin Conductance and Heart Rate Reactions to Feedback on AI-Assisted Work",
+      "status": null,
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Human-centered Information Systems Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/hise/Theses/Bachelor-and-master-theses/feedback-ai-assisted-work-skin-conductance-heart-rate.html",
+      "source_id": "ifi--4",
+      "scraped_at": "2026-07-18T10:03:54.453105+00:00",
+      "topic_id": "19c98ea3a4f8d2e35c95269771dbb6afff7b326e"
+    },
+    {
+      "title": "A Team of One: How Individuals Orchestrate Multiple AI Agents at Work",
+      "status": null,
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Human-centered Information Systems Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/hise/Theses/Bachelor-and-master-theses/ai-agent-orchestration.html",
+      "source_id": "ifi--4",
+      "scraped_at": "2026-07-18T10:03:54.453105+00:00",
+      "topic_id": "9828f427f59b933de6e37a3778a43003a7b0ffd7"
+    },
+    {
+      "title": "Thinking or Outsourcing? Comparing a Specialized GenAI Tool with a General-Purpose Chatbot",
+      "status": null,
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Human-centered Information Systems Engineering",
+      "supervisor_name": null,
+      "supervisor_email": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/hise/Theses/Bachelor-and-master-theses/genai-scaffolding-vs-chatbot.html",
+      "source_id": "ifi--4",
+      "scraped_at": "2026-07-18T10:03:54.453105+00:00",
+      "topic_id": "74f5361df3c4569e85fe50cfbe7950651df0185f"
+    }
+  ]
+}

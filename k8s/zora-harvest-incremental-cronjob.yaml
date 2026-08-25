@@ -1,0 +1,91 @@
+# Daily except Monday, 01:00 UTC.
+#
+# An incremental harvest fetches only items accessioned since
+# harvest_state.last_accessioned and upserts them. It deletes nothing, so it is
+# cheap and safe to run daily.
+#
+# The two harvest CronJobs are given DISJOINT day sets on purpose. The deleted
+# in-process scheduler needed a "full wins when both are due" tie-break; splitting
+# Monday off from the rest of the week makes that rule declarative, so the two can
+# never both fire and there is no tie to break. Together they cover all 7 days:
+# full is "1", incremental is "0,2-6".
+#
+# Careful with the numbering when editing either: cron's day-of-week starts at
+# SUNDAY (0=Sun, 1=Mon), whereas the deleted FULL_HARVEST_WEEKDAY used Python's
+# datetime.weekday(), where 0=Mon. Both encode Monday here, but by different
+# numbers, so copying the old default across would have shifted the full harvest
+# to Sunday.
+#
+# Backfill or an ad-hoc run:
+#   kubectl create job --from=cronjob/zora-harvest-incremental zora-harvest-manual-1
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: zora-harvest-incremental
+  labels:
+    app.kubernetes.io/name: thesis-matchmaker
+    app.kubernetes.io/component: zora-harvester
+spec:
+  schedule: "0 1 * * 0,2-6"
+  # Needs Kubernetes >= 1.27, where CronJob timeZone is GA. Without it the
+  # schedule follows kube-controller-manager's timezone, which is not ours to
+  # assume. TODO(ci): confirm the cluster's version.
+  timeZone: "Etc/UTC"
+  # A harvest is the only writer of the publication table and prunes inside one
+  # transaction. Two at once is never wanted.
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: thesis-matchmaker
+            app.kubernetes.io/component: zora-harvester
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: harvest
+              # TODO(ci): Harbor host / project / tag. See k8s/README.md.
+              image: TODO(ci)/TODO(ci)/thesis-matchmaker:TODO(ci)
+              # The image's ENTRYPOINT is already the harvester; this replaces
+              # only its default CMD of ["--mode", "incremental"].
+              args: ["--mode", "incremental"]
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: thesis-matchmaker-db
+                      key: database-url
+                # A file, not an inline value: config.resolve_api_token prefers
+                # the file and this mirrors how the token arrives here.
+                - name: ZORA_UZH_API_KEY_FILE
+                  value: /run/secrets/zora/token
+                - name: ZORA_DATA_DIR
+                  value: /var/cache/zora
+              volumeMounts:
+                - name: zora-api-token
+                  mountPath: /run/secrets/zora
+                  readOnly: true
+                - name: raw-cache
+                  mountPath: /var/cache/zora
+              # resources: deliberately unset -- see k8s/README.md. A full
+              # harvest of ~22.5k records has never been profiled in a cluster,
+              # and an invented memory limit would OOM-kill it mid-run.
+          volumes:
+            - name: zora-api-token
+              secret:
+                secretName: zora-api-token
+                defaultMode: 0400
+            - name: raw-cache
+              # OPEN QUESTION, not a settled choice. harvest.write_raw_dump writes
+              # one JSONL per run so ingestion is reproducible without re-hitting
+              # ZORA. emptyDir discards it when the pod exits, which loses exactly
+              # that property. The alternatives are a PVC (needs a storage class
+              # we have not been given) or moving the cache into Postgres as a
+              # jsonb table. emptyDir is the honest placeholder: the harvest works,
+              # and nothing pretends the dump is being kept.
+              emptyDir: {}

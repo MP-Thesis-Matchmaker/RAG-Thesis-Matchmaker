@@ -1,0 +1,56 @@
+{
+  "source_id": "ieu--1",
+  "page_type": "topics",
+  "verified_content_sha1": "38cc9ac35063806f29711273a5ffb4649757c8b8",
+  "records": [
+    {
+      "title": "Expression of alternative reproductive tactics relative to social context",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Evolutionary Biology",
+      "supervisors": [
+        {
+          "name": "Stefan Lüpold",
+          "email": "stefan.luepold@ieu.uzh.ch"
+        }
+      ],
+      "topic_description": "Species with intense male-male competition for access to females often show alternative reproductive tactics (ARTs), with males of lower competitive ability trying to steal mates from courting rivals. In Drosophila prolongata, for example, non-courting males sometimes intercept the female from a courting male. This ART appears to be condition-dependent, but little is known about how the social context might influence its expression. We plan to test how varying local densities and sex ratios influence the expression of interception in D. prolongata in the context of frequency- and density-dependent selection. Evaluating the environmental and social factors promoting the expression of this ART is important to understand the maintenance of phenotypic variation on secondary sexual traits.",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_evolutionary_biology.html",
+      "source_id": "ieu--1",
+      "scraped_at": "2026-08-05T12:25:08.735054+00:00",
+      "topic_id": "a4fd5a960c60e2624ca1ba637984214663458c8a"
+    },
+    {
+      "title": "Fitness consequences of heat stress across generations",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Evolutionary Biology",
+      "supervisors": [
+        {
+          "name": "Stefan Lüpold",
+          "email": "stefan.luepold@ieu.uzh.ch"
+        }
+      ],
+      "topic_description": "Climate change is causing more extreme temperature fluctuations, including more widespread, longer, and more intense heatwaves. Extreme weather events can have damaging effects on organisms and cause species declines, extinctions, or range shifts across ecosystems. Animals like insects, whose physiology and metabolism are directly linked to their ambient temperature, are particularly affected. For better predictions of population distributions and persistence, we need to know how extreme conditions not only affect the survival of individuals but also their ability to reproduce. For example, there is growing evidence that heat stress can cause infertility in insects (e.g., due to sperm damage), but individuals below the sterility threshold may be affected in their own, but unexplored, way. Using experimental heatwaves at different life stages in our insect model systems (e.g., Drosophila), this project will explore (1) the short- and long-term fertility loss in exposed individuals, and (2) the health and fertility consequences for their offspring (i.e., transgenerational effects). A Master’s student will work alongside PhD student and conduct their independent research as part of a bigger project.",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_evolutionary_biology.html",
+      "source_id": "ieu--1",
+      "scraped_at": "2026-08-05T12:25:08.735054+00:00",
+      "topic_id": "d0b5725d296fa4c5125ac5ba0bd1ad20d54ecd49"
+    },
+    {
+      "title": "Molecular mechanisms that allow bacteria to “innovate” antibiotic molecules",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Evolutionary Biology",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ieu.uzh.ch/dam/jcr:8aed64b2-b795-47e2-bf63-f354f128dc80/master_project_nivina_group_2026.pdf",
+      "source_id": "ieu--1",
+      "scraped_at": "2026-08-05T12:25:08.735054+00:00",
+      "topic_id": "f77a7fcdc4bf0a417a0ea4dbafe876480cb439c7"
+    }
+  ]
+}

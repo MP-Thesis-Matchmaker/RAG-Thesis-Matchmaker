@@ -1,0 +1,49 @@
+# ifi--14: RPG (Robotics and Perception Group, Prof. Scaramuzza). Served from a
+# .php page but plain HTML (static fetch). Dual page: a "How to apply" process
+# (summarised via LLM under the group) plus a grid of topic cards, each a
+# `div.student-project-item` with a title + status suffix ("- Available"), a
+# Description and Goal paragraph, a Thesis Type line (degree), a Contact Details
+# line naming several supervisors with inline emails, and a SiROP link.
+source_id: ifi--14
+page_type: topics
+also_process: true
+group:
+  id: rpg
+  name: RPG
+  full_name: Robotics and Perception Group
+
+record:
+  container: "div.student-project-item"
+  fields:
+    title:
+      - selector: "h3"                 # strip the trailing " - Available/Taken"
+        attr: text
+        regex: '^(.*?)\s*-\s*(?:Available|Taken|Filled|Assigned|Reserved|Closed)\s*$'
+        transform: normalize_ws
+      - selector: "h3"                 # fallback: whole heading
+        attr: text
+        transform: normalize_ws
+    status:                            # the status word sits in its own span
+      selector: "h3 span"
+      attr: text
+      transform: norm_status
+    topic_description:
+      selector: 'p:-soup-contains("Description:")'
+      attr: text
+      regex: '^\s*Description:\s*(.+)$'
+      transform: normalize_ws
+    degree_level:
+      selector: 'p.requirement:-soup-contains("Thesis Type")'
+      attr: text
+      transform: degree_from_text
+    supervisors:
+      selector: 'p:-soup-contains("Contact Details")'
+      attr: text
+      transform: contact_supervisors
+    source_link:
+      - selector: 'a[href*="sirop.org"]'
+        attr: href
+        transform: absolute_url
+      - value: "https://rpg.ifi.uzh.ch/student_projects.php"
+
+id_from: [title]

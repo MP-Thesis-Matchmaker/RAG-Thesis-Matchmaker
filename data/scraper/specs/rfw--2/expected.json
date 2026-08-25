@@ -1,0 +1,49 @@
+{
+  "source_id": "rfw--2",
+  "page_type": "process",
+  "verified_content_sha1": "e2a5dad0504bf0b0bcd99489d43d9b90fabe3066",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "The page does not describe a concrete process for obtaining or completing Bachelor’s or Master’s theses — it provides no details on eligibility, finding/approaching supervisors, registration, formal requirements, deadlines, or links to official guidelines.",
+      "relevant_links": [
+        {
+          "url": "https://www.ius.uzh.ch/dam/jcr:511cace5-5a9f-4ea9-8f51-e2c329b3568e/Seminarangebotsliste%20Herbstsemester%202026%20DE_v2.pdf",
+          "description": "Seminarangebotsliste Herbstsemester 2026 (PDF, 177 KB)"
+        },
+        {
+          "url": "https://www.ius.uzh.ch/de/studies/during-studies/deadlines.html",
+          "description": "Termine und Fristen"
+        },
+        {
+          "url": "https://launchpad.uzh.ch/",
+          "description": "Zur Anmeldung (Studierendenportal)"
+        },
+        {
+          "url": "https://www.ius.uzh.ch/dam/jcr:f96cbb94-4e9e-4ae2-a2bb-a5c0dd7c5329/Proseminarangebotsliste%20Herbstsemester%202026.pdf",
+          "description": "Proseminarangebotsliste Herbstsemester 2026 (PDF, 176 KB)"
+        },
+        {
+          "url": "https://www.ius.uzh.ch/dam/jcr:a93730b4-8c86-4c00-8588-7f9f59e304ea/neu_ma_vereinbarung_dt-4.pdf",
+          "description": "Vereinbarung über eine Masterarbeit (PDF, 148 KB)"
+        },
+        {
+          "url": "https://www.ius.uzh.ch/dam/jcr:1a063ed6-56a5-4b28-ae40-4b83ef928875/Informationsblatt%20Individuelle%20Masterarbeit.pdf",
+          "description": "Informationsblatt zur individuellen Masterarbeit (PDF, 108 KB)"
+        },
+        {
+          "url": "https://www.ius.uzh.ch/de/studies/contact-form.html",
+          "description": "Kontaktformular"
+        }
+      ],
+      "source_url": "https://www.ius.uzh.ch/de/studies/during-studies/modules-records/thesis-papers.html#Bachelorarbeit",
+      "source_id": "rfw--2",
+      "scraped_at": "2026-08-04T10:21:32.853724+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "source_id": "mef--1",
+  "page_type": "process",
+  "verified_content_sha1": "abddb87d0c9d24a2632619b915d68ea47ec84b11",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "This page concerns the Masterarbeit for Human‑ and Zahnmedizin Master students: the thesis is mandatory in the Master programme and a prerequisite for admission to the federal examination. To find a supervisor or topic students are directed to the Virtuelle Ausbildungsplattform Medizin (VAM > Masterarbeit), which hosts a \"Handbuch\", an online Themenbörse to match supervisors and students, a mini‑guide for supervisors and assorted documents. Formal registration steps and deadlines are not specified on this page. Plagiarism rules are explicit: the Faculty policy (22 May 2019) requires supervisors/mentors to check theses (students must consent), and the absence of suspicion must be confirmed at submission; suspected cases are referred to the Masterarbeitskommission. Official guidelines are on VAM and the faculty's plagiarism‑policy PDF; contact: Sandra Lang, Studiendekanat.",
+      "relevant_links": [
+        {
+          "url": "https://www.med.uzh.ch/dam/jcr:c1650d20-8765-4a9f-b7ff-1985b25b3e84/220207%20Policy%20Plagiat%20Mai%202019.pdf",
+          "description": "pdf (PDF, 102 KB)"
+        }
+      ],
+      "source_url": "https://www.med.uzh.ch/de/studium/masterarbeit.html",
+      "source_id": "mef--1",
+      "scraped_at": "2026-08-05T13:49:35.766755+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

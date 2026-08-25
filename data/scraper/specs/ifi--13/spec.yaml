@@ -1,0 +1,28 @@
+# ifi--13: ALPI (Autonomous Learning and Predictive Intelligence Lab). Short
+# dual page: a brief process ("we offer BSc/MSc projects & theses, apply via the
+# Google form", summarised via LLM under the group) plus a "Current topics" list
+# of five RL topic titles. The page states detailed proposals are only shared
+# after emailing, so there are no per-topic descriptions or named supervisors —
+# only the titles are captured; the application form lives in the process links.
+source_id: ifi--13
+page_type: topics
+also_process: true
+group:
+  id: alpi
+  name: ALPI
+  full_name: Autonomous Learning and Predictive Intelligence Lab
+
+record:
+  container: 'h3:-soup-contains("Current topics") ~ ul li'
+  fields:
+    title:
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Bachelor, Master"        # BSc theses + MSc projects & theses
+    research_area:
+      value: "Autonomous Learning and Predictive Intelligence"
+
+id_from: [title]

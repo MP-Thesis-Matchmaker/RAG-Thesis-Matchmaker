@@ -1,0 +1,40 @@
+# ifi--12: VMML (Visualization and MultiMedia Lab). Dual page: process text
+# (Overview / Expectations / General Rules, summarised via LLM under the group)
+# plus a "Topics" grid of project cards. Each card is a `div.vmml-project` with
+# a title and a link to a project PDF. The one-line card blurb is thin, so each
+# PDF is parsed once (pdf_enrich) for a fuller LLM description, the supervisor
+# contact email(s), and the degree level ("Master Project" / "Bachelor Thesis").
+source_id: ifi--12
+page_type: topics
+also_process: true
+group:
+  id: vmml
+  name: VMML
+  full_name: Visualization and MultiMedia Lab
+
+record:
+  container: "div.vmml-project"
+  fields:
+    title:
+      selector: "div.image_title_title"
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    research_area:
+      value: "Visualization and Multimedia"
+    source_link:                       # the project PDF
+      selector: "a[href]"
+      attr: href
+      transform: absolute_url
+
+id_from: [source_link]
+
+# Parse each project PDF once: fuller description (LLM), supervisor email(s)
+# (any uzh.ch address in the text), and degree level from the header line.
+pdf_enrich:
+  url_field: source_link
+  summary_into: topic_description
+  supervisors: true
+  degree_into: degree_level
+  degree_default: "Bachelor, Master"   # page offers projects for BSc and MSc

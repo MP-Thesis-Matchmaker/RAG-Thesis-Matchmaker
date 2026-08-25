@@ -1,0 +1,32 @@
+# JSON/API-backed topics source (Next.js + tRPC theses portal).
+# The registry URL is a SPA deep-link; the real data is the tRPC proposals
+# endpoint below (status=OPEN_PROPOSALS). All returned proposals are IBW; the
+# department filter guards against that ever changing.
+source_id: ibw--2
+page_type: topics
+source_type: json
+api_url: "https://theses.business.uzh.ch/api/trpc/proposals?batch=1&input=%7B%220%22%3A%7B%22filters%22%3A%7B%22status%22%3A%22OPEN_PROPOSALS%22%7D%7D%7D"
+
+record:
+  path: "0.result.data"          # tRPC batch: [0].result.data -> list of proposals
+  filter:
+    department: "IBW"
+  fields:
+    title:
+      path: title
+      transform: normalize_ws
+    topic_description:
+      path: description
+      transform: normalize_ws
+    degree_level: studyLevel
+    research_area: topicArea.name
+    supervisor_name: supervisedBy[0].supervisor.name
+    supervisor_email: supervisedBy[0].supervisor.email
+    date_of_listing:
+      path: createdAt
+      transform: date_only
+    source_link:
+      template: "https://theses.business.uzh.ch/{id}"
+
+# topic_id = sha1(source_link + normalized title); title identifies the topic.
+id_from: [title]

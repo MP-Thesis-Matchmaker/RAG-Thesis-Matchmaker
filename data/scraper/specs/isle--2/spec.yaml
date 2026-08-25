@@ -1,0 +1,32 @@
+# isle--2: ISLE staff page. Per the brief, extract all Professors — every table
+# row whose name cell carries "Prof." (institute professors plus guests,
+# affiliated and associated professorships). The tables have slightly different
+# column layouts, so fields are taken layout-agnostically: the name cell, any
+# mailto in the row (some are "(at)/(dot)" obfuscated), the second cell as the
+# position/affiliation, and the name link as the profile URL.
+source_id: isle--2
+page_type: people
+
+record:
+  container: 'table tr:has(td:nth-child(1):-soup-contains("Prof."))'
+  fields:
+    name:
+      selector: "td:nth-child(1)"
+      attr: text
+      transform: [normalize_ws, strip_titles]
+    role:
+      selector: "td:nth-child(1)"
+      attr: text
+      transform: academic_role
+    email:
+      selector: 'a[href^="mailto"]'
+      attr: href
+      transform: [strip_mailto, deobfuscate_email]
+    research_field:                    # position (institute profs) or home affiliation
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: normalize_ws
+    _profile_url:
+      selector: 'td:nth-child(1) a[href]'
+      attr: href
+      transform: absolute_url

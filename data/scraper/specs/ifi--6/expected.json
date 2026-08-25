@@ -1,0 +1,20 @@
+{
+  "source_id": "ifi--6",
+  "page_type": "process",
+  "verified_content_sha1": "d5507a6ffabc44e8df16576e4ecab72bb59a1754",
+  "records": [
+    {
+      "degree_level": "Unspecified",
+      "process_description": "Eligible BS and MS students should have basic cybersecurity foundations—at minimum the UZH course Foundations of Cybersecurity or equivalent experience. Before applying, check SPINS’ current research areas; most projects/theses are co-advised by a SPINS PhD/PostDoc. To apply, complete the group’s APPLICATION FORM and include a brief (couple-paragraph) project/thesis description. Applications must be submitted at least two months before the proposed start to allow a proposal to be prepared and submitted together with your registration/enrollment form. Project execution must coincide with academic semesters (Fall or Spring). The group advises only as staffing allows, so apply early and ensure your topic fits SPINS. The page does not provide or link to separate official faculty/UZH thesis guidelines.",
+      "relevant_links": [],
+      "source_url": "https://www.ifi.uzh.ch/en/spins/Prospective-MS-and-BS-Thesis-Students.html",
+      "source_id": "ifi--6",
+      "scraped_at": "2026-07-21T12:43:13.494870+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

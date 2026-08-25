@@ -1,0 +1,9 @@
+# vsf--1: the Vetsuisse Faculty's Masterarbeit / Themenbörse page for veterinary
+# medicine. Process/contact-only: open topics live in the login-gated
+# "Masterthemenbörse" tool (vsf-matool.uzh.ch — no public listing); the page
+# itself covers the topic-exchange process, timeline/milestones, generative-AI
+# and plagiarism rules, and the Masterarbeitskomitee membership. Summarized by
+# the LLM.
+source_id: vsf--1
+page_type: process
+degree_level: "Master"

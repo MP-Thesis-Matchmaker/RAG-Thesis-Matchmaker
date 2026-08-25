@@ -1,0 +1,272 @@
+{
+  "source_id": "ifi--16",
+  "page_type": "topics",
+  "verified_content_sha1": "19d81bf13d4257de922691ba2d3231c030a71cea",
+  "records": [
+    {
+      "title": "Chaos Testing in Named Data Networking (NDN)",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Thomas Grübl"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/TG-MA-Chaos-Testing-in-NDN.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "66bbfc74630ecaa86b95b3b96725236c7d9582ff"
+    },
+    {
+      "title": "Evaluating Messaging in SCION",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Thomas Grübl"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/TG-MA-SCION-Messaging.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "d323b5701ccc058f3b65984c8193e79a1c5fd7a3"
+    },
+    {
+      "title": "Designing Military Network Scenarios for Offensive AI Training",
+      "status": "open",
+      "degree_level": "Bachelor",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Francisco Enguix"
+        },
+        {
+          "name": "Alberto Huertas"
+        },
+        {
+          "name": "Chao Feng"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/FE-BA-Designing-Military-Network-Scenarios-for-Offensive-AI-Training.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "c661c1d1e1220e57358eb38751ffccaefe41683f"
+    },
+    {
+      "title": "Evaluating Self-Sovereign Identity System against Functional Model",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Daria Schumm"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/DS-IS-Evaluating-Self-Sovereign-Identity-System-against-Functional-Model.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "0170df513ecf67b4fa3326cdb4cfc724f3db032f"
+    },
+    {
+      "title": "Formalization and Evaluation of Decentralization Requirements in Decentralized Identity Systems",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Daria Schumm"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/DS-MA-Formalization-and-Evaluation-of-Decentralization-Requirements-in-Decentralized-Identity-Systems.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "8a607633cebb92f64c07f24de52207f816f78c1a"
+    },
+    {
+      "title": "Building a Reinforcement Learning Reward Optimizer Agent based on Large Language Models",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Francisco Enguix"
+        },
+        {
+          "name": "Weijie Niu"
+        },
+        {
+          "name": "Alberto Huertas"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/FE-MA-Building-a-Reinforcement-Learning-Reward-Optimizer-Agent-based-on-Large-Language-Models.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "be38ec72d74597d1e6f5938699ddb26558222e80"
+    },
+    {
+      "title": "Building a Large Language Model Agent to Improve Reinforcement Learning Actions",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Francisco Enguix"
+        },
+        {
+          "name": "Alberto Huertas"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/FE-MA-Building-an-LLM-Agent-to-Improve-RL-Actions.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "cc5f81669d8fadcfca88b11cb87a00a754eece26"
+    },
+    {
+      "title": "Extracting Functional Requirements from Policies for Decentralized Identity Applications",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Daria Schumm"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/DS-MA-Extracting-Functional-Requirements-from-Policies-for-Decentralized-Identity-Applications.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "2f740619408b70aa233282bd318d18806c551c81"
+    },
+    {
+      "title": "Shedding Light on the Unknown — Leveraging OSINT and AI for Leadership Decisions",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Andy Aidoo"
+        },
+        {
+          "name": "Francisco Enguix"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/AAi-FE-MA-MP-Shedding-Light-on-the-Unknown-Leveraging-OSINT-and-AI-for-Leadership-Decisions.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "fe5e94ad6a85eb52c5237d6d4602184d78b7d36e"
+    },
+    {
+      "title": "Long-term Habit Tracking from Lightbulbs",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Katharina O. E. Müller"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/KM-BA-MA-Long-term-Habit-Tracking-from-Lightbulbs.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "f93a5f6cd797b0f5b9b5242a3e7cb6856d771f45"
+    },
+    {
+      "title": "Deep Learning for Arbitrage Trading in Crypto Options Market",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "rabtahi@ifi.uzh.ch"
+        },
+        {
+          "name": "Nasim Nezhadsistani"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/NN-MA-MP-Deep-Learning-for-Arbitrage-Trading-in-Crypto-Options-Market.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "f46ee385818a9d64972d96c93a12000e44283945"
+    },
+    {
+      "title": "Explainable AI (XAI) for Attack Detection in Wireless Sensor Networks",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Nasim Nezhadsistani"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/NN-BA-MA-MP-Explainable-AI-%28XAI%29-for-Attack-Detection-in-Wireless-Sensor-Networks.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "27b8b2ce93bf1b45c8ee6fef116d20d1fe7f9d3f"
+    },
+    {
+      "title": "Benchmarking Large Language Models for Knowledge Graph Construction in Prediction Markets",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Reza Abtahi"
+        },
+        {
+          "name": "Ahmad Abtahi"
+        },
+        {
+          "name": "Nasim Nezhadsistani"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/NN-MA-MP-Benchmarking-Large-Language-Models-for-Knowledge-Graph-Construction-in-Prediction-Markets.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "b552726dc37bfe092772ea52c32d590e0c6c3f71"
+    },
+    {
+      "title": "Simulating Internal Threat Actor Attacks in Industrial Control Systems via BPMN",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": null,
+      "supervisors": [
+        {
+          "name": "Chao Feng"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.csg.uzh.ch/en/theses/AnI-BA-MA-Simulating-Internal-Threat-Actor-Attacks-in-Industrial-Control-Systems-via-BPMN.html",
+      "source_id": "ifi--16",
+      "scraped_at": "2026-07-22T20:54:44.588432+00:00",
+      "topic_id": "269049a96c705d55e82c26dadb8b0e74d52a0159"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+# ifi--5: DBTG (Database Technology Group). Dual page: process text + a thesis-
+# type table, then inline topic blocks. Each topic block (div.TextImage--content
+# with an h3) has a title (+ a coloured status span, red="Taken"), an inline
+# "Supervisor:" staff link (followed for the email), and often a PDF with the
+# full description (kept as source_link — descriptions live in the PDFs).
+source_id: ifi--5
+page_type: topics
+also_process: true
+group:
+  id: dbtg
+  name: DBTG
+  full_name: Database Technology Group
+
+record:
+  container: "div.TextImage--content:has(h3)"
+  fields:
+    # Title is the h3 minus the trailing status word; fall back to whole h3.
+    title:
+      - selector: "h3"
+        attr: text
+        regex: '^(.+?)\s+(?:Taken|Reserved|Assigned|Available)\s*$'
+      - selector: "h3"
+        attr: text
+        transform: normalize_ws
+    status:
+      selector: "h3"
+      attr: text
+      transform: lower               # runs before regex, so match lowercase
+      regex: '(taken|reserved|assigned)'
+      default: open
+    degree_level:
+      value: "Bachelor, Master"
+    research_area:
+      value: "Database Technology"
+    supervisor_name:
+      selector: 'a[href*="/Staff/"]'
+      attr: text
+      transform: normalize_ws
+    # Inline description = the block text minus the h3 title, the "Supervisor:"
+    # line, the PDF link and the anchor. PDF-only blocks (no inline text) fall
+    # back to the pdf_summary step below.
+    topic_description:
+      exclude:
+        - "h3"
+        - 'p:-soup-contains("Supervisor")'
+        - 'p:has(a[href$=".pdf"])'
+        - "a[name]"
+      attr: text
+      transform: normalize_ws
+    source_link:
+      selector: 'a[href$=".pdf"]'
+      attr: href
+      transform: absolute_url
+    _supervisor_url:
+      selector: 'a[href*="/Staff/"]'
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+# Topics whose source_link is a PDF: fetch it and LLM-summarize into the
+# description (cached so re-runs don't re-fetch/re-spend).
+pdf_summary:
+  url_field: source_link
+  into: topic_description
+
+follow:
+  url_field: _supervisor_url
+  url_pattern: '^https://www\.ifi\.uzh\.ch/en/dbtg/Staff/.+\.html$'
+  fields:
+    supervisor_email:
+      - selector: 'main a[href^="mailto"]'
+        attr: href
+        transform: strip_mailto
+      - selector: "main address, main"
+        attr: text
+        transform: deobfuscate_email

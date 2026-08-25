@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ZoraPublication",
-  "description": "One line of data/publications.jsonl. Mirrors src/output_schema.py — keep both in sync.",
+  "description": "One publication row. Mirrors src/output_schema.py — keep both in sync.",
   "type": "object",
   "required": ["id"],
   "properties": {

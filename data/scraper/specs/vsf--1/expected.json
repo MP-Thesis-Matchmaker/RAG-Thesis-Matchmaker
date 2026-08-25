@@ -1,0 +1,29 @@
+{
+  "source_id": "vsf--1",
+  "page_type": "process",
+  "verified_content_sha1": "811e3856507e8ba76e1343ed8f5a34b374ec6fa5",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Masterstudierende (1. Studienjahr / Beginn 8. Semester) erhalten ab 1. März eine Liste mit angebotenen Masterarbeitsthemen; betreuende Dozierende geben Themen in die Themenbörse ein und können ab 1. März an Studierende des 4. Jahres vergeben. Studierende wählen ein Thema ab 1. März (17:00) und müssen das Learning Agreement bis 31. Juli unterschreiben. Die Arbeit wird in den Semestern 9–11 durchgeführt (Studierende haben insgesamt 16 Wochen Schreibzeit); nicht‑klinische Schwerpunkte in Sem. 9–10, klinische zwischen den Rotationen in Sem. 9–11. Endfassung: spätestens 31. Oktober bei der betreuenden Person; alle Unterlagen inkl. Bewertung bis 30. November im Studiendekanat. Formulare (Learning Agreement, Vorlage, Beurteilungsschema, Eigenständigkeitserklärung u.a.) und Richtlinien sind in der Masterarbeiten-Themenbörse (Menü „Wichtige Dokumente“, Zugang für Dozierende). Betreuer prüfen Plagiate (Turnitin); Einverständnis der Studierenden erforderlich.",
+      "relevant_links": [
+        {
+          "url": "https://vsf-matool.uzh.ch",
+          "description": "Masterarbeiten-Themenbörse (Dozierende)"
+        },
+        {
+          "url": "https://www.vet.uzh.ch/dam/jcr:f83f151a-2322-4e0d-a177-6a0f4c523ed9/A.I.-Tools_Richtlinie%20VSF%5B30%5D.pdf",
+          "description": "Einsatz von generativer KI bei der Verfassung von Arbeiten (PDF, 352 KB)"
+        }
+      ],
+      "source_url": "https://www.vet.uzh.ch/de/dozierende/MasterarbeitThemenboerse.html",
+      "source_id": "vsf--1",
+      "scraped_at": "2026-08-05T13:52:50.895987+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

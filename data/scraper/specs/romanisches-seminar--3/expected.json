@@ -1,0 +1,20 @@
+{
+  "source_id": "romanisches-seminar--3",
+  "page_type": "process",
+  "verified_content_sha1": "5d8d58ef115de03481288bbda5f62d799f766059",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Any student who wants to book a Masterarbeit must first obtain the supervisor’s written consent (gem. §31 Studienordnung, allg. Teil) — contact the desired supervisor or the study program director Rico Valär. After consent, book the thesis like any module during normal booking periods in the Studierendenportal. After the booking deadline the Philosophical Faculty will send a link to a special website where you must immediately register the supervisor and a provisional title. The Master thesis is a two‑semester module (can be assessed after one semester by agreement). Minimum length: 120,000 characters including spaces. Eligible supervisors: full and associate professors, assistant professors, titular professors and Privatdozierende; other staff with a PhD may supervise after superior’s approval and an application to the program director. Deadlines: submit to supervisor by 1 Dec for HS grading, 1 June for FS grading; extension requests go to the supervisor and Sven Bachmann. Official rule reference: §31 of the Studienordnung (general part).",
+      "relevant_links": [],
+      "source_url": "https://www.rose.uzh.ch/de/studium/infos/buchung-ma.html",
+      "source_id": "romanisches-seminar--3",
+      "scraped_at": "2026-07-31T14:13:45.317526+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

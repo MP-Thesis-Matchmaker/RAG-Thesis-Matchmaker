@@ -1,5 +1,7 @@
-# Zora API token gitignore
-.dspace-personal-api-token.secret
+# Zora API token. docs/zora-harvester.md and docker-compose.yml both tell
+# you to create token.secret at the repository root -- never commit it.
+token.secret
+*.secret
 
 # macOS
 .DS_Store
@@ -213,8 +215,44 @@ marimo/_lsp/
 __marimo__/
 
 # project specific
-data/index/
+
+# graphify / knowledge-graph tool output
+graphify-out/
 
 # Claude
-CLAUDE.md
+#   CLAUDE.md is tracked on purpose: it is the shared agent brief for the team.
 .claude/
+
+# Harvested data
+#   data/raw/ is the ZORA raw-response cache: one JSONL dump per harvest run, so
+#   ingestion is reproducible without re-hitting the live API. It is machine
+#   output, it grows with every run, and it has no business in git.
+#   data/samples/ stays tracked on purpose — it is fixture data the offline path
+#   and the test suite both depend on.
+data/raw/
+#   publications.jsonl and state.json are the pre-Postgres harvest output. Nothing
+#   writes either any more: zora/store.py writes the publication and harvest_state
+#   tables instead. They were tracked, which meant a 47 MB blob in every clone and
+#   a tempting stale copy of a corpus that now lives in the database.
+data/publications.jsonl
+data/state.json
+
+# Scraped data
+#   data/scraper/cache/ is the page cache: one directory per source holding the
+#   fetched HTML plus a few previous versions, so re-extracting never re-hits a UZH
+#   site. var/ is per-source run state. output/ is the scraper's own JSON view.
+#   All three are machine output that grows with every run.
+#   data/scraper/registry/ and data/scraper/specs/ stay tracked on purpose:
+#   registry/ is the human-authored list of what to scrape, and specs/ holds the
+#   per-source spec.yaml the extractor reads at runtime plus the frozen page
+#   snapshots the offline test suite replays against.
+data/scraper/cache/
+data/scraper/var/
+data/scraper/output/
+
+# Supervisor demo bundle
+#   demo/ carries a 1.6 GB database dump plus a runbook for handing the system
+#   to someone who should not have to harvest or index anything. Machine-sized
+#   data, personal data (researcher names), and a moving snapshot -- none of it
+#   belongs in history. demo/README.md documents how to run it.
+/demo/

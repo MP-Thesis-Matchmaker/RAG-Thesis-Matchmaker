@@ -1,0 +1,25 @@
+{
+  "source_id": "kunsthistorisches-institut--1",
+  "page_type": "process",
+  "verified_content_sha1": "51316bec6f4cd56626b0abbf97a44b9298295751",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Die Bachelorarbeit (Modul 06SM640-BA, 15 ECTS) ist Bestandteil des BA‑Studiums und wird empfohlen gegen Ende des Studiums zu schreiben. Betreuung: jede Lehrperson des KHIST mit mindestens Masterabschluss, die während des Prüfungszeitraums an der UZH angestellt ist; Thema wird von der Studierenden/ dem Studierenden in Absprache mit der Betreuung gewählt (Idealerweise im vorangehenden Semester besprechen). Anmeldung: Studierende buchen das Modul selbst über das reguläre Modulbuchungssystem; nach Buchungsfrist werden Sie aufgefordert, vorläufigen Titel und Betreuer/in auf der Webseite des Studiendekanats anzugeben. Abgabe: über OLAT; Umfang 60'000–100'000 Zeichen; unterschriebene Lauterkeitserklärung beilegen; Titelblatt mit genannten Angaben. Fristen: Buchung im HS → Abgabe bis 1. Dez.; FS → bis 1. Juni. Betreuungspersonen haben sechs Wochen für Benotung/Gutachten. Modalitäten zu Fristerstreckung/Abmeldung, RVO/StO und Abschlussverfahren siehe Seiten des Studiendekanats und der Philosophischen Fakultät.",
+      "relevant_links": [
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+          "description": "Modul Bachelorarbeit an der PhF"
+        }
+      ],
+      "source_url": "https://www.khist.uzh.ch/de/studies/Studienorganisation/bachelor/Abschluss-des-Studiums.html",
+      "source_id": "kunsthistorisches-institut--1",
+      "scraped_at": "2026-07-31T12:45:41.327024+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

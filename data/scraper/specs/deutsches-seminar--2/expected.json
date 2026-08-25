@@ -1,0 +1,20 @@
+{
+  "source_id": "deutsches-seminar--2",
+  "page_type": "process",
+  "verified_content_sha1": "3c5b22b349c9be629168c840dc7b74d50889ec79",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Eligibility: BA students in the department (modules listed: 06SM360-BA Deutsche Sprach- und Literaturwissenschaft; 06SM370-BA Skandinavistik). How to find/approach a supervisor: contact the desired supervision person (check that they are authorised to supervise), confirm their willingness and agree a topic and working title. How to register: complete the online supervision request form (name, matriculation number, UZH e‑mail + confirmation, booking semester, chosen supervisor, module, Arbeitstitel). You will receive an acknowledgement to your UZH e‑mail and, if the supervisor accepts, a supervision confirmation—keep this. After receiving the supervision confirmation, book the corresponding module yourself in the Studierendenportal. Key formal notes/deadlines: the request does not guarantee supervision or module booking; booking occurs only after a supervision agreement (StO §26/31); booking semester options are shown on the form. Official rules: governed by the study regulations referenced (StO §26 and §31) — no full guideline link is provided on the page.",
+      "relevant_links": [],
+      "source_url": "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ba.php?get=s",
+      "source_id": "deutsches-seminar--2",
+      "scraped_at": "2026-08-05T13:55:04.263277+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

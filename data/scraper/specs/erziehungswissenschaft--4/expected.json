@@ -1,0 +1,25 @@
+{
+  "source_id": "erziehungswissenschaft--4",
+  "page_type": "process",
+  "verified_content_sha1": "f9b9133d59e0bf81a457391e5d76c39fb60c0af3",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Masterstudierende im Major Erziehungswissenschaft sowie im Major Fachwissenschaft Pädagogik und Psychologie (Verfassen in Psychologie ausgeschlossen) können am IfE eine Masterarbeit schreiben. Die Arbeit umfasst 30 ECTS (ca. 900 h), 50–90 Seiten (Titelblatt, Inhalts-/Literaturverzeichnis und Anhang nicht eingerechnet), ist zweisemestrig, benotet und kann auf Deutsch oder Englisch verfasst werden. Studierende planen die Arbeit idealerweise spätestens ein Jahr vor dem Abschluss. Betreuung muss durch eine Dozentin/einen Dozenten mit Doktortitel erfolgen (aufgelistete Kategorien; auch Mitarbeitende der Fachstelle Methoden und der Forschungsstelle mit Doktortitel). Studierende melden sich frühzeitig (vorzugsweise im Vorsemester) per Sprechstunde oder E‑Mail mit Themenvorschlag und Grobskizze; Themenangebote finden sich auf der IfE‑Masterarbeitsseite. Vor Buchung ist eine verbindliche Betreuungszusage und ein akzeptiertes Konzept (Fragestellung, Disposition, Quellen/Literatur) nötig; die Buchung erfolgt selbständig. Offizielle Vorgaben: Studienordnung (§§ 19, 31, 32) sowie IfE‑Merkblätter (Plagiat, KI, lehrstuhlspezifische Hinweise) auf der Study‑Webseite des IfE.",
+      "relevant_links": [
+        {
+          "url": "https://www.ife.uzh.ch/dam/jcr:f959d90e-2b98-4f1b-bdd8-c626da957ceb/Merkblatt%20MA-Arbeit.pdf",
+          "description": "Process pdf for MA thesis"
+        }
+      ],
+      "source_url": "https://www.ife.uzh.ch/dam/jcr:f959d90e-2b98-4f1b-bdd8-c626da957ceb/Merkblatt%20MA-Arbeit.pdf",
+      "source_id": "erziehungswissenschaft--4",
+      "scraped_at": "2026-07-30T08:20:59.450032+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

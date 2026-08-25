@@ -1,0 +1,72 @@
+{
+  "source_id": "ifi--15",
+  "page_type": "topics",
+  "verified_content_sha1": "55f17afe67a364682fc9a82af1f144f2aa1331d5",
+  "records": [
+    {
+      "title": "Digital Agents for Automated Facilitation",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": "Information Management",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/imrg/theses/master-theses/digital-agents-for-automated-facilitation.html",
+      "source_id": "ifi--15",
+      "scraped_at": "2026-07-22T20:28:42.581026+00:00",
+      "topic_id": "f55699ab4395ca5fea63711e70e6fd16347b3e4d"
+    },
+    {
+      "title": "Marketing Decisions Using Social Media and GenAI",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": "Information Management",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/imrg/theses/master-theses/marketing-decisions.html",
+      "source_id": "ifi--15",
+      "scraped_at": "2026-07-22T20:28:42.581026+00:00",
+      "topic_id": "ea3ca8452fd8a6b2a3559b09c7a6ddf0f7465da5"
+    },
+    {
+      "title": "Real or Generated? Individual, Collective, and Expert Intelligence in Detection of AI-generated Media",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": "Information Management",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/imrg/theses/master-theses/real-or-generated.html",
+      "source_id": "ifi--15",
+      "scraped_at": "2026-07-22T20:28:42.581026+00:00",
+      "topic_id": "916ce1623735e50a0458c963fe6b145a67c5e9d3"
+    },
+    {
+      "title": "How AI-Assisted Software Development Reshapes Serial Digital Entrepreneurship",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": "Information Management",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/imrg/theses/master-theses/serial-digital-entrepreneurship.html",
+      "source_id": "ifi--15",
+      "scraped_at": "2026-07-22T20:28:42.581026+00:00",
+      "topic_id": "34b381e8f69392bb656cc2afa2ec3a83e0d2886f"
+    },
+    {
+      "title": "Digital Agents in Software Development",
+      "status": "open",
+      "degree_level": null,
+      "date_of_listing": null,
+      "research_area": "Information Management",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ifi.uzh.ch/en/imrg/theses/master-theses/digital-agents-in-software-development.html",
+      "source_id": "ifi--15",
+      "scraped_at": "2026-07-22T20:28:42.581026+00:00",
+      "topic_id": "52e09714097c3eb03246639aff9cf16fec726908"
+    }
+  ]
+}

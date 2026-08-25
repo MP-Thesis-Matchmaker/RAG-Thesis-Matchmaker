@@ -1,0 +1,40 @@
+# deutsches-seminar--5: the DS people page (a directory of ~215 people). Only the
+# thesis Betreuungspersonen are wanted, so the extracted people are filtered to
+# the supervisor <select> rosters on the MA (--1) and BA (--2) booking forms,
+# tagging each with the degree(s) they supervise. (DS hides emails behind a
+# mail-form popup, so none are available — name, title, affiliation and the
+# profile link are captured.) Stored at the institute (unit) level.
+source_id: deutsches-seminar--5
+page_type: people
+
+record:
+  container: 'table tr:has(a[href*="detail="])'
+  fields:
+    name:
+      selector: 'td:nth-child(1) a[href*="detail="]'
+      attr: text
+      transform: normalize_ws
+    role:                              # academic title from the "(Dr.)" span
+      selector: 'td:nth-child(1) span'
+      attr: text
+      regex: '\(([^)]+)\)'
+      transform: normalize_ws
+    research_field:                    # chair / department affiliation
+      selector: "td:nth-child(2)"
+      attr: text
+      transform: normalize_ws
+    _profile_url:                      # institutional profile (detail) page
+      selector: 'td:nth-child(1) a[href*="detail="]'
+      attr: href
+      transform: absolute_url
+
+# Keep only people who are on the BA/MA supervisor selects, tagging BA vs MA.
+roster:
+  match: name
+  sources:
+    - url: "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ma.php?get=s"
+      selector: 'select[name="lecturer"] option'
+      supervises: Master
+    - url: "https://www.ds.uzh.ch/apps/cms/pfs/betreuung_ba_ma/betreuung_ba.php?get=s"
+      selector: 'select[name="lecturer"] option'
+      supervises: Bachelor

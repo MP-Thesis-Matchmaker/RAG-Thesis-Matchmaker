@@ -1,0 +1,45 @@
+# ifi--18: IFI institute people page. The visible page embeds an iframe
+# (capuana.ifi.uzh.ch/people) whose grid is populated from persons.json — a dict
+# keyed by category. Per the brief, only the professors are extracted: the
+# "Professors / Professorinnen und Professoren" category (the Director and
+# Vice-director are the same people, already in that list). These are
+# institute-level faculty, so they are stored at the ifi UNIT level (no group).
+source_id: ifi--18
+page_type: people
+source_type: json
+api_url: "https://capuana.ifi.uzh.ch/people/persons.json"
+
+record:
+  path: "Professors / Professorinnen und Professoren"
+  fields:
+    role:
+      template: "Professor"
+    name:
+      template: "{Firstname} {Lastname}"
+      transform: normalize_ws
+    email:
+      path: Mail
+      transform: normalize_ws
+    _profile_url: Personalpage         # institutional IFI profile page
+    office: Office
+    phone: Phone
+    research_group: Group
+
+# Each professor's IFI profile page (_profile_url) follows the common institute
+# template; pull their research interests and short bio where present.
+follow:
+  url_field: _profile_url
+  url_pattern: '^https?://([\w-]+\.)?ifi\.uzh\.ch/.+\.html$'   # incl. chair subdomains
+  fields:
+    research_interest:
+      - selector: 'h2.TextImage--title:-soup-contains("Research Interests") + div'
+        attr: text
+        transform: normalize_ws
+      - selector: 'h2.TextImage--title:-soup-contains("Research") + div'
+        attr: text
+        transform: normalize_ws
+    bio:
+      # section title varies: "Short Bio", "Short biography", "Biography", ...
+      selector: 'h2.TextImage--title:-soup-contains("Short Bio") + div, h2.TextImage--title:-soup-contains("Short biography") + div, h2.TextImage--title:-soup-contains("Bio") + div, h2.TextImage--title:-soup-contains("Biography") + div'
+      attr: text
+      transform: normalize_ws

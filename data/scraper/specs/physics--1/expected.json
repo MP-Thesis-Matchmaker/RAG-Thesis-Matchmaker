@@ -1,0 +1,615 @@
+{
+  "source_id": "physics--1",
+  "page_type": "topics",
+  "verified_content_sha1": "c11729b7408ec85858c3ce4b01801e8e2bcadb7e",
+  "records": [
+    {
+      "title": "Disordered and Biological Soft Matter",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Disordered and Biological Soft Matter",
+      "supervisors": [
+        {
+          "name": "Christof Aegerter"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/aegerter.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "967cf1f2eba14982e75f0722304fa7135ebef3d1"
+    },
+    {
+      "title": "Astroparticle Physics (Gerda, XENON, Darwin)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Astroparticle Physics (Gerda, XENON, Darwin)",
+      "supervisors": [
+        {
+          "name": "Laura Baudis"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:d9cff306-b435-4bd1-86c9-e2f8c654ac9e/Baudis.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/baudis.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "52c4a1839fa6b47fbf7e771b1c2ee3956856d580"
+    },
+    {
+      "title": "Theoretical condensed Matter",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical condensed Matter",
+      "supervisors": [
+        {
+          "name": "Tomas Bzdusek"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/bzdusek.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "765cb9510d40e5a9e52ae25f769cad675dd7cdc7"
+    },
+    {
+      "title": "Particle Physics (CMS)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Particle Physics (CMS)",
+      "supervisors": [
+        {
+          "name": "Lea Caminada"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:e8795219-c549-4efa-9dca-58ba7a8ca8e0/Flyer_LeaCaminada.pdf",
+      "group_url": "https://www.physik.uzh.ch/de/forschung/Gruppen/caminada.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "4230024601ef719292f342786d1db734f0559fbd"
+    },
+    {
+      "title": "Particle Physics (CMS)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Particle Physics (CMS)",
+      "supervisors": [
+        {
+          "name": "Florencia Canelli"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:c428a928-bf64-4837-9fbc-4cba544c781e/topic_cms.pdf",
+      "group_url": "https://www.physik.uzh.ch/de/forschung/Gruppen/canelli.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "08d5abe0811ef2922026b7be0a003b3ec692e0cc"
+    },
+    {
+      "title": "Physics of Quantum Matter",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Physics of Quantum Matter",
+      "supervisors": [
+        {
+          "name": "Johan Chang"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:d6aaeb63-1dd3-4780-ae10-be7e59e87a98/Chang_Projects.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/chang.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "2b4efe35a047f03af7733607d3d9ca439b723823"
+    },
+    {
+      "title": "Quantum Information Theory",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Quantum Information Theory",
+      "supervisors": [
+        {
+          "name": "Lidia del Rio"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/delrio.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "27c4f598fae5913939f200153f0806de85aeee93"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Thomas Gehrmann"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:cfb8410e-ce13-41a5-8d07-ccfd8cbf28e8/Gehrmann.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/gehrmann.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "7f99918bbbf7a6b70316011ba4d783e0a8c1c5df"
+    },
+    {
+      "title": "Oxide Interface Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Oxide Interface Physics",
+      "supervisors": [
+        {
+          "name": "Marta Gibert"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:d9919cd8-d651-4d6d-995b-1dfe07bce521/topic_gibert.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/gibert.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "ca853c4809cbbdf0c3539d3142385c39f36fec68"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Massimiliano Grazzini"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:320a35ef-5304-4cdb-bc62-e7680a0a84b4/topics_grazzini.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/groups/grazzini.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "950595a4ad720a66eb79f57e2d69029124e69c98"
+    },
+    {
+      "title": "Theory of Fundamental Interactions",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theory of Fundamental Interactions",
+      "supervisors": [
+        {
+          "name": "Gino Isidori"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/isidori.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "a47169cb6ba5924d9f93870d8e61556778bf8108"
+    },
+    {
+      "title": "Correlated Quantum Matter",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Correlated Quantum Matter",
+      "supervisors": [
+        {
+          "name": "Marc Janoschek"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:92c7fc3a-289f-42bd-b516-fff950e83285/Janoschek_BSc_MSc_flyer.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/groups/janoschek.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "69e839115d84a520f050e0895ea6892e9b554c4d"
+    },
+    {
+      "title": "Gravitation and Astrophysics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Gravitation and Astrophysics",
+      "supervisors": [
+        {
+          "name": "ippe Jetzer"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:488cdd39-3c17-4eb8-9df3-05555bf02cad/Topics_Jetzer.pdf",
+      "group_url": "https://www.physik.uzh.ch/groups/jetzer/#students",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "94ad2590eb832c57338b2c202cfc0caf2b35db3f"
+    },
+    {
+      "title": "Particle Physics (CMS), Damic",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Particle Physics (CMS), Damic",
+      "supervisors": [
+        {
+          "name": "Ben Kilminster"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:c428a928-bf64-4837-9fbc-4cba544c781e/topic_cms.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/researcharea/cms/positions.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "12730cbab0f6cbf64a58c7b8b711f5d4ea884d2a"
+    },
+    {
+      "title": "Atomic Interactions Lab",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Atomic Interactions Lab",
+      "supervisors": [
+        {
+          "name": "Fabian Natterer"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:77919363-7fea-4b52-b951-ce6af2e06525/Topics-Natterer.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/natterer.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "f323730153158e19ee4f995a1c19bc9f81bf1aa6"
+    },
+    {
+      "title": "Condensed Matter Theory",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Condensed Matter Theory",
+      "supervisors": [
+        {
+          "name": "Titus Neupert"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:92a45577-bccf-4021-ab46-568395c000c4/Masters_Project_2025_Titus_Neupert.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/neupert.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "4b54e430932d826b804cb475e621608ff964db5e"
+    },
+    {
+      "title": "Thin-film quantum materials",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Thin-film quantum materials",
+      "supervisors": [
+        {
+          "name": "Johanna Nordlander"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/nordlander.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "6b17b1a187e41728c2356a4a27a736fc72e361b7"
+    },
+    {
+      "title": "Dark Matter Searches",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Dark Matter Searches",
+      "supervisors": [
+        {
+          "name": "Björn Penning"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:083a0395-8b2f-4c88-89ec-26b96fac9c10/topics_penning.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/groups/penning.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "0d5b18ae1cf063a2813e2baed582dfa29e5a494a"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Stefano Pozzorini"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:2aa1634f-654b-4d73-bbe7-02296ce0a919/topics_pozzorini.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/groups/pozzorini/team/pozzorini.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "1dc54cda4eb91a07b29b59858369499b6bcd061a"
+    },
+    {
+      "title": "Gravitational Lenses",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Gravitational Lenses",
+      "supervisors": [
+        {
+          "name": "Prasenjit Saha"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/~psaha/",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "e94eaf5c2b07ed99f988c38ecaf7b950c703e63f"
+    },
+    {
+      "title": "Particle Physics (LHCb, SHiP, mu3e)",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Particle Physics (LHCb, SHiP, mu3e)",
+      "supervisors": [
+        {
+          "name": "Nico Serra"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:2547d62a-c5d9-4e18-9886-509cbaab017a/serra_theses25.pdf",
+      "group_url": "https://www.physik.uzh.ch/groups/serra/bachelormaster.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "aa91181332568ff6549563ef2aea8a02fde32763"
+    },
+    {
+      "title": "Phase Transitions, Materials and Applications",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Phase Transitions, Materials and Applications",
+      "supervisors": [
+        {
+          "name": "Andreas Schilling"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:4a4ead78-d842-4fc5-b1d3-52b055b2d8f9/Schilling.pdf",
+      "group_url": "http://www.physik.uzh.ch/groups/schilling/bama.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "6f4e98d584f00921a0504391de268754aa9f8ccb"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Adrian Signer"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:6df99b7d-966a-4dc8-8755-bab9a0c1255d/Topics-Signer.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/research/signer.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "b8eab8edfbc9f3c4e2bffea7345f259c6bf2740e"
+    },
+    {
+      "title": "Observational Cosmology",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Observational Cosmology",
+      "supervisors": [
+        {
+          "name": "Marcelle Soares-Santos"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/soares.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "be826324e4d02401b2a3ef9ffb911f0086f65034"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Peter Stoffer"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:7de28b33-7fa7-4f51-bca6-cc582b187693/Stoffer.pdf",
+      "group_url": "https://www.physik.uzh.ch/en/groups/stoffer.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "a0a1ca100ff2de4f0371fef9d9c965e4d61759b9"
+    },
+    {
+      "title": "Theoretical Particle Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Particle Physics",
+      "supervisors": [
+        {
+          "name": "Max Zoller"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/zoller.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "ad9a6e6d1e63510de30cf897d76c827bc788569d"
+    },
+    {
+      "title": "Radio Teleskop",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Radio Teleskop",
+      "supervisors": [
+        {
+          "name": "Achim Vollhardt"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:c636e765-33e6-418d-ae24-e7bef4877e8d/ArtemisII_UZH_arbeiten.pdf",
+      "group_url": "https://www.physik.uzh.ch/de/services/elektronik/radioteleskop.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "f9daf48703dd1f278bd4138e651f09689738c807"
+    },
+    {
+      "title": "Coherent Diffraction Imaging",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Coherent Diffraction Imaging",
+      "supervisors": [
+        {
+          "name": "Tatiana Latychevskaia"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:0a465c97-c7be-43b0-8e56-906fcb76bd33/Tatiana.pdf",
+      "group_url": "https://www.psi.ch/de/lnb/people/tatiana-latychevskaia",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "e13f500bebe4f988cd4981ad73141b7f634cc0f1"
+    },
+    {
+      "title": "Photovoltaik",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Photovoltaik",
+      "supervisors": [
+        {
+          "name": "Wolfgang Tress"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.zhaw.ch/en/engineering/institutes-centres/icp-institute-of-computational-physics/organic-electronics-and-photovoltaics/novel-semiconductor-devices-team/translate-to-en-bachelor-and-master-projects",
+      "group_url": "https://www.zhaw.ch/de/ueber-uns/person/trew",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "c05a8d2c27ec4d4aad6166ebec1680c9a2425918"
+    },
+    {
+      "title": "Medical Physics and Radiation Research",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Medical Physics and Radiation Research",
+      "supervisors": [
+        {
+          "name": "Uwe Schneider"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/schneider/phdmsci.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "141ace278db588f99b9a2ba9b05ea2b0a8d0ca89"
+    },
+    {
+      "title": "Molekulare Biophysik",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Molekulare Biophysik",
+      "supervisors": [
+        {
+          "name": "Ben Schuler"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.bioc.uzh.ch/en/research/research-groups/schuler.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "9bf7ce7c160d0a1422e16b793d447e4e8fbdd45d"
+    },
+    {
+      "title": "Medical Physics",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Medical Physics",
+      "supervisors": [
+        {
+          "name": "Jan Unkelbach"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/de/studium/Themen-Bachelor-Masterarbeit/Themenvorschl%C3%A4ge.html",
+      "group_url": "https://www.physik.uzh.ch/en/groups/unkelbach/Master-thesis-projects.html",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "6e0f6cf13af5eb558b81aa2df3d2aeec029bec42"
+    },
+    {
+      "title": "AI Art Authentication",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "AI Art Authentication",
+      "supervisors": [
+        {
+          "name": "Carina Popovici"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:9cb462e3-a0b9-4ca0-a633-229bbd1fdbf0/Art_Recognition_Thesis_Project_Brochure.pdf",
+      "group_url": "https://art-recognition.com/",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "62d4f85e1769b3bfd68ddce4f1e0e4d3d41f4932"
+    },
+    {
+      "title": "Mettler Toledo",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Mettler Toledo",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.physik.uzh.ch/dam/jcr:0d5ea574-9cfe-4228-a433-48310ccd8030/mettlertoledo.pdf",
+      "group_url": "https://www.mt.com/ch",
+      "source_id": "physics--1",
+      "scraped_at": "2026-08-05T13:15:09.199137+00:00",
+      "topic_id": "ccad087a574ba2217539256e2f851896d26e62e3"
+    }
+  ]
+}

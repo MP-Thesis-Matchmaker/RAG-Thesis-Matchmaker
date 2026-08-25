@@ -1,0 +1,69 @@
+{
+  "source_id": "iff--1",
+  "page_type": "process",
+  "verified_content_sha1": "384775a5cf555689b1a64b16dcf0dc9e82559bbd",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Students who have the relevant prior knowledge and have passed the corresponding lectures may write a Bachelor’s or Master’s thesis at the Department of Finance. You apply digitally via the DF Thesis Market using your UZH login and upload a CV, transcript and (for own topics) a 2–3 page Research Proposal; provided topics require a short letter of motivation. You either propose your own topic or apply to posted proposals; successful applicants are contacted by their supervisor who issues the official thesis assignment on OLAT. Collecting the assignment on OLAT starts the six‑month working period. Submit the final thesis (and attachments) as a ZIP via OLAT; grading follows within about one month. Apply at least one month before your desired start; follow Dean’s Office rules; contact the study coordinator with questions.",
+      "relevant_links": [
+        {
+          "url": "https://cmsauth.uzh.ch/df/dam/jcr:8285e68a-6639-44ad-8228-0dec0a2a23e2/Pr%C3%A4sentation_Bachelorarbeit_Final_2023.pdf",
+          "description": "presentation (PDF, 276 KB)"
+        },
+        {
+          "url": "https://theses.df.uzh.ch/",
+          "description": "DF Thesis Market"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:dcf76951-19b3-4ec2-bef9-4bc4a2d303f3/Research_Proposal_Instructions_ENG.pdf",
+          "description": "Instructions for writing a Research Proposal (PDF, 69 KB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:49d19108-e397-43c4-a627-fee9ec8cc83a/Sample_Proposal.pdf",
+          "description": "Example of a Research Proposal (PDF, 205 KB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:13a0ae15-6284-4605-a85b-4c1703284e8c/Bachelor_Thesis_Example.pdf",
+          "description": "The different theories of the 2010 Flash Crash with main focus on high-frequency trading (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:70e846dc-43a5-4483-a908-e1245b64ee15/Master_Thesis_Example.pdf",
+          "description": "Strategic Allocation to Return Factors (PDF, 1 MB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:1b0741ad-afa2-491b-a85d-3b4245f930fc/Thesis_Template.zip",
+          "description": "template for LaTeX (ZIP, 416 KB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:36f7371c-64ea-4fac-89b5-683e2f4d8786/Bachelor%20and%20master%20theses%20at%20Chair%20Nyborg.pdf",
+          "description": "Bachelor and Master Theses at Chair Nyborg (PDF, 124 KB)"
+        },
+        {
+          "url": "https://www.df.uzh.ch/dam/jcr:72619389-a7be-49aa-87e8-58f521d67f4e/Zitierstandard_JoF.pdf",
+          "description": "Zitierstandard (Journal of Finance) (PDF, 83 KB)"
+        },
+        {
+          "url": "https://people.math.ethz.ch/~farkas/Thesis_topics.html",
+          "description": "More information and topics"
+        },
+        {
+          "url": "https://www.df.uzh.ch/en/studies/bachelor-master/thesis/faq.html",
+          "description": "FAQ for Students"
+        },
+        {
+          "url": "https://www.df.uzh.ch/en/studies/bachelor-master/thesis/thesis-market.html",
+          "description": "DF Thesis Market"
+        }
+      ],
+      "source_url": "https://www.df.uzh.ch/en/studies/bachelor-master/thesis.html",
+      "source_id": "iff--1",
+      "scraped_at": "2026-07-17T22:46:59.416225+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

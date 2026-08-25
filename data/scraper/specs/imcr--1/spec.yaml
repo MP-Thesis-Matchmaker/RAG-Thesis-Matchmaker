@@ -1,0 +1,66 @@
+# imcr--1: the "Cancer Biology" Master specialization page (biologie.uzh.ch).
+# The department's full list of open MSc thesis topics sits in the Teaser titled
+# "MASTER THESIS TOPICS": one PDF per project, its link text formatted as
+# "SURNAME_Descriptive title (PDF, N MB)" (sometimes two PIs, "A_B_Title"). The
+# PI surname seeds a readable supervisor; each project PDF is then parsed for a
+# fuller description and the supervisor's name + e-mail (supervisors_from_pdf
+# replaces the surname stub whenever the PDF yields a contact).
+source_id: imcr--1
+page_type: topics
+
+record:
+  container: 'div.Teaser:has(h3.Teaser--title:-soup-contains("MASTER THESIS TOPICS")) li.Teaser--linkList--link'
+  fields:
+    title:
+      selector: 'a'
+      attr: text
+      regex: '^[A-Z]+(?:_[A-Z]+)*_(.+?)\s*(?:\(PDF[^)]*\))?$'
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Cancer Biology"
+    supervisors:                       # surname prefix -> readable fallback name
+      each: 'a'
+      fields:
+        name:
+          attr: text
+          transform: pi_surname
+    source_link:
+      selector: 'a'
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+# Parse each project PDF for a description + the supervisor's name and e-mail.
+pdf_enrich:
+  url_field: source_link
+  summary_into: topic_description
+  supervisors: true
+  supervisors_from_pdf: true           # PDF name+email supersedes the surname stub
+  supervisor_email_any: true           # some PIs are at usz.ch / kispi.uzh.ch
+
+# The page also carries the Cancer Biology supervisor directory (a table of
+# ~43 group leaders with links to their research pages). Extracted as auxiliary
+# people. Names are "Surname Given"; profiles are external (mixed UZH institutes,
+# USZ, Kispi) and carry no scrapable e-mail, so only name/role/profile are kept.
+people:
+  record:
+    container: 'table tr:has(td:nth-child(2) a[href])'
+    fields:
+      role:
+        selector: "td:nth-child(1)"
+        attr: text
+        transform: academic_role
+      name:
+        selector: "td:nth-child(2)"
+        attr: text
+        transform: name_lastfirst_space
+      _profile_url:
+        selector: "td:nth-child(2) a"
+        attr: href
+        transform: absolute_url
+  id_from: [name]

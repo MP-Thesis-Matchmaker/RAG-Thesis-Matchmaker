@@ -1,0 +1,45 @@
+{
+  "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--2",
+  "page_type": "process",
+  "verified_content_sha1": "1612fcef30d9ace2201b10362300ddea12f8c591",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Für die Masterarbeit (30 ECTS) plus Masterkolloquium (6 ECTS) müssen Sie zuerst die Module der Gruppe «Methoden und Forschungslogik» (im Programm Internet & Society zusätzlich «Multivariate Statistics» und ein «Research Seminar») abgeschlossen haben. Der Prozess startet mit Abteilungs‑Vorbesprechungen (Mitte April und Anfang November), in denen Themen und Betreuungspersonen vorgestellt werden. Anschließend reichen Sie ein Masterarbeitskonzept via Onlineformular ein (Fristen: 30. Mai für Herbststart, 5. Dezember für Frühjahrsstart); die Konzepte werden allen betreuungsberechtigten Dozierenden zur Zuteilung vorgelegt. Nach Betreuungszusage buchen Sie Masterarbeit und Kolloquium während der regulären Modulbuchungsfristen online (Arbeit läuft über zwei Semester). Abgabe der Arbeit: 1. Juni (Herbststart) bzw. 1. Dezember (Frühjahrsstart); Einreichung inkl. Anhänge, Datensätze und unterschriebener Selbständigkeitserklärung. Verlängerungsgesuch bis max. 1 Monat möglich. Offizielle Regeln, Formulare und Uploads finden Sie auf den Seiten der Philosophischen Fakultät (inkl. Leistungsnachweise-Seite).",
+      "relevant_links": [
+        {
+          "url": "https://forms.office.com/e/xWTKZQNhZg",
+          "description": "Onlineformular"
+        },
+        {
+          "url": "https://www.uzh.ch/phil/ssl-dir/abschlussarbeiten/index.php",
+          "description": "Website der Fakultät"
+        },
+        {
+          "url": "https://mediachange.ch/students/",
+          "description": "Merkblatt"
+        },
+        {
+          "url": "https://www.ikmz.uzh.ch/dam/jcr:a2ac3989-3329-4ef7-9020-3d1398f8c863/vorbesprechungstermine_2026_fs_update.pdf",
+          "description": "Vorbesprechungstermine (PDF, 84 KB)"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/abschluss.html",
+          "description": "Anmeldung & Fristen"
+        },
+        {
+          "url": "https://www.students.uzh.ch/de/studyadmin/registration/deregister.html",
+          "description": "Exmatrikulation"
+        }
+      ],
+      "source_url": "https://www.ikmz.uzh.ch/de/studies/graduation/master.html",
+      "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--2",
+      "scraped_at": "2026-07-31T10:25:06.261422+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "source_id": "philosophisches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "2c372bf49ae61e2bc2369ace61c65dddcfd751a5",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Sie einigen sich vor Beginn mit einer Betreuungsperson auf ein Thema und müssen die Buchungsvoraussetzungen laut Modulbeschreibung Ihres Studienprogramms erfüllen. Für Bachelorarbeiten muss die Betreuungsperson im Major-/Mono‑Studienprogramm unterrichten; für Masterarbeiten muss sie im Semester der Buchung an der UZH angestellt sein. Buchen Sie die Arbeit während der regulären Modulbuchungsfrist online (nur mit gültiger Einschreibung; Semestergebühren rechtzeitig bezahlen). Nach Fristende erhalten Sie eine E‑Mail an Ihre UZH‑Adresse, loggen sich ein und geben vorläufigen Titel und Betreuer/in an. Abgabe spätestens 1. Dezember (Herbst) bzw. 1. Juni (Frühjahr) bei der Betreuungsperson; Fristüberschreitung = Modul «nicht bestanden» (Fehlversuch). Nach Abgabe werden Sie gebeten, den definitiven Titel online einzutragen. Bei Verhinderung: Fristerstreckung (nur kurzfristig) oder Abmeldung; für Gesuche wenden Sie sich an die Institute/Seminare oder die Studienprogrammberatung. Offizielle Regeln: Modulbeschreibungen, die UZH‑Seite zur Modulbuchung sowie die Webseiten der Institute/Seminare.",
+      "relevant_links": [
+        {
+          "url": "https://www.uzh.ch/phil/ssl-dir/abschlussarbeiten/index.php",
+          "description": "Webseite"
+        },
+        {
+          "url": "https://www.zi.uzh.ch/dam/jcr:3d10d79d-6b18-40e0-a824-a9d3a581e7a2/Podcast_Livestreaming_Merkblatt_Studierende_DE.pdf",
+          "description": "Podcasts und Livestreaming an der UZH: Hinweise für Studierende"
+        },
+        {
+          "url": "https://sprachenzentrum.uzh.ch/apps/symfony/kursanmeldung/de/phf-notification",
+          "description": "spezielle Kurse"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/allgemein/20240812_STO_Allgemeiner_Teil_Stand_20231223_DE.pdf",
+          "description": "Studienordnung der Studienprogramme der Philosophischen Fakultät"
+        }
+      ],
+      "source_url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+      "source_id": "philosophisches-seminar--1",
+      "scraped_at": "2026-07-31T12:57:04.360279+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

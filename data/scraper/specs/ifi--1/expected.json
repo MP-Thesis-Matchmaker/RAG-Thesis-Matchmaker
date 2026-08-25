@@ -1,0 +1,37 @@
+{
+  "source_id": "ifi--1",
+  "page_type": "process",
+  "verified_content_sha1": "59dee52fde523406dfaedd560f9fe13ba6ff6c7a",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "ZEST accepts motivated students for bachelor’s theses, master’s theses, master’s projects and independent studies (linked as PDFs on the page). Eligibility is broadly described as motivated students; new students are treated as junior research members. To apply/secure supervision you must email zest with a recent transcript (courses taken and current/planned), indicate which ZEST publications match your interests and why, and list any other topics you’d consider and why. ZEST will reply and schedule a 25‑minute one‑to‑one meeting; the group assesses your prior knowledge and interests to determine a suitable topic and supervision. The page does not give formal registration steps, deadlines or full administrative requirements; only the linked PDF briefs are provided.",
+      "relevant_links": [
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:98813eec-095e-413e-a276-d2d06f6b8232/Merkblatt-Bachelorarbeit-SO26-EN-20260702.pdf",
+          "description": "bachelor's thesis (PDF, 99 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:a8df9bc8-40df-468a-a004-a04bbfeb0c44/Merkblatt-Masterarbeit-SO26-EN-20260702.pdf",
+          "description": "master’s thesis (PDF, 92 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:f7a9e0bd-2a65-402b-882d-4cf72a6bdf81/Merkblatt-Masterprojekt-SO26-EN-20260702.pdf",
+          "description": "master's project (PDF, 85 KB)"
+        },
+        {
+          "url": "https://www.ifi.uzh.ch/dam/jcr:dbccd306-3981-41ee-839f-e056484287ea/Merkblatt-Independent-Study-SO26-EN-20260702.pdf",
+          "description": "independent study (PDF, 78 KB)"
+        }
+      ],
+      "source_url": "https://www.ifi.uzh.ch/en/zest/theses.html",
+      "source_id": "ifi--1",
+      "scraped_at": "2026-07-18T09:24:44.174193+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

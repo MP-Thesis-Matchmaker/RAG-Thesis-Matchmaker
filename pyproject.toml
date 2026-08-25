@@ -20,24 +20,114 @@ dependencies = [
     "pydantic-settings>=2.2",
     "python-dotenv>=1.0",
     "httpx>=0.27",
-    "chromadb>=0.5",
+    "psycopg[binary]>=3.2",
+    "psycopg-pool>=3.2",
     "dspace-rest-client>=0.1.20",
 ]
 
 [project.optional-dependencies]
+# Local embedding model (BGE-M3). Kept out of the default install because it
+# pulls in torch; CI and the fake embedder do not need it.
+embeddings = [
+    # Floor is 5.6 because SentenceTransformerEmbedder calls
+    # get_embedding_dimension, which only exists in 5.x -- it lives in the
+    # sentence_transformers/sentence_transformer/ subpackage introduced by that
+    # restructure, and the 3.x/4.x name warns on every call. >=3.0 was promising
+    # support for versions whose API we do not call.
+    "sentence-transformers>=5.6",
+    # torch is a transitive dependency of sentence-transformers and would resolve
+    # perfectly well without being named here. It is listed because
+    # [tool.uv.sources] below is only honoured for OUR OWN dependencies -- a
+    # source override on a purely transitive package is silently ignored, which
+    # would leave the CUDA wheels in place while looking like it had worked.
+    #
+    # The upper bound keeps the two platforms on the SAME upstream version.
+    # PyPI and the CPU index advance independently, so an open range resolved
+    # 2.12.1 on macOS and 2.13.0+cpu on linux -- a laptop and the cluster running
+    # different torch minors is the drift this lockfile exists to prevent. Raise
+    # the ceiling deliberately, once, when both indexes carry the newer version.
+    "torch>=2.6,<2.13",
+]
+# MCP server adapter. Optional: only needed to run the tool server.
+#
+# Floor is 2.0 because the adapter uses the 2.x API: MCPServer, from
+# mcp.server.mcpserver, with host and port as run() arguments. 1.x had FastMCP
+# at mcp.server.fastmcp and configured the address through mcp.settings, so the
+# two majors are not interchangeable and a range spanning both would be a lie.
+mcp = [
+    "mcp>=2.0",
+]
+# Posting scraper. Its dependency set is almost disjoint from the core's -- the
+# core speaks httpx / psycopg / dspace-rest-client, this speaks requests / bs4 /
+# PyYAML / pypdf / openai -- which is why it is an extra and why the scraper gets
+# its own image rather than riding along in the harvester's. See the Images
+# section of docs/deployment.md.
+#
+# requests rather than the httpx the rest of the repository uses: the fetch layer
+# entangles it with the politeness delay and the Playwright fallback, and the 131
+# tests that make this port trustworthy all replay through it. Converting it is a
+# follow-up, not a port step. requests and PyYAML were already in uv.lock as
+# transitive dependencies before this extra existed; naming them here makes them
+# direct, which is what lets a floor or a source override apply to them at all.
+#
+# The openai floor spans three majors, and that needed checking rather than
+# assuming: >=1.30 resolves to 3.3.1 today, which is the same shape as the mcp>=1.2
+# range that silently resolved to 2.0.0 and broke the MCP adapter. It is not the
+# same problem. Verified against 3.3.1 -- every symbol scraper/llm.py imports still
+# exists (OpenAI plus the five error classes), the constructor still takes
+# api_key/timeout/max_retries/base_url, and chat.completions.create still takes
+# model and messages. The Responses API arrived in 2.x alongside that surface, not
+# in place of it. Re-check on a major bump: nothing in the test suite would notice,
+# because every LLM call is stubbed.
+scraping = [
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "PyYAML>=6.0",
+    "pypdf>=4.0",
+    "openai>=1.30",
+]
+# JS-rendered pages. Separate from `scraping` because installing it downloads a
+# browser: `python -m playwright install chromium`. fetch.py imports it lazily and
+# degrades to the static fetch when it is absent, so most runs never need it.
+render = [
+    "playwright>=1.40",
+]
+
+# Test tooling is not an optional feature of the distribution -- nobody
+# installing thesis-matchmaker wants our test runner -- so it is a PEP 735
+# dependency group rather than an extra. `uv sync` installs it by default,
+# which makes that command the whole dev setup; the container image opts out
+# with --no-default-groups.
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
 ]
-# Local embedding model (BGE-M3). Kept out of the default install because it
-# pulls in torch; CI and the fake embedder do not need it.
-embeddings = [
-    "sentence-transformers>=3.0",
-]
-# MCP server adapter (FastMCP). Optional: only needed to run the tool server.
-mcp = [
-    "mcp>=1.2",
-]
+
+# The deployment target is a CPU-only Kubernetes namespace: the ZI general Helm
+# chart exposes no GPU, nodeSelector or tolerations key at all, so nothing we
+# deploy can ever be scheduled onto an accelerator. PyPI's default linux torch
+# wheel is the CUDA build regardless -- a wheel tag cannot say "linux, but no
+# accelerator" -- which drags in ~1.55 GB of nvidia-* and triton that runs
+# nothing faster, because CUDA wheels are a capability rather than a speedup.
+# Three separate reasons to drop them: the Harbor project quota is 10 GB by
+# default, the container Compliance Policy asks images to carry "nur die absolut
+# notwendigen Komponenten", and pulling them on every scheduled indexer run
+# costs bandwidth for nothing. See docs/deployment.md.
+#
+# The marker is what keeps this from hurting local development: macOS never
+# matches sys_platform == 'linux', so Apple Silicon still resolves the stock
+# universal wheel, and MPS keeps working -- MPS ships inside that wheel, there is
+# no separate build to opt into.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+# explicit: this index is used ONLY by packages that name it below, never as a
+# general fallback for anything else in the lock.
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
 [project.scripts]
 thesis-matchmaker = "thesis_matchmaker.cli:main"
@@ -45,6 +135,11 @@ thesis-matchmaker-mcp = "thesis_matchmaker.adapters.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# schema.sql is package data, not a top-level file: the init-db Job runs from an
+# installed package inside the container image.
+[tool.setuptools.package-data]
+thesis_matchmaker = ["schema.sql"]
 
 [tool.ruff]
 line-length = 100

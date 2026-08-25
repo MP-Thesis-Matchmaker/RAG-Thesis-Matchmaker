@@ -1,0 +1,191 @@
+{
+  "source_id": "astrophysics--1",
+  "page_type": "topics",
+  "verified_content_sha1": "f2453f7ee137c45ba7b4a9589e2af025a4c48df5",
+  "records": [
+    {
+      "title": "Diversity in the low mass galaxy population",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Galaxy Formation",
+      "supervisors": [
+        {
+          "name": "Robert Feldmann",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1115201"
+        }
+      ],
+      "topic_description": "Observations show that low-mass galaxies fall into several broad morphological classes such as ultra-diffuse galaxies, dwarf elliptical galaxies, compact elliptical galaxies, and others. Current numerical models struggle in reproducing this diversity in the low mass galaxy population. The goal of this project is to more robustly quantify this problem and to explore improvements to the modeling to solve this challenge. To this end, we will analyze low-mass galaxies in suites of state-of-the-art cosmological simulations and compare the predicted morphologies, especially their sizes and rotation curves, faithfully with observational data of nearby low-mass galaxies.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "5202dbd038718c58b7fc20ea53dd5dd1d3d426c5"
+    },
+    {
+      "title": "Disk galaxy formation",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Galaxy Formation",
+      "supervisors": [
+        {
+          "name": "Robert Feldmann",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1115201"
+        }
+      ],
+      "topic_description": "When and how galaxies form stable, thin disks is still not fully understood. A recent model proposes that disk formation is closely linked to the depth of the gravitational potential in the center of galaxies. First, we will test this model prediction and explore its limitations using a large suite of cosmological simulations. Secondly, we will analyze the properties of both the gas and stellar disks in more detail and compare them to available observational data. Finally, we will make predictions for when the first disk galaxies are expected to form in the Universe.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "7c3f0e951e00bd7aedeb3e11175710f6214d00d9"
+    },
+    {
+      "title": "Inferring galaxy properties with Machine Learning",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Galaxy Formation",
+      "supervisors": [
+        {
+          "name": "Robert Feldmann",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1115201"
+        }
+      ],
+      "topic_description": "Galaxy properties, such as their masses or star formation rates, are usually observationally inferred from the magnitudes and colors of galaxies. However, interstellar dust can strongly affect these measurements. In many cases, the impact of dust is modeled in a highly simplified and idealized manner which could in principle lead to significant biases in the inferred galaxy properties. In this project, we will use galaxies from a cosmological simulation which have been processed with radiative transfer to quantify these biases and to test how well we can recover intrinsic galaxy properties. As second part, we will train a deep neural network on the simulations to predict intrinsic quantities from mock images and apply it to a real observational data set.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "b701ed351ef33bf5c8f9cbb024f5250105c42328"
+    },
+    {
+      "title": "Holes in atomic gas disks",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Galaxy Formation",
+      "supervisors": [
+        {
+          "name": "Robert Feldmann",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1115201"
+        }
+      ],
+      "topic_description": "Gas disks of galaxies often show distinct holes which may be created by stellar feedback, turbulence in the interstellar medium, and other processes. The goal of this project is to study holes in the atomic gas disks of simulated galaxies, to quantify their properties, and to determine how they formed. In addition, we will develop a machine learning based classifier to automatically distinguish the different physical origins of holes in atomic gas disks.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "dda3e614716ccb8fb40c923c16b208fda2bd1250"
+    },
+    {
+      "title": "Giant planet formation and evolution",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Planet formation and evolution, planetary interiors, extra-solar planets",
+      "supervisors": [
+        {
+          "name": "Ravit Helled",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1181501"
+        }
+      ],
+      "topic_description": "Giant planets play a key role in the formation and dynamical evolution of planetary systems. Their origin, however, is still poorly understood. In this project we will use numerical simulations to model the formation and evolution of giant planets with the aim to provide predictions on their compositions and final masses of the planets. We will explore the formation of the outer planets in the solar system as well as of giant exoplanets.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "fece3035273475ebdfca42a8e1eedf3ab87f151b"
+    },
+    {
+      "title": "Exoplanet characterization",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Planet formation and evolution, planetary interiors, extra-solar planets",
+      "supervisors": [
+        {
+          "name": "Ravit Helled",
+          "contact_url": "http://www.phonebook.uzh.ch/?ID=1181501"
+        }
+      ],
+      "topic_description": "Planets orbiting other stars are detected at a rapid pace. When both the mass and the radius of a planet are measured, the average density of the planet can be determined. In order to understand what exoplanets are made of, structure models are required. In this project we will characterise exoplanets using interior models, to put limits on their bulk compositions and internal structure, and when possible, link it to their formation and evolution histories.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "4a755e5fac4890c9da44432d9d1c4226e8c0f471"
+    },
+    {
+      "title": "Giant Impacts of clumps",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Planet formation and evolution, planetary interiors, extra-solar planets",
+      "supervisors": [
+        {
+          "name": "Ravit Helled",
+          "contact_url": "https://www.phonebook.uzh.ch/?ID=1181501"
+        },
+        {
+          "name": "Joachim Stadel",
+          "contact_url": "https://www.phonebook.uzh.ch/?ID=1131401"
+        }
+      ],
+      "topic_description": null,
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "7ca146fb0b92d5264d7b492213575fc01bec02be"
+    },
+    {
+      "title": "Constraining Dark Sector with Gravitational Wave from Binary Inspirals",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Astrophysics and Cosmology",
+      "supervisors": [
+        {
+          "name": "Jaiyul Yoo",
+          "contact_url": "https://www.phonebook.uzh.ch/?ID=1132401"
+        }
+      ],
+      "topic_description": "Gravitational waves are detected by merging binary black holes. In the presence of new physics in dark sector beyond the standard model, the gravitational waveform from the inspiral is modified from the standard prediction in general relativity. Here we explore the changes in the gravitational wave signals to the first post-Newtonian order.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "34d3d8660f14fb2344cf02a6e9d861faccbb779f"
+    },
+    {
+      "title": "Cosmological Observables in the Tetrad Formalism",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Astrophysics and Cosmology",
+      "supervisors": [
+        {
+          "name": "Jaiyul Yoo",
+          "contact_url": "https://www.phonebook.uzh.ch/?ID=1132401"
+        }
+      ],
+      "topic_description": "Cosmological observables such as galaxy clustering, cosmic microwave background anisotropies are measured in the local rest frame of the observers. The tetrad formalism provides a natural way to describe the local observations. The linear order perturbation computations can be performed in the tetrad formalism, connecting the local observables to the cosmological observables in a gauge invariant way.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "f56cf9b2b6269287775325449201601a0761dee7"
+    },
+    {
+      "title": "Pulsar Timing Signatures from Ultra-Light Dark Matter",
+      "status": "open",
+      "degree_level": "Bachelor, Master",
+      "date_of_listing": null,
+      "research_area": "Theoretical Astrophysics and Cosmology",
+      "supervisors": [
+        {
+          "name": "Jaiyul Yoo",
+          "contact_url": "https://www.phonebook.uzh.ch/?ID=1132401"
+        }
+      ],
+      "topic_description": "Recently, international collaborations of pulsar timing array reported evidence for stochastic gravitational wave background. These signals, however, can also come from dark matter in our own Galaxy. The nature of dark matter is poorly understood, and rapidly oscillating light scalar fields as a dark matter candidate can result in rapidly oscillating gravitational potential that can mimic the signals in the pulsar timing array. Here we explore their contributions to PTA signals and ways to distinguish from stochastic gravitational wave background.",
+      "source_link": "https://www.astro.uzh.ch/en/studies/Available-Master--Bachelor-projects.html",
+      "source_id": "astrophysics--1",
+      "scraped_at": "2026-08-04T11:18:40.961327+00:00",
+      "topic_id": "7ce6c4128a0accb3c102cbe9052113d423eb3484"
+    }
+  ]
+}

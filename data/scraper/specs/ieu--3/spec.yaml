@@ -1,0 +1,68 @@
+# ieu--3: IEU Master's projects in Animal Behaviour. Each project is a
+# collapsible h2.toggle block with a description, a "Contact:" supervisor (mailto)
+# and sometimes a "Last update" date. Unit level.
+source_id: ieu--3
+page_type: topics
+
+record:
+  container: 'div.TextImage:has(h2.TextImage--title.toggle)'
+  fields:
+    title:
+      selector: 'h2.TextImage--title.toggle'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Animal Behaviour"
+    topic_description:
+      selector: 'div.TextImage--content.richtext'
+      attr: text
+      exclude:
+        - "h2"
+        - 'h3:-soup-contains("Contact")'
+        - 'a[href^="mailto"]'
+        - 'a[href*="/staff/member/"]'
+        - 'a[href*=".pdf"]'
+        - 'p:-soup-contains("Contact")'
+        - 'p:-soup-contains("Last update")'
+        - 'p:-soup-contains("Information about the project")'
+      transform: normalize_ws
+    supervisors:                       # contact is a mailto or a staff profile link
+      each: 'a[href^="mailto"], a[href*="/staff/member/"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles, drop_if_email]
+        email:
+          attr: href
+          transform: mailto_email
+        _url:
+          attr: href
+          transform: absolute_url
+    source_link:                       # the project's PDF, when it links one
+      selector: 'a[href*=".pdf"]'
+      attr: href
+      transform: absolute_url
+
+id_from: [title]
+
+resolve_supervisors:                   # follow staff-profile contacts for email
+  list_field: supervisors
+  url_key: _url
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email
+
+# Where a project's description is only a linked PDF, summarise the PDF instead.
+pdf_enrich:
+  url_field: source_link
+  summary_into: topic_description
+  supervisors: true
+  supervisor_email_any: true

@@ -1,0 +1,41 @@
+{
+  "source_id": "historisches-seminar--1",
+  "page_type": "process",
+  "verified_content_sha1": "ab4309e5204db22a60b28f1e97188f4fb57f197c",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Masterarbeiten im Historischen Seminar werden im Teilfach 1 über zwei Semester geschrieben und sind an das Forschungskolloquium I (1. Semester) und II (2. Semester) gekoppelt. Betreuung erfolgt durch Professor:innen, Titularprofessor:innen oder Privatdozierende des Seminars (bei Titularprofessor:innen/Privatdozierenden nur in ihrem Zeitbereich); in der Regel hat man zuvor ein Seminar oder Kolloquium bei der Betreuungsperson besucht. Vorgehen: Studierende kontaktieren eine potenzielle Betreuungsperson vor der Modulbuchung und vereinbaren Thema und Ablauf; das Modul muss innerhalb der ordentlichen Buchungsfristen gebucht. Nach Fristende fordert das Studiendekanat zur Eingabe von Betreuer:in und vorläufigem Titel auf. Abgabe: spätestens 1. Dezember (Herbstsemester) bzw. 1. Juni (Frühjahrssemester) an die Betreuungsperson, danach PDF auf der Studiendekanats-Website hochladen. Titelblatt- und Abgabeformate, Verlängerungen und Abmeldung sind auf der Website des Studiendekanats sowie in Modulkatalog, RVO, StO und dem Merkblatt geregelt. Mündliche Prüfung: 30 Minuten, in anderem Teilfach; Prüfende wie für die Betreuung; Themenwahl und Literaturlisten erfolgen nach Buchungsfrist; Termine im Mai bzw. Ende Nov/Anfang Dez.",
+      "relevant_links": [
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/master/regulaer-nachfolger/mk/MK_06M-7600-090.pdf",
+          "description": "Modulkatalog Geschichte 90 ECTS Credits"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/studienrelevante-dokumente/richtlinien-formulare.html",
+          "description": "Merkblatt Beurteilungskriterien"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/dam/jcr:ffffffff-cb70-aa7a-0000-00000aa12814/20260601_Merkblatt_muendl_Pruefung_MA.pdf",
+          "description": "Merkblatt (PDF, 77 KB)"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/beratung/kontaktformular.html",
+          "description": "Kontaktformular"
+        },
+        {
+          "url": "https://www.hist.uzh.ch/de/studium/geschichte-studieren-in-zuerich/beratung/sprechstunde.html",
+          "description": "Anmeldung Sprechstunde"
+        }
+      ],
+      "source_url": "https://www.hist.uzh.ch/de/studium/studienstufen/master/aufbau/abschluss.html",
+      "source_id": "historisches-seminar--1",
+      "scraped_at": "2026-07-30T08:01:12.061831+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

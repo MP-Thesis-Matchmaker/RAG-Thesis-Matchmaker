@@ -1,0 +1,33 @@
+{
+  "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--1",
+  "page_type": "process",
+  "verified_content_sha1": "40c18efd736fb0f037445ea6ac652c504c060759",
+  "records": [
+    {
+      "degree_level": "Bachelor",
+      "process_description": "Major-Studierende absolvieren ein Forschungsseminar (9 ECTS, Herbstsemester) und die anschliessende Bachelorarbeit (15 ECTS, Frühjahrssemester). Im Forschungsseminar entwickeln Sie das Projekt einzeln oder im Team und erstellen einen Forschungsbericht; die Bachelorarbeit ist eine Einzelarbeit und setzt das erfolgreich abgeschlossene Forschungsseminar voraus. Forschungsseminare werden von den Dozierenden betreut; die Bachelorarbeit wird im Rahmen eines Kolloquiums von diesen Dozierenden betreut. Module buchen Sie selbstständig während der regulären Buchungsfristen (achten Sie auf die korrekte Buchungsgruppe); nach der Buchung fordert das Studiendekanat Sie per E‑Mail auf, Betreuungsperson und Arbeitstitel im System zu erfassen. Abgabe der Bachelorarbeit: 1. Juni. Fristverlängerungen: unter «Leistungsnachweise». Studienfortschritt und Abschlussanmeldung laufen über das Studierendenportal («Studienfortschritt & -abschluss»). Offizielle Richtlinien auf der Website der Philosophischen Fakultät und den verlinkten IKMZ‑Seiten.",
+      "relevant_links": [
+        {
+          "url": "https://www.students.uzh.ch/de/studyadmin/registration/subjectchange.html",
+          "description": "Fristen für den Studienprogrammwechsel"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/abschluss.html",
+          "description": "Anmeldung & Fristen"
+        },
+        {
+          "url": "https://www.students.uzh.ch/de/studyadmin/registration/deregister.html",
+          "description": "Exmatrikulation"
+        }
+      ],
+      "source_url": "https://www.ikmz.uzh.ch/de/studies/graduation/bachelor.html",
+      "source_id": "kommunikationswissenschaft-und-medienforschung-ikm--1",
+      "scraped_at": "2026-07-31T10:24:54.505498+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

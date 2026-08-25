@@ -1,0 +1,130 @@
+{
+  "source_id": "ieu--3",
+  "page_type": "topics",
+  "verified_content_sha1": "9435cb26816c5b6802b1d057b63c819949544af6",
+  "records": [
+    {
+      "title": "Behavioural projects on wild house mice at the barn",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": null,
+      "topic_description": "We run a long term field study (20+ years) on a large population of wild house mice outside of Zurich, enabling a variety of projects in animal behaviour. House mice are wonderful study organisms as we can directly observe them and collect data on many aspects of their behaviour, for a large number of animals. We can obtain fitness measurements over several generations in a fairly short period of time to test the fitness consequences of alternative behaviours. We provide living conditions that mice like, and many stay, despite the possibility to emigrate. The wild house mice can also be brought to the lab for controlled experiments. We offer a variety of projects investigating social behaviour. House mice are social animals, and studying social interactions provides insights into how and why animals form societies. Some examples of projects that could be the basis of a MSc project are the following: 1) The role of vocalisations in house mice social relationships. Mice vocalise regularly, and their vocalisations have been compared to birdsong in its complexity, but what is the function of these vocalisations? Experimental playbacks can be used to test how mice interpret the vocalisations of other individuals. 2) Mice live together in a home range, either in the same home range they were born into, or another, but interact unequally with other individuals. In the main breeding season, females also reduce the number of other mice that they live with, and many breed plurally, pooling litters and sharing the care of offspring. How do mice choose their social partners? An analysis of our huge dataset allows tests of which features are most important. 3) Mice have complex social relationships, and cooperate and compete with each other. To what extent do mice have individually differentiated social relationships with their nestmates? Using cameras house mice can be observed without disturbing them, allowing analyses that have never been done before. 4) Mice can live a long time. Do social interactions change with age? 5) In the lab, males provide some parental care. In the wild, we think that they do not, because they have other reproductive prospects to pursue. Are wild male mice caring for offspring? We can use cameras to observe pups in the nest, and determine if and to what extent males are caring for pups. We also combine social behaviour with fitness data. We find that some females (about 50%!) are reproductively suppressed, producing no offspring, while others produce up more than ten litters. What determines who fails at the most important task of all, reproduction? Do dominance interactions predict reproduction in females, as is thought to be the case in males? We have a large dataset available, and cameras at nests can be used to compare interactions between individuals, and how individuals invest into maternal care. How do females choose males? How does male quality differ, and does it matter for her fitness? We study dispersal, and aim to understand how and why mice disperse both within and outside the population. Leaving the population is risky, because, for a commensal species, suitable habitats are patchy, and predators are abundant. Not leaving is also risky, because many mice fail to reproduce. Who leaves, and why? What about immigration? We also have predation events, and do not yet understand what makes some mice more susceptible to predation. What makes a mouse a survivor? We study domestication, aiming to understand how mice have adapted to our research project over 20 years! We have documented an increase in white pigmentation, and a decrease in head length over time, consistent with predictions of the domestication syndrome. We aim to continue this study of signs of domestication. We study inbreeding, and are interested in determining which mice inbreed and how strong the fitness consequences are. We are also interested in recent findings that house mice perform “first aid” on each other DOI: 10.1126/science.adv3731, and that chance early life effects have a large influence on fitness outcomes DOI: 10.1126/science.adq0579. We are open to other topics as well. Requirements Curiousity about animal behaviour Willingness to obtain training to work with live house mice Willingness to participate in field or lab work Ability for teamwork Project start Anytime – open to discussion Prof Dr Anna Lindholm (anna.lindholm@ieu.uzh.ch) Department of Evolutionary Biology and Environmental Studies, University of Zurich",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_animal_behaviour.html",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "1c6af93ba76c792352c41928c0992cfbc75117d2"
+    },
+    {
+      "title": "Behavioural projects relevant to ethical mouse biocontrol",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": null,
+      "topic_description": "We are developing a project on biocontrol of house mice. House mice are generalists which have been introduced to many parts of the world, including regions where their natural enemies are absent. As they are flexible in their behaviour and reproduce quickly when conditions are favourable, mouse populations easily build up. This can become a problem, for example, when crops and food stores are spoiled, or mice learn to prey upon endemic invertebrate or bird species. The current method of mouse control relies on applications of poison. Our project relies on the t-haplotype, a large natural genetic polymorphism which acts as a male meiotic driver, and which, when homozygous, destroys its carrier’s sperm production, thereby interfering with reproduction. Thus in males, only heterozygotes transmit the t haplotype to offspring (but at a high rate: 80-95% of offspring!). We are testing the extent to which the t-haplotype influences social behaviour and female mate choice and its rate of spread in populations, and offer several MSc projects. Social interactions House mice carrying the t-haplotype are more likely to leave a population than wild-type individuals, but the underlying processes and the differences between genotypes are poorly understood. How do social interactions of t carriers and wildtype mice influence access to resources, such as food, nest sites, and females, as well as the decision to disperse? Automated motion tracking will be used to analyse social behaviour of individual mice. i) In this project, the student will contribute to a large experiment investigating the processes that lead to dispersal in house mice. The student will train annotations using DeepLabCut to track social behaviour in the video data from these experiments. The data will then be analysed to assess the social relationships between individuals. Furthermore, the results can be linked to the already analysed anxiety and exploratory behaviour of these individuals. This study will contribute to our understanding of how the t-haplotype spreads in nature. Mice are a mammalian model species, and understanding dispersal in house mice will also help to understand how and why animals disperse in general, a particularly important topic in projecting changes in animal distributions over time. ii) Male house mice carrying the t-haplotype appear to influence the reproductive success of their neighbours negatively. We aim to understand how, testing hypotheses about social hierarchy, and positive and negative social interactions in experimental settings. The student will train annotations using DeepLabCut to track social behaviour in the video data from these experiments. The data will then be analysed to assess the social relationships between individuals, and the results related to which individuals gain or lose fitness. This is a key aspect to understanding how t-carriers influence population reproductive success. Mate choice experiments Our project relies on transmission of the t-haplotype between generations, and therefore on female interest in mating with t-haplotype carrying males. We are experimentally testing various aspects of female mate preferences, such as the extent to which phenotypic differences between males (such as body size differences) influence female mate preferences, as this could be used to improve the mating prospects of t-haplotype carriers, for example, by giving them access to growth-maximising conditions. What influences frequencies of a meiotic driver in nature? One of the best known male meiotic drivers is the t-haplotype, which occurs in wild populations of house mice in Switzerland and elsewhere. The t-haplotype is a supergene that influences sperm competition – in heterozygotes giving an advantage to t over + sperm in within-male sperm competition for fertilisation, resulting in super-Mendelian inheritance patterns. However, it has a large disadvantage in between-male sperm competition, and harmful recessive effects, which brake its spread in nature. It is found in mouse populations all over the world, but no one has yet undertaken a global analysis of t-frequencies and distribution. The student will develop hypotheses and test them using data from the literature and our own data. We also offer possibilities for more theoretical approaches to predicting t-frequencies in nature, and studying t-haplotype evolution. Requirements Curiousity about animal behaviour Willingness to participate in ongoing field or lab work Aptitude for teamwork Project start Anytime – open to discussion Prof Dr Anna Lindholm (anna.lindholm@ieu.uzh.ch) Department of Evolutionary Biology and Environmental Studies, University of Zurich",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_animal_behaviour.html",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "6d04f3f01624f466d1923842584df9ac5cc90d9a"
+    },
+    {
+      "title": "Innovation and culture in urban-living cockatoos",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": [
+        {
+          "name": "Lucy Aplin",
+          "email": "lucy.aplin@anu.edu.au"
+        }
+      ],
+      "topic_description": "The capacity for innovation, social learning and culture is vital to the success of humans, facilitating our colonization of almost every habitat on Earth. But has culture been a determinant of success in any other species? Urban environments present a natural experiment to investigate these questions, as cities provide novel challenges and opportunities that animals need to respond to over short time-scales. Our recent research on one urban-adaptor, the sulphur-crested cockatoo, has described the spread of one innovation, flipping bin lids to raid household food scraps in Sydney Australia. In this work, and the help of citizen-science, we mapped emergence and geographic spread of this behaviour to observe the formation of a local ‘bin-opening culture’. However, people have now responded to this behaviour by protecting bins with a variety of methods. Our evidence for social learning of bin protection by people (and anecdotal observations that birds can defeat measures) leads to the potential for an interspecies cultural arms race. This masters project will investigate whether this is occurring by using a combination of observations and experiments to test where, when and how cockatoos can defeat bin protection measures. The project will combine spatial mapping and citizen science approaches with wild fieldwork on habituated cockatoos in eastern Australia. Requirements An interest in animal behaviour and cognition. Experience with programming or statistics in R or Python, or a strong motivation to learn. A willingness to engage with a large, active, and exciting research team. Willingness to engage in urban/peri-urban fieldwork in Australia, and a current passport. Project start Starting date open If you want to know more about our lab and projects visit our website . If you are interested in this work, please send an email with a brief letter of motivation (1-2 paragraphs) outlining why you wish to join the project to: , Department of Evolutionary Biology and Environmental Studies, University of Zurich, Switzerland",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_animal_behaviour.html",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "5156a71bf20fa911edd5110363e8a311337b55dc"
+    },
+    {
+      "title": "Experimental study of meerkats’ orientation and navigation mechanisms",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ieu.uzh.ch/dam/jcr:b763c4e1-6ae8-461e-aabf-48a4647d2b99/202511meerkat_navigation_ma-call.pdf",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "d005841419ef4c6b4e96334f80a0a90ff7681959"
+    },
+    {
+      "title": "Sexual conflict in chacma baboons",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": [
+        {
+          "name": "Tony Weingrill",
+          "email": "tonyw@aim.uzh.ch"
+        }
+      ],
+      "topic_description": "Project description I am advertising MSc projects focusing on wild chacma baboons in the Waterberg district of the Limpopo province, South Africa. The main research goal is to improve our understanding of the role of sexual conflict as a selection pressure shaping physiology, male-female relationships, and paternal behavior. Together with local and international field assistants and students, you will collect behavioral, endocrinological, genetic and ecological data while following habituated chacma baboon troops. The study site – also home to vervet monkeys and bushbabies, to name only the primates – is located on the Swebeswebe Wildlife Estate, approximately 50km from the town of Lephalale. You will also contribute to the general running of the research camp set in the rugged bushveld with magnificent wildlife. The research camp provides all necessary amenities including free fast internet access. Requirements You should be in possession or close to obtaining a bachelor’s degree in biology or Biomedicine from the University of Zurich (or another Swiss University). Previous field experience is desirable, but not essential. You should be physically fit and resilient. Project start Start dates of MSc Projects are flexible. Also visit the website Primate Reproductive Strategies and Socioendocrinology",
+      "source_link": "https://www.ieu.uzh.ch/en/teaching/ma_projects_animal_behaviour.html",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "9e188d644dbbf350b8aad6da4661dad65c59f305"
+    },
+    {
+      "title": "The use of Alarm Call vocalizations in a Semi-Urban population of vervet monkeys",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": [
+        {
+          "name": "Sofia Forss,",
+          "email": "sofia.forss@ieu.uzh.ch"
+        },
+        {
+          "name": "Marta Manser",
+          "email": "marta.manser@ieu.uzh.ch"
+        }
+      ],
+      "topic_description": "This MSc project will focus on identifying the acoustic variation in alarm calls related to the context in which they are produced in a semi urban vervet monkey population. In particular, we are interested in studying responses to dogs, and other anthropogenic introduced threats in the habitat of this population. The project entails 6-8 months field work at the Simbithi Eco Estate at the East Coast of South Africa. You will be working in a small team and beside recording monkey vocalizations you will contribute to the projects general data collection. Requirements An interest in animal behaviour and animal communication. Preferrable but not required computer programming experience (e.g. in R). Willingness to spend prolonged time in South Africa with physically hard work following vervet monkeys in a semi-urban habitat. Great interest in cross-cultural teamwork. Project start Enrolment as MSc student at Animal Behaviour Group from Fall Semester 2023. Fieldwork period January 2024 (7-8 months). Applications should include a CV and a motivation letter why you are particularly suited/ interested in this research. If you are interested or would like to have further information regarding this project, please don’t hesitate to reach out to us: Department of Evolutionary Biology and Environmental Studies, University of Zurich, Switzerland , Department of Evolutionary Biology and Environmental Studies, University of Zurich, Switzerland More information about our research groups under: Animal Curiosity and Cognition Communication and Cognition in Social Mammals",
+      "source_link": "https://www.ieu.uzh.ch/dam/jcr:e7afec5c-4059-4565-9899-13e007628935/msc_urban_vervet_vocalisations.pdf",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "34d02200f2b2f4573a301c0f0293067f89c608d0"
+    },
+    {
+      "title": "Vocal activity and flexibility in call usage in wild meerkats",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ieu.uzh.ch/dam/jcr:acd1d675-2876-4db8-8a35-6a9138419819/202511vocal_meerkats_ma-call.pdf",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "02b842fbaf9223f40e1d984a7fc0d6eae27fb9ce"
+    },
+    {
+      "title": "Vocal communication in yellow mangooses",
+      "status": "open",
+      "degree_level": "Master",
+      "date_of_listing": null,
+      "research_area": "Animal Behaviour",
+      "supervisors": null,
+      "topic_description": null,
+      "source_link": "https://www.ieu.uzh.ch/dam/jcr:f844514a-e8c2-4a16-905b-c0977f9b8242/2024_ymp_maproject-ab.pdf",
+      "source_id": "ieu--3",
+      "scraped_at": "2026-08-05T12:25:29.986365+00:00",
+      "topic_id": "1c8d4895944d00b9c15eac7094c8ace7acef1ead"
+    }
+  ]
+}

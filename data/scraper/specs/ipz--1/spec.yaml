@@ -1,0 +1,56 @@
+# ipz--1: IPZ Master-thesis topic listing ("Themenausschreibung"). Each topic is
+# a collapsible h2.toggle block with description paragraphs, References, and a
+# "Kontakt:" supervisor link. Only the CURRENTLY offered topics are taken —
+# stop_before drops everything from the "Themenarchiv" heading onward. Each
+# supervisor's profile is followed for the email. Stored at the unit level.
+source_id: ipz--1
+page_type: topics
+
+record:
+  container: 'div.TextImage:has(h2.TextImage--title.toggle)'
+  stop_before: 'h2.TextImage--title:-soup-contains("Themenarchiv")'
+  fields:
+    title:
+      selector: 'h2.TextImage--title.toggle'
+      attr: text
+      transform: normalize_ws
+    status:
+      value: open
+    degree_level:
+      value: "Master"
+    research_area:
+      value: "Political Science"
+    topic_description:
+      selector: 'div.TextImage--content.richtext'
+      attr: text
+      exclude:
+        - "h2"
+        - 'p:-soup-contains("References")'
+        - 'p:-soup-contains("References") ~ *'
+        - 'p:-soup-contains("Kontakt")'
+      transform: normalize_ws
+    supervisors:                       # contact is a profile link and/or mailto(s)
+      each: 'p:-soup-contains("Kontakt") a[href*="/mitarbeitende/"], p:-soup-contains("Kontakt") a[href^="mailto:"]'
+      fields:
+        name:
+          attr: text
+          transform: [normalize_ws, strip_titles, drop_if_email]
+        email:
+          attr: href
+          transform: mailto_email
+        _url:
+          attr: href
+          transform: absolute_url
+
+id_from: [title]
+
+resolve_supervisors:
+  list_field: supervisors
+  url_key: _url
+  email:
+    - selector: 'main a[href^="mailto"]'
+      attr: href
+      transform: strip_mailto
+    - selector: "main address, main"
+      attr: text
+      transform: deobfuscate_email

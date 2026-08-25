@@ -1,0 +1,73 @@
+{
+  "source_id": "geography--2",
+  "page_type": "process",
+  "verified_content_sha1": "476c2191c727f5967b66d1f96b2f2f45c12abf9a",
+  "records": [
+    {
+      "degree_level": "Master",
+      "process_description": "Master’s candidates choose an available topic or propose a self‑selected topic to a supervisor (internal or external). In addition to the supervisor, a faculty member or other person with “Promotionsrecht” must agree to supervise. Topics are listed on unit webpages and in the department’s research‑group/topic lists; past and ongoing theses are published there. To start, upload the Master’s agreement and a 2–3 (30 ECTS) / 4–6 (60 ECTS) page draft concept on Lean Gate; once accepted by supervisor and the Promotionsrecht person it is assigned automatically. Book the corresponding module (GEO/ESS 511 for 30 ECTS or GEO/ESS 510 for 60 ECTS) in UZH’s module booking tool — from autumn 2024 starts are allowed monthly (start = 1st of month); January starters must email teaching-support@geo.uzh.ch for manual booking. Duration: 30 ECTS = 6–12 months, 60 ECTS = 12–18 months. Official timelines, topic lists and guidelines (including plagiarism rules) are on the department pages, the timetable link and UZH’s plagiarism webpage.",
+      "relevant_links": [
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/faq.html",
+          "description": "More about Frequently asked questions"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/dam/jcr:2a07dcee-964a-423c-8ad5-88e99040baff/Detailed_Information_MSc_thesis_v3.pdf",
+          "description": "More about Detailed Informationsheet"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/timetable.html",
+          "description": "here"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/topic-ideas.html",
+          "description": "here"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/master/master_thesis_exam/ongoing-completed-msc-theses.html",
+          "description": "pages of the units"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/completed.html",
+          "description": "large, sortable table"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/master/master_thesis_exam/faculty_members.html",
+          "description": "here"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/ongoing-completed-msc-theses.html",
+          "description": "More about Ongoing and completed Master's thesis in the units"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/ongoing.html",
+          "description": "More about List of all ongoing MSc Theses"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/faculty-members.html",
+          "description": "More about Faculty Members with \"Promotionsrecht\" as supervisors"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/dam/jcr:722f8d75-15c9-4bac-9d37-602fa5a8dd31/infosheet_consulting_for_students-1.pdf",
+          "description": "Information sheet (PDF, 55 KB)"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/dam/jcr:4f61822c-6190-4247-a5b5-f42bedd24099/2026-05_KW21_MSc_Thesis_Presentations.pdf",
+          "description": "More about Current Master exams"
+        },
+        {
+          "url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam/interdisciplinary-topics.html",
+          "description": "Interdisciplinary topics"
+        }
+      ],
+      "source_url": "https://www.geo.uzh.ch/en/studying/during-your-studies/theses/master-thesis-exam.html",
+      "source_id": "geography--2",
+      "scraped_at": "2026-08-05T12:45:04.080210+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}

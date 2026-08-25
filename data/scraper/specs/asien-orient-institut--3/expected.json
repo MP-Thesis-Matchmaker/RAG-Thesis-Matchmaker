@@ -1,0 +1,37 @@
+{
+  "source_id": "asien-orient-institut--3",
+  "page_type": "process",
+  "verified_content_sha1": "ea043a4636415fff7691c45c4a4905d122451301",
+  "records": [
+    {
+      "degree_level": "Bachelor, Master",
+      "process_description": "Sie einigen sich vor Beginn mit einer Betreuungsperson auf ein Thema; die Betreuungsperson muss beim Bachelor im Major-/Mono‑Studienprogramm lehren, beim Master im Semester der Buchung an der UZH angestellt sein. Voraussetzungen für die Buchung finden Sie in der Modulbeschreibung Ihres Studienprogramms. Buchen Sie die Arbeit während der regulären Modulbuchungsfrist online; nach Ablauf erhalten Sie per UZH‑E‑Mail den Link, um vorläufigen Titel und Betreuer/in einzutragen. Abgabe bei der Betreuungsperson spätestens 1. Dezember (Herbst) oder 1. Juni (Frühjahr); Fristüberschreitung gilt als «nicht bestanden» (Fehlversuch). Nach Abgabefrist tragen Sie den definitiven Titel online ein. Bei Verhinderung: Fristerstreckung (nur kurz) oder Abmeldung; für Gesuche prüfen Sie Institute/Seminare oder wenden sich an die Studienprogrammberatung. Offizielle Hinweise: Modulbeschreibungen, Institute/Seminare und die UZH‑Seite «Modulbuchung».",
+      "relevant_links": [
+        {
+          "url": "https://www.uzh.ch/phil/ssl-dir/abschlussarbeiten/index.php",
+          "description": "Webseite"
+        },
+        {
+          "url": "https://www.zi.uzh.ch/dam/jcr:3d10d79d-6b18-40e0-a824-a9d3a581e7a2/Podcast_Livestreaming_Merkblatt_Studierende_DE.pdf",
+          "description": "Podcasts und Livestreaming an der UZH: Hinweise für Studierende"
+        },
+        {
+          "url": "https://sprachenzentrum.uzh.ch/apps/symfony/kursanmeldung/de/phf-notification",
+          "description": "spezielle Kurse"
+        },
+        {
+          "url": "https://www.phil.uzh.ch/static/rechtssammlung/allgemein/20240812_STO_Allgemeiner_Teil_Stand_20231223_DE.pdf",
+          "description": "Studienordnung der Studienprogramme der Philosophischen Fakultät"
+        }
+      ],
+      "source_url": "https://www.phil.uzh.ch/de/studium/rundumsstudium/module.html",
+      "source_id": "asien-orient-institut--3",
+      "scraped_at": "2026-07-25T04:55:04.735696+00:00",
+      "_llm": {
+        "provider": "openai",
+        "model": "gpt-5-mini",
+        "status": "ok"
+      }
+    }
+  ]
+}
