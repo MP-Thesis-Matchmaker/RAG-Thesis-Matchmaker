@@ -383,10 +383,12 @@ behaviour, so the untested surface went away without anything new being verified
   exclude it, admit it under the sole-author rule, or index both and let `ranking`
   prefer UUID-backed candidates. Every candidate rule is now computable from the
   persisted typed map. Whatever is decided propagates:
-  `indexing/sources.py` filters on `cardinality(uzh_authors) > 0` at index time,
-  `retrieval/vector.py` filters on `has_uzh_author` at query time, and CLAUDE.md's
-  "91,673 (42.7%) have at least one UZH author" is inflated by the same 38,157
-  records. Two loose ends: our data holds 2,941 UUID names against ~2,016 exposed
+  `indexing/sources.py` no longer filters at all (since 2026-08-25 the whole corpus
+  is indexed), and `retrieval/vector.py` filters on `has_uzh_author` only when
+  `RETRIEVAL_REQUIRE_UZH_AUTHOR` is set — so whatever is decided is a settings and
+  ranking question now, not a re-index. Measured on the 2026-08-25 harvest: 91,734
+  publications pass the current any-authority rule but only 53,544 carry a
+  CRIS-backed author, so ~38,190 qualify on an ORCID placeholder alone. Two loose ends: our data holds 2,941 UUID names against ~2,016 exposed
   Person entities, so some UUIDs may name other entity types — measurable after the
   re-harvest as `% of cris-typed ids present in person.uuid` — and 20 authority
   values are malformed — lowercase-`x` checksums, a trailing period, and truncated

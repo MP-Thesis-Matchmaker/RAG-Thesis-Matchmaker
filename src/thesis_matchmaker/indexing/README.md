@@ -250,15 +250,18 @@ at a Postgres with the extension, which CI always does via a
   proves the API, not the query plan. Check it with `EXPLAIN ANALYZE` against the
   real corpus.
 
-  Note what the index-time filter did to the selectivity half of this argument.
-  Now that `--source db` yields only UZH-authored publications, every row in a
-  DB-sourced index satisfies `metadata @> '{"has_uzh_author": true}'`, so that
-  predicate matches everything and is no longer selective at all: it is a
-  per-candidate jsonb check that buys nothing on this source. It stays because it
-  is the invariant for sources that are *not* filtered (see `sources.py`), not
-  because it narrows anything. The partial HNSW indexes on `source_type` are
-  unaffected and still do real work, since the index holds both publications and
-  postings.
+  The selectivity half of this argument has now flipped twice, and the second flip
+  turned it into a live defect. While `--source db` filtered to UZH-authored
+  publications, every row in a DB-sourced index satisfied
+  `metadata @> '{"has_uzh_author": true}'`, so the predicate was unselective and
+  merely wasteful. Since 2026-08-25 the source is unfiltered — 91,734 of 214,756
+  publications carry a UZH author — so with `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` that
+  predicate discards ~57% of the candidates the HNSW scan returns, **after** the
+  scan, which is precisely the under-return that `schema.sql`'s partial-index comment
+  describes. `VectorRetriever` over-fetches 4x to compensate; the real fix is a third
+  partial index matching the predicate, and it needs a schema reset. The two existing
+  partial HNSW indexes on `source_type` are unaffected and still do real work, since
+  the index holds both publications and postings.
 - **Both halves of the index now have real producers.** `zora/` writes
   `publication`, `scraper/` writes `posting`, and `PostgresSourceReader` reads
   both. `theses.jsonl` stays because the offline path and CI need a source with no

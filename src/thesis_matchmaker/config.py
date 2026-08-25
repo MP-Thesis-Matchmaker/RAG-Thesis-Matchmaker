@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -99,6 +101,42 @@ class Settings(BaseSettings):
     # indexer reads publications.jsonl and theses.jsonl from here. Defaults to
     # the checked-in synthetic sample data until real ingestion output exists.
     sources_path: str = "data/samples"
+
+    # Whether a publication needs at least one registered UZH author to be
+    # retrievable at all. This used to be hardcoded True in retrieval/vector.py and
+    # mirrored by a WHERE clause in indexing/sources.py, on the reasoning that a
+    # paper with no UZH author cannot yield a supervisor a student could work with.
+    #
+    # Now off by default, and the index no longer takes a position either way, so
+    # flipping this needs no re-embed. What replaces it as the default behaviour is
+    # retrieval_ranking_strategy below: the ineligible records are reachable but
+    # rank underneath every UZH-authored one.
+    #
+    # KNOWN GAP when set to True: pgvector applies metadata filters *after* the HNSW
+    # scan (see the partial-index comment in schema.sql), and the partial indexes key
+    # on source_type only. Over a full index only ~43% of publications satisfy this
+    # predicate, so a filtered query can return fewer than top_k. VectorRetriever
+    # over-fetches to compensate; the real fix is a partial index that matches this
+    # predicate, which needs a schema change.
+    retrieval_require_uzh_author: bool = False
+
+    # How candidates are ordered once retrieval has grouped hits per person.
+    #
+    #   uzh_first -- people credited by at least one UZH-authored publication (or by
+    #                a thesis posting, whose supervisors work here by construction)
+    #                rank above everyone else; similarity breaks ties within each
+    #                group. This is the default because the product recommends UZH
+    #                supervisors: an external researcher is a weaker answer than any
+    #                UZH one, however well their abstract matches.
+    #   score     -- plain similarity, ignoring affiliation. The behaviour before
+    #                this setting existed.
+    #
+    # Inert while retrieval_require_uzh_author is True: nothing non-UZH survives the
+    # filter, so there is nothing left for the strategy to order differently.
+    #
+    # A Literal rather than a str so a typo fails at settings load with a message
+    # naming the valid values, instead of silently selecting a fallback strategy.
+    retrieval_ranking_strategy: Literal["uzh_first", "score"] = "uzh_first"
 
     # MCP server. This is deployed as a standalone service that the AI Buddy
     # agent points at, so the tools are served over HTTP at

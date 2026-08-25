@@ -14,7 +14,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-22)
 
 `thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,197 LOC,
-317 test functions in 26 files (344 pass with a database, 308 pass / 36 skip offline).
+442 test functions in 30 files (all pass with a database, 398 pass / 44 skip offline).
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API and multi-signal ranking in it are not built yet).
@@ -61,28 +61,36 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
-corpus lives in the `publication` table — **214,685 publications** as of 2026-08-21, of which
-**91,673 (42.7%)** pass the UZH-author filter — a figure the `uzh_authors` ORCID conflation
-inflates by 38,157 records; see the first known gap in
-[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes only those: a publication
-with no UZH author cannot yield a supervisor recommendation, and `retrieval/` already filtered it
-out at query time, so embedding it was work spent on unreachable vectors.
-`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
-longer tracked.
+corpus lives in the `publication` table — **214,756 publications** as of 2026-08-25, of which
+**91,734 (42.7%)** carry a UZH author — a figure the `uzh_authors` ORCID conflation inflates by
+38,190 records (only 53,544 carry a CRIS-backed author); see the first known gap in
+[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes **all** of them,
+plus the 678 available postings. It briefly indexed only the UZH-authored ones (2026-08-21 to
+08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
+turning it off would have returned nothing extra until someone re-embedded the corpus. Eligibility
+is now a retrieval-time setting, with `RETRIEVAL_RANKING_STRATEGY=uzh_first` demoting
+unaffiliated researchers rather than excluding them. `data/publications.jsonl` is a pre-Postgres
+artefact: nothing writes it and it is no longer tracked.
 
-**Pending schema reset (2026-08-24):** `schema.sql` gained the `person` and `org_unit`
-entity mirrors (refreshed at the start of every `zora.harvest` run — persons, then org
-units, then publications; `--no-persons` / `--no-org-units` / `--no-publications` opt out),
-plus `publication.owning_collection_uuid` and a typed `author_authority_map`
-(`{"type": "cris"|"orcid", "id": ...}` — the CRIS-vs-ORCID distinction the known
-`uzh_authors` gap needed). The fingerprint changed, so existing databases need
-`init-db --reset` **and a fresh `harvest --mode full`** (old dumps lack the new
-fields). Deliberately not run yet — posting-side follow-up changes land first, then one
-single reset. Details: [`zora/README.md`](src/thesis_matchmaker/zora/README.md).
+**Schema reset performed (2026-08-25, fingerprint `135ac01a09be`).** `schema.sql` gained the
+`person` and `org_unit` entity mirrors (refreshed at the start of every `zora.harvest` run —
+persons, then org units, then publications; `--no-persons` / `--no-org-units` /
+`--no-publications` opt out), plus `publication.owning_collection_uuid` and a typed
+`author_authority_map` (`{"type": "cris"|"orcid", "id": ...}` — the CRIS-vs-ORCID distinction the
+known `uzh_authors` gap needed). The local database was reset and re-harvested from the API:
+**2,018 persons, 497 org units, 214,756 publications**, every one carrying
+`owning_collection_uuid`. Postings were restored from the scraper's response cache (695 rows, no
+re-fetch). The `document` table is empty — **the re-index has not run yet.**
+
+Two consequences. Old raw dumps predate the new fields, so `--from-dump` cannot rebuild this
+corpus; only an API harvest can. And the **posting-side follow-up will need its own reset** —
+the "one reset for everything" plan did not survive, because the entity mirrors were needed
+before those changes were designed. Details:
+[`zora/README.md`](src/thesis_matchmaker/zora/README.md).
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (344 tests /
-26 files; 36 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (442 tests /
+30 files; 44 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,

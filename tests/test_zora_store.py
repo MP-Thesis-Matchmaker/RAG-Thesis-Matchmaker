@@ -184,12 +184,13 @@ def test_incremental_run_does_not_stamp_the_full_column(clean_db: str) -> None:
     assert state.last_full_run_at is None
 
 
-def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db: str) -> None:
-    """The index only holds what could actually produce a supervisor recommendation.
+def test_postgres_source_reader_reads_publications_without_a_uzh_author(clean_db: str) -> None:
+    """Indexing takes no position on UZH authorship; retrieval decides.
 
-    A publication whose author list contains no registered UZH researcher cannot
-    produce one -- nobody on it works here -- so it is filtered out in SQL rather
-    than embedded and then discarded by retrieval's query-time pre-filter.
+    This asserted the opposite until 2026-08-25. Filtering in SQL made
+    `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable in practice: turning it off would
+    return nothing extra until someone re-embedded the corpus. Reading everything
+    costs ~2.3x the embedding work once and makes the rule a setting.
     """
     _write(
         clean_db,
@@ -205,7 +206,14 @@ def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db
         mode="full",
     )
     reader = PostgresSourceReader(dsn=clean_db)
-    assert [r.id for r in reader.publications()] == ["zora:1"]
+    records = list(reader.publications())
+
+    assert [r.id for r in records] == ["zora:1", "zora:2"]
+    # Read faithfully, so retrieval can tell the two apart: the empty list is what
+    # `documents.py` turns into `has_uzh_author: False`, and what the retriever's
+    # fallback keys on when it credits `authors` instead.
+    assert records[1].uzh_authors == []
+    assert records[1].authors == ["X. External", "Y. Elsewhere"]
 
 
 # --- Entity mirrors: person and org_unit ---

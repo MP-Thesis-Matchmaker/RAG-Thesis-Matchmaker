@@ -47,12 +47,27 @@ class SupervisorMatch(BaseModel):
     """One ranked recommendation from the retrieval and ranking layer.
 
     This is what the orchestration and LLM steps consume. A returned list is
-    already sorted by score, highest first.
+    already ranked, best first -- but **not necessarily by score**: under the
+    default `uzh_first` strategy, `has_uzh_affiliation` outranks similarity, so a
+    lower-scored UZH supervisor precedes a higher-scored external researcher. Do
+    not re-sort on `score` and assume the order is preserved.
     """
 
     supervisor: str = Field(description="Name of the recommended supervisor.")
     department: str | None = None
     score: float = Field(description="Final ranking score, higher is a better match.")
+    has_uzh_affiliation: bool = Field(
+        default=True,
+        description=(
+            "Whether this person is a registered UZH researcher -- a UZH author on "
+            "some retrieved publication, or the named supervisor of a UZH thesis "
+            "posting. False means an external co-author surfaced only because "
+            "RETRIEVAL_REQUIRE_UZH_AUTHOR is off: relevant work, but nobody a "
+            "student here can actually be supervised by, so callers should say so "
+            "rather than presenting them as a supervisor. Defaults True because "
+            "every producer predating the setting emitted UZH-only matches."
+        ),
+    )
     matched_topics: list[str] = Field(
         default_factory=list, description="Query topics this person matched on."
     )
