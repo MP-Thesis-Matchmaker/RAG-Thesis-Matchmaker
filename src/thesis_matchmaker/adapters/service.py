@@ -13,12 +13,26 @@ from thesis_matchmaker.pipeline import Pipeline
 from thesis_matchmaker.retrieval import build_retriever
 
 
+class IndexNotBuiltError(RuntimeError):
+    """Raised when a tool is called before anything has been indexed."""
+
+
 def _default_pipeline() -> Pipeline:
-    """Pipeline over the real retriever if an index exists, else the fake one."""
+    """Pipeline over the real retriever.
+
+    Deliberately has no fake-retriever fallback. These functions back the MCP
+    tools askUZH calls, so an unbuilt index has to surface as an error: handing
+    back invented supervisors because nothing was indexed yet is far worse than
+    failing, and it is the kind of thing nobody notices until a student acts on
+    it. Tests inject their own pipeline instead.
+    """
     settings = get_settings()
-    if read_manifest(settings) is not None:
-        return Pipeline(retriever=build_retriever(settings))
-    return Pipeline()
+    if read_manifest(settings) is None:
+        raise IndexNotBuiltError(
+            "No index has been built, so there is nothing to recommend from. "
+            "Run 'thesis-matchmaker index' against a populated database first."
+        )
+    return Pipeline(retriever=build_retriever(settings))
 
 
 def find_researchers(query: str, top_k: int = 5, pipeline: Pipeline | None = None) -> list[dict]:
