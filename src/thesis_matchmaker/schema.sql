@@ -97,9 +97,13 @@ CREATE TABLE publication (
     -- Real arrays rather than JSON strings: unlike the index's metadata blob,
     -- these are queryable (see the GIN index below).
     authors              text[] NOT NULL DEFAULT '{}',
-    -- Authors carrying any authority key. Known gap: this admits ORCID-only
-    -- external co-authors as well as CRIS-registered UZH researchers -- see
-    -- zora/README.md. The typed map below is what separates the two.
+    -- The supervisor-eligible subset of `authors`, in the same order. WHICH
+    -- authors qualify is decided by the harvester and deliberately not restated
+    -- here: this file is fingerprinted by its raw text, so pinning the rule in a
+    -- comment would make tuning it cost a full `init-db --reset`. The map below
+    -- records every author's authority kind, which is what keeps an alternative
+    -- rule computable from the table rather than needing a fresh harvest.
+    -- Current rule and its open questions: zora/README.md.
     uzh_authors          text[] NOT NULL DEFAULT '{}',
     -- author name -> typed authority, null for authors with no authority at all:
     --   {"type": "cris",  "id": "<Person item UUID>"}  -- resolves in person.uuid

@@ -253,6 +253,13 @@ without the indexer noticing. The DSpace field names are all isolated in
   `config.py`, and shows per-author `authority` keys. Run with
   `export ZORA_UZH_API_KEY=... && python -m scripts.zora_inspect_fields 5`.
   Use it before changing any `FIELD_*` constant.
+- **`scripts/zora_authority_audit.py`** — measures the candidate `uzh_authors`
+  eligibility rules (first Known gap below) against the harvested corpus, so the
+  rule is chosen from data rather than from estimates. Postgres only: no API, no
+  token, and it writes nothing but a session-scoped TEMP table. Needs the current
+  schema *and* a completed `--mode full` run, since it reads
+  `author_authority_map`, `owning_collection_uuid` and the `person` mirror.
+  Run with `python -m scripts.zora_authority_audit`.
 
 ## Field mapping
 
