@@ -55,7 +55,8 @@ import logging
 import sys
 from collections.abc import Iterator
 
-from thesis_matchmaker import db
+from thesis_matchmaker import db, schema
+from thesis_matchmaker.config import get_settings
 
 from . import config, entities, mapping, normalize, store, zora_client
 from .raw_dump import read_raw_dump, write_raw_dump
@@ -178,6 +179,12 @@ def run(
     publications: bool = True,
 ) -> int:
     """Harvest the enabled capabilities, entities first. @return: exit code."""
+    # First, and before any request: every path below writes to Postgres -- a
+    # --from-dump replay included -- so a database whose schema predates this code
+    # has to be caught in one round-trip rather than by an UndefinedTable after the
+    # fetching is already paid for.
+    schema.require_current(get_settings().database_url)
+
     # Enforced here rather than only in argparse, because "--from-dump makes no API
     # request" has to hold for every caller of run(), not just the command line.
     # Scoped to a run that is actually replaying publications: with
@@ -300,10 +307,13 @@ def main() -> None:
             org_units=org_units,
             publications=publications,
         )
-    except RuntimeError as exc:
-        # Expected failure modes (auth, config, a broken tree walk) get a clean
-        # one-line message in the Actions log instead of a full traceback.
-        # Anything else (a real bug) still surfaces its traceback normally.
+    except (RuntimeError, *db.DB_ERRORS) as exc:
+        # Expected failure modes (auth, config, a broken tree walk, an unreachable
+        # or out-of-date database) get a clean one-line message in the Actions log
+        # instead of a full traceback. Anything else (a real bug) still surfaces
+        # its traceback normally. psycopg errors are in the list because they are
+        # operator conditions too: `raw_dump.py` already translates OSError for the
+        # same reason, but the store layer has no such translation of its own.
         logger.error(str(exc))
         exit_code = 1
     finally:

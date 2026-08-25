@@ -14,7 +14,7 @@ import os
 
 import pytest
 
-from thesis_matchmaker import db
+from thesis_matchmaker import db, schema
 from thesis_matchmaker.zora import config, entities, harvest, store, zora_client
 
 from .fake_dso import FakeDSO
@@ -91,6 +91,10 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
         lambda client, since=None: iter([_dso("123/1"), _dso("123/2", accessioned="2026-02-02")]),
     )
     monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
+    # The preflight is the one part of `run()` that needs a real database. It has
+    # its own tests in tests/test_schema.py; here it would only mean every
+    # orchestration test required Postgres.
+    monkeypatch.setattr(schema, "require_current", lambda dsn: None)
     return s
 
 
