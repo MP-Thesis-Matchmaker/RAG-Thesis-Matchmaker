@@ -19,40 +19,75 @@ from __future__ import annotations
 import logging
 
 from . import mapping, normalize, store, zora_client
-from .raw_dump import write_raw_dump
+from .raw_dump import ORG_UNITS, PERSONS, read_raw_dump, write_raw_dump
 
 logger = logging.getLogger(__name__)
 
-PERSONS = "persons"
-ORG_UNITS = "orgunits"
 
+def _collect(source, kind: str, limit: int | None, from_dump: str | None) -> list[dict]:
+    """Normalized records for one mirror, from the API or from a dump.
 
-def harvest_persons(client, limit: int | None = None) -> store.EntityWriteResult:
-    """Snapshot the DSpace-CRIS Person entities into the `person` table."""
+    Both halves of every step reduce to this: a stream of normalized records,
+    capped by `limit`, cached to `data/raw/` unless it came from there. Written
+    once so the fetch and the replay cannot drift into behaving differently --
+    `--limit` in particular applies to both, which is what makes a replay usable
+    as a smoke test.
+
+    No second dump is written on the replay path: the source file already *is*
+    the cache, and copying it under a new timestamp would only make it ambiguous
+    which one a later replay should use. Same reasoning as the publication step.
+    """
     records = []
-    for i, dso in enumerate(zora_client.iter_persons(client)):
+    for i, record in enumerate(source):
         if limit is not None and i >= limit:
-            logger.info("Reached --limit %d, stopping the person fetch", limit)
+            logger.info("Reached --limit %d, stopping the %s step", limit, kind)
             break
-        records.append(normalize.normalize_person(dso))
+        records.append(record)
 
-    logger.info("Fetched %d person records", len(records))
-    write_raw_dump(records, PERSONS)
+    label = "person" if kind == PERSONS else "org unit"
+    logger.info("%s %d %s records", "Replayed" if from_dump else "Fetched", len(records), label)
+    if from_dump:
+        logger.info("Not writing a raw dump: this run replayed an existing one")
+    else:
+        write_raw_dump(records, kind)
+    return records
+
+
+def harvest_persons(
+    client, limit: int | None = None, from_dump: str | None = None
+) -> store.EntityWriteResult:
+    """Snapshot the DSpace-CRIS Person entities into the `person` table.
+
+    @param from_dump: replay this dump instead of calling ZORA. `client` is then
+        unused and callers pass None, so "no API request" is structural rather
+        than a promise.
+    """
+    if from_dump:
+        logger.info("Replaying %s -- no ZORA request will be made", from_dump)
+        source = read_raw_dump(from_dump)
+    else:
+        source = (normalize.normalize_person(dso) for dso in zora_client.iter_persons(client))
+
+    records = _collect(source, PERSONS, limit, from_dump)
     return store.write_persons([mapping.to_person(record) for record in records])
 
 
-def harvest_org_units(client, limit: int | None = None) -> store.EntityWriteResult:
-    """Snapshot the UZH community tree into the `org_unit` table."""
-    records = []
-    walk = zora_client.iter_org_tree(client)
-    for i, (community, parent_uuid, depth, faculty_uuid, collections) in enumerate(walk):
-        if limit is not None and i >= limit:
-            logger.info("Reached --limit %d, stopping the org-unit walk", limit)
-            break
-        records.append(
-            normalize.normalize_org_unit(community, parent_uuid, depth, faculty_uuid, collections)
+def harvest_org_units(
+    client, limit: int | None = None, from_dump: str | None = None
+) -> store.EntityWriteResult:
+    """Snapshot the UZH community tree into the `org_unit` table.
+
+    @param from_dump: as for `harvest_persons`.
+    """
+    if from_dump:
+        logger.info("Replaying %s -- no ZORA request will be made", from_dump)
+        source = read_raw_dump(from_dump)
+    else:
+        walk = zora_client.iter_org_tree(client)
+        source = (
+            normalize.normalize_org_unit(community, parent, depth, faculty, collections)
+            for community, parent, depth, faculty, collections in walk
         )
 
-    logger.info("Fetched %d org-unit records", len(records))
-    write_raw_dump(records, ORG_UNITS)
+    records = _collect(source, ORG_UNITS, limit, from_dump)
     return store.write_org_units([mapping.to_org_unit(record) for record in records])

@@ -73,6 +73,7 @@ The mirrors come first because they are what a publication's author authorities
 | `harvest_persons(client, limit)` / `harvest_org_units(client, limit)` | `entities.py` | One entity mirror each: fetch → normalize → dump → validate → snapshot write. Called by `harvest.run`; **not runnable on their own**. |
 | `write_persons(rows)` / `write_org_units(rows)` | `store.py` | Snapshot-replace of the mirror tables (upsert + prune in one transaction). Refuse an empty snapshot over a non-empty table. |
 | `write_raw_dump(records, kind)` / `read_raw_dump(path)` | `raw_dump.py` | The per-step JSONL cache under `data/raw/`. Its own module because both `harvest.py` and `entities.py` write dumps. |
+| `dump_kind(path)` | `raw_dump.py` | Which step a dump feeds, read off its filename. Raises rather than guessing when the name says nothing. |
 
 **The models are not here.** `contracts.ZoraPublication`, `ZoraPerson`,
 `ZoraOrgUnit` and `AuthorAuthority` live in
@@ -141,7 +142,8 @@ python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_f
 | `--mode {incremental,full}` | `incremental` | See above. **Publication step only** — the mirrors are always full snapshots. |
 | `--since ISO_DATE` | none | **Full mode only.** Ignored with a warning in incremental mode, which takes its `since` from `harvest_state`. Also ignored with `--from-dump`, where the filter was already applied at fetch time, and with `--no-publications`. |
 | `--limit N` | none | Stop after N items **per step**. For smoke tests. |
-| `--from-dump PATH` | none | Replay a `data/raw/` publication dump instead of calling ZORA. Implies `--no-persons --no-org-units`. |
+| `--from-dump PATH` | none | Replay a `data/raw/` dump instead of calling ZORA. **Repeatable**, once per kind; which step it feeds comes from the filename. |
+| `--dump-kind KIND` | none | The kind of a `--from-dump` file whose name does not say (renamed, hand-copied). One dump only. |
 | `--no-persons` | off | Skip the `person` mirror. |
 | `--no-org-units` | off | Skip the `org_unit` mirror. |
 | `--no-publications` | off | Skip the publication harvest; refresh only the mirrors. Nothing writes `harvest_state` in that case. |
@@ -156,12 +158,49 @@ records, and replaying it re-runs only the validate/upsert half of the pipeline.
 No API token is needed (no client is built), and no second dump is written, since
 the source file already *is* the cache. Everything downstream is unchanged — same
 `mapping.to_publication` validation, same single transaction, same retention rail,
-same watermark. The implication onto `--no-persons --no-org-units` is applied
-inside `run()`, not just in argparse, so "no API request" holds for programmatic
-callers too.
+same watermark.
+
+Every step writes a dump, so every step can replay one. `write_raw_dump` puts the
+kind in the filename and `dump_kind` reads it back out; `--from-dump` is repeatable,
+once per kind. One rule covers the lot:
+
+> **If any dump is given, no API request is made. A step with a dump replays from
+> it; a step without one is skipped.**
+
+A lone `<ts>_full.jsonl` therefore behaves as it always did — publications only,
+neither mirror — which is the old "implies `--no-persons --no-org-units`" rule as a
+special case rather than a separate one. Enforced inside `run()`, not just in
+argparse, so it holds for programmatic callers; a replaying step is handed `None`
+where the client goes, so "no API request" is structural rather than a promise.
+
+Contradictions are usage errors, not precedence questions: a dump whose step is
+disabled by its own `--no-*` flag, two dumps of one kind, or `--dump-kind` with
+anything other than exactly one dump. A name carrying no kind is likewise refused
+up front — guessing would only defer the failure to the validator, with a worse
+message — and `--dump-kind` is the way to replay a renamed or hand-copied file.
+
+**A dump's ceiling is what the normalizer extracted when it was written.** It cannot
+supply fields a later `normalize.py` change added, which is why the 2026-08-21
+publication dump cannot stand in for a re-harvest: it predates
+`owning_collection_uuid` and the typed `author_authority_map`, and fails validation
+against the current contract.
 
 Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
 `thesis-matchmaker-mcp`, the harvester has no console-script entry point.
+
+### The schema preflight
+
+`run()` calls `schema.require_current(database_url)` before it builds a client, so a
+database whose schema predates the code fails in one round-trip instead of at
+whichever relation the first query happened to touch. That is not hypothetical: a
+`--no-publications` run once fetched 2,018 person records before finding out
+`person` did not exist, because the mirrors had been added to `schema.sql` and
+`init-db --reset` had not been run yet.
+
+The check applies to **every** path, a `--from-dump` replay included — a replay skips
+the API, not Postgres. The message names both fingerprints and the command that
+fixes it. `psycopg` errors reach `main`'s one-line handler too (`db.DB_ERRORS`), so a
+dead or out-of-date database is reported rather than traced.
 
 ### Entity mirrors: `person` and `org_unit`
 
@@ -269,12 +308,11 @@ The notable, non-obvious mappings (`normalize.py`):
 | `keywords` | `dc.subject.ddc` + `uzh.scopus.subjects` + `dc.subject`, order-preserving dedupe | |
 | `publication_type` | `dc.type` | Renamed from the internal key `type` in `to_output`. |
 | `language` | `dc.language.iso` | e.g. `eng`, `deu`. |
-| `accessioned` | `dc.date.accessioned` | Used as the watermark; deliberately **not** part of the output schema. |
+| `accessioned` | `dc.date.accessioned` | The incremental watermark, and part of `ZoraPublication` — so the validated model is exactly what gets written, with no post-validation splice. |
 
 ## Status
 
-**Implemented and running in production.** The `publication` table currently holds
-22,541 harvested records. Nothing is written back into the repository: the
+**Implemented and running in production.** Nothing is written back into the repository: the
 pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
 the only file a run still leaves behind is its raw-response dump in `data/raw/`.
 
@@ -282,8 +320,10 @@ Test coverage: `tests/zora/test_normalize.py` and `tests/zora/test_mapping.py`
 are thorough on the pure functions; `store.py` is covered from
 `tests/test_zora_store.py` (Postgres-gated); `tests/zora/test_harvest_run.py`
 covers the orchestration — step order, each opt-out, an aborted mirror stopping
-the run, and the `--from-dump` implication — with ZORA and the store faked;
-`tests/zora/test_entities.py` covers the two mirror steps and
+the run, and dump routing across every combination — with ZORA and the store faked;
+`tests/zora/test_raw_dump.py` round-trips `write_raw_dump` through `dump_kind` for
+each kind; `tests/zora/test_entities.py` covers the two mirror steps, fetch and
+replay alike, and
 `tests/zora/test_org_tree.py` the community walk, including pagination and the
 fail-on-a-bad-page rule. `zora_client.get_client` itself (auth, retries,
 timeouts) is still only exercised through `tests/zora/test_config_auth.py`'s token

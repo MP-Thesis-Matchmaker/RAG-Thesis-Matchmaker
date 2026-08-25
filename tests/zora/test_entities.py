@@ -151,3 +151,84 @@ def test_a_malformed_record_fails_before_the_write(raw_dir, monkeypatch):
         entities.harvest_org_units(client=object())
 
     assert written == []
+
+
+# ---------------------------------------------------------------------------
+# Replaying a dump instead of fetching
+# ---------------------------------------------------------------------------
+
+
+def _write(raw_dir, name: str, records: list[dict]) -> str:
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    path = raw_dir / name
+    path.write_text("".join(json.dumps(record) + "\n" for record in records), encoding="utf-8")
+    return str(path)
+
+
+def test_replay_reads_the_dump_and_never_calls_zora(raw_dir, monkeypatch):
+    """The stranded-dump case: 2,018 records already on disk, no API request left to make."""
+
+    def unreachable(client):
+        raise AssertionError("a replay must not call iter_persons")
+
+    monkeypatch.setattr(entities.zora_client, "iter_persons", unreachable)
+    written: list[list[dict]] = []
+    monkeypatch.setattr(entities.store, "write_persons", _captured_writer(written))
+    path = _write(
+        raw_dir,
+        "20260825T091305Z_persons.jsonl",
+        [
+            {"uuid": "p1", "display_name": "Doe, Jane", "orcid": "0000-0002-0450-9897"},
+            {"uuid": "p2", "display_name": "Roe, Ada"},
+        ],
+    )
+
+    result = entities.harvest_persons(client=None, from_dump=path)
+
+    assert (result.total, result.aborted) == (2, False)
+    assert [row["uuid"] for row in written[0]] == ["p1", "p2"]
+    # Still validated through the contract, so the replay is not a shortcut past it.
+    assert written[0][0]["orcid"] == "0000-0002-0450-9897"
+
+
+def test_replay_does_not_write_a_second_dump(raw_dir, monkeypatch):
+    """The source file already *is* the cache; a copy would make replays ambiguous."""
+    monkeypatch.setattr(entities.store, "write_persons", _captured_writer([]))
+    path = _write(raw_dir, "20260825T091305Z_persons.jsonl", [{"uuid": "p1", "display_name": "X"}])
+
+    entities.harvest_persons(client=None, from_dump=path)
+
+    assert sorted(f.name for f in raw_dir.glob("*.jsonl")) == ["20260825T091305Z_persons.jsonl"]
+
+
+def test_replay_honours_limit(raw_dir, monkeypatch):
+    """`--limit` works on a replay too, which is what makes one usable as a smoke test."""
+    written: list[list[dict]] = []
+    monkeypatch.setattr(entities.store, "write_persons", _captured_writer(written))
+    path = _write(
+        raw_dir,
+        "20260825T091305Z_persons.jsonl",
+        [{"uuid": f"p{i}", "display_name": f"P{i}"} for i in range(10)],
+    )
+
+    entities.harvest_persons(client=None, from_dump=path, limit=3)
+
+    assert [row["uuid"] for row in written[0]] == ["p0", "p1", "p2"]
+
+
+def test_org_unit_replay_reads_the_dump(raw_dir, monkeypatch):
+    def unreachable(client):
+        raise AssertionError("a replay must not walk the community tree")
+
+    monkeypatch.setattr(entities.zora_client, "iter_org_tree", unreachable)
+    written: list[list[dict]] = []
+    monkeypatch.setattr(entities.store, "write_org_units", _captured_writer(written))
+    path = _write(
+        raw_dir,
+        "20260825T091305Z_orgunits.jsonl",
+        [{"uuid": "fac-1", "name": "03 Faculty of Economics", "depth": 1}],
+    )
+
+    entities.harvest_org_units(client=None, from_dump=path)
+
+    assert [row["uuid"] for row in written[0]] == ["fac-1"]

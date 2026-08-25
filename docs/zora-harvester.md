@@ -6,7 +6,11 @@ RAG pipeline.
 
 ## Quick Start
 
-The harvester writes to the database, so the schema has to exist first:
+The harvester writes to the database, so the schema has to exist first — and has to be
+*current*: every run checks its fingerprint before making a single request, and refuses with
+a one-line message naming `init-db --reset` if the database is on an older version. A stale
+schema is otherwise found only when a query touches a missing column, after the fetching is
+already paid for.
 
 ```bash
 # Local Postgres with pgvector, plus the schema
@@ -32,17 +36,41 @@ ignored in incremental mode, which always uses the `harvest_state` watermark.
 
 ## Replaying a harvest without re-fetching
 
-Every run writes its records to `data/raw/<timestamp>_<mode>.jsonl` **before** touching Postgres.
-That ordering is what makes a failed write cheap to recover from: the two hours of ZORA requests are
-already on disk, so replay the dump instead of repeating them.
+Every step writes its records to `data/raw/<timestamp>_<kind>.jsonl` **before** touching Postgres,
+where `<kind>` is the publication mode (`full`/`incremental`) or the entity kind
+(`persons`/`orgunits`). That ordering is what makes a failed write cheap to recover from: the two
+hours of ZORA requests are already on disk, so replay the dump instead of repeating them.
 
 ```bash
 python -m thesis_matchmaker.zora.harvest --mode full \
     --from-dump data/raw/20260101T120000Z_full.jsonl
 ```
 
+**Which step a dump feeds comes from its filename**, so a mirror dump replays just as a publication
+one does, and `--from-dump` is repeatable — once per kind — for a run that died partway:
+
+```bash
+python -m thesis_matchmaker.zora.harvest \
+    --from-dump data/raw/20260101T120000Z_persons.jsonl \
+    --from-dump data/raw/20260101T120100Z_orgunits.jsonl
+```
+
+One rule covers every combination:
+
+> **If any dump is given, no API request is made. A step with a dump replays from it; a step
+> without one is skipped.**
+
+So a lone `<ts>_full.jsonl` replays publications and touches neither mirror — which is what
+`--from-dump` did before it became repeatable. A dump for a step its own `--no-*` flag switched
+off is a usage error rather than a silent precedence call, and so is passing two dumps of one kind.
+
+A renamed or hand-copied dump has no routable name; `--dump-kind {full,incremental,persons,orgunits}`
+states it explicitly, and is refused unless exactly one `--from-dump` was given. Without it, an
+unroutable name fails immediately rather than being guessed at — feeding a person dump to the
+publication validator fails anyway, several steps later and with a far worse message.
+
 The records in a dump were already normalized at fetch time, so a replay re-runs only the second
-half of the pipeline — schema validation, upsert, prune, retention check, watermark. Consequences
+half of the pipeline — contract validation, upsert, prune, retention check, watermark. Consequences
 worth knowing:
 
 - **No ZORA API token is required.** No client is built, so `ZORA_UZH_API_KEY` can be unset.
@@ -54,7 +82,12 @@ worth knowing:
   exactly like a fetched one, so publications absent from the dump are deleted — subject to the
   same retention rail.
 - **`--limit` still applies**, which makes it a fast way to smoke-test the write path against a
-  scratch database.
+  scratch database. It caps a replayed mirror step too.
+- **A dump only carries fields the normalizer extracted when it was written.** This is the real
+  limit of the cache: a dump from before a `normalize.py` change cannot supply fields that change
+  added, so it is not a substitute for a re-harvest. The 2026-08-21 publication dump, for instance,
+  predates `owning_collection_uuid` and the typed `author_authority_map`, and fails validation
+  against the current contract.
 
 ## Scheduled harvest (production)
 
@@ -137,7 +170,8 @@ in, so as JSON one row looks like:
 ```
 
 `authors`, `uzh_authors` and `keywords` are `text[]` columns; `author_authority_map` is `jsonb`.
-The table also carries `accessioned` and `harvested_at`, which are not part of the output schema.
+`accessioned` is part of `ZoraPublication` too — the validated model is exactly what gets written.
+Only `harvested_at` is outside it, set by the `INSERT` rather than by the harvester.
 
 **Key fields for the RAG system:**
 - **`title` + `abstract`** — embedded for semantic search
@@ -156,7 +190,7 @@ src/thesis_matchmaker/zora/
 ├── zora_client.py      # thin wrapper around dspace_rest_client
 ├── normalize.py        # raw DSpace item → flat dict (publications, persons, org units)
 ├── mapping.py          # flat dict → validated contracts model (edit for shape changes)
-├── raw_dump.py         # the data/raw/ JSONL cache, written per step
+├── raw_dump.py         # the data/raw/ JSONL cache, written per step; dump_kind routes a replay
 ├── entities.py         # the person + org_unit mirror steps (NOT runnable on its own)
 ├── store.py            # the only writer: publication, harvest_state, person, org_unit
 └── harvest.py          # one-shot harvest orchestrator (Docker ENTRYPOINT)

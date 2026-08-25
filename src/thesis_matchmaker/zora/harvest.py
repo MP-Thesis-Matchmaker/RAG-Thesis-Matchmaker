@@ -8,6 +8,7 @@ Usage:
     python -m thesis_matchmaker.zora.harvest --mode incremental
     python -m thesis_matchmaker.zora.harvest --no-persons --no-org-units
     python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
+    python -m thesis_matchmaker.zora.harvest --from-dump data/raw/<ts>_persons.jsonl
 
 Outputs (all in the Postgres at DATABASE_URL):
     person           — one row per DSpace-CRIS Person entity (~2,000)
@@ -39,9 +40,16 @@ incremental: fetches only items accessioned since the last successful run (per
              daily.
 --from-dump: skips ZORA entirely and replays a raw dump written by an earlier
              run. The records in it were already normalized, so this re-runs
-             only the validate/upsert half of the pipeline. Implies
-             --no-persons --no-org-units: the whole point is not to touch the
-             API, and one dump holds one kind of record.
+             only the validate/upsert half of the pipeline. Repeatable, once per
+             kind: which step a dump feeds is read off its filename (or stated
+             with --dump-kind). One rule covers every combination --
+
+                 if any dump is given, no API request is made; a step with a
+                 dump replays from it, a step without one is skipped.
+
+             So a lone <ts>_full.jsonl replays publications and touches neither
+             mirror, exactly as before, while a run that died partway can hand
+             back every dump it managed to write.
 
 An entity step that fails stops the run *before* the publication step. A full
 publication harvest costs hours; if the API is refusing requests or the community
@@ -58,7 +66,7 @@ from collections.abc import Iterator
 from thesis_matchmaker import db, schema
 from thesis_matchmaker.config import get_settings
 
-from . import config, entities, mapping, normalize, store, zora_client
+from . import config, entities, mapping, normalize, raw_dump, store, zora_client
 from .raw_dump import read_raw_dump, write_raw_dump
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -67,6 +75,44 @@ logger = logging.getLogger(__name__)
 # Re-exported: the dump helpers live in raw_dump.py now (entities.py needs them
 # too, and this module imports entities.py), but this is where callers look.
 __all__ = ["main", "read_raw_dump", "run", "write_raw_dump"]
+
+
+def _as_dump_map(from_dump: str | dict[str, str] | None) -> dict[str, str]:
+    """Normalize the `from_dump` argument into `{kind: path}`.
+
+    A bare string is the single-dump form -- every caller before dumps became
+    repeatable passed one, and a lone publication dump is still the common case --
+    so its kind is read off the filename rather than assumed to be a publication
+    dump. That way `run(from_dump="<ts>_persons.jsonl")` routes correctly instead
+    of silently feeding persons to the publication validator.
+    """
+    if from_dump is None:
+        return {}
+    if isinstance(from_dump, str):
+        return {raw_dump.dump_kind(from_dump): from_dump}
+    return dict(from_dump)
+
+
+def _because(replaying: bool) -> str:
+    """Why a step was skipped, appended to the skip message.
+
+    A skipped step is unremarkable when its own flag turned it off, and worth
+    explaining when it was a consequence of replaying dumps -- that is the case
+    somebody re-reads the log over.
+    """
+    return " (replaying dumps, and none feeds it)" if replaying else ""
+
+
+def _publication_dump(dumps: dict[str, str]) -> str | None:
+    """The publication dump among `dumps`, if any.
+
+    `full` and `incremental` are two names for one step: which of them wrote the
+    dump says how *that* run was invoked, not what this one should do with it.
+    """
+    for kind in raw_dump.PUBLICATION_KINDS:
+        if kind in dumps:
+            return dumps[kind]
+    return None
 
 
 def _harvest_publications(
@@ -173,25 +219,44 @@ def run(
     mode: str,
     since_override: str | None = None,
     limit: int | None = None,
-    from_dump: str | None = None,
+    from_dump: str | dict[str, str] | None = None,
     persons: bool = True,
     org_units: bool = True,
     publications: bool = True,
 ) -> int:
-    """Harvest the enabled capabilities, entities first. @return: exit code."""
+    """Harvest the enabled capabilities, entities first. @return: exit code.
+
+    @param from_dump: a `{kind: path}` mapping, or a bare path for the publication
+        step -- the single-dump form every existing caller already passes, kept
+        working rather than migrated.
+    """
     # First, and before any request: every path below writes to Postgres -- a
     # --from-dump replay included -- so a database whose schema predates this code
     # has to be caught in one round-trip rather than by an UndefinedTable after the
     # fetching is already paid for.
     schema.require_current(get_settings().database_url)
 
-    # Enforced here rather than only in argparse, because "--from-dump makes no API
+    dumps = _as_dump_map(from_dump)
+
+    # Enforced here rather than only in argparse, because "a dump means no API
     # request" has to hold for every caller of run(), not just the command line.
-    # Scoped to a run that is actually replaying publications: with
-    # --no-publications the dump is irrelevant and the mirrors can still refresh.
-    if from_dump and publications and (persons or org_units):
-        logger.warning("--from-dump implies --no-persons --no-org-units (no API request is made)")
-        persons = org_units = False
+    # A step with a dump replays it; a step without one is skipped, which is what
+    # keeps the promise absolute instead of per-flag. The old "--from-dump implies
+    # --no-persons --no-org-units" rule is the publication-only case of this.
+    # `replaying` is what the skip messages below use to say *why* a step was
+    # skipped: "you disabled it" and "you are replaying dumps and gave none for it"
+    # are different situations for whoever reads the log.
+    replaying = bool(dumps)
+    if replaying:
+        persons = persons and raw_dump.PERSONS in dumps
+        org_units = org_units and raw_dump.ORG_UNITS in dumps
+        publications = publications and _publication_dump(dumps) is not None
+        if not (persons or org_units or publications):
+            logger.error(
+                "Replaying %s, but none of them feeds an enabled step. Nothing to do.",
+                ", ".join(sorted(dumps.values())),
+            )
+            return 1
 
     # One client for the whole run, built on first use: three steps that each
     # authenticated separately would pay for it three times, and a --from-dump
@@ -204,14 +269,17 @@ def run(
             client = zora_client.get_client()
         return client
 
-    for enabled, label, step in (
-        (persons, "person", entities.harvest_persons),
-        (org_units, "org unit", entities.harvest_org_units),
+    for enabled, kind, label, step in (
+        (persons, raw_dump.PERSONS, "person", entities.harvest_persons),
+        (org_units, raw_dump.ORG_UNITS, "org unit", entities.harvest_org_units),
     ):
         if not enabled:
-            logger.info("Skipping the %s mirror", label)
+            logger.info("Skipping the %s mirror%s", label, _because(replaying))
             continue
-        result = step(client_factory(), limit)
+        dump = dumps.get(kind)
+        # No client at all on the replay path, so "no API request" is enforced by
+        # there being nothing to make one with.
+        result = step(None if dump else client_factory(), limit, dump)
         if result.aborted:
             # The store refused the snapshot (see its empty-snapshot rail). Stop
             # here rather than spending hours on publications during a run that
@@ -227,10 +295,12 @@ def run(
         )
 
     if not publications:
-        logger.info("Skipping the publication harvest")
+        logger.info("Skipping the publication harvest%s", _because(replaying))
         return 0
 
-    return _harvest_publications(client_factory, mode, since_override, limit, from_dump)
+    return _harvest_publications(
+        client_factory, mode, since_override, limit, _publication_dump(dumps)
+    )
 
 
 def main() -> None:
@@ -253,15 +323,26 @@ def main() -> None:
     )
     parser.add_argument(
         "--from-dump",
+        action="append",
         default=None,
         metavar="PATH",
         help=(
-            "Replay a raw publication dump from data/raw/ instead of fetching from "
-            "ZORA. Its records were already normalized when they were written, so "
-            "only the validate/upsert half of the pipeline re-runs -- no API token "
-            "needed, and no second request for data already on disk. Use this after "
-            "a run that fetched successfully but failed to write. Implies "
-            "--no-persons --no-org-units."
+            "Replay a raw dump from data/raw/ instead of fetching from ZORA. Its "
+            "records were already normalized when they were written, so only the "
+            "validate/upsert half of the pipeline re-runs -- no API token needed, "
+            "and no second request for data already on disk. Use this after a run "
+            "that fetched successfully but failed to write. Repeatable, once per "
+            "kind; the step a dump feeds comes from its filename. Any dump at all "
+            "means no API request is made, so steps without one are skipped."
+        ),
+    )
+    parser.add_argument(
+        "--dump-kind",
+        choices=raw_dump.KINDS,
+        default=None,
+        help=(
+            "Which step the --from-dump file feeds, when its name does not say "
+            "(a renamed or hand-copied dump). Only valid with a single --from-dump."
         ),
     )
     parser.add_argument(
@@ -288,21 +369,44 @@ def main() -> None:
     if not (persons or org_units or publications):
         parser.error("all three capabilities are disabled — nothing to harvest")
 
+    dumps: dict[str, str] = {}
+    paths = args.from_dump or []
+    if args.dump_kind and len(paths) != 1:
+        parser.error("--dump-kind names the kind of one dump; pass exactly one --from-dump")
+    for path in paths:
+        try:
+            kind = args.dump_kind or raw_dump.dump_kind(path)
+        except RuntimeError as exc:
+            parser.error(str(exc))
+        if kind in dumps:
+            parser.error(f"two {kind} dumps given ({dumps[kind]} and {path}); a step replays one")
+        dumps[kind] = path
+    # A dump for a step its own flag switched off is a contradiction, not a
+    # precedence question -- say so rather than quietly honouring one of the two.
+    for kind, disabled, flag in (
+        (raw_dump.PERSONS, args.no_persons, "--no-persons"),
+        (raw_dump.ORG_UNITS, args.no_org_units, "--no-org-units"),
+    ):
+        if kind in dumps and disabled:
+            parser.error(f"{dumps[kind]} is a {kind} dump but {flag} was given")
+    if _publication_dump(dumps) and args.no_publications:
+        parser.error("a publication dump was given but --no-publications was too")
+
     # `run()` applies the --from-dump implication itself, so it holds for every
     # caller rather than only for this one.
     if args.since and args.mode == "incremental":
         logger.warning("--since is ignored in incremental mode (uses the harvest_state watermark)")
     if args.since and args.from_dump:
         logger.warning("--since is ignored with --from-dump (the filter was applied at fetch time)")
-    if args.no_publications and (args.since or args.from_dump):
-        logger.warning("--since/--from-dump are ignored with --no-publications")
+    if args.no_publications and args.since:
+        logger.warning("--since is ignored with --no-publications")
 
     try:
         exit_code = run(
             args.mode,
             since_override=args.since,
             limit=args.limit,
-            from_dump=args.from_dump,
+            from_dump=dumps,
             persons=persons,
             org_units=org_units,
             publications=publications,

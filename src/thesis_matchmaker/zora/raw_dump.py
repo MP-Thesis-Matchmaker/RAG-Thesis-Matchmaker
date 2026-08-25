@@ -27,6 +27,15 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
+# The four kinds of dump a run can write. The publication modes double as
+# `--mode` values; the entity kinds are what `entities.py` passes. Kept here
+# rather than in entities.py because this module is what parses them back out of
+# a filename, and entities.py imports this one.
+PUBLICATION_KINDS = ("full", "incremental")
+PERSONS = "persons"
+ORG_UNITS = "orgunits"
+KINDS = (*PUBLICATION_KINDS, PERSONS, ORG_UNITS)
+
 
 def write_raw_dump(records: list[dict], kind: str) -> str:
     """Write one JSONL dump and return its path.
@@ -43,6 +52,32 @@ def write_raw_dump(records: list[dict], kind: str) -> str:
         for record in records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     return dump_path
+
+
+def dump_kind(path: str) -> str:
+    """Which harvest step a dump belongs to, read off its filename.
+
+    `write_raw_dump` puts the kind in the name for exactly this purpose, so a
+    replay can route `<ts>_persons.jsonl` to the person step and `<ts>_full.jsonl`
+    to the publications. Nothing about a dump's *contents* says which it is --
+    both are just JSONL objects -- so the name is the only signal available.
+
+    That makes a renamed or hand-copied dump unroutable, which is why this raises
+    rather than guessing: feeding a person dump to the publication validator would
+    fail anyway, several steps later and with a far worse message. `--dump-kind`
+    is the way out.
+
+    @raise RuntimeError: if the filename carries no recognisable kind.
+    """
+    stem = os.path.basename(path).removesuffix(".jsonl")
+    for kind in KINDS:
+        if stem.endswith(f"_{kind}"):
+            return kind
+    raise RuntimeError(
+        f"cannot tell what {path} holds: its name ends in neither "
+        f"{', '.join('_' + kind for kind in KINDS)}. Pass --dump-kind to say which "
+        "harvest step should replay it."
+    )
 
 
 def read_raw_dump(path: str) -> Iterator[dict]:
