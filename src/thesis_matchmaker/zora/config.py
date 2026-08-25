@@ -14,10 +14,19 @@ from pathlib import Path
 # harvest all of ZORA (~238K items across every UZH faculty).
 DEFAULT_SCOPE_UUID: str | None = None
 
+# Root of the UZH community tree: the org structure (faculties, institutes)
+# lives in communities below this node. Walked by zora_client.iter_org_tree
+# for the org_unit mirror; ZORA's OrgUnit entity type is empty upstream.
+UZH_ROOT_COMMUNITY_UUID = "323725a5-950d-4b89-8765-1b955e305664"
+
 # --- Department resolution ---------------------------------------------
 # Departments are resolved dynamically per item by parsing the
 # owningCollection name (see normalize._get_department). No hardcoded
 # mapping needed — this covers all 291 departments across every UZH faculty.
+# Each org unit's publications live in a collection named with this prefix;
+# normalize strips it for `publication.department` and uses it to pick the
+# publications collection out of a community's collection list.
+PUBLICATIONS_COLLECTION_PREFIX = "Publications of "
 
 # --- API endpoint -------------------------------------------------------
 DEFAULT_API_ENDPOINT = "https://www.zora.uzh.ch/server/api"
@@ -96,6 +105,18 @@ FIELD_SCOPUS_SUBJECTS = "uzh.scopus.subjects"
 FIELD_SUBJECT = "dc.subject"  # kept as fallback — may appear on some items
 FIELD_LANGUAGE = "dc.language.iso"
 
+# Person entity fields (dspace.entity.type:Person items — the CRIS researcher
+# profiles that cris-typed author authorities resolve to). Probed live
+# 2026-08-24: these plus dc.title / dc.identifier.uri are all the substance a
+# Person item carries; there is no affiliation, department or email upstream.
+FIELD_PERSON_FAMILY = "person.familyName"
+FIELD_PERSON_GIVEN = "person.givenName"
+FIELD_PERSON_ORCID = "person.identifier.orcid"
+
+# Community (org unit) field: UZH's own numeric org-unit id, independent of
+# the DSpace uuid.
+FIELD_ORG_SUBJECT_ID = "dc.zora.subjectid"
+
 # Candidate fields for author ORCID — UZH uses cris.virtual.orcid with full
 # URL format ("https://orcid.org/0000-..."), not a bare ID. The harvester
 # tries each candidate in order and takes the first hit, stripping any URL
@@ -114,10 +135,11 @@ FIELD_ORCID_CANDIDATES = [
 DATA_DIR = os.environ.get("ZORA_DATA_DIR", "data")
 RAW_DIR = os.path.join(DATA_DIR, "raw")
 
-# Legacy JSONL location. Nothing writes it any more; kept so the standalone
-# validator (`python -m thesis_matchmaker.zora.output_schema`) still has a
-# default target for checking a file harvested before the database existed.
-PUBLICATIONS_PATH = os.path.join(DATA_DIR, "publications.jsonl")
+# Gone with output_schema.py (2026-08-24): PUBLICATIONS_PATH pointed at
+# data/publications.jsonl for a standalone validator of pre-Postgres harvests.
+# Nothing wrote that file, git stopped tracking it, and the validator was its
+# only reader. `indexing/sources.py::JsonlSourceReader` still validates JSONL --
+# that is data/samples, and unrelated.
 
 # --- Safety thresholds ---------------------------------------------------
 # If a harvest run returns dramatically fewer publications than the previous

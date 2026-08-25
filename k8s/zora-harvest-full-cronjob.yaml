@@ -5,6 +5,10 @@
 # that reflects upstream corrections and withdrawals, which incremental mode
 # cannot detect (dc.date.accessioned does not change on edit).
 #
+# Every run also refreshes the `person` and `org_unit` mirrors first, as full
+# snapshots -- steps of a harvest rather than a job of their own, which is why
+# there is no third CronJob. `--no-persons` / `--no-org-units` opt out.
+#
 # The two harvest CronJobs are given DISJOINT day sets on purpose. The deleted
 # in-process scheduler needed a "full wins when both are due" tie-break; splitting
 # Monday off from the rest of the week makes that rule declarative, so the two can

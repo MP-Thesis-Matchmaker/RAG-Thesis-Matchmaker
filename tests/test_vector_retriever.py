@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import ParsedQuery, ThesisPosting, ZoraPublication
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer
 from thesis_matchmaker.indexing.sources import JsonlSourceReader
@@ -19,7 +19,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
     sources = tmp_path / "src"
     sources.mkdir()
     publications = [
-        ZoraRecord(
+        ZoraPublication(
             id="zora:1",
             title="Dense retrieval for German text",
             abstract="Neural search over German corpora.",
@@ -28,7 +28,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             year=2024,
             department="Department of Computational Linguistics",
         ),
-        ZoraRecord(
+        ZoraPublication(
             id="zora:2",
             title="Medieval trade routes of the Alps",
             abstract="Archival study of alpine commerce.",
@@ -38,7 +38,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             department="Department of History",
         ),
         # External-only author list: indexed, but never supervisor-eligible.
-        ZoraRecord(
+        ZoraPublication(
             id="zora:3",
             title="Dense retrieval for German text, external edition",
             abstract="Neural search over German corpora.",
@@ -48,7 +48,7 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             department="Department of Computational Linguistics",
         ),
         # Two UZH co-authors on one publication: both get credited.
-        ZoraRecord(
+        ZoraPublication(
             id="zora:4",
             title="Sleep and risk-seeking behaviour",
             abstract="Sleep intensity and risk decisions.",
@@ -157,13 +157,79 @@ def test_evidence_points_back_to_source_ids(retriever: VectorRetriever) -> None:
     assert "zora:1" in ids or "posting:1" in ids
 
 
-def test_publications_without_uzh_authors_are_filtered_out(retriever: VectorRetriever) -> None:
+# ---------------------------------------------------------------------------
+# UZH affiliation: the filter, the fallback crediting, and the ranking
+#
+# zora:3 is the fixture's unaffiliated publication -- authors=["Dr. E. External"],
+# uzh_authors=[]. Against this query it is the *second best* match by similarity
+# (0.723 against Müller's 0.774), which is what makes it a useful probe: every
+# assertion below would also hold if it simply scored badly, so each one names the
+# score to show the ordering is a decision and not an accident.
+# ---------------------------------------------------------------------------
+
+
+def test_an_unaffiliated_researcher_is_reachable_but_ranked_last(
+    retriever: VectorRetriever,
+) -> None:
+    """The permissive default: returned, credited via `authors`, below every UZH match."""
     query = ParsedQuery(topics=["Dense retrieval for German text"])
-    matches = retriever.retrieve(query, top_k=5)
+    matches = retriever.retrieve(query, top_k=10)
+
+    external = [m for m in matches if m.supervisor == "Dr. E. External"]
+    assert len(external) == 1, "the fallback to `authors` should credit the external author"
+    assert external[0].has_uzh_affiliation is False
+    assert "zora:3" in {e.source_id for e in external[0].evidence}
+
+    # Last, despite outscoring every UZH match but one.
+    assert matches[-1].supervisor == "Dr. E. External"
+    assert external[0].score > matches[1].score
+
+
+def test_uzh_first_demotion_can_push_a_match_out_of_top_k(retriever: VectorRetriever) -> None:
+    """Demotion is not cosmetic: at a realistic top_k the external match drops out."""
+    matches = retriever.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=5)
+
+    assert "Dr. E. External" not in {m.supervisor for m in matches}
+    assert all(m.has_uzh_affiliation for m in matches)
+
+
+def test_score_strategy_orders_purely_by_similarity(retriever: VectorRetriever) -> None:
+    """The pre-setting behaviour, still available: affiliation ignored."""
+    scored = VectorRetriever(
+        embedder=retriever.embedder, store=retriever.store, ranking_strategy="score"
+    )
+    matches = scored.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
+
+    assert [m.score for m in matches] == sorted((m.score for m in matches), reverse=True)
+    # Second on similarity alone, where uzh_first put it last.
+    assert matches[1].supervisor == "Dr. E. External"
+
+
+def test_require_uzh_author_removes_it_entirely(retriever: VectorRetriever) -> None:
+    """The hard cut: not demoted, absent -- even at a top_k wide enough to hold it."""
+    strict = VectorRetriever(
+        embedder=retriever.embedder, store=retriever.store, require_uzh_author=True
+    )
+    matches = strict.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
+
+    assert "Dr. E. External" not in {m.supervisor for m in matches}
+    assert "zora:3" not in {e.source_id for m in matches for e in m.evidence}
+    assert all(m.has_uzh_affiliation for m in matches)
+
+
+def test_a_uzh_author_stays_affiliated_despite_external_co_authors(
+    retriever: VectorRetriever,
+) -> None:
+    """zora:4 names F. External alongside two UZH authors.
+
+    The fallback must not fire when `uzh_authors` is non-empty, or every external
+    co-author on a perfectly good UZH paper would be recommended as a supervisor.
+    """
+    matches = retriever.retrieve(ParsedQuery(topics=["Sleep and risk-seeking behaviour"]), top_k=10)
     supervisors = {m.supervisor for m in matches}
-    evidence_ids = {e.source_id for m in matches for e in m.evidence}
-    assert "Dr. E. External" not in supervisors
-    assert "zora:3" not in evidence_ids
+
+    assert "F. External" not in supervisors
+    assert {"Prof. D. Werth", "Prof. E. Huber"} <= supervisors
 
 
 def test_multi_uzh_author_publication_credits_every_author(retriever: VectorRetriever) -> None:

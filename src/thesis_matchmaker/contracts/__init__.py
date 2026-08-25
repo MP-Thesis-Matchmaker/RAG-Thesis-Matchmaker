@@ -8,16 +8,20 @@ parallel against a fixed shape.
 from thesis_matchmaker.contracts.retrieval import Evidence, ParsedQuery, SupervisorMatch
 from thesis_matchmaker.contracts.sources import (
     ApplicationProcess,
+    AuthorAuthority,
     DegreeLevel,
     PostingStatus,
     ResearcherProfile,
     Supervisor,
     ThesisPosting,
-    ZoraRecord,
+    ZoraOrgUnit,
+    ZoraPerson,
+    ZoraPublication,
 )
 
 __all__ = [
     "ApplicationProcess",
+    "AuthorAuthority",
     "DegreeLevel",
     "Evidence",
     "ParsedQuery",
@@ -26,5 +30,7 @@ __all__ = [
     "Supervisor",
     "SupervisorMatch",
     "ThesisPosting",
-    "ZoraRecord",
+    "ZoraOrgUnit",
+    "ZoraPerson",
+    "ZoraPublication",
 ]

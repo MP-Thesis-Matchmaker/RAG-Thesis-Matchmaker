@@ -102,6 +102,36 @@ def applied_fingerprint(dsn: str) -> str | None:
     return row[0] if row else None
 
 
+def require_current(dsn: str) -> None:
+    """Refuse to go on unless `dsn` has the current `schema.sql` applied.
+
+    The check `apply` already performs for `init-db`, made available to the code
+    that *uses* the schema rather than only to the code that creates it. Without
+    it, a database left on an older version fails at whichever relation the query
+    happened to touch first -- `zora/harvest.py --no-publications` fetched 2,018
+    person records before finding out the `person` table did not exist.
+
+    A plain `RuntimeError` rather than `SchemaChangedError`, because the callers
+    that need this are the ones with a one-line error handler for operator
+    conditions (`zora/harvest.py::main`); `cli.py` maps `SchemaChangedError` onto
+    its own `init-db`-specific `SystemExit` and should not catch this too.
+    """
+    want = fingerprint()
+    have = applied_fingerprint(dsn)
+    if have == want:
+        return
+    if have is None:
+        raise RuntimeError(
+            f"this database has no schema applied (the code expects {want}). "
+            "Run `thesis-matchmaker init-db` first."
+        )
+    raise RuntimeError(
+        f"this database has schema {have} applied but the code expects {want}. "
+        "Run `thesis-matchmaker init-db --reset` to drop every table and recreate "
+        "from the current schema.sql. That DESTROYS ALL DATA in the database."
+    )
+
+
 _TABLES_QUERY = "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
 
 

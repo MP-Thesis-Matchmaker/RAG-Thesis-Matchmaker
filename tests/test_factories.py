@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from thesis_matchmaker.config import Settings
 from thesis_matchmaker.indexing import build_embedder, build_indexer
 from thesis_matchmaker.indexing.embedder import HashEmbedder, SentenceTransformerEmbedder
@@ -49,3 +52,40 @@ def test_embedding_device_setting_reaches_the_embedder(tmp_path: Path) -> None:
     settings.embedding_model = "BAAI/bge-m3"
     settings.embedding_device = "cpu"
     assert build_embedder(settings)._device == "cpu"
+
+
+# --- The two UZH-affiliation settings ---
+
+
+def test_affiliation_settings_default_to_permissive_but_demoted(tmp_path: Path) -> None:
+    """The defaults are the product decision, so they are asserted, not assumed.
+
+    Off + uzh_first is the only combination where both knobs do something: with the
+    filter on, nothing non-UZH survives for the strategy to order.
+    """
+    settings = _settings(tmp_path)
+    assert settings.retrieval_require_uzh_author is False
+    assert settings.retrieval_ranking_strategy == "uzh_first"
+
+
+def test_affiliation_settings_reach_the_retriever(tmp_path: Path) -> None:
+    """A setting nothing reads is worse than no setting -- pin the wiring."""
+    settings = _settings(tmp_path)
+    settings.retrieval_require_uzh_author = True
+    settings.retrieval_ranking_strategy = "score"
+
+    retriever = build_retriever(settings)
+
+    assert retriever.require_uzh_author is True
+    assert retriever.ranking_strategy == "score"
+
+
+def test_an_unknown_ranking_strategy_is_refused_at_load(tmp_path: Path) -> None:
+    """A typo must fail loudly, not silently select a strategy nobody asked for."""
+    with pytest.raises(ValidationError, match="uzh_first"):
+        Settings(
+            embedding_model="hash-fake",
+            database_url=_DSN,
+            sources_path=str(tmp_path / "src"),
+            retrieval_ranking_strategy="uzh-first",
+        )

@@ -97,13 +97,16 @@ def test_list_and_map_metadata_survive_a_roundtrip(store: VectorStore) -> None:
         source_type="publication",
         authors=["A. Müller", "X. External"],
         uzh_authors=["A. Müller"],
-        author_authority_map={"A. Müller": "uuid-1", "X. External": None},
+        author_authority_map={"A. Müller": {"type": "cris", "id": "uuid-1"}, "X. External": None},
         has_uzh_author=True,
     )
     store.upsert([doc], embedder.embed_documents([doc.text]))
     hit = store.query(embedder.embed_query("multi author publication"), top_k=1)[0]
     assert hit.metadata["authors"] == ["A. Müller", "X. External"]
-    assert hit.metadata["author_authority_map"] == {"A. Müller": "uuid-1", "X. External": None}
+    assert hit.metadata["author_authority_map"] == {
+        "A. Müller": {"type": "cris", "id": "uuid-1"},
+        "X. External": None,
+    }
     assert hit.metadata["has_uzh_author"] is True
 
 

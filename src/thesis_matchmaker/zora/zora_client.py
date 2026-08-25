@@ -98,3 +98,76 @@ def iter_items(
         sort="dc.date.accessioned,asc",
         embeds=["owningCollection", "mappedCollections"],
     )
+
+
+def iter_persons(client: DSpaceClient):
+    """
+    Yield every DSpace-CRIS Person entity (~2,017 items, a few pages).
+
+    These are the researcher profiles that cris-typed author authorities on
+    publications resolve to. No scope: Person items do not live in the
+    community tree, and no embeds: everything they carry is plain metadata.
+    """
+    yield from client.search_objects_iter(
+        dso_type="item",
+        query="dspace.entity.type:Person",
+        sort="dc.date.accessioned,asc",
+    )
+
+
+def _iter_paginated(client: DSpaceClient, url: str, embed_key: str):
+    """Yield every entry of a paginated /core sub-resource list.
+
+    The vendored client's pagination helpers only cover the search endpoint,
+    so the /core/communities sub-resources are walked by page number here.
+    A missing page (fetch_resource returns None on any non-200) raises: a
+    half-walked tree committed as a snapshot would silently prune real org
+    units, which is worse than a failed run.
+    """
+    page = 0
+    while True:
+        response = client.fetch_resource(url, params={"page": page, "size": 100})
+        if response is None:
+            raise RuntimeError(f"Failed to fetch {url} page {page} — aborting the tree walk.")
+        yield from response.get("_embedded", {}).get(embed_key, [])
+        total_pages = response.get("page", {}).get("totalPages", 0)
+        page += 1
+        if page >= total_pages:
+            return
+
+
+def iter_org_tree(client: DSpaceClient, root_uuid: str = config.UZH_ROOT_COMMUNITY_UUID):
+    """
+    Walk the community tree breadth-first from the UZH root.
+
+    Yields (community_json, parent_uuid, depth, faculty_uuid, collections)
+    per community, the root included — depth 0 is the root, depth 1 the
+    faculties. BFS from the root rather than paginating /core/communities:
+    the flat list contains every community on the server, while the walk
+    contains exactly the org units by construction, and parent/depth fall
+    out for free.
+    """
+    endpoint = os.environ.get("DSPACE_API_ENDPOINT", config.DEFAULT_API_ENDPOINT)
+    root = client.fetch_resource(f"{endpoint}/core/communities/{root_uuid}")
+    if root is None:
+        raise RuntimeError(f"Could not fetch the UZH root community {root_uuid}.")
+
+    # (community_json, parent_uuid, depth, faculty_uuid)
+    queue: list[tuple[dict, str | None, int, str | None]] = [(root, None, 0, None)]
+    while queue:
+        community, parent_uuid, depth, faculty_uuid = queue.pop(0)
+        uuid = community["uuid"]
+        if depth == 1:
+            faculty_uuid = uuid
+
+        collections = list(
+            _iter_paginated(
+                client, f"{endpoint}/core/communities/{uuid}/collections", "collections"
+            )
+        )
+        yield community, parent_uuid, depth, faculty_uuid, collections
+
+        for child in _iter_paginated(
+            client, f"{endpoint}/core/communities/{uuid}/subcommunities", "subcommunities"
+        ):
+            queue.append((child, uuid, depth + 1, faculty_uuid))

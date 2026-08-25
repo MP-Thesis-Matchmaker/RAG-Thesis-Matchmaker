@@ -15,7 +15,7 @@ import pytest
 
 from thesis_matchmaker import cli, indexing
 from thesis_matchmaker.cli import main
-from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import ThesisPosting, ZoraPublication
 from thesis_matchmaker.indexing.store import InMemoryVectorStore
 
 
@@ -28,7 +28,7 @@ def offline_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     sources = tmp_path / "src"
     sources.mkdir()
     (sources / "publications.jsonl").write_text(
-        ZoraRecord(
+        ZoraPublication(
             id="zora:1",
             title="Dense retrieval for German text",
             abstract="Neural search over German corpora.",

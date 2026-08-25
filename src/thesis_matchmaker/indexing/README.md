@@ -36,7 +36,7 @@ SourceReader (publication table, or JSONL files)
 | `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
 | `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table, **UZH-authored publications only**. What a deployed indexer uses. |
 | `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
-| `zora_to_document` | `documents.py` | `ZoraRecord` → `Document`. |
+| `zora_to_document` | `documents.py` | `ZoraPublication` → `Document`. |
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
 | `VectorStore` | `store.py` | Protocol: `upsert`, `delete`, `existing_hashes`, `query`, `read_manifest`, `write_manifest`, `clear`. |
 | `ScoredHit` | `store.py` | One retrieved document plus its similarity score. |
@@ -69,7 +69,7 @@ Postgres at `DATABASE_URL`.
 **No chunking. One record = one embedding.** Title, abstract/description, and
 keywords are joined into a single text blob and embedded whole. Publication
 abstracts are short enough that this holds, and it keeps the id space identical to
-the record space — a `Document.id` *is* a `ZoraRecord.id`, which is what makes the
+the record space — a `Document.id` *is* a `ZoraPublication.id`, which is what makes the
 content-hash diff and the evidence back-references trivial. Introducing chunking
 would break that 1:1 assumption in `retrieval/` as well as here.
 
@@ -250,15 +250,18 @@ at a Postgres with the extension, which CI always does via a
   proves the API, not the query plan. Check it with `EXPLAIN ANALYZE` against the
   real corpus.
 
-  Note what the index-time filter did to the selectivity half of this argument.
-  Now that `--source db` yields only UZH-authored publications, every row in a
-  DB-sourced index satisfies `metadata @> '{"has_uzh_author": true}'`, so that
-  predicate matches everything and is no longer selective at all: it is a
-  per-candidate jsonb check that buys nothing on this source. It stays because it
-  is the invariant for sources that are *not* filtered (see `sources.py`), not
-  because it narrows anything. The partial HNSW indexes on `source_type` are
-  unaffected and still do real work, since the index holds both publications and
-  postings.
+  The selectivity half of this argument has now flipped twice, and the second flip
+  turned it into a live defect. While `--source db` filtered to UZH-authored
+  publications, every row in a DB-sourced index satisfied
+  `metadata @> '{"has_uzh_author": true}'`, so the predicate was unselective and
+  merely wasteful. Since 2026-08-25 the source is unfiltered — 91,734 of 214,756
+  publications carry a UZH author — so with `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` that
+  predicate discards ~57% of the candidates the HNSW scan returns, **after** the
+  scan, which is precisely the under-return that `schema.sql`'s partial-index comment
+  describes. `VectorRetriever` over-fetches 4x to compensate; the real fix is a third
+  partial index matching the predicate, and it needs a schema reset. The two existing
+  partial HNSW indexes on `source_type` are unaffected and still do real work, since
+  the index holds both publications and postings.
 - **Both halves of the index now have real producers.** `zora/` writes
   `publication`, `scraper/` writes `posting`, and `PostgresSourceReader` reads
   both. `theses.jsonl` stays because the offline path and CI need a source with no

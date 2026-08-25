@@ -4,6 +4,11 @@
 # harvest_state.last_accessioned and upserts them. It deletes nothing, so it is
 # cheap and safe to run daily.
 #
+# Every run also refreshes the `person` and `org_unit` mirrors first, as full
+# snapshots -- they are small enough that daily is free, and it means the mirrors
+# can never be stale relative to the publications referencing them. Nothing about
+# them is incremental; `--mode` describes the publication step only.
+#
 # The two harvest CronJobs are given DISJOINT day sets on purpose. The deleted
 # in-process scheduler needed a "full wins when both are due" tie-break; splitting
 # Monday off from the rest of the week makes that rule declarative, so the two can
