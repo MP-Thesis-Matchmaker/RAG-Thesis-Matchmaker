@@ -1,3 +1,5 @@
+import pytest
+
 from thesis_matchmaker.zora import config
 from thesis_matchmaker.zora.normalize import normalize_item, normalize_org_unit, normalize_person
 
@@ -516,3 +518,104 @@ def test_normalize_org_unit_warns_and_keeps_first_on_multiple_collections(caplog
 
     assert record["collection_uuid"] == "x-1"
     assert "Publications of" in caplog.text or "collections" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# ORCID normalization
+#
+# Every raw value below is real -- taken from the 2026-08-25 corpus, where 20 of
+# 157,800 orcid-typed authority ids were corrupt in one of four ways. The old
+# placeholder test used a *bare* ORCID in the marker, which is precisely why none
+# of this was caught.
+# ---------------------------------------------------------------------------
+
+
+def _authority_map(authority: str) -> dict:
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={config.FIELD_AUTHOR: ["Preisig, Martina Vanessa"]},
+        authorities={config.FIELD_AUTHOR: [authority]},
+    )
+    return normalize_item(dso)["author_authority_map"]["Preisig, Martina Vanessa"]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        # The bug that started this: the marker was stripped, the URL was not.
+        ("https://orcid.org/0009-0005-4380-7204", "0009-0005-4380-7204"),
+        ("http://orcid.org/0000-0001-5968-592X", "0000-0001-5968-592X"),
+        # Lowercase check digit -- ORCID canonicalises to uppercase X.
+        ("0000-0001-5644-045x", "0000-0001-5644-045X"),
+        ("0000-0003-3065-530x", "0000-0003-3065-530X"),
+        # Trailing punctuation. The 4 is real data (checksum-valid); only the dot goes.
+        ("0000-0002-3148-0954.", "0000-0002-3148-0954"),
+        # Already canonical -- must survive untouched.
+        ("0000-0002-1825-0097", "0000-0002-1825-0097"),
+    ],
+)
+def test_orcid_authority_is_canonicalised(raw: str, expected: str) -> None:
+    assert _authority_map(f"will be referenced::ORCID::{raw}") == {
+        "type": "orcid",
+        "id": expected,
+    }
+
+
+@pytest.mark.parametrize("raw", ["0000-0002-8070-773", "0000-0002-8632-166", "0000-0003-1927-993"])
+def test_a_stripped_check_digit_is_restored(raw: str) -> None:
+    """All three real truncated ids compute to X, matching a manual ORCID lookup."""
+    assert _authority_map(f"will be referenced::ORCID::{raw}") == {
+        "type": "orcid",
+        "id": f"{raw}X",
+    }
+
+
+def test_a_truncated_id_whose_checksum_is_not_x_is_left_alone() -> None:
+    """The guard, and the reason this repair is safe to ship.
+
+    A 3-character final group has two possible causes -- a stripped X, or a dropped
+    leading zero -- and the checksum cannot always tell them apart (both
+    `0000-0002-8070-773X` and `0000-0002-8070-0773` are valid). Appending the
+    computed digit is only justified when it is X, the one case the stripped-X
+    explanation covers. Anything else stays visibly broken rather than being
+    completed into a wrong ORCID attributed to a named researcher.
+    """
+    # 0000-0002-1825-009 -> checksum 7, so the stripped-X story does not hold.
+    assert _authority_map("will be referenced::ORCID::0000-0002-1825-009") == {
+        "type": "orcid",
+        "id": "0000-0002-1825-009",
+    }
+
+
+def test_an_unrecognisable_orcid_is_preserved_not_blanked() -> None:
+    """Bad data has to stay visible; a silently emptied field is unrecoverable."""
+    assert _authority_map("will be referenced::ORCID::garbage") == {
+        "type": "orcid",
+        "id": "garbage",
+    }
+
+
+def test_a_cris_authority_is_never_orcid_normalised() -> None:
+    """The one constraint that would corrupt the corpus if it were wrong.
+
+    CRIS ids are lowercase-hex UUIDs joining to `person.uuid`. The ORCID pipeline
+    uppercases, so running it here would break every join in the entity mirror.
+    """
+    uuid = "d5df134e-965f-4125-94d2-1cc5483553cf"
+
+    assert _authority_map(uuid) == {"type": "cris", "id": uuid}
+
+
+def test_person_orcid_uses_the_same_normalisation() -> None:
+    """One definition across all three ORCID paths, so they cannot drift apart."""
+    dso = FakeDSO(
+        handle="h",
+        uuid="u",
+        fields={
+            config.FIELD_TITLE: ["Preisig, Martina Vanessa"],
+            config.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0001-5644-045x"],
+        },
+    )
+
+    assert normalize_person(dso)["orcid"] == "0000-0001-5644-045X"
