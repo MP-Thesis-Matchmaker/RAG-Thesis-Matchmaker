@@ -315,6 +315,85 @@ def write_org_units(rows: list[dict], dsn: str | None = None) -> EntityWriteResu
     return _write_entity_snapshot("org_unit", _ORG_UNIT_UPSERT, rows, dsn)
 
 
+# Rebuilds `uzh_authors` from the two columns that already hold everything the
+# rule needs: `authors` for the names and their order, `author_authority_map` for
+# each name's authority kind.
+#
+# Driven from `unnest(authors) WITH ORDINALITY` rather than from
+# `jsonb_each(author_authority_map)` on purpose. jsonb orders object keys by
+# length and then bytewise, so rebuilding from the map would quietly reorder
+# `uzh_authors` -- which changes the indexer's content hash and the order
+# `retrieval` returns candidates in, for no reason anyone would ever connect
+# back to this statement.
+#
+# `IS TRUE` is load-bearing. For an author with no authority at all the `->>`
+# yields NULL, so `= 'cris'` is NULL rather than false, and NULL inside FILTER
+# behaves as "not counted" here but flips meaning the moment anyone negates this
+# expression. Collapsing it once, here, is cheaper than remembering.
+#
+# `IS DISTINCT FROM` keeps rows whose value is already correct out of the write
+# set, which is what makes a second run cost almost nothing.
+# The `person` join is the one thing `normalize` cannot do: it classifies one item
+# at a time with no database, so an ORCID-typed authority is all it can see. Here
+# the mirror is available, and an ORCID matching a harvested Person is that
+# researcher however DSpace happened to reference them on that record. Measured
+# 2026-08-25: 2 publications, 0 additional names -- both people already qualify via
+# CRIS-typed entries elsewhere, so this adds evidence to existing candidates rather
+# than new ones. A floor, not a ceiling: it rises on its own as ZORA links more
+# ORCIDs to Person items, with no code change and no re-harvest.
+_RECONCILE_UZH_AUTHORS = """
+UPDATE publication p
+SET uzh_authors = sub.eligible
+FROM (
+    SELECT p2.id,
+           coalesce(
+               array_agg(a.name ORDER BY a.ord) FILTER (
+                   WHERE ((p2.author_authority_map -> a.name) ->> 'type' = 'cris') IS TRUE
+                      OR pe.uuid IS NOT NULL
+               ),
+               '{}'
+           ) AS eligible
+    FROM publication p2
+    CROSS JOIN LATERAL unnest(p2.authors) WITH ORDINALITY AS a(name, ord)
+    LEFT JOIN person pe
+           ON (p2.author_authority_map -> a.name) ->> 'type' = 'orcid'
+          AND pe.orcid = (p2.author_authority_map -> a.name) ->> 'id'
+    GROUP BY p2.id
+) sub
+WHERE p.id = sub.id
+  AND p.uzh_authors IS DISTINCT FROM sub.eligible
+"""
+
+
+def reconcile_uzh_authors(dsn: str | None = None) -> int:
+    """Recompute `uzh_authors` for every publication. Returns rows changed.
+
+    `normalize._get_uzh_authors` decides eligibility at fetch time, so it only
+    ever fixes records a harvest is currently writing. This fixes the corpus that
+    already exists -- and it can, because `authors` and `author_authority_map`
+    together are a complete input for the rule, so no API call is involved. That
+    is the difference between deploying a rule change in seconds and re-harvesting
+    215k records over several hours.
+
+    It also makes the rule self-correcting: run after the `person` mirror
+    refreshes, it picks up whatever ZORA's authority coverage looks like now
+    rather than what it looked like when a publication was first harvested.
+
+    So this is deliberately a shade wider than `_get_uzh_authors`, not a copy of
+    it. Both admit CRIS-typed authorities; only this one can also resolve an
+    ORCID-typed authority against `person.orcid`, because only this one has a
+    database in front of it. Running last in every harvest is what keeps the column
+    at the wider rule rather than at whichever of the two happened to write last.
+
+    Idempotent by construction -- the UPDATE only touches rows whose value would
+    actually change, so calling it twice reports zero the second time.
+    """
+    with db.connection(_dsn(dsn)) as conn:
+        updated = conn.execute(_RECONCILE_UZH_AUTHORS).rowcount
+    logger.info("Reconciled uzh_authors: %d publication rows changed", updated)
+    return updated
+
+
 def load_state(dsn: str | None = None) -> HarvestState:
     """Where the next incremental harvest resumes from.
 

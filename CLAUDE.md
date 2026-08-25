@@ -62,8 +62,11 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
 corpus lives in the `publication` table — **214,756 publications** as of 2026-08-25, of which
-**91,734 (42.7%)** carry a UZH author — a figure the `uzh_authors` ORCID conflation inflates by
-38,190 records (only 53,544 carry a CRIS-backed author); see the first known gap in
+**53,545 (24.9%)** carry a UZH author, naming **2,942** distinct researchers. That figure was
+**91,734 (42.7%)** and 58,218 names until 2026-08-25, when
+`uzh_authors` stopped admitting ORCID-only authorities — 38,190 records whose authors DSpace never
+linked to a local Person. Those publications are still indexed and still retrievable; they are
+ranked below CRIS-backed candidates rather than excluded. See
 [`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes **all** of them,
 plus the 678 available postings. It briefly indexed only the UZH-authored ones (2026-08-21 to
 08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —

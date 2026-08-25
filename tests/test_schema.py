@@ -12,6 +12,62 @@ def test_fingerprint_is_stable_and_sensitive() -> None:
     assert schema.fingerprint("create table a ()") != schema.fingerprint("create table b ()")
 
 
+def test_fingerprint_ignores_comments_and_formatting() -> None:
+    """Documentation is not schema, so editing it must not demand a reset.
+
+    Before this, correcting a comment raised SchemaChangedError on the next
+    init-db -- which is why one wrong comment sat in schema.sql deliberately
+    unfixed. A tool that prices correct documentation that high gets incorrect
+    documentation.
+    """
+    plain = "create table a (b int)"
+
+    assert schema.fingerprint(plain) == schema.fingerprint("create table a (b int) -- a note")
+    assert schema.fingerprint(plain) == schema.fingerprint("-- leading\ncreate table a (b int)")
+    assert schema.fingerprint(plain) == schema.fingerprint("create   table\n\n  a (b int)\n")
+    assert schema.fingerprint(plain) == schema.fingerprint("create /* mid */ table a (b int)")
+    # Still sensitive to the thing it exists to detect.
+    assert schema.fingerprint(plain) != schema.fingerprint("create table a (b text)")
+
+
+def test_an_apostrophe_inside_a_comment_does_not_open_a_string() -> None:
+    """The trap this normaliser has to survive.
+
+    schema.sql is full of possessives inside comments -- "the scraper's topic_id",
+    "the record's own seed". Anything that finds string literals before it finds
+    comments reads those apostrophes as quote delimiters and mis-parses the rest of
+    the file. `grep -o "'[^']*'"` on the real schema returns
+    `'s topic_id: sha1 over the source url and the record'`, which is not a literal
+    at all. Comments have to win first, left to right.
+    """
+    with_possessive = "create table a (b int) -- don't reorder this\ncreate table c (d int)"
+    without = "create table a (b int)\ncreate table c (d int)"
+
+    assert schema.fingerprint(with_possessive) == schema.fingerprint(without)
+
+
+def test_a_double_dash_inside_a_string_literal_is_not_a_comment() -> None:
+    """The mirror-image failure: stripping too much, silently changing the DDL."""
+    assert schema.fingerprint("create table a (b text default '--x')") != schema.fingerprint(
+        "create table a (b text default '')"
+    )
+    # An escaped quote must not end the literal early and expose its tail.
+    assert schema.fingerprint("create table a (b text default 'it''s -- fine')") == (
+        schema.fingerprint("create table a (b text default 'it''s -- fine')")
+    )
+
+
+def test_the_real_schema_still_fingerprints_and_keeps_its_ddl() -> None:
+    """Guards a normaliser that eats too much: the DDL has to survive stripping."""
+    sql_text = schema.schema_sql()
+
+    assert schema.fingerprint(sql_text) == schema.fingerprint(sql_text)
+    normalized = schema._normalize_sql(sql_text)
+    for statement in ("CREATE TABLE document", "CREATE TABLE publication", "vector(1024)"):
+        assert statement in normalized
+    assert "--" not in normalized
+
+
 def test_shipped_schema_is_readable_as_package_data() -> None:
     """schema.sql has to survive `pip install` for the init-db Job to work."""
     sql_text = schema.schema_sql()

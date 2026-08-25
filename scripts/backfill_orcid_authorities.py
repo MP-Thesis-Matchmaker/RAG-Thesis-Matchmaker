@@ -1,12 +1,20 @@
-"""One-off: re-normalize ORCID ids inside `publication.author_authority_map`.
+"""One-off: repair ORCID authorities inside `publication.author_authority_map`.
 
 Why this exists
 ---------------
-`zora/normalize.py::_typed_authority` stripped DSpace's
+Two rounds of the same class of defect, both repaired here.
+
+`zora/normalize.py::_typed_authority` first stripped DSpace's
 `will be referenced::ORCID::` marker but stored whatever followed verbatim, so
 four upstream corruptions reached Postgres -- full URLs, lowercase check digits,
 a trailing full stop, and ids whose check digit had been stripped entirely. The
 normalizer now handles all four; this repairs the rows harvested before it did.
+
+It then also treated an *unmarked* value as a CRIS Person id unconditionally.
+Where upstream omitted the marker on a plain ORCID (`20.500.14742/59205` does
+exactly this), that produced a phantom UZH researcher: eligible for supervisor
+recommendations while joining to nothing in `person`. The classifier now lets
+shape decide unmarked values, and this re-types the rows written before it did.
 
 Why a script and not SQL
 ------------------------
@@ -48,17 +56,21 @@ from psycopg.types.json import Jsonb
 
 from thesis_matchmaker import db
 from thesis_matchmaker.config import get_settings
-from thesis_matchmaker.zora.normalize import _normalize_orcid
+from thesis_matchmaker.zora.normalize import _normalize_orcid, _typed_authority
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# Only rows that actually carry an orcid-typed authority; the jsonb path operator
-# keeps this off a full 214k-row scan.
+# Both repair candidates: rows carrying an orcid-typed authority (ids to
+# canonicalise) and rows whose cris-typed id is ORCID-shaped (entries to re-type).
+# The jsonb path operator keeps this off a full 214k-row scan; `like_regex` accepts
+# a lowercase check digit because canonicalisation has not happened yet.
 _SELECT = """
 SELECT id, author_authority_map
 FROM publication
 WHERE author_authority_map @? '$.* ? (@.type == "orcid")'
+   OR author_authority_map @? '$.* ? (@.type == "cris" && @.id like_regex
+        "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9Xx]?$")'
 ORDER BY id
 """
 
@@ -66,22 +78,44 @@ _UPDATE = "UPDATE publication SET author_authority_map = %(map)s WHERE id = %(id
 
 
 def _repaired(authority_map: dict) -> tuple[dict, list[tuple[str, str, str]]]:
-    """The map with every orcid id canonicalised, plus a log of what changed.
+    """The map with orcid ids canonicalised and mistyped cris entries re-typed.
 
-    CRIS entries are copied through untouched: their ids are lowercase-hex UUIDs
-    joining to `person.uuid`, and the ORCID pipeline uppercases.
+    Two different repairs, because the two entry kinds carry different histories.
+
+    An **orcid** entry has already had its marker stripped, so the stored id is a
+    payload and nothing more; it is canonicalised, never re-typed. Re-running the
+    classifier on it would be wrong precisely where it matters: a malformed payload
+    such as `not-an-orcid` would fail the shape test and get demoted to `cris`,
+    turning a known non-UZH author into a phantom researcher.
+
+    A **cris** entry is the opposite: that branch never modified the value, so the
+    stored id *is* the raw authority DSpace sent, and re-running `_typed_authority`
+    on it reproduces exactly what a fresh harvest would now produce. That is what
+    catches the unmarked bare ORCIDs the old fall-through filed as Person ids.
+    Genuine UUIDs come back `cris` byte-for-byte -- the classifier tests a
+    normalised throwaway and stores the original.
     """
     out: dict = {}
     changes: list[tuple[str, str, str]] = []
     for name, authority in authority_map.items():
-        if not isinstance(authority, dict) or authority.get("type") != "orcid":
+        if not isinstance(authority, dict):
             out[name] = authority
             continue
+
         raw = authority.get("id") or ""
-        fixed = _normalize_orcid(raw)
-        out[name] = {**authority, "id": fixed}
-        if fixed != raw:
-            changes.append((name, raw, fixed))
+        if authority.get("type") == "orcid":
+            fixed = _normalize_orcid(raw)
+            out[name] = {**authority, "id": fixed}
+            if fixed != raw:
+                changes.append((name, raw, fixed))
+            continue
+
+        retyped = _typed_authority(raw) or authority
+        out[name] = retyped
+        if retyped != authority:
+            changes.append(
+                (name, f"{authority['type']} {raw}", f"{retyped['type']} {retyped['id']}")
+            )
     return out, changes
 
 

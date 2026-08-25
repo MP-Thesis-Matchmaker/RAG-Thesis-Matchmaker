@@ -80,10 +80,19 @@ class AuthorAuthority(BaseModel):
 
     cris:  id is a CRIS Person item UUID — a registered UZH researcher; it
            resolves in the `person` table.
-    orcid: id is a bare ORCID with no local CRIS Person record. The honest
-           reading is *unknown affiliation*, not external: CRIS coverage is
-           sparse (~2,000 Person entities), so "no UUID" does not mean
-           "not UZH".
+    orcid: id is a bare ORCID, and DSpace did not link THIS item to a local
+           Person. That is a statement about the record, not about the human:
+           a Person entity with the same ORCID may still exist, and 2 in the
+           2026-08-25 corpus do. The honest reading is *unknown affiliation*,
+           not external -- CRIS coverage is sparse (~2,000 Person entities), so
+           "no UUID" does not mean "not UZH". Such authors are ranked below UZH
+           researchers rather than excluded, and `store.reconcile_uzh_authors`
+           promotes the ones whose ORCID resolves in `person`.
+
+    The marker decides the type wherever DSpace supplies one, however malformed
+    the payload. Shape decides only unmarked values, which is how a bare ORCID
+    sent without the marker avoids being filed as a Person id; see
+    `zora.normalize._typed_authority`.
     """
 
     type: Literal["cris", "orcid"]
@@ -113,12 +122,13 @@ class ZoraPublication(BaseModel):
     uzh_authors: list[str] = Field(
         default_factory=list,
         description=(
-            "Authors carrying *any* DSpace authority key — a CRIS Person UUID or "
-            "an ORCID-only placeholder. Known gap: that admits co-authors of "
-            "unknown affiliation, so this is wider than 'registered UZH "
-            "researcher' despite being the current supervisor-eligibility "
-            "signal. `author_authority_map` is what distinguishes the two kinds; "
-            "see the Known gaps section of zora/README.md."
+            "Authors carrying a CRIS Person UUID — registered UZH researchers, "
+            "resolvable in the `person` table. A subset of `authors`, in the "
+            "same order. ORCID-only authors are deliberately absent: DSpace "
+            "records those as unlinked to any local Person, so their "
+            "affiliation is unknown. They stay in `author_authority_map` and "
+            "stay retrievable; retrieval ranks them below UZH researchers "
+            "rather than dropping them."
         ),
     )
     author_authority_map: dict[str, AuthorAuthority | None] = Field(

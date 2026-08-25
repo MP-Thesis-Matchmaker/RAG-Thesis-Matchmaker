@@ -97,21 +97,24 @@ CREATE TABLE publication (
     -- Real arrays rather than JSON strings: unlike the index's metadata blob,
     -- these are queryable (see the GIN index below).
     authors              text[] NOT NULL DEFAULT '{}',
-    -- The supervisor-eligible subset of `authors`, in the same order. WHICH
-    -- authors qualify is decided by the harvester and deliberately not restated
-    -- here: this file is fingerprinted by its raw text, so pinning the rule in a
-    -- comment would make tuning it cost a full `init-db --reset`. The map below
-    -- records every author's authority kind, which is what keeps an alternative
-    -- rule computable from the table rather than needing a fresh harvest.
+    -- The supervisor-eligible subset of `authors`, in the same order. WHICH authors
+    -- qualify is decided by the harvester and deliberately not restated here -- two
+    -- statements of one rule drift, and the code is the one that runs. The map below
+    -- records every author's authority kind, which is what keeps an alternative rule
+    -- computable from the table rather than needing a fresh harvest.
     -- Current rule and its open questions: zora/README.md.
     uzh_authors          text[] NOT NULL DEFAULT '{}',
     -- author name -> typed authority, null for authors with no authority at all:
     --   {"type": "cris",  "id": "<Person item UUID>"}  -- resolves in person.uuid
-    --   {"type": "orcid", "id": "<bare ORCID>"}        -- no CRIS Person record;
+    --   {"type": "orcid", "id": "<bare ORCID>"}        -- this item is not
+    --                                                     linked to a Person;
     --                                                     affiliation unknown
-    -- The type comes from DSpace's own "will be referenced::ORCID::" marker at
-    -- fetch time, never from pattern-matching the id (malformed ORCIDs exist
-    -- upstream). A map, so jsonb rather than an array.
+    -- DSpace's own "will be referenced::ORCID::" marker decides the type wherever
+    -- it is present, however malformed the payload behind it -- upstream ORCIDs
+    -- frequently are, and demoting those to cris would invent researchers who
+    -- resolve to nobody. Shape decides only UNMARKED values, which is what stops a
+    -- bare ORCID sent without the marker being filed as a Person id. A map, so
+    -- jsonb rather than an array.
     author_authority_map jsonb NOT NULL DEFAULT '{}'::jsonb,
     year                 int,
     publication_type     text,
@@ -152,9 +155,11 @@ CREATE TABLE harvest_state (
     -- check that refuses a harvest which lost most of the corpus.
     last_total_publications   int NOT NULL DEFAULT 0,
     last_run_at               timestamptz,
-    -- Per-mode stamps. Only the in-process scheduler reads these; they become
-    -- redundant the moment Kubernetes CronJobs own the cadence, since the cluster
-    -- tracks its own run history.
+    -- Per-mode stamps. Nothing reads these now that the CronJobs own the cadence,
+    -- but they are not redundant: a CronJob's history records that a pod FIRED,
+    -- whereas these record that a harvest COMMITTED. The retention rail can roll a
+    -- run back while the pod still exits 0, so the two disagree exactly when it
+    -- matters most.
     last_incremental_run_at   timestamptz,
     last_full_run_at          timestamptz
 );
