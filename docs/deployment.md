@@ -264,6 +264,14 @@ covers the registry credential.
 | `ZORA_UZH_API_KEY_FILE` | ZORA API token path | Vault, mounted as a file |
 | `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
 | `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
+
+**What goes to that endpoint.** The synthesis step puts retrieved supervisor and author
+names, publication titles, abstracts and posting descriptions into the prompt, and the LLM
+parser sends the student's query. Pointing `LLM_BASE_URL` at a hosted API therefore sends
+UZH personal data off-campus on every recommendation, with no warning in the logs. The
+cluster target is a UZH-hosted LibreChat endpoint, so this is a development-machine
+concern rather than a deployment one — but it is one variable away in either direction.
+
 | `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
 | `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | baked into `projects/gateway/` |
 | `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into both `[embeddings]` images |

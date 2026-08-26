@@ -4,14 +4,15 @@ This page shows the recommendation pipeline end to end: a student query goes in,
 returns candidate supervisors with supporting evidence, and the synthesis step turns that into a
 written recommendation.
 
-Everything below is real output, recorded on 2026-08-21. It is not illustrative filler, and where a
-run exposed a defect the defect is recorded rather than tidied away — see
-[What these runs revealed](#what-these-runs-revealed).
+Everything below is real output, recorded on 2026-08-26 against the regenerated sample corpus. It is
+not illustrative filler, and where a run exposed a defect the defect is recorded rather than tidied
+away — see [What these runs revealed](#what-these-runs-revealed).
 
 ## Reproducing it
 
-Both examples run over the checked-in samples in `data/samples` — 50 documents (30 real ZORA
-publications, 20 synthetic thesis postings, kept as the offline fixture set):
+All three examples run over the checked-in samples in `data/samples` — 50 documents, 30 real ZORA
+publications and 20 real scraped thesis postings. Both halves are real as of 2026-08-26; the
+postings used to be invented fixtures. See [`data/samples/README.md`](../data/samples/README.md).
 
 ```bash
 docker compose up -d postgres
@@ -20,29 +21,37 @@ EMBEDDING_MODEL=hash-fake themis-matcher index --source data/samples --rebuild
 ```
 
 **Example 1 needs no model and no API key** — with `LLM_BASE_URL` unset, both parsing and synthesis
-use their offline implementations. **Example 2 and 3 add a local model**, which
-`docker-compose.yml` provides:
+use their offline implementations. **Examples 2 and 3 add an LLM.** These were recorded against
+OpenAI, because that is what the recording machine had configured:
 
 ```bash
-docker compose up -d ollama
-docker compose exec ollama ollama pull qwen3:8b
-
-export LLM_BASE_URL=http://localhost:11434/v1
-export LLM_MODEL=qwen3:8b
-export LLM_REASONING_EFFORT=none    # not optional for qwen3 — see the note below
+export LLM_BASE_URL=https://api.openai.com/v1
+export LLM_MODEL=gpt-5-mini
+export LLM_API_KEY=...
 ```
 
-Two caveats that shape everything on this page:
+Any OpenAI-compatible endpoint works, and a local one avoids the second caveat below.
+`docker-compose.yml` ships an `ollama` service for that; set `LLM_REASONING_EFFORT=none` if you
+point it at a reasoning model such as `qwen3:8b`, or hidden reasoning will push the synthesis call
+past `LLMClient`'s 30 s timeout and the answer will silently degrade to Example 1's template.
+
+Three caveats that shape everything on this page:
 
 - **`EMBEDDING_MODEL=hash-fake` ranks pseudo-randomly, not semantically.** It is the deterministic
-  offline embedder, so candidate *ordering* here is noise. That is deliberate: it keeps the page
-  reproducible with no 4 GB model download, and it makes the pipeline's grounding behaviour easy to
-  see, because a semantically clean candidate list would hide whether the answer is grounded or
-  merely plausible. With real `BAAI/bge-m3` embeddings the ordering is meaningful; the *shape* of
-  the output is identical.
-- **`LLM_REASONING_EFFORT=none` is required for `qwen3:8b`.** Left on, hidden reasoning takes the
-  synthesis call to ~31 s against `LLMClient`'s 30 s timeout, so it fails and the answer silently
-  degrades to Example 1's template. Off, the same call takes ~6 s. Measured while writing this page.
+  offline embedder, so candidate *ordering* here is noise — which is why a query about RAG returns
+  neurosurgery papers below. That is deliberate: it keeps the page reproducible with no 4 GB model
+  download, and it makes the pipeline's grounding behaviour easy to see, because a semantically
+  clean candidate list would hide whether the answer is grounded or merely plausible. With real
+  `BAAI/bge-m3` embeddings the ordering is meaningful; the *shape* of the output is identical.
+- **Running Examples 2 and 3 sends real data to your LLM endpoint.** The retrieved supervisor
+  names, publication titles and abstracts all go into the synthesis prompt. Against a hosted API
+  that is UZH personal data leaving the university. Worth knowing which endpoint is configured
+  before running these; the pipeline does not warn.
+- **A supervisor is never evidenced by both a paper and a posting.** Retrieval groups people by
+  exact name, and the two sources spell them differently — `"Davide Scaramuzza"` on a posting
+  against `"Scaramuzza, D"` on a paper. Zero of 403 supervisor names match a publication author
+  across the whole corpus, so every candidate below is either publication-backed or posting-backed,
+  never both. See [`data/samples/README.md`](../data/samples/README.md).
 
 ## Example 1 — offline, no model, no key
 
@@ -56,63 +65,68 @@ query: retrieval-augmented generation and misinformation detection
 
 Based on your interest in "retrieval-augmented generation and misinformation detection", here are the top matches:
 
-1. Prof. Anna Meierhans (Department of Computational Linguistics)
-   Works on retrieval-augmented generation, misinformation detection; 0 related publications; has an open thesis position.
-   - MSc thesis: Grounding LLM Answers with Retrieval over Course Materials (https://example.org/theses/sample-001)
+1. Indiveri, Giacomo (Clinic for Neurosurgery)
+   Works on retrieval-augmented generation, misinformation detection; 2 related publications.
+   - Real-time chirp-based seizure detection in human iEEG with neuromorphic hardware (https://www.zora.uzh.ch/handle/20.500.14742/249206)
+   - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome (https://www.zora.uzh.ch/handle/20.500.14742/249204)
 
-2. Prof. Daniel Keller (Department of Informatics)
-   Works on retrieval-augmented generation, misinformation detection; 0 related publications; has an open thesis position.
-   - MSc thesis: Early Detection of Coordinated Misinformation Campaigns (https://example.org/theses/sample-004)
+2. Sarnthein, Johannes (Clinic for Neurosurgery)
+   Works on retrieval-augmented generation, misinformation detection; 2 related publications.
+   - Real-time chirp-based seizure detection in human iEEG with neuromorphic hardware (https://www.zora.uzh.ch/handle/20.500.14742/249206)
+   - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome (https://www.zora.uzh.ch/handle/20.500.14742/249204)
 
-3. Prof. Isabelle Roth (Department of Geography)
-   Works on retrieval-augmented generation, misinformation detection; 0 related publications; has an open thesis position.
-   - MSc thesis: Glacier Change Detection from Satellite Time Series (https://example.org/theses/sample-017)
+3. Weibel, Robert (Institute of Geography)
+   Works on retrieval-augmented generation, misinformation detection; 1 related publications.
+   - Places Are More Than Just Stops: Integrating Move Segments in Place Location Detection from Trajectory Data (https://www.zora.uzh.ch/handle/20.500.14742/249130)
 
-4. Mahl, Daniela (Department of Communication and Media Research)
-   Works on retrieval-augmented generation, misinformation detection; 1 related publications; no open position listed.
-   - “We Follow the Disinformation”: Conceptualizing and Analyzing Fact-Checking Cultures Across Countries (https://www.zora.uzh.ch/handle/20.500.14742/221780)
+4. Langenfeld Sickendieck, Anke (Balgrist University Hospital, Swiss Spinal Cord Injury Center)
+   Works on retrieval-augmented generation, misinformation detection; 1 related publications.
+   - Correlation of examiner judgement and radiological digital pictures in infants with upper cervical spine dysfunction: a cross-sectional study (https://www.zora.uzh.ch/handle/20.500.14742/248844)
 
-5. Zeng, Jing (Department of Communication and Media Research)
-   Works on retrieval-augmented generation, misinformation detection; 1 related publications; no open position listed.
-   - “We Follow the Disinformation”: Conceptualizing and Analyzing Fact-Checking Cultures Across Countries (https://www.zora.uzh.ch/handle/20.500.14742/221780)
+5. Ramantani, Georgia (Clinic for Neurosurgery)
+   Works on retrieval-augmented generation, misinformation detection; 1 related publications.
+   - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome (https://www.zora.uzh.ch/handle/20.500.14742/249204)
 
 matches (retrieval detail):
-1. Prof. Anna Meierhans  (score 0.38)
-   Department of Computational Linguistics
-   topics: retrieval-augmented generation, misinformation detection  |  0 papers  |  open position
-     - MSc thesis: Grounding LLM Answers with Retrieval over Course Materials
-2. Prof. Daniel Keller  (score 0.25)
-   Department of Informatics
-   topics: retrieval-augmented generation, misinformation detection  |  0 papers  |  open position
-     - MSc thesis: Early Detection of Coordinated Misinformation Campaigns
-3. Prof. Isabelle Roth  (score 0.21)
-   Department of Geography
-   topics: retrieval-augmented generation, misinformation detection  |  0 papers  |  open position
-     - MSc thesis: Glacier Change Detection from Satellite Time Series
-4. Mahl, Daniela  (score 0.07)
-   Department of Communication and Media Research
-   topics: retrieval-augmented generation, misinformation detection  |  1 papers  |  no open position
-     - “We Follow the Disinformation”: Conceptualizing and Analyzing Fact-Checking Cultures Across Countries
-5. Zeng, Jing  (score 0.07)
-   Department of Communication and Media Research
-   topics: retrieval-augmented generation, misinformation detection  |  1 papers  |  no open position
-     - “We Follow the Disinformation”: Conceptualizing and Analyzing Fact-Checking Cultures Across Countries
+1. Indiveri, Giacomo  (score 0.12)
+   Clinic for Neurosurgery
+   topics: retrieval-augmented generation, misinformation detection  |  2 papers
+     - Real-time chirp-based seizure detection in human iEEG with neuromorphic hardware
+     - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome
+2. Sarnthein, Johannes  (score 0.12)
+   Clinic for Neurosurgery
+   topics: retrieval-augmented generation, misinformation detection  |  2 papers
+     - Real-time chirp-based seizure detection in human iEEG with neuromorphic hardware
+     - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome
+3. Weibel, Robert  (score 0.12)
+   Institute of Geography
+   topics: retrieval-augmented generation, misinformation detection  |  1 papers
+     - Places Are More Than Just Stops: Integrating Move Segments in Place Location Detection from Trajectory Data
+4. Langenfeld Sickendieck, Anke  (score 0.09)
+   Balgrist University Hospital, Swiss Spinal Cord Injury Center
+   topics: retrieval-augmented generation, misinformation detection  |  1 papers
+     - Correlation of examiner judgement and radiological digital pictures in infants with upper cervical spine dysfunction: a cross-sectional study
+5. Ramantani, Georgia  (score 0.08)
+   Clinic for Neurosurgery
+   topics: retrieval-augmented generation, misinformation detection  |  1 papers
+     - Detecting high-frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome
 ```
 
-**Ranks 4 and 5 are the interesting part.** `Mahl, Daniela` and `Zeng, Jing` are two entries citing
-*the same* publication. That is the multi-UZH-author fan-out in
-`VectorRetriever._group_by_person`: a publication with several UZH-affiliated authors credits each of
-them separately, because any of them could supervise. Co-authors with no CRIS authority — external
-collaborators — are filtered out before this point and never appear as candidates. This is the
-behaviour the Chroma-to-pgvector migration had to preserve, and it is preserved over real ZORA rows.
+**Ranks 1, 2 and 5 are the interesting part.** `Indiveri, Giacomo`, `Sarnthein, Johannes` and
+`Ramantani, Georgia` are three entries citing *the same* publication. That is the multi-UZH-author
+fan-out in `VectorRetriever._group_by_person`: a publication with several UZH-affiliated authors
+credits each of them separately, because any of them could supervise. Co-authors with no CRIS
+authority — external collaborators — are filtered out before this point and never appear as
+candidates.
 
-Note also that the top three are all thesis postings with `0 related publications`, and the real ZORA
-records only appear from rank 4. That is the `hash-fake` ordering, not a property of the pipeline.
+Note that all five candidates are publication-backed, with no posting among them, and that a query
+about retrieval-augmented generation returned seizure detection and cervical spine imaging. Both are
+the `hash-fake` ordering, not a property of the pipeline.
 
 ## Example 2 — same index, same query, with the LLM
 
-Only the synthesis step changes. The retrieval detail block is byte-identical to Example 1, so it is
-omitted here.
+Only the synthesis step changes. The retrieval detail block is identical to Example 1's — verified
+with `diff`, not assumed — so it is omitted here.
 
 ```
 $ themis-matcher match \
@@ -120,31 +134,22 @@ $ themis-matcher match \
 
 query: retrieval-augmented generation and misinformation detection
 
-Given your interests in retrieval-augmented generation and misinformation detection, **Prof. Anna
-Meierhans** and **Prof. Daniel Keller** are the most relevant supervisors. Both have explicitly
-listed these topics in their research areas, and their MSc theses directly relate to your interests:
-Prof. Meierhans worked on grounding LLM answers with retrieval over course materials, while Prof.
-Keller focused on early detection of coordinated misinformation campaigns. Both are currently open to
-new students, making them strong candidates.
+There is no strong match among these candidates for a thesis specifically on retrieval‑augmented generation (RAG) and misinformation detection. The closest, as a long shot, is Robert Weibel (Institute of Geography): his paper "Places Are More Than Just Stops: Integrating Move Segments in Place Location Detection from Trajectory Data" indicates experience with integrating heterogeneous spatio‑temporal data and retrieval-style tasks, which could be relevant if your RAG work involves location or trajectory data. 
 
-**Prof. Isabelle Roth** also has these topics listed, but her MSc thesis on glacier change detection
-is unrelated, so the fit is only partial.
+Giacomo Indiveri and Johannes Sarnthein (Clinic for Neurosurgery) both have methodological expertise in real‑time detection and neuromorphic systems — see "Real‑time chirp‑based seizure detection in human iEEG with neuromorphic hardware" and "Detecting high‑frequency oscillations in real time during epilepsy surgery with neuromorphic hardware validated to predict postoperative seizure outcome" — so they could be a partial fit if your project emphasizes streaming detection, signal processing, or hardware‑aware implementations. Georgia Ramantani lists the HFO paper as well and would be a similar partial fit. 
 
-**Mahl, Daniela**, and **Zeng, Jing** have relevant topics, but they are not currently accepting new
-students, and their work focuses more on fact-checking cultures rather than the technical aspects of
-retrieval-augmented generation or misinformation detection.
+Anke Langenfeld Sickendieck’s study "Correlation of examiner judgement and radiological digital pictures in infants with upper cervical spine dysfunction: a cross‑sectional study" might be useful only if your misinformation work focuses on comparing human judgement vs automated outputs; otherwise it is not directly on RAG or misinformation.
 ```
 
-The model named only supervisors from the candidate list, cited their work by real title, and — the
-part the prompt explicitly asks for — **called out Isabelle Roth as only a partial fit** rather than
-inventing a justification for a candidate that `hash-fake` had surfaced by chance. That is the
-grounding discipline working under adverse ranking.
+**The answer led with the absence.** Handed five candidates none of whom work on RAG or
+misinformation, it opened by saying so, then offered each as a qualified partial fit with the reason
+stated — "could be relevant *if* your RAG work involves location or trajectory data". That is what
+the synthesis prompt is built for: no invented people, no invented work, and no pretence that a weak
+match is a strong one.
 
-It also overstates two things. See [below](#what-these-runs-revealed).
+## Example 3 — a conversational query, and a lucky hit
 
-## Example 3 — when nothing fits
-
-Same setup, a query the samples cannot serve.
+**Query:** `I want a master's thesis on multilingual embeddings and machine translation`
 
 ```
 $ themis-matcher match \
@@ -152,53 +157,54 @@ $ themis-matcher match \
 
 query: I want a master's thesis on multilingual embeddings and machine translation
 
-There is no strong match for your interest in multilingual embeddings and machine translation, as
-none of the candidates have a clear track record or open position in these areas. However, Prof. Anna
-Meierhans from the Department of Computational Linguistics is the closest fit, as her listed work
-focuses on multilingual embeddings, specifically in the context of Swiss German, which aligns with
-your thesis topic. She is also currently open to new students, making her the most viable option
-despite her limited publication record.
+All three candidates list multilingual embeddings and machine translation as topics, so any could potentially supervise your master's work — I’d highlight Deborah Noemie Jakobi first. Jakobi (Institute of Computational Linguistics) has a publication, "MultiplEYE Data Collection Guidelines", which suggests direct experience with multilingual data and would likely be a strong fit for empirical or data-focused MT/embedding work. Yu Zhang (Institut für Informatik / Department of Informatics) also matches the topics and brings machine‑learning experience evident in "Cryptocurrency Portfolio Strategies with Machine Learning", so they could be a good fit if you want an ML‑driven approach (though that listed work is not MT‑specific). Charles Driver (Psychologisches Institut) lists the topics and has "Machine Learning and Deep Learning Versus Classical Statistics for Psychological Modelling", which indicates strong methodological and evaluation expertise — useful if you care about rigorous statistical analysis, but less obviously MT‑applied from the listed title.
 
 matches (retrieval detail):
-1. Prof. Anna Meierhans  (score 0.17)
-   Department of Computational Linguistics
-   topics: multilingual embeddings, machine translation  |  0 papers  |  open position
-     - MSc thesis: Evaluating Multilingual Embedding Models on Swiss German
-2. Dergaa, Ismail  (score 0.05)
-   Institute of General Practice
-   topics: multilingual embeddings, machine translation  |  1 papers  |  no open position
-     - Impact of wet and dry cupping therapy on endurance, perceived wellness, and exertion in recreational male runners
-3. Ghouili, Hatem  (score 0.05)
-   Institute of General Practice
-   topics: multilingual embeddings, machine translation  |  1 papers  |  no open position
-     - Impact of wet and dry cupping therapy on endurance, perceived wellness, and exertion in recreational male runners
+1. Charles Driver  (score 0.12)
+   Psychologisches Institut
+   topics: multilingual embeddings, machine translation  |  0 papers  |  1 open postings
+     - Machine Learning and Deep Learning Versus Classical Statistics for Psychological Modelling
+2. Yu Zhang  (score 0.11)
+   Institut für Informatik (IFI) / Department of Informatics
+   topics: multilingual embeddings, machine translation  |  0 papers  |  1 open postings
+     - Cryptocurrency Portfolio Strategies with Machine Learning
+3. Jakobi, Deborah Noemie  (score 0.10)
+   Institute of Computational Linguistics
+   topics: multilingual embeddings, machine translation  |  1 papers
+     - MultiplEYE Data Collection Guidelines
 ```
 
-Handed two cupping-therapy papers and one genuinely relevant posting, the answer **opened by saying
-there is no strong match** and presented the one plausible candidate as the closest option. The
-fan-out shows again at ranks 2 and 3 — one publication, two UZH co-authors.
+This section used to be titled "when nothing fits", and the reason it is not any more is worth
+recording. `Jakobi, Deborah Noemie` at the **Institute of Computational Linguistics** is a genuinely
+plausible supervisor for this query — but she surfaced by accident. `hash-fake` cannot rank
+semantically, so rank 3 here is luck, not retrieval working. A sample corpus spanning four subjects
+makes "nothing fits" hard to demonstrate offline, which is a better problem than the one it replaces.
+
+The mix is also what the previous corpus could not show: two posting-backed candidates and one
+publication-backed one in a single result.
 
 ## What these runs revealed
 
 Recorded as observed. None of these are hypothetical.
 
-**1. `matched_topics` is circular, and the LLM reads it as evidence.** Every candidate in Example 2
-shows the same `topics:` line, because those are the *query's* topics echoed back, not anything the
-supervisor declared. The model took them at face value — "Both have explicitly listed these topics in
-their research areas" — which is not true of anyone in the data. The field is fine for the retrieval
-detail block but misleading inside the LLM's candidate list.
+**1. `matched_topics` is circular, and the LLM still reads it as evidence.** Every candidate shows
+the same `topics:` line, because those are the *query's* topics echoed back, not anything the
+supervisor declared. Example 3's answer opens: "All three candidates list multilingual embeddings
+and machine translation as topics, so any could potentially supervise your master's work" — which is
+not true of anyone in the data. **Confirmed still live on 2026-08-26**, against a different model and
+a different corpus than when it was first recorded, so this is a property of the field rather than of
+one model's reading. The field is fine for the retrieval detail block and misleading inside the LLM's
+candidate list.
 
-**2. `has_open_position` gets read as "accepting students".** The flag means "this person has a
-thesis posting in our scraped data". The model rendered it as "currently open to new students"
-(Example 2, Example 3) and "not currently accepting new students" (Example 2), which the data does
-not support. In this sample run that flag only ever comes from the synthetic
-sample postings. *Since fixed*: the field is now `posting_count`, an int, and the CLI, the
-template synthesiser and the LLM candidate list emit a posting clause only when it is
-non-zero, so absent data reaches the reader as absent rather than as a negative. The
-synthesis prompt also now forbids any claim about a supervisor's availability. Note the
-deeper reason the old `False` was indefensible: the posting query has no distance
-threshold, so an empty posting list means "none of theirs ranked in the top-k", not
-"there are none".
+**2. `has_open_position` used to get read as "accepting students".** The flag meant "this person has
+a thesis posting in our scraped data". The model rendered it as "currently open to new students",
+which the data does not support. *Since fixed*: the field is now `posting_count`, an int, and the
+CLI, the template synthesiser and the LLM candidate list emit a posting clause only when it is
+non-zero, so absent data reaches the reader as absent rather than as a negative. The synthesis prompt
+also now forbids any claim about a supervisor's availability. Visible in Example 3, where two
+candidates carry `1 open postings` and the third carries no posting clause at all rather than a
+`False`. Note the deeper reason the old `False` was indefensible: the posting query has no distance
+threshold, so an empty posting list means "none of theirs ranked in the top-k", not "there are none".
 
 **3. The offline rule-based parser mangles conversational queries.** `RuleBasedExtractor` strips
 filler by substring replacement, and its `_FILLER` list covers `"master's thesis"` but not

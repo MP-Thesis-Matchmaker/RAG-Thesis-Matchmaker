@@ -97,9 +97,10 @@ class Settings(BaseSettings):
     # Postgres with the extension available. See docs/deployment.md.
     database_url: str = "postgresql://matchmaker:matchmaker@localhost:5432/matchmaker"
 
-    # Directory the ingestion component writes its JSONL output to; the
-    # indexer reads publications.jsonl and theses.jsonl from here. Defaults to
-    # the checked-in synthetic sample data until real ingestion output exists.
+    # Where the indexer reads publications.jsonl and theses.jsonl from. Defaults
+    # to the checked-in samples: 50 real records exported from the corpus, which
+    # is what makes an offline index possible at all. Set it to "db" to index the
+    # harvested tables instead. Not synthetic -- see data/samples/README.md.
     sources_path: str = "data/samples"
 
     # Whether a publication needs at least one registered UZH author to be

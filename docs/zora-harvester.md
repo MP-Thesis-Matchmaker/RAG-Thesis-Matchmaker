@@ -157,7 +157,7 @@ in, so as JSON one row looks like:
   "uzh_authors": ["Schmutzler, Armin"],
   "author_authority_map": {
     "Aydemir, Zava": null,
-    "Schmutzler, Armin": "f45b3ec1-cf2a-43ae-85d4-528afff07a40"
+    "Schmutzler, Armin": {"type": "cris", "id": "f45b3ec1-cf2a-43ae-85d4-528afff07a40"}
   },
   "year": 2008,
   "publication_type": "article",

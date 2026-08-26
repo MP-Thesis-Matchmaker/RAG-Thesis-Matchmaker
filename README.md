@@ -44,9 +44,9 @@ actually exists.*
    [`themis-zora-harvest`](docs/zora-harvester.md) — 214,756
    publications as of 2026-08-25, of which 53,545 carry a UZH author. Scraping is live
    too — [`themis-scraper`](projects/scraper/README.md)
-   reads 103 curated departmental pages and writes the `posting` table, so
-   thesis postings are real rather than the synthetic `theses.jsonl` sample that
-   `data/samples/` still carries for offline runs.
+   reads 103 curated departmental pages and writes the `posting` table. The
+   `data/samples/` fixtures are drawn from both tables now, so the offline path
+   runs on real records too.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash

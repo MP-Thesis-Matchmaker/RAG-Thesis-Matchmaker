@@ -286,7 +286,8 @@ CREATE UNIQUE INDEX org_unit_collection ON org_unit (collection_uuid)
 
 -- Written only by scraper/store.py. Until this table existed, `ThesisPosting`
 -- had no producer at all and the posting half of the index came from 20 invented
--- fixtures in data/samples.
+-- fixtures in data/samples. Those fixtures are gone: the samples are a slice of
+-- this table now.
 CREATE TABLE posting (
     -- The scraper's topic_id: sha1 over the source url and the record's own seed,
     -- so it is stable across runs and lines up with the indexer's content-hash

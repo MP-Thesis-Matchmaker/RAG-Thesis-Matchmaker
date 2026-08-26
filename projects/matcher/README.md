@@ -70,6 +70,24 @@ psycopg pool is synchronous, `encode` blocks, `LLMClient.chat` is a blocking
 this implies: `db.get_pool` caps at `max_size=5`, so five concurrent
 database-touching requests is the limit before `PoolTimeout`.
 
+## What leaves this process
+
+Worth stating plainly, because it is easy to miss and the pipeline does not warn.
+
+`synthesis/llm.py` puts the retrieved candidates into the prompt: **supervisor and author names,
+publication titles, abstracts and posting descriptions**. All of it goes to whatever
+`LLM_BASE_URL` points at, on every `match`, `repl` and `POST /v1/recommend` call. Against a local
+endpoint that is a loopback connection; against a hosted API it is UZH personal data leaving the
+university, and the difference is one environment variable with no visible signal either way.
+
+`parsing/openai_compat.py` sends the student's query to the same endpoint. Retrieval and indexing
+send nothing anywhere — only these two steps talk to an LLM, and both fall back to offline
+implementations when `LLM_BASE_URL` is unset.
+
+Not a recommendation either way: the deployment target is a UZH-hosted LibreChat endpoint, for
+which this is a non-issue. It matters for development machines, where the convenient thing to
+configure is a hosted API.
+
 ## Dependencies
 
 `fastapi` and `uvicorn` are core, not an extra: CI's `offline` and `pgvector` jobs
