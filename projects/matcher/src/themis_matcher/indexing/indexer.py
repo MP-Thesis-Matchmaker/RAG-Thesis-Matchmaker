@@ -23,10 +23,10 @@ from collections.abc import Iterator
 
 from pydantic import BaseModel
 
-from thesis_matchmaker.indexing.documents import Document, posting_to_document, zora_to_document
-from thesis_matchmaker.indexing.embedder import Embedder
-from thesis_matchmaker.indexing.sources import SourceReader
-from thesis_matchmaker.indexing.store import IndexManifest, VectorStore
+from themis_matcher.indexing.documents import Document, posting_to_document, zora_to_document
+from themis_matcher.indexing.embedder import Embedder
+from themis_matcher.indexing.sources import SourceReader
+from themis_matcher.indexing.store import IndexManifest, VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class Indexer:
             raise ModelMismatchError(
                 f"the index was built with '{manifest.embedding_model}' but the configured "
                 f"model is '{self.embedder.model_name}'; rebuild with "
-                "`thesis-matchmaker index --rebuild`"
+                "`themis-matcher index --rebuild`"
             )
         if manifest.embedding_dim != self.embedder.dimensions:
             # A different vector width is a schema change, not a config change:
@@ -159,7 +159,7 @@ class Indexer:
                 f"the index was built with a {manifest.max_seq_length}-token window but "
                 f"the configured cap is {self.embedder.max_seq_length}; that changes every "
                 "vector without changing any content hash, so nothing would be re-embedded. "
-                "Rebuild with `thesis-matchmaker index --rebuild`"
+                "Rebuild with `themis-matcher index --rebuild`"
             )
 
     def _write_manifest(self, document_count: int, sources: str, truncated: int) -> None:

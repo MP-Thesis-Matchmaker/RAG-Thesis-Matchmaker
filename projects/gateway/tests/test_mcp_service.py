@@ -4,11 +4,11 @@ These test the service layer with an injected offline pipeline, so they need
 neither the MCP SDK, a built index, nor a network.
 """
 
-from thesis_matchmaker.adapters import service
-from thesis_matchmaker.parsing import RuleBasedExtractor
-from thesis_matchmaker.pipeline import Pipeline
-from thesis_matchmaker.retrieval import FakeRetriever
-from thesis_matchmaker.synthesis import TemplateSynthesizer
+from themis_gateway import service
+from themis_matcher.parsing import RuleBasedExtractor
+from themis_matcher.pipeline import Pipeline
+from themis_matcher.retrieval import FakeRetriever
+from themis_matcher.synthesis import TemplateSynthesizer
 
 
 def _offline_pipeline() -> Pipeline:

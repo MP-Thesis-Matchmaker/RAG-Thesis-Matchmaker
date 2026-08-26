@@ -1,8 +1,8 @@
 """Tests for the answer synthesiser (offline template path and factory)."""
 
-from thesis_matchmaker.config import Settings
-from thesis_matchmaker.contracts import Evidence, SupervisorMatch
-from thesis_matchmaker.synthesis import TemplateSynthesizer, build_synthesizer
+from themis_shared.config import Settings
+from themis_shared.contracts import Evidence, SupervisorMatch
+from themis_matcher.synthesis import TemplateSynthesizer, build_synthesizer
 
 
 def _match(name: str, title: str, score: float = 0.9) -> SupervisorMatch:
@@ -37,7 +37,7 @@ def test_build_synthesizer_offline_by_default():
 
 
 def test_build_synthesizer_uses_llm_when_endpoint_set():
-    from thesis_matchmaker.synthesis.llm import LLMSynthesizer
+    from themis_matcher.synthesis.llm import LLMSynthesizer
 
     synth = build_synthesizer(
         Settings(llm_base_url="http://localhost:11434/v1", llm_model="llama3.1")
@@ -57,8 +57,8 @@ def test_build_synthesizer_passes_min_score():
 
 
 def test_llm_synthesizer_flags_weak_matches_without_calling_llm():
-    from thesis_matchmaker.llm import LLMClient
-    from thesis_matchmaker.synthesis.llm import LLMSynthesizer
+    from themis_matcher.llm import LLMClient
+    from themis_matcher.synthesis.llm import LLMSynthesizer
 
     # client is never called: everything is below the threshold
     client = LLMClient("http://localhost:1", "none")
@@ -92,7 +92,7 @@ def test_llm_candidate_block_omits_missing_postings():
     """The same rule inside the prompt: given "no open position" the model wrote
     "not currently accepting new students", so the line it must not paraphrase is
     simply not written."""
-    from thesis_matchmaker.synthesis.llm import _format_candidates
+    from themis_matcher.synthesis.llm import _format_candidates
 
     zero = _match("Prof. A", "Paper One").model_copy(update={"posting_count": 0})
     block = _format_candidates([zero, _match("Dr. B", "Paper Two")])

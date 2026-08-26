@@ -1,7 +1,7 @@
 """Smoke tests: the package imports and config loads with sane defaults."""
 
-from thesis_matchmaker import __version__
-from thesis_matchmaker.config import get_settings
+from themis_shared import __version__
+from themis_shared.config import get_settings
 
 
 def test_version_is_set():

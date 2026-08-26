@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker.zora import config, raw_dump
+from themis_zora import config, raw_dump
 
 
 @pytest.fixture()

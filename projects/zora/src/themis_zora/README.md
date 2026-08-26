@@ -45,7 +45,7 @@ ZORA DSpace REST API
                                                        │              │
                                                        ▼              │
                               indexing/ reads the publication table ◀─┘
-                              (`thesis-matchmaker index --source db`)
+                              (`themis-matcher index --source db`)
 ```
 
 The mirrors come first because they are what a publication's author authorities
@@ -130,12 +130,12 @@ tombstones, so the delta logic is ours:
 ### CLI
 
 ```
-python -m thesis_matchmaker.zora.harvest --mode incremental
-python -m thesis_matchmaker.zora.harvest --mode full --since 2024-07-01
-python -m thesis_matchmaker.zora.harvest --mode full --limit 50     # smoke test
-python -m thesis_matchmaker.zora.harvest --no-persons --no-org-units
-python -m thesis_matchmaker.zora.harvest --no-publications         # mirrors only
-python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
+python -m themis_zora.harvest --mode incremental
+python -m themis_zora.harvest --mode full --since 2024-07-01
+python -m themis_zora.harvest --mode full --limit 50     # smoke test
+python -m themis_zora.harvest --no-persons --no-org-units
+python -m themis_zora.harvest --no-publications         # mirrors only
+python -m themis_zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
 ```
 
 | Flag | Default | Behaviour |
@@ -186,8 +186,8 @@ publication dump cannot stand in for a re-harvest: it predates
 `owning_collection_uuid` and the typed `author_authority_map`, and fails validation
 against the current contract.
 
-Note this is reachable only via `python -m`; unlike `thesis-matchmaker` and
-`thesis-matchmaker-mcp`, the harvester has no console-script entry point.
+Note this is reachable only via `python -m`; unlike `themis-matcher` and
+`themis-gateway-mcp`, the harvester has no console-script entry point.
 
 ### The schema preflight
 
@@ -263,7 +263,7 @@ stamps the incremental column" is easy to get wrong.
 
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| Database | `DATABASE_URL` | see `config.py` in the package root | Postgres holding `publication` and `harvest_state`. Create the schema with `thesis-matchmaker init-db`. |
+| Database | `DATABASE_URL` | see `config.py` in the package root | Postgres holding `publication` and `harvest_state`. Create the schema with `themis-init-db`. |
 | Data directory | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
 | API endpoint | `DSPACE_API_ENDPOINT` | `https://www.zora.uzh.ch/server/api` | Defined in `zora_client.py`, not `config.py`. |
 | API token (file) | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
@@ -281,7 +281,7 @@ without the indexer noticing. The DSpace field names are all isolated in
 ## Operations
 
 - **Docker** — `docker/zora/Dockerfile` builds a `python:3.12-slim` image with
-  entrypoint `python -m thesis_matchmaker.zora.harvest`. `data/` is expected to be
+  entrypoint `python -m themis_zora.harvest`. `data/` is expected to be
   bind-mounted; the container is run with `--user "$(id -u):$(id -g)"` so host
   file ownership stays sane.
 - **Scheduling** — harvesting is a cluster concern, not a CI concern. The image is
@@ -487,7 +487,7 @@ behaviour, so the untested surface went away without anything new being verified
 - **The `--since` range query is untested against the live API** — the code says
   so itself in a warning log.
 - **The harvested table is not what gets indexed by default.** `SOURCES_PATH`
-  defaults to `data/samples`, so `thesis-matchmaker index` indexes the 50 sample
+  defaults to `data/samples`, so `themis-matcher index` indexes the 50 sample
   documents unless you pass `--source db`. Easy to miss.
 - **`author_orcid` is normalised but never emitted** — `mapping.to_publication`
   drops it. It is an item-level single value, whereas the per-author identifiers

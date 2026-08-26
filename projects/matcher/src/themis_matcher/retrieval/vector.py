@@ -16,9 +16,9 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Literal
 
-from thesis_matchmaker.contracts import Evidence, ParsedQuery, SupervisorMatch
-from thesis_matchmaker.indexing.embedder import Embedder
-from thesis_matchmaker.indexing.store import ScoredHit, VectorStore
+from themis_shared.contracts import Evidence, ParsedQuery, SupervisorMatch
+from themis_matcher.indexing.embedder import Embedder
+from themis_matcher.indexing.store import ScoredHit, VectorStore
 
 # How much wider than top_k to search when `require_uzh_author` is on.
 #

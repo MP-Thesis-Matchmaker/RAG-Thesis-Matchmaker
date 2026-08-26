@@ -36,7 +36,7 @@ added later as a second thin wrapper over the same two functions.
 | `_default_pipeline()` | `service.py` | Builds a `Pipeline` with the real retriever if the index exists, otherwise a bare `Pipeline` (fake retriever). |
 | `find_researchers` (MCP tool) | `mcp_server.py` | The tool askUZH calls. Same signature, minus the injectable pipeline. |
 | `recommend_supervisors` (MCP tool) | `mcp_server.py` | Prose variant, same shape. |
-| `main()` | `mcp_server.py` | Server entry point; console script `thesis-matchmaker-mcp`. |
+| `main()` | `mcp_server.py` | Server entry point; console script `themis-gateway-mcp`. |
 
 The `pipeline` parameter on both service functions exists purely for injection in
 tests — production callers omit it.
@@ -71,8 +71,8 @@ Everything else is inherited from whatever `Pipeline` builds — see
 
 ```
 uv sync --extra mcp                       # add --extra dev too if you want the test tooling
-uv run thesis-matchmaker-mcp              # streamable HTTP on 127.0.0.1:8000/mcp
-uv run thesis-matchmaker-mcp --stdio      # stdio, for the MCP inspector
+uv run themis-gateway-mcp              # streamable HTTP on 127.0.0.1:8000/mcp
+uv run themis-gateway-mcp --stdio      # stdio, for the MCP inspector
 ```
 
 The default is streamable HTTP because askUZH points its agent at a URL. `--stdio`

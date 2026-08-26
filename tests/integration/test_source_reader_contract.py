@@ -19,11 +19,11 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker import db
-from thesis_matchmaker.contracts import AuthorAuthority
-from thesis_matchmaker.indexing.sources import PostgresSourceReader
-from thesis_matchmaker.scraper import store as scraper_store
-from thesis_matchmaker.zora import store as zora_store
+from themis_shared import db
+from themis_shared.contracts import AuthorAuthority
+from themis_matcher.indexing.sources import PostgresSourceReader
+from themis_scraper import store as scraper_store
+from themis_zora import store as zora_store
 
 _RATIO = 0.5
 

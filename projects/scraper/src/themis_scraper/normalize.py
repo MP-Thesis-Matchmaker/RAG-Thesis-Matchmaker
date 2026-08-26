@@ -41,7 +41,7 @@ import re
 from datetime import date, datetime
 from typing import Any
 
-from thesis_matchmaker.contracts import (
+from themis_shared.contracts import (
     ApplicationProcess,
     DegreeLevel,
     PostingStatus,

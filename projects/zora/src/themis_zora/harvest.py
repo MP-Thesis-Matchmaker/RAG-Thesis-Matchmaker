@@ -2,13 +2,13 @@
 Main entrypoint for the ZORA harvester.
 
 Usage:
-    python -m thesis_matchmaker.zora.harvest --mode full
-    python -m thesis_matchmaker.zora.harvest --mode full --since 2024-07-01
-    python -m thesis_matchmaker.zora.harvest --mode full --limit 5
-    python -m thesis_matchmaker.zora.harvest --mode incremental
-    python -m thesis_matchmaker.zora.harvest --no-persons --no-org-units
-    python -m thesis_matchmaker.zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
-    python -m thesis_matchmaker.zora.harvest --from-dump data/raw/<ts>_persons.jsonl
+    python -m themis_zora.harvest --mode full
+    python -m themis_zora.harvest --mode full --since 2024-07-01
+    python -m themis_zora.harvest --mode full --limit 5
+    python -m themis_zora.harvest --mode incremental
+    python -m themis_zora.harvest --no-persons --no-org-units
+    python -m themis_zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
+    python -m themis_zora.harvest --from-dump data/raw/<ts>_persons.jsonl
 
 Outputs (all in the Postgres at DATABASE_URL):
     person           — one row per DSpace-CRIS Person entity (~2,000)
@@ -63,8 +63,8 @@ import logging
 import sys
 from collections.abc import Iterator
 
-from thesis_matchmaker import db, schema
-from thesis_matchmaker.config import get_settings
+from themis_shared import db, schema
+from themis_shared.config import get_settings
 
 from . import config, entities, mapping, normalize, raw_dump, store, zora_client
 from .raw_dump import read_raw_dump, write_raw_dump

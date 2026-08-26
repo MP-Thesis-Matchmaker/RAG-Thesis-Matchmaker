@@ -10,11 +10,11 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
-from thesis_matchmaker.scraper import dataset as ST
-from thesis_matchmaker.scraper import llm_extract as LX
-from thesis_matchmaker.scraper import main as M
-from thesis_matchmaker.scraper import spec_engine as S
-from thesis_matchmaker.scraper import validate as V
+from themis_scraper import dataset as ST
+from themis_scraper import llm_extract as LX
+from themis_scraper import main as M
+from themis_scraper import spec_engine as S
+from themis_scraper import validate as V
 
 URL = "https://example.uzh.ch/topics.html"
 
@@ -475,7 +475,7 @@ class LlmFallbackCoerceTest(unittest.TestCase):
 
 class LlmFallbackExtractTest(unittest.TestCase):
     def test_returns_empty_when_llm_unavailable(self):
-        with mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=False):
+        with mock.patch("themis_scraper.llm.is_available", return_value=False):
             recs, info = LX.extract_records_fallback(
                 "s--1", "topics", html="<main></main>", base_url=URL
             )
@@ -497,10 +497,10 @@ class LlmFallbackExtractTest(unittest.TestCase):
         )
         html = "<main><h1>Open topics</h1><p>Graph Learning ...</p></main>"
         with (
-            mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=True),
-            mock.patch("thesis_matchmaker.scraper.llm.complete", return_value=reply) as m_complete,
-            mock.patch("thesis_matchmaker.scraper.cache.has_subpage", return_value=False),
-            mock.patch("thesis_matchmaker.scraper.cache.write_subpage") as m_write,
+            mock.patch("themis_scraper.llm.is_available", return_value=True),
+            mock.patch("themis_scraper.llm.complete", return_value=reply) as m_complete,
+            mock.patch("themis_scraper.cache.has_subpage", return_value=False),
+            mock.patch("themis_scraper.cache.write_subpage") as m_write,
         ):
             recs, info = LX.extract_records_fallback("s--1", "topics", html=html, base_url=URL)
         self.assertEqual(info["status"], "ok")
@@ -514,10 +514,10 @@ class LlmFallbackExtractTest(unittest.TestCase):
     def test_uses_cached_reply_without_calling_llm(self):
         reply = '[{"name": "Jane Doe", "_profile_url": "/team/jane.html"}]'
         with (
-            mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=True),
-            mock.patch("thesis_matchmaker.scraper.llm.complete") as m_complete,
-            mock.patch("thesis_matchmaker.scraper.cache.has_subpage", return_value=True),
-            mock.patch("thesis_matchmaker.scraper.cache.read_subpage", return_value=reply),
+            mock.patch("themis_scraper.llm.is_available", return_value=True),
+            mock.patch("themis_scraper.llm.complete") as m_complete,
+            mock.patch("themis_scraper.cache.has_subpage", return_value=True),
+            mock.patch("themis_scraper.cache.read_subpage", return_value=reply),
         ):
             recs, info = LX.extract_records_fallback(
                 "s--1", "people", html="<main>x</main>", base_url=URL
@@ -558,7 +558,7 @@ class PublicViewTest(unittest.TestCase):
     def test_faculty_scope_source_diffs_against_faculty_records(self):
         # A scope='faculty' process source is stored at the faculty level; the
         # diff lookup must read it there, not from the (empty) unit bucket.
-        from thesis_matchmaker.scraper import registry
+        from themis_scraper import registry
 
         rec = {
             "source_id": "phil--1",

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker import db
-from thesis_matchmaker.scraper import store
+from themis_shared import db
+from themis_scraper import store
 
 
 def _topic(topic_id: str, source_id: str, **overrides) -> dict:

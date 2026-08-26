@@ -1,7 +1,7 @@
 """Tests for the standalone init-db entry point.
 
 The point of `dbcli` is that it reaches the schema without the matcher's
-dependency closure, and that it says the same things `thesis-matchmaker init-db`
+dependency closure, and that it says the same things `themis-matcher init-db`
 said. Both are asserted here; neither was covered before the carve.
 """
 
@@ -11,8 +11,8 @@ import argparse
 
 import pytest
 
-from thesis_matchmaker import dbcli, schema
-from thesis_matchmaker.config import Settings
+from themis_shared import initdb, schema
+from themis_shared.config import Settings
 
 
 class _Result:
@@ -33,7 +33,7 @@ def test_run_reports_a_fresh_apply(
 ) -> None:
     monkeypatch.setattr(schema, "apply", lambda dsn, reset=False: _Result(applied=True, dropped=[]))
 
-    dbcli.run(_settings(), reset=False)
+    initdb.run(_settings(), reset=False)
 
     assert "schema applied (deadbeef)" in capsys.readouterr().out
 
@@ -46,7 +46,7 @@ def test_run_distinguishes_an_idempotent_re_run(
         schema, "apply", lambda dsn, reset=False: _Result(applied=False, dropped=[])
     )
 
-    dbcli.run(_settings(), reset=False)
+    initdb.run(_settings(), reset=False)
 
     assert "already up to date" in capsys.readouterr().out
 
@@ -61,7 +61,7 @@ def test_run_names_every_table_it_dropped(
         lambda dsn, reset=False: _Result(applied=True, dropped=["publication", "document"]),
     )
 
-    dbcli.run(_settings(), reset=True)
+    initdb.run(_settings(), reset=True)
 
     out = capsys.readouterr().out
     assert "dropped table publication" in out
@@ -78,7 +78,7 @@ def test_run_passes_reset_through(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(schema, "apply", _apply)
 
-    dbcli.run(_settings(), reset=True)
+    initdb.run(_settings(), reset=True)
 
     assert seen == {"dsn": "postgresql://u@h/db", "reset": True}
 
@@ -94,7 +94,7 @@ def test_a_changed_schema_exits_rather_than_applying_over_it(
     monkeypatch.setattr(schema, "apply", _apply)
 
     with pytest.raises(SystemExit) as exc:
-        dbcli.run(_settings(), reset=False)
+        initdb.run(_settings(), reset=False)
 
     assert "fingerprint mismatch" in str(exc.value)
 
@@ -102,22 +102,9 @@ def test_a_changed_schema_exits_rather_than_applying_over_it(
 def test_the_reset_flag_defaults_to_off() -> None:
     """A parser that defaulted --reset on would silently destroy a harvest."""
     parser = argparse.ArgumentParser()
-    dbcli.add_arguments(parser)
+    initdb.add_arguments(parser)
 
     assert parser.parse_args([]).reset is False
     assert parser.parse_args(["--reset"]).reset is True
 
 
-def test_the_cli_subcommand_and_the_entry_point_do_the_same_work(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """`thesis-matchmaker init-db` must not drift from `thesis-matchmaker-init-db`."""
-    from thesis_matchmaker import cli
-
-    calls: list[bool] = []
-    monkeypatch.setattr(dbcli, "run", lambda settings, *, reset: calls.append(reset))
-    monkeypatch.setattr(cli.db, "close_pools", lambda: None)
-
-    cli.main(["init-db", "--reset"])
-
-    assert calls == [True]

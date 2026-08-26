@@ -21,7 +21,7 @@ from __future__ import annotations
 import sys
 from collections import defaultdict
 
-from thesis_matchmaker.zora import config, zora_client
+from themis_zora import config, zora_client
 
 
 def main() -> None:

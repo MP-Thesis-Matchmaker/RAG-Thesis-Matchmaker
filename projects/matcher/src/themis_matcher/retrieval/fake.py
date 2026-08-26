@@ -6,7 +6,7 @@ ranker exist. The retrieval and ranking component replaces this later.
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import Evidence, ParsedQuery, SupervisorMatch
+from themis_shared.contracts import Evidence, ParsedQuery, SupervisorMatch
 
 _CANNED: list[SupervisorMatch] = [
     SupervisorMatch(

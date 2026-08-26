@@ -54,9 +54,9 @@ import logging
 
 from psycopg.types.json import Jsonb
 
-from thesis_matchmaker import db
-from thesis_matchmaker.config import get_settings
-from thesis_matchmaker.zora.normalize import _normalize_orcid, _typed_authority
+from themis_shared import db
+from themis_shared.config import get_settings
+from themis_zora.normalize import _normalize_orcid, _typed_authority
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

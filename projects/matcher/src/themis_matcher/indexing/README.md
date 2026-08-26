@@ -198,7 +198,7 @@ Malformed JSONL lines are counted and skipped, not fatal.
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
 | `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
-| `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `thesis-matchmaker init-db`. |
+| `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `themis-init-db`. |
 | `sources_path` | `SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
 | `embedding_max_seq_length` | `EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap per document. Recorded in the manifest and guarded: changing it needs `--rebuild`. |
 | `embedding_batch_size` | `EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer together with the cap; cannot replace it. |
@@ -206,8 +206,8 @@ Malformed JSONL lines are counted and skipped, not fatal.
 | `index_chunk_size` | `INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Lower it to cut peak memory. |
 
 > **Watch out:** `sources_path` still defaults to `data/samples`, so a bare
-> `thesis-matchmaker index` indexes the sample rows. The real harvest now lives in
-> Postgres: use `thesis-matchmaker index --source db`, or set `SOURCES_PATH=db`.
+> `themis-matcher index` indexes the sample rows. The real harvest now lives in
+> Postgres: use `themis-matcher index --source db`, or set `SOURCES_PATH=db`.
 > The output line reports which source was used, so at least it is visible.
 
 ## Swappable seams

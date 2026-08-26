@@ -11,7 +11,7 @@ Deployment: this runs as a standalone server that AI Buddy points its agent at,
 so the default transport is streamable HTTP and the tools are served at
 ``http://<MCP_HOST>:<MCP_PORT>/mcp``. Nothing is merged into AI Buddy itself.
 
-Run with ``thesis-matchmaker-mcp``, or ``--stdio`` for local testing with an MCP
+Run with ``themis-gateway-mcp``, or ``--stdio`` for local testing with an MCP
 inspector. Needs the ``mcp`` extra.
 """
 
@@ -21,9 +21,9 @@ import argparse
 
 from mcp.server.mcpserver import MCPServer
 
-from thesis_matchmaker import __version__
-from thesis_matchmaker.adapters import service
-from thesis_matchmaker.config import get_settings
+from themis_gateway import __version__
+from themis_gateway import service
+from themis_shared.config import get_settings
 
 # MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from
 # mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than `mcp` on
@@ -32,7 +32,7 @@ from thesis_matchmaker.config import get_settings
 # version is passed explicitly because 2.x defaults it to "". In 1.x the field
 # was filled with the SDK's own version, which reported "1.29.0" as though that
 # were this server's version; ours is the honest value.
-server = MCPServer("thesis-matchmaker", version=__version__)
+server = MCPServer("themis", version=__version__)
 
 
 @server.tool()
@@ -62,7 +62,7 @@ def recommend_supervisors(interests: str, top_k: int = 5) -> str:
 def main() -> None:
     """Run the MCP server, over streamable HTTP by default."""
     parser = argparse.ArgumentParser(
-        prog="thesis-matchmaker-mcp",
+        prog="themis-gateway-mcp",
         description="Serve the thesis matchmaker as MCP tools.",
     )
     parser.add_argument(

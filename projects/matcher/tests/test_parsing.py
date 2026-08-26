@@ -2,9 +2,9 @@
 
 import pytest
 
-from thesis_matchmaker.config import Settings
-from thesis_matchmaker.contracts import DegreeLevel
-from thesis_matchmaker.parsing import RuleBasedExtractor, build_extractor
+from themis_shared.config import Settings
+from themis_shared.contracts import DegreeLevel
+from themis_matcher.parsing import RuleBasedExtractor, build_extractor
 
 
 def test_rule_based_detects_master():
@@ -31,7 +31,7 @@ def test_build_extractor_falls_back_without_endpoint():
 
 
 def test_build_extractor_uses_llm_when_endpoint_set():
-    from thesis_matchmaker.parsing.openai_compat import OpenAICompatExtractor
+    from themis_matcher.parsing.openai_compat import OpenAICompatExtractor
 
     extractor = build_extractor(
         Settings(llm_base_url="http://localhost:11434/v1", llm_model="llama3.1")

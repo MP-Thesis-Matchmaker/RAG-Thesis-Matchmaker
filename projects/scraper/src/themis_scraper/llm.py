@@ -7,7 +7,7 @@ Public surface is deliberately tiny (the plan): one function
 Everything else — which provider, which model, keys, retries — lives in
 ``config.Settings``. The provider is chosen by ``SCRAPER_LLM_PROVIDER`` (default
 ``openai``). Swapping in another provider means adding one file
-``thesis_matchmaker/scraper/llm_<name>.py`` that exposes a ``Provider`` class with
+``themis_scraper/llm_<name>.py`` that exposes a ``Provider`` class with
 ``available()`` and ``complete(system, prompt, **opts)`` — no call site anywhere
 else changes.
 

@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from unittest import mock
 
-from thesis_matchmaker.scraper import validate
-from thesis_matchmaker.scraper.main import _flag_llm_outage
+from themis_scraper import validate
+from themis_scraper.main import _flag_llm_outage
 
 _ENRICHED_SPEC = {"page_type": "topics", "pdf_enrich": {"url_field": "source_link"}}
 _PLAIN_SPEC = {"page_type": "topics"}
@@ -32,7 +32,7 @@ def _schema_invalid() -> validate.Result:
 
 def test_llm_outage_becomes_the_headline_reason() -> None:
     result = _schema_invalid()
-    with mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=False):
+    with mock.patch("themis_scraper.llm.is_available", return_value=False):
         _flag_llm_outage(result, _ENRICHED_SPEC)
     assert "LLM unavailable" in result.reasons[0]
     # The original diagnosis is kept, demoted -- it is still true, just not the story.
@@ -42,7 +42,7 @@ def test_llm_outage_becomes_the_headline_reason() -> None:
 def test_no_hint_when_the_llm_is_up() -> None:
     """With a working LLM, a schema failure on an enriched spec IS suspicious."""
     result = _schema_invalid()
-    with mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=True):
+    with mock.patch("themis_scraper.llm.is_available", return_value=True):
         _flag_llm_outage(result, _ENRICHED_SPEC)
     assert len(result.reasons) == 1
 
@@ -50,7 +50,7 @@ def test_no_hint_when_the_llm_is_up() -> None:
 def test_no_hint_for_a_spec_without_llm_enrichment() -> None:
     """A spec whose fields are all deterministic cannot blame the LLM."""
     result = _schema_invalid()
-    with mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=False):
+    with mock.patch("themis_scraper.llm.is_available", return_value=False):
         _flag_llm_outage(result, _PLAIN_SPEC)
     assert len(result.reasons) == 1
 
@@ -60,6 +60,6 @@ def test_no_hint_on_other_statuses() -> None:
     result = validate.Result(
         source_id="x", status=validate.EXTRACT_FAILED, page_type="topics", reasons=["boom"]
     )
-    with mock.patch("thesis_matchmaker.scraper.llm.is_available", return_value=False):
+    with mock.patch("themis_scraper.llm.is_available", return_value=False):
         _flag_llm_outage(result, _ENRICHED_SPEC)
     assert result.reasons == ["boom"]

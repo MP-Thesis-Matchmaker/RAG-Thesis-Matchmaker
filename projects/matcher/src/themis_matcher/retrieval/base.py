@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from thesis_matchmaker.contracts import ParsedQuery, SupervisorMatch
+from themis_shared.contracts import ParsedQuery, SupervisorMatch
 
 
 class Retriever(Protocol):

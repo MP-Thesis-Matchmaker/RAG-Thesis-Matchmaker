@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker.zora import config
-from thesis_matchmaker.zora.zora_client import iter_org_tree
+from themis_zora import config
+from themis_zora.zora_client import iter_org_tree
 
 ROOT = config.UZH_ROOT_COMMUNITY_UUID
 

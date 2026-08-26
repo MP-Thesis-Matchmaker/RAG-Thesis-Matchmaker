@@ -17,8 +17,8 @@ import os
 from pathlib import Path
 from unittest import mock
 
-from thesis_matchmaker.scraper import registry
-from thesis_matchmaker.scraper.main import main
+from themis_scraper import registry
+from themis_scraper.main import main
 
 _REAL_DATA_ROOT = Path("data/scraper")
 

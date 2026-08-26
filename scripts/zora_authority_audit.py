@@ -13,15 +13,15 @@ Requires a database with the current schema.sql applied AND a completed
 pre-2026-08-24 database.
 
 Usage:
-    thesis-matchmaker init-db --reset          # if the schema is stale
-    python -m thesis_matchmaker.zora.harvest --mode full
+    themis-init-db --reset          # if the schema is stale
+    python -m themis_zora.harvest --mode full
     python -m scripts.zora_authority_audit
 """
 
 from __future__ import annotations
 
-from thesis_matchmaker import db
-from thesis_matchmaker.config import get_settings
+from themis_shared import db
+from themis_shared.config import get_settings
 
 WIDTH = 70
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker import db, schema
+from themis_shared import db, schema
 
 
 def test_fingerprint_is_stable_and_sensitive() -> None:

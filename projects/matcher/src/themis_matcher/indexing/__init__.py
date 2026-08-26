@@ -8,24 +8,24 @@ Never writes back to the source data.
 
 from __future__ import annotations
 
-from thesis_matchmaker.config import Settings
-from thesis_matchmaker.indexing.documents import (
+from themis_shared.config import Settings
+from themis_matcher.indexing.documents import (
     Document,
     posting_to_document,
     zora_to_document,
 )
-from thesis_matchmaker.indexing.embedder import (
+from themis_matcher.indexing.embedder import (
     Embedder,
     HashEmbedder,
     SentenceTransformerEmbedder,
 )
-from thesis_matchmaker.indexing.indexer import Indexer
-from thesis_matchmaker.indexing.sources import (
+from themis_matcher.indexing.indexer import Indexer
+from themis_matcher.indexing.sources import (
     JsonlSourceReader,
     PostgresSourceReader,
     SourceReader,
 )
-from thesis_matchmaker.indexing.store import (
+from themis_matcher.indexing.store import (
     IndexManifest,
     InMemoryVectorStore,
     PgVectorStore,

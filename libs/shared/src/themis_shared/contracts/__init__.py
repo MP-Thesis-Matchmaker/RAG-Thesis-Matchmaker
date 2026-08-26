@@ -5,8 +5,8 @@ data-retrieval, scraping, retrieval, and orchestration parts can be built in
 parallel against a fixed shape.
 """
 
-from thesis_matchmaker.contracts.retrieval import Evidence, ParsedQuery, SupervisorMatch
-from thesis_matchmaker.contracts.sources import (
+from themis_shared.contracts.retrieval import Evidence, ParsedQuery, SupervisorMatch
+from themis_shared.contracts.sources import (
     ApplicationProcess,
     AuthorAuthority,
     DegreeLevel,

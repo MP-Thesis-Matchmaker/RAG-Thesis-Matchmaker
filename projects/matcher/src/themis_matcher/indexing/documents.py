@@ -14,7 +14,7 @@ import re
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts import (
+from themis_shared.contracts import (
     DegreeLevel,
     PostingStatus,
     ThesisPosting,

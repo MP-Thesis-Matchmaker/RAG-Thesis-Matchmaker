@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # Root of everything the scraper reads or writes (registry/, specs/, cache/,
     # output/, var/). Relative to the working directory, which is the same choice the
     # rest of the repository makes -- `sources_path = "data/samples"` in
-    # thesis_matchmaker/config.py, `ZORA_DATA_DIR` defaulting to "data" in
+    # themis_shared/config.py, `ZORA_DATA_DIR` defaulting to "data" in
     # zora/config.py. Deriving it from the package location instead would break in the
     # container image, where `uv sync --no-editable` installs into site-packages and
     # there is no repository above the module at all.
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
 
     # --- LLM ----------------------------------------------------------------
     # Which provider module backs `llm.complete`. "openai" is built in; any other name
-    # loads `thesis_matchmaker/scraper/llm_<name>.py`, which must expose a `Provider` class.
+    # loads `themis_scraper/llm_<name>.py`, which must expose a `Provider` class.
     llm_provider: str = "openai"
     llm_model: str = "gpt-5-mini"
 

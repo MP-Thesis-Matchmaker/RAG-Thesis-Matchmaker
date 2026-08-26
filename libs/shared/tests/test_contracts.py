@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from thesis_matchmaker.contracts import (
+from themis_shared.contracts import (
     AuthorAuthority,
     DegreeLevel,
     Evidence,

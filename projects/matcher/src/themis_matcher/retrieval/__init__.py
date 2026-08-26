@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from thesis_matchmaker.config import Settings
-from thesis_matchmaker.retrieval.base import Retriever
-from thesis_matchmaker.retrieval.fake import FakeRetriever
+from themis_shared.config import Settings
+from themis_matcher.retrieval.base import Retriever
+from themis_matcher.retrieval.fake import FakeRetriever
 
 
 def build_retriever(settings: Settings) -> Retriever:
@@ -13,8 +13,8 @@ def build_retriever(settings: Settings) -> Retriever:
     Imported lazily so importing the retrieval package (e.g. for the fake) does
     not open a database connection or reach for the embedding model.
     """
-    from thesis_matchmaker.indexing import build_embedder, build_store
-    from thesis_matchmaker.retrieval.vector import VectorRetriever
+    from themis_matcher.indexing import build_embedder, build_store
+    from themis_matcher.retrieval.vector import VectorRetriever
 
     return VectorRetriever(
         embedder=build_embedder(settings),

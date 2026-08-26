@@ -53,7 +53,7 @@ Pure data. No I/O, no business logic, no imports from sibling packages.
 | `SupervisorMatch` | `retrieval.py` | One ranked person: `supervisor`, `department`, `score`, `matched_topics`, `publication_count`, `posting_count`, `evidence[]`. |
 
 All thirteen are re-exported from `contracts/__init__.py`, so
-`from thesis_matchmaker.contracts import ZoraPublication` is the intended import
+`from themis_shared.contracts import ZoraPublication` is the intended import
 path.
 
 ## Nullability follows the database

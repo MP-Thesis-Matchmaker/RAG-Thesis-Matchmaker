@@ -156,17 +156,17 @@ Two invocations, kept separate on purpose: `fetch` is the stage that talks to uz
 
 ```bash
 # Stage 1: fetch (polite, sequential, resumable). Needs SCRAPER_CONTACT set.
-python -m thesis_matchmaker.scraper.main fetch --resume
+python -m themis_scraper.main fetch --resume
 # Stage 2: extract, validate, write to Postgres. Reads only the cache.
-python -m thesis_matchmaker.scraper.main run --resume
+python -m themis_scraper.main run --resume
 
-python -m thesis_matchmaker.scraper.main status             # per-source lifecycle
-python -m thesis_matchmaker.scraper.main check <source_id>  # one source, verbose
-python -m thesis_matchmaker.scraper.main onboard --next     # interactive: add a source
+python -m themis_scraper.main status             # per-source lifecycle
+python -m themis_scraper.main check <source_id>  # one source, verbose
+python -m themis_scraper.main onboard --next     # interactive: add a source
 ```
 
-No console script, deliberately — same as `zora/harvest.py`. `thesis-matchmaker` and
-`thesis-matchmaker-mcp` are front doors over the application service; this is an
+No console script, deliberately — same as `zora/harvest.py`. `themis-matcher` and
+`themis-gateway-mcp` are front doors over the application service; this is an
 operator tool with an interactive flow, and it does not belong behind the same command.
 
 In the cluster: `docker/scraper/Dockerfile`, whose `ENTRYPOINT` is already the module and

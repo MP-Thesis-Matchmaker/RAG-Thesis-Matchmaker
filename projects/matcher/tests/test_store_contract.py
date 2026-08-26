@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker.indexing.documents import Document
-from thesis_matchmaker.indexing.embedder import HashEmbedder
-from thesis_matchmaker.indexing.store import IndexManifest, InMemoryVectorStore, VectorStore
+from themis_matcher.indexing.documents import Document
+from themis_matcher.indexing.embedder import HashEmbedder
+from themis_matcher.indexing.store import IndexManifest, InMemoryVectorStore, VectorStore
 
 
 def _doc(doc_id: str, text: str, **metadata) -> Document:

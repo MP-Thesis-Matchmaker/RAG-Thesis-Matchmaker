@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from thesis_matchmaker.contracts import SupervisorMatch
+from themis_shared.contracts import SupervisorMatch
 
 
 class Synthesizer(Protocol):

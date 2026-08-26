@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker.contracts import ThesisPosting, ZoraPublication
-from thesis_matchmaker.indexing.embedder import HashEmbedder
-from thesis_matchmaker.indexing.indexer import Indexer, ModelMismatchError
-from thesis_matchmaker.indexing.sources import JsonlSourceReader
-from thesis_matchmaker.indexing.store import InMemoryVectorStore
+from themis_shared.contracts import ThesisPosting, ZoraPublication
+from themis_matcher.indexing.embedder import HashEmbedder
+from themis_matcher.indexing.indexer import Indexer, ModelMismatchError
+from themis_matcher.indexing.sources import JsonlSourceReader
+from themis_matcher.indexing.store import InMemoryVectorStore
 
 
 def _write_sources(

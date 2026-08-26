@@ -1,9 +1,9 @@
 """Tests for the orchestration skeleton against fakes for all boundaries."""
 
-from thesis_matchmaker.parsing import RuleBasedExtractor
-from thesis_matchmaker.pipeline import Pipeline, parse_query
-from thesis_matchmaker.retrieval import FakeRetriever
-from thesis_matchmaker.synthesis import TemplateSynthesizer
+from themis_matcher.parsing import RuleBasedExtractor
+from themis_matcher.pipeline import Pipeline, parse_query
+from themis_matcher.retrieval import FakeRetriever
+from themis_matcher.synthesis import TemplateSynthesizer
 
 
 def test_parse_query_keeps_raw_text():

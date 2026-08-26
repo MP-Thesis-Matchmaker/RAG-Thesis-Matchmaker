@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import PostingStatus, ThesisPosting, ZoraPublication
-from thesis_matchmaker.indexing.documents import (
+from themis_shared.contracts import PostingStatus, ThesisPosting, ZoraPublication
+from themis_matcher.indexing.documents import (
     posting_to_document,
     prepare_text,
     zora_to_document,

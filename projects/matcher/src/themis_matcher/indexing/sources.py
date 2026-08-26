@@ -18,8 +18,8 @@ from typing import Protocol
 
 from pydantic import BaseModel, ValidationError
 
-from thesis_matchmaker import db
-from thesis_matchmaker.contracts import Supervisor, ThesisPosting, ZoraPublication
+from themis_shared import db
+from themis_shared.contracts import Supervisor, ThesisPosting, ZoraPublication
 
 logger = logging.getLogger(__name__)
 

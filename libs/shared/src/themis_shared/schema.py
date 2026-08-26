@@ -42,7 +42,7 @@ from importlib import resources
 from psycopg import sql
 from pydantic import BaseModel
 
-from thesis_matchmaker import db
+from themis_shared import db
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def schema_sql() -> str:
     Package data rather than a repository-root file, so it survives `pip install`
     and is present in the container image the Kubernetes Job runs.
     """
-    return resources.files("thesis_matchmaker").joinpath("schema.sql").read_text(encoding="utf-8")
+    return resources.files("themis_shared").joinpath("schema.sql").read_text(encoding="utf-8")
 
 
 def _normalize_sql(text: str) -> str:
@@ -190,11 +190,11 @@ def require_current(dsn: str) -> None:
     if have is None:
         raise RuntimeError(
             f"this database has no schema applied (the code expects {want}). "
-            "Run `thesis-matchmaker init-db` first."
+            "Run `themis-init-db` first."
         )
     raise RuntimeError(
         f"this database has schema {have} applied but the code expects {want}. "
-        "Run `thesis-matchmaker init-db --reset` to drop every table and recreate "
+        "Run `themis-init-db --reset` to drop every table and recreate "
         "from the current schema.sql. That DESTROYS ALL DATA in the database."
     )
 

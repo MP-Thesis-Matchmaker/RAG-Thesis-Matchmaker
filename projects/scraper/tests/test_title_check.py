@@ -14,9 +14,9 @@ import unittest
 from bs4 import BeautifulSoup
 
 import replay_util as R
-from thesis_matchmaker.scraper import dataset as ST
-from thesis_matchmaker.scraper import title_check as T
-from thesis_matchmaker.scraper import validate as V
+from themis_scraper import dataset as ST
+from themis_scraper import title_check as T
+from themis_scraper import validate as V
 
 # The real ifi--5 block that started this: a posting date in the h3, the actual
 # title in a bold paragraph below it.
@@ -291,7 +291,7 @@ class Ifi5EndToEndTest(unittest.TestCase):
             self.assertNotIn("_title_check", r, f"record {i} unexpectedly flagged")
 
     def test_topic_id_is_seeded_from_the_repaired_title(self):
-        from thesis_matchmaker.scraper import spec_engine
+        from themis_scraper import spec_engine
 
         r = self.records[0]
         self.assertEqual(

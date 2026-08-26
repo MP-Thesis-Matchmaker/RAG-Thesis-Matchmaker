@@ -7,10 +7,10 @@ they can be tested without it, and a pipeline can be injected for tests.
 
 from __future__ import annotations
 
-from thesis_matchmaker.config import get_settings
-from thesis_matchmaker.indexing import read_manifest
-from thesis_matchmaker.pipeline import Pipeline
-from thesis_matchmaker.retrieval import build_retriever
+from themis_shared.config import get_settings
+from themis_matcher.indexing import read_manifest
+from themis_matcher.pipeline import Pipeline
+from themis_matcher.retrieval import build_retriever
 
 
 class IndexNotBuiltError(RuntimeError):
@@ -30,7 +30,7 @@ def _default_pipeline() -> Pipeline:
     if read_manifest(settings) is None:
         raise IndexNotBuiltError(
             "No index has been built, so there is nothing to recommend from. "
-            "Run 'thesis-matchmaker index' against a populated database first."
+            "Run 'themis-matcher index' against a populated database first."
         )
     return Pipeline(retriever=build_retriever(settings))
 

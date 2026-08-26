@@ -1,4 +1,4 @@
-"""CLI entry point — `python -m thesis_matchmaker.scraper.main <command>`.
+"""CLI entry point — `python -m themis_scraper.main <command>`.
 
 main.py stays orchestration-only: it wires argparse to stage functions, owns the
 interrupt/resume/state loop, and drives the interactive `onboard` flow. Heavy
@@ -18,7 +18,7 @@ import time
 
 import yaml
 
-from thesis_matchmaker import db
+from themis_shared import db
 
 from . import (
     cache,
@@ -1766,7 +1766,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not cache.is_cached(src.source_id):
         print(
             f"{src.source_id} not cached — run "
-            f"`python -m thesis_matchmaker.scraper.main fetch --only {src.source_id}` first."
+            f"`python -m themis_scraper.main fetch --only {src.source_id}` first."
         )
         return 2
 
@@ -1817,7 +1817,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="python -m thesis_matchmaker.scraper.main", description="UZH thesis-posting scraper"
+        prog="python -m themis_scraper.main", description="UZH thesis-posting scraper"
     )
     sub = p.add_subparsers(dest="command", required=True)
 

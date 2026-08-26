@@ -15,8 +15,8 @@ from unittest import mock
 
 from pydantic import ValidationError
 
-from thesis_matchmaker.scraper import dataset, llm, title_check
-from thesis_matchmaker.scraper.config import Settings, get_settings
+from themis_scraper import dataset, llm, title_check
+from themis_scraper.config import Settings, get_settings
 
 
 def _clean_env(**overrides):
@@ -68,11 +68,11 @@ class DefaultsTest(unittest.TestCase):
         self.assertEqual(self.s.spec_draft_html_budget, 16000)  # was spec_generator.py
 
     def test_user_agent_names_the_tool_and_a_reachable_contact(self):
-        with _clean_env(SCRAPER_CONTACT="thesis-matchmaker@example.uzh.ch"):
+        with _clean_env(SCRAPER_CONTACT="themis@example.uzh.ch"):
             ua = Settings(_env_file=None).user_agent
         self.assertIn("UZH-Thesis-Scraper", ua)
         self.assertIn("academic research", ua)
-        self.assertIn("mailto:thesis-matchmaker@example.uzh.ch", ua)
+        self.assertIn("mailto:themis@example.uzh.ch", ua)
 
     def test_contact_has_no_default(self):
         """Deliberately changed on the port into backend-core.
@@ -95,7 +95,7 @@ class DefaultsTest(unittest.TestCase):
         The prototype anchored this to its own checkout by counting parent
         directories, which is wrong one level deeper here and meaningless in the
         container image, where the package is installed non-editable into
-        site-packages. `sources_path = "data/samples"` in thesis_matchmaker/config.py
+        site-packages. `sources_path = "data/samples"` in themis_shared/config.py
         makes the same choice.
         """
         self.assertEqual(self.s.data_root, Path("data/scraper"))
@@ -109,7 +109,7 @@ class DataRootTest(unittest.TestCase):
     per call — so setting the data root moved the cache but not the output.
     """
 
-    ROOT = Path("/tmp/thesis-matchmaker-scraper-config-test")
+    ROOT = Path("/tmp/themis-scraper-config-test")
 
     def test_every_derived_path_follows_the_data_root(self):
         with _clean_env(SCRAPER_DATA_ROOT=str(self.ROOT)):
@@ -139,7 +139,7 @@ class DataRootTest(unittest.TestCase):
 
     def test_a_relocated_root_is_not_created_as_a_side_effect(self):
         """Reading settings must never touch the filesystem."""
-        with _clean_env(SCRAPER_DATA_ROOT="/tmp/thesis-matchmaker-scraper-should-not-exist"):
+        with _clean_env(SCRAPER_DATA_ROOT="/tmp/themis-scraper-should-not-exist"):
             s = get_settings()
             self.assertFalse(s.cache_dir.exists())
             self.assertFalse(s.data_root.exists())

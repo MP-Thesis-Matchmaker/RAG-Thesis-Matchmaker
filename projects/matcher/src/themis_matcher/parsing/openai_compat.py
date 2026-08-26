@@ -12,10 +12,10 @@ import logging
 
 from pydantic import BaseModel, Field, ValidationError
 
-from thesis_matchmaker.contracts import DegreeLevel, ParsedQuery
-from thesis_matchmaker.llm import LLMClient, LLMError
-from thesis_matchmaker.parsing.base import QueryExtractor
-from thesis_matchmaker.parsing.rule_based import RuleBasedExtractor
+from themis_shared.contracts import DegreeLevel, ParsedQuery
+from themis_matcher.llm import LLMClient, LLMError
+from themis_matcher.parsing.base import QueryExtractor
+from themis_matcher.parsing.rule_based import RuleBasedExtractor
 
 logger = logging.getLogger(__name__)
 

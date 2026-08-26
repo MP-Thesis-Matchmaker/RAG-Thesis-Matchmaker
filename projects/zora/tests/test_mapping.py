@@ -1,7 +1,7 @@
 """Tests for mapping.py — normalized harvester dicts → validated contract models."""
 
-from thesis_matchmaker.contracts import ZoraOrgUnit, ZoraPerson, ZoraPublication
-from thesis_matchmaker.zora.mapping import to_org_unit, to_person, to_publication
+from themis_shared.contracts import ZoraOrgUnit, ZoraPerson, ZoraPublication
+from themis_zora.mapping import to_org_unit, to_person, to_publication
 
 
 def _record(**overrides):

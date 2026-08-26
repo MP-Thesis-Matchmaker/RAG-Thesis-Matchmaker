@@ -14,9 +14,9 @@ import logging
 import httpx
 import pytest
 
-from thesis_matchmaker.config import Settings
-from thesis_matchmaker.contracts import Evidence, SupervisorMatch
-from thesis_matchmaker.llm import LLMClient, LLMError
+from themis_shared.config import Settings
+from themis_shared.contracts import Evidence, SupervisorMatch
+from themis_matcher.llm import LLMClient, LLMError
 
 _URL = "http://localhost:11434/v1"
 
@@ -132,7 +132,7 @@ def test_retry_happens_at_most_once(recorder):
 
 
 def test_settings_reach_the_synthesiser():
-    from thesis_matchmaker.synthesis import build_synthesizer
+    from themis_matcher.synthesis import build_synthesizer
 
     synth = build_synthesizer(
         Settings(llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none")
@@ -141,7 +141,7 @@ def test_settings_reach_the_synthesiser():
 
 
 def test_settings_reach_the_parser():
-    from thesis_matchmaker.parsing import build_extractor
+    from themis_matcher.parsing import build_extractor
 
     extractor = build_extractor(
         Settings(llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none")
@@ -152,7 +152,7 @@ def test_settings_reach_the_parser():
 def test_synthesis_fallback_is_logged(caplog, recorder):
     """A degraded answer that logs nothing is indistinguishable from the
     offline path, which is how a timing-out endpoint hides."""
-    from thesis_matchmaker.synthesis.llm import LLMSynthesizer
+    from themis_matcher.synthesis.llm import LLMSynthesizer
 
     recorder([500])
     match = SupervisorMatch(
@@ -171,7 +171,7 @@ def test_synthesis_fallback_is_logged(caplog, recorder):
 
 
 def test_parser_fallback_is_logged(caplog, recorder):
-    from thesis_matchmaker.parsing.openai_compat import OpenAICompatExtractor
+    from themis_matcher.parsing.openai_compat import OpenAICompatExtractor
 
     recorder([500])
     with caplog.at_level(logging.WARNING):

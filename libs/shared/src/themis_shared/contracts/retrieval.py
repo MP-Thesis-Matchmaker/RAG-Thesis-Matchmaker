@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts.sources import DegreeLevel
+from themis_shared.contracts.sources import DegreeLevel
 
 
 class ParsedQuery(BaseModel):

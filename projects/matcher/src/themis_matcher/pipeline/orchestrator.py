@@ -7,11 +7,11 @@ the ranked matches into a written recommendation. Each step is swappable.
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import ParsedQuery, SupervisorMatch
-from thesis_matchmaker.parsing import QueryExtractor, RuleBasedExtractor, build_extractor
-from thesis_matchmaker.retrieval.base import Retriever
-from thesis_matchmaker.retrieval.fake import FakeRetriever
-from thesis_matchmaker.synthesis import Synthesizer, build_synthesizer
+from themis_shared.contracts import ParsedQuery, SupervisorMatch
+from themis_matcher.parsing import QueryExtractor, RuleBasedExtractor, build_extractor
+from themis_matcher.retrieval.base import Retriever
+from themis_matcher.retrieval.fake import FakeRetriever
+from themis_matcher.synthesis import Synthesizer, build_synthesizer
 
 
 def parse_query(raw_query: str) -> ParsedQuery:

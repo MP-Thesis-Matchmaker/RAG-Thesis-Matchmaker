@@ -15,8 +15,8 @@ import os
 import pytest
 
 from fake_dso import FakeDSO
-from thesis_matchmaker import db, schema
-from thesis_matchmaker.zora import config, entities, harvest, store, zora_client
+from themis_shared import db, schema
+from themis_zora import config, entities, harvest, store, zora_client
 
 
 def _dso(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z") -> FakeDSO:

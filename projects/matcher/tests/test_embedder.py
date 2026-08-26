@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker.indexing.embedder import (
+from themis_matcher.indexing.embedder import (
     HashEmbedder,
     SentenceTransformerEmbedder,
     _limit_thread_pools,

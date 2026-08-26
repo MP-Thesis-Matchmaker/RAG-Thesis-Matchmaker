@@ -15,18 +15,19 @@ import contextlib
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
-from thesis_matchmaker import __version__, db, dbcli
-from thesis_matchmaker.config import Settings, get_settings
-from thesis_matchmaker.contracts import SupervisorMatch
-from thesis_matchmaker.indexing import (
+from themis_matcher import __version__
+from themis_shared import db, initdb
+from themis_shared.config import Settings, get_settings
+from themis_shared.contracts import SupervisorMatch
+from themis_matcher.indexing import (
     DATABASE_SOURCE,
     build_indexer,
     build_source_reader,
     build_store,
     read_manifest,
 )
-from thesis_matchmaker.pipeline import Pipeline
-from thesis_matchmaker.retrieval import build_retriever
+from themis_matcher.pipeline import Pipeline
+from themis_matcher.retrieval import build_retriever
 
 
 def _print_matches(matches: list[SupervisorMatch]) -> None:
@@ -52,7 +53,7 @@ def _index_exists(settings: Settings) -> bool:
 
 
 def _run_init_db(settings: Settings, args: argparse.Namespace) -> None:
-    dbcli.run(settings, reset=args.reset)
+    initdb.run(settings, reset=args.reset)
 
 
 def _run_index(settings: Settings, args: argparse.Namespace) -> None:
@@ -80,7 +81,7 @@ def _build_pipeline(settings: Settings) -> Pipeline:
     """Pipeline over the real retriever if an index exists, else the fake one."""
     if _index_exists(settings):
         return Pipeline(retriever=build_retriever(settings))
-    print("no index found - run 'thesis-matchmaker index' first.")
+    print("no index found - run 'themis-matcher index' first.")
     print("(results are canned for now, from the fake retriever)\n")
     return Pipeline()
 
@@ -113,7 +114,7 @@ def _run_repl(settings: Settings, args: argparse.Namespace) -> None:
         import readline  # noqa: F401
 
     endpoint = settings.llm_base_url or "offline (rule-based parser, template prose)"
-    print("thesis-matchmaker repl -- type a research interest, 'exit' to leave,")
+    print("themis-matcher repl -- type a research interest, 'exit' to leave,")
     print("':k N' to change how many matches are shown.")
     print(f"  llm endpoint:    {endpoint}")
     print(f"  embedding model: {settings.embedding_model}")
@@ -170,7 +171,7 @@ def _index_status(settings: Settings) -> str:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        prog="thesis-matchmaker",
+        prog="themis-matcher",
         description="Thesis matchmaking assistant.",
     )
     parser.add_argument("--version", action="version", version=__version__)
@@ -205,7 +206,7 @@ def main(argv: list[str] | None = None) -> None:
         "init-db",
         help="create the database schema (idempotent; safe to re-run)",
     )
-    dbcli.add_arguments(init_db_parser)
+    initdb.add_arguments(init_db_parser)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -230,15 +231,15 @@ def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
         _run_repl(settings, args)
     else:
         endpoint = settings.llm_base_url or "offline (rule-based parser)"
-        print("thesis-matchmaker")
+        print("themis-matcher")
         print(f"  llm endpoint:    {endpoint}")
         print(f"  llm model:       {settings.llm_model}")
         print(f"  embedding model: {settings.embedding_model}")
         print(f"  database:        {_redacted_dsn(settings.database_url)}")
         print(f"  index:           {_index_status(settings)}")
         print(
-            "try: thesis-matchmaker init-db && thesis-matchmaker index && "
-            'thesis-matchmaker match "NLP thesis on RAG"'
+            "try: themis-matcher init-db && themis-matcher index && "
+            'themis-matcher match "NLP thesis on RAG"'
         )
 
 

@@ -81,7 +81,7 @@ CREATE TABLE index_manifest (
 
 -- ---------------------------------------------------------------------------
 -- Ingestion: harvested ZORA publications, and the incremental watermark.
--- Written only by thesis_matchmaker.zora (invariant 1).
+-- Written only by themis_zora (invariant 1).
 -- ---------------------------------------------------------------------------
 
 -- Replaces data/publications.jsonl. A 45 MB file rewritten in full on every
@@ -166,8 +166,8 @@ CREATE TABLE harvest_state (
 
 -- ---------------------------------------------------------------------------
 -- ZORA entity mirrors: researchers and organizational units.
--- Written only by thesis_matchmaker.zora (invariant 1), by
--- `python -m thesis_matchmaker.zora.harvest_entities`. Both are pure API
+-- Written only by themis_zora (invariant 1), by
+-- `python -m themis_zora.harvest_entities`. Both are pure API
 -- mirrors, refreshed as full snapshots -- no watermark, no incremental mode.
 -- ---------------------------------------------------------------------------
 

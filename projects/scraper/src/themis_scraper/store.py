@@ -28,9 +28,9 @@ import logging
 
 from pydantic import BaseModel
 
-from thesis_matchmaker import db
-from thesis_matchmaker.config import get_settings
-from thesis_matchmaker.contracts import ApplicationProcess, ResearcherProfile, ThesisPosting
+from themis_shared import db
+from themis_shared.config import get_settings
+from themis_shared.contracts import ApplicationProcess, ResearcherProfile, ThesisPosting
 
 from . import normalize
 

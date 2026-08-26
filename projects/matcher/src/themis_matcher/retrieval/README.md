@@ -178,7 +178,7 @@ signal.
 Follows the repository-wide idiom: `base.py` Protocol, implementations beside it,
 `build_retriever(settings)` in `__init__.py`. `FakeRetriever` is not a test mock —
 it is a first-class offline implementation, which is what lets someone clone the
-repository and run `thesis-matchmaker match` before indexing anything.
+repository and run `themis-matcher match` before indexing anything.
 
 ## Status
 

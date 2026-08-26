@@ -1,7 +1,7 @@
 """Normalized harvester dicts → validated contract models.
 
 `normalize.py` produces flat dicts in the harvester's own vocabulary; this module
-maps them onto the shapes in `thesis_matchmaker.contracts` and validates them. It
+maps them onto the shapes in `themis_shared.contracts` and validates them. It
 is the last thing that runs before a row reaches `store.py`, so a malformed record
 fails here rather than in Postgres.
 
@@ -18,7 +18,7 @@ the half that is genuinely harvester-specific.
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import ZoraOrgUnit, ZoraPerson, ZoraPublication
+from themis_shared.contracts import ZoraOrgUnit, ZoraPerson, ZoraPublication
 
 
 def to_publication(record: dict) -> dict:

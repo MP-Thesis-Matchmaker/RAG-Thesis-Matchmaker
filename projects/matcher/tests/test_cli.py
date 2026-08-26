@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker import cli, indexing
-from thesis_matchmaker.cli import main
-from thesis_matchmaker.contracts import ThesisPosting, ZoraPublication
-from thesis_matchmaker.indexing.store import InMemoryVectorStore
+from themis_matcher import cli, indexing
+from themis_matcher.cli import main
+from themis_shared.contracts import ThesisPosting, ZoraPublication
+from themis_matcher.indexing.store import InMemoryVectorStore
 
 
 @pytest.fixture()
@@ -100,7 +100,7 @@ def test_repl_survives_a_query_error(
     def _boom(self: object, raw_query: str, top_k: int = 5) -> list:
         raise ValueError("retrieval exploded")
 
-    from thesis_matchmaker.pipeline import Pipeline
+    from themis_matcher.pipeline import Pipeline
 
     monkeypatch.setattr(Pipeline, "run", _boom)
     _feed_input(monkeypatch, ["anything", "exit"])
@@ -120,4 +120,4 @@ def test_repl_eof_exits_cleanly(
     monkeypatch.setattr("builtins.input", _eof)
     main(["repl"])
     out = capsys.readouterr().out
-    assert "thesis-matchmaker repl" in out
+    assert "themis-matcher repl" in out

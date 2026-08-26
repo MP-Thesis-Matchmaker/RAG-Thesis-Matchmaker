@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from thesis_matchmaker.contracts import DegreeLevel, ParsedQuery
+from themis_shared.contracts import DegreeLevel, ParsedQuery
 
 _DEGREE_KEYWORDS: list[tuple[DegreeLevel, tuple[str, ...]]] = [
     (DegreeLevel.phd, ("phd", "ph.d", "doctoral", "doctorate")),

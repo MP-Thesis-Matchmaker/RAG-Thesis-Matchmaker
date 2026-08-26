@@ -30,8 +30,8 @@ from pathlib import Path
 
 import yaml
 
-from thesis_matchmaker.scraper import cache, registry, spec_engine
-from thesis_matchmaker.scraper.config import get_settings
+from themis_scraper import cache, registry, spec_engine
+from themis_scraper.config import get_settings
 
 CONTRACTS = get_settings().specs_dir
 GOLDEN_PATH = Path(__file__).resolve().parent / "golden_specs.json"

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from thesis_matchmaker.config import Settings, get_settings
-from thesis_matchmaker.parsing.base import QueryExtractor
-from thesis_matchmaker.parsing.rule_based import RuleBasedExtractor
+from themis_shared.config import Settings, get_settings
+from themis_matcher.parsing.base import QueryExtractor
+from themis_matcher.parsing.rule_based import RuleBasedExtractor
 
 
 def build_extractor(settings: Settings | None = None) -> QueryExtractor:
@@ -16,7 +16,7 @@ def build_extractor(settings: Settings | None = None) -> QueryExtractor:
     """
     settings = settings or get_settings()
     if settings.llm_base_url:
-        from thesis_matchmaker.parsing.openai_compat import OpenAICompatExtractor
+        from themis_matcher.parsing.openai_compat import OpenAICompatExtractor
 
         return OpenAICompatExtractor(
             base_url=settings.llm_base_url,

@@ -8,7 +8,7 @@ when no LLM is configured.
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import SupervisorMatch
+from themis_shared.contracts import SupervisorMatch
 
 
 class TemplateSynthesizer:

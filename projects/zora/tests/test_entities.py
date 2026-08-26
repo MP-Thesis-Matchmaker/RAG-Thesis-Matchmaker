@@ -11,7 +11,7 @@ import json
 import pytest
 
 from fake_dso import FakeDSO
-from thesis_matchmaker.zora import config, entities, store
+from themis_zora import config, entities, store
 
 
 @pytest.fixture()

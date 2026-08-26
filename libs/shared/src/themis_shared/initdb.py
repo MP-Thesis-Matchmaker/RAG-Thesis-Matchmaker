@@ -16,8 +16,8 @@ from __future__ import annotations
 import argparse
 import logging
 
-from thesis_matchmaker import db, schema
-from thesis_matchmaker.config import Settings, get_settings
+from themis_shared import db, schema
+from themis_shared.config import Settings, get_settings
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
@@ -46,7 +46,7 @@ def run(settings: Settings, *, reset: bool) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        prog="thesis-matchmaker-init-db",
+        prog="themis-init-db",
         description="Create the database schema (idempotent; safe to re-run).",
     )
     add_arguments(parser)

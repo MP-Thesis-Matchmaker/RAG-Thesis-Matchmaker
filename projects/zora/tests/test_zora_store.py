@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from thesis_matchmaker import db
-from thesis_matchmaker.zora import store
+from themis_shared import db
+from themis_zora import store
 
 _RATIO = 0.5
 
