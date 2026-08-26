@@ -8,7 +8,6 @@ Never writes back to the source data.
 
 from __future__ import annotations
 
-from themis_shared.config import Settings
 from themis_matcher.indexing.documents import (
     Document,
     posting_to_document,
@@ -31,6 +30,7 @@ from themis_matcher.indexing.store import (
     PgVectorStore,
     VectorStore,
 )
+from themis_shared.config import Settings
 
 
 def build_embedder(settings: Settings) -> Embedder:

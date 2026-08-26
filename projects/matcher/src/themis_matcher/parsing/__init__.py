@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from themis_shared.config import Settings, get_settings
 from themis_matcher.parsing.base import QueryExtractor
 from themis_matcher.parsing.rule_based import RuleBasedExtractor
+from themis_shared.config import Settings, get_settings
 
 
 def build_extractor(settings: Settings | None = None) -> QueryExtractor:

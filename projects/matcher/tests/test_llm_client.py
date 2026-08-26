@@ -14,9 +14,9 @@ import logging
 import httpx
 import pytest
 
+from themis_matcher.llm import LLMClient, LLMError
 from themis_shared.config import Settings
 from themis_shared.contracts import Evidence, SupervisorMatch
-from themis_matcher.llm import LLMClient, LLMError
 
 _URL = "http://localhost:11434/v1"
 

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from themis_shared.contracts import PostingStatus, ThesisPosting, ZoraPublication
 from themis_matcher.indexing.documents import (
     posting_to_document,
     prepare_text,
     zora_to_document,
 )
+from themis_shared.contracts import PostingStatus, ThesisPosting, ZoraPublication
 
 
 def _zora(**overrides) -> ZoraPublication:

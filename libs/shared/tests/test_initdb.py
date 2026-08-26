@@ -106,5 +106,3 @@ def test_the_reset_flag_defaults_to_off() -> None:
 
     assert parser.parse_args([]).reset is False
     assert parser.parse_args(["--reset"]).reset is True
-
-

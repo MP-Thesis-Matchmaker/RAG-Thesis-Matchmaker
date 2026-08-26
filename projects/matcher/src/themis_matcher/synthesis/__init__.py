@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from themis_shared.config import Settings, get_settings
 from themis_matcher.synthesis.base import Synthesizer
 from themis_matcher.synthesis.template import TemplateSynthesizer
+from themis_shared.config import Settings, get_settings
 
 
 def build_synthesizer(settings: Settings | None = None) -> Synthesizer:

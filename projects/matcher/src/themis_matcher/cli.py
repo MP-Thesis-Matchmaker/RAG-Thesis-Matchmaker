@@ -16,9 +16,6 @@ import logging
 from urllib.parse import urlsplit, urlunsplit
 
 from themis_matcher import __version__
-from themis_shared import db, initdb
-from themis_shared.config import Settings, get_settings
-from themis_shared.contracts import SupervisorMatch
 from themis_matcher.indexing import (
     DATABASE_SOURCE,
     build_indexer,
@@ -28,6 +25,9 @@ from themis_matcher.indexing import (
 )
 from themis_matcher.pipeline import Pipeline
 from themis_matcher.retrieval import build_retriever
+from themis_shared import db, initdb
+from themis_shared.config import Settings, get_settings
+from themis_shared.contracts import SupervisorMatch
 
 
 def _print_matches(matches: list[SupervisorMatch]) -> None:

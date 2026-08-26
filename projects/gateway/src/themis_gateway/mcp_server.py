@@ -21,8 +21,7 @@ import argparse
 
 from mcp.server.mcpserver import MCPServer
 
-from themis_gateway import __version__
-from themis_gateway import service
+from themis_gateway import __version__, service
 from themis_shared.config import get_settings
 
 # MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from

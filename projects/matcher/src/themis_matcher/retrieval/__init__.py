@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from themis_shared.config import Settings
 from themis_matcher.retrieval.base import Retriever
 from themis_matcher.retrieval.fake import FakeRetriever
+from themis_shared.config import Settings
 
 
 def build_retriever(settings: Settings) -> Retriever:

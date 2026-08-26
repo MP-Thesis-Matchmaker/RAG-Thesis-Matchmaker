@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import pytest
 
-from themis_shared import db
 from themis_scraper import store
+from themis_shared import db
 
 
 def _topic(topic_id: str, source_id: str, **overrides) -> dict:

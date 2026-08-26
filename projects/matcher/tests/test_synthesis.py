@@ -1,8 +1,8 @@
 """Tests for the answer synthesiser (offline template path and factory)."""
 
+from themis_matcher.synthesis import TemplateSynthesizer, build_synthesizer
 from themis_shared.config import Settings
 from themis_shared.contracts import Evidence, SupervisorMatch
-from themis_matcher.synthesis import TemplateSynthesizer, build_synthesizer
 
 
 def _match(name: str, title: str, score: float = 0.9) -> SupervisorMatch:

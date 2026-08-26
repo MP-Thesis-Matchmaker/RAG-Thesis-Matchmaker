@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from themis_shared.config import Settings
 from themis_matcher.indexing import build_embedder, build_indexer
 from themis_matcher.indexing.embedder import HashEmbedder, SentenceTransformerEmbedder
 from themis_matcher.indexing.store import PgVectorStore
 from themis_matcher.retrieval import build_retriever
 from themis_matcher.retrieval.vector import VectorRetriever
+from themis_shared.config import Settings
 
 _DSN = "postgresql://nobody@localhost:1/unused"
 

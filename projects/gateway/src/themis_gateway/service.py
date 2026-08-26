@@ -7,10 +7,10 @@ they can be tested without it, and a pipeline can be injected for tests.
 
 from __future__ import annotations
 
-from themis_shared.config import get_settings
 from themis_matcher.indexing import read_manifest
 from themis_matcher.pipeline import Pipeline
 from themis_matcher.retrieval import build_retriever
+from themis_shared.config import get_settings
 
 
 class IndexNotBuiltError(RuntimeError):

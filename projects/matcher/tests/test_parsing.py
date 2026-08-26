@@ -2,9 +2,9 @@
 
 import pytest
 
+from themis_matcher.parsing import RuleBasedExtractor, build_extractor
 from themis_shared.config import Settings
 from themis_shared.contracts import DegreeLevel
-from themis_matcher.parsing import RuleBasedExtractor, build_extractor
 
 
 def test_rule_based_detects_master():

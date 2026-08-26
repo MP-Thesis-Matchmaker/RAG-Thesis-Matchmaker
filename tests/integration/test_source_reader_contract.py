@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import pytest
 
-from themis_shared import db
-from themis_shared.contracts import AuthorAuthority
 from themis_matcher.indexing.sources import PostgresSourceReader
 from themis_scraper import store as scraper_store
+from themis_shared import db
+from themis_shared.contracts import AuthorAuthority
 from themis_zora import store as zora_store
 
 _RATIO = 0.5

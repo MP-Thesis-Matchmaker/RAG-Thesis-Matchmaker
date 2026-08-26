@@ -12,10 +12,10 @@ from __future__ import annotations
 
 import logging
 
-from themis_shared.contracts import SupervisorMatch
 from themis_matcher.llm import LLMClient, LLMError
 from themis_matcher.synthesis.base import Synthesizer
 from themis_matcher.synthesis.template import TemplateSynthesizer
+from themis_shared.contracts import SupervisorMatch
 
 logger = logging.getLogger(__name__)
 

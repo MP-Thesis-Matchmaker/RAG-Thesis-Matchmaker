@@ -15,8 +15,8 @@ import pytest
 
 from themis_matcher import cli, indexing
 from themis_matcher.cli import main
-from themis_shared.contracts import ThesisPosting, ZoraPublication
 from themis_matcher.indexing.store import InMemoryVectorStore
+from themis_shared.contracts import ThesisPosting, ZoraPublication
 
 
 @pytest.fixture()

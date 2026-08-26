@@ -22,8 +22,8 @@ import psycopg
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
-from themis_shared import db
 from themis_matcher.indexing.documents import Document, MetadataValue
+from themis_shared import db
 
 logger = logging.getLogger(__name__)
 
