@@ -202,6 +202,13 @@ def main(argv: list[str] | None = None) -> None:
         help="empty the existing index first (required after changing the embedding model)",
     )
 
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="run the HTTP API (match, recommend, and the index triggers)",
+    )
+    serve_parser.add_argument("--host", help="default: API_HOST setting")
+    serve_parser.add_argument("--port", type=int, help="default: API_PORT setting")
+
     init_db_parser = subparsers.add_parser(
         "init-db",
         help="create the database schema (idempotent; safe to re-run)",
@@ -220,6 +227,28 @@ def main(argv: list[str] | None = None) -> None:
         db.close_pools()
 
 
+def _run_serve(settings: Settings, args: argparse.Namespace) -> None:
+    """Serve the HTTP API until killed.
+
+    Imported here rather than at module scope so `index`, `match` and `repl` do
+    not pay for importing FastAPI, and so the batch role keeps working if the API
+    dependencies are ever made optional again.
+    """
+    import uvicorn
+
+    from themis_matcher.api import create_app
+
+    host = args.host or settings.api_host
+    port = args.port or settings.api_port
+    print(f"themis-matcher serving on http://{host}:{port}")
+    print(f"  database:        {_redacted_dsn(settings.database_url)}")
+    print(f"  embedding model: {settings.embedding_model}")
+    print(f"  index:           {_index_status(settings)}")
+    # The app closes the connection pools in its own lifespan, which is why
+    # main()'s finally-block close is harmless rather than duplicated work.
+    uvicorn.run(create_app(settings), host=host, port=port)
+
+
 def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
     if args.command == "init-db":
         _run_init_db(settings, args)
@@ -229,6 +258,8 @@ def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
         _run_match(settings, args)
     elif args.command == "repl":
         _run_repl(settings, args)
+    elif args.command == "serve":
+        _run_serve(settings, args)
     else:
         endpoint = settings.llm_base_url or "offline (rule-based parser)"
         print("themis-matcher")

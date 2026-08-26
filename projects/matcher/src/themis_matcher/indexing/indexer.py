@@ -19,7 +19,7 @@ which is why nothing here knows about either.
 from __future__ import annotations
 
 import logging
-from collections.abc import Collection, Iterator
+from collections.abc import Callable, Collection, Iterator
 
 from pydantic import BaseModel
 
@@ -59,10 +59,22 @@ class IndexResult(BaseModel):
 class Indexer:
     """Runs one read -> diff -> embed -> upsert pass over the source records."""
 
-    def __init__(self, embedder: Embedder, store: VectorStore, chunk_size: int = 1000) -> None:
+    def __init__(
+        self,
+        embedder: Embedder,
+        store: VectorStore,
+        chunk_size: int = 1000,
+        on_chunk: Callable[[int, int], None] | None = None,
+    ) -> None:
         self.embedder = embedder
         self.store = store
         self.chunk_size = chunk_size
+        # Called with (embedded, seen) after each committed chunk. The HTTP
+        # trigger uses it to bump a run's heartbeat: a run is only distinguishable
+        # from a dead process by saying something as it goes, and a chunk commit
+        # is the one moment work is known to have landed. Failures here must not
+        # take the run down with them -- see _flush.
+        self.on_chunk = on_chunk
 
     def run(self, reader: SourceReader, kinds: Collection[str] | None = None) -> IndexResult:
         """One pass over `kinds` (both, by default).
@@ -157,6 +169,14 @@ class Indexer:
         truncated += self.embedder.last_truncated
         # A full run is hours long. Without this it is indistinguishable from a hang.
         logger.info("committed %d embedded document(s); %d source records read", embedded, seen)
+        if self.on_chunk is not None:
+            try:
+                self.on_chunk(embedded, seen)
+            except Exception:
+                # Progress reporting is not the run. A database blip while writing
+                # a heartbeat would otherwise throw away hours of embedding that
+                # has already been committed.
+                logger.warning("index progress callback failed", exc_info=True)
         buffer.clear()
         return embedded, truncated
 

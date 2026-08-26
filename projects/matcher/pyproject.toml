@@ -21,6 +21,16 @@ dependencies = [
     # the workspace, reached from parsing/openai_compat.py and synthesis/llm.py.
     # The scraper's llm.py is a separate, openai-based module and is not this.
     "httpx>=0.27",
+    # The HTTP front door: match, recommend, and the index triggers the harvester
+    # and the scraper fire. Core rather than an extra because CI's offline and
+    # pgvector jobs both install with --all-packages and no extras, so an extra
+    # would leave the API tests uncollectable there -- and because one image
+    # serves both this role and the batch indexer, so it is installed either way.
+    #
+    # uvicorn and starlette were already in uv.lock as transitive dependencies of
+    # the gateway's mcp extra; only fastapi is a new resolution.
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]

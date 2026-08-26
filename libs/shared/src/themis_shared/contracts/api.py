@@ -14,6 +14,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from themis_shared.contracts.retrieval import SupervisorMatch
+
 
 class IndexRunState(StrEnum):
     """Where one index run got to."""
@@ -59,3 +61,62 @@ class IndexRun(BaseModel):
         description="Bumped at every committed chunk; how a dead run is told from a slow one."
     )
     finished_at: datetime | None = None
+
+
+class MatchRequest(BaseModel):
+    """A student's interests, in their own words."""
+
+    query: str = Field(min_length=1, description="Free text; the matcher parses it.")
+    top_k: int = Field(default=5, ge=1, le=50)
+
+
+class MatchResponse(BaseModel):
+    """Ranked matches, no prose.
+
+    Already ordered, and **not necessarily by score** -- see `SupervisorMatch`.
+    Do not re-sort and assume the order survives.
+    """
+
+    matches: list[SupervisorMatch]
+
+
+class RecommendResponse(BaseModel):
+    """A written recommendation, grounded in the same matches."""
+
+    answer: str
+
+
+class IndexStatus(BaseModel):
+    """What is in the index right now, from `index_manifest`."""
+
+    embedding_model: str
+    embedding_dim: int
+    document_count: int
+    sources: str | None = None
+    max_seq_length: int | None = None
+    truncated_docs: int = 0
+
+
+class IndexRunAccepted(BaseModel):
+    """A trigger was accepted. The work happens after the response.
+
+    Indexing is measured in minutes at steady state and days from cold, so a
+    trigger can only ever hand back a receipt. Poll `/v1/index/runs/{run_id}`.
+    """
+
+    run_id: int
+    kind: IndexRunKind
+
+
+class ApiError(BaseModel):
+    """A refusal the caller can branch on.
+
+    `code` is the machine-readable half: the gateway maps `index_not_built` back
+    onto its own exception type rather than matching on prose.
+    """
+
+    code: str
+    message: str
+    run_id: int | None = Field(
+        default=None, description="Set on index_run_in_progress: the run that holds the slot."
+    )

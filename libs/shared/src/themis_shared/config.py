@@ -159,6 +159,24 @@ class Settings(BaseSettings):
     mcp_host: str = "127.0.0.1"
     mcp_port: int = 8000
 
+    # The matcher's own HTTP service: match, recommend, and the index triggers.
+    # 8100 rather than 8000 on purpose -- both servers run side by side on a
+    # laptop, and sharing mcp_port's default would make that collide.
+    api_host: str = "127.0.0.1"
+    api_port: int = 8100
+
+    # Where the gateway (and the harvester, and the scraper) find that service.
+    # None means "not configured": the gateway then has nothing to call and says
+    # so, while the producers skip their post-run trigger instead of failing a
+    # harvest that otherwise succeeded.
+    matcher_base_url: str | None = None
+
+    # How long an index run may go without committing a chunk before it is
+    # presumed dead and its single-active slot released. This bounds the gap
+    # between two chunks, not the length of a run: a cold index takes days but
+    # breathes every chunk.
+    index_run_heartbeat_timeout_s: int = 900
+
 
 def get_settings() -> Settings:
     """Return settings, read fresh from the environment."""
