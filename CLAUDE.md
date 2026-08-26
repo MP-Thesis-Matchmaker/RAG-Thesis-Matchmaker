@@ -14,7 +14,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-26)
 
 A **five-member `uv` workspace**, every member `requires-python >=3.11`, ~11,750 LOC across the
-five `src/` trees, 481 tests in 33 files (433 pass / 48 skip without `DATABASE_URL`). The
+five `src/` trees, 538 tests in 39 files (472 pass / 66 skip without `DATABASE_URL`). The
 workspace root has **no `[project]` table** — it is virtual, which is why a bare `uv sync`
 installs nothing and errors; always `--all-packages` or `--package themis-<x>`.
 **Per-member detail lives in the member's `README.md`; read those instead of expanding this
@@ -121,11 +121,20 @@ before those changes were designed. Details:
 Tooling: `uv` everywhere — a **single root `uv.lock` covering all five members**, tracked, and what
 actually gets installed by CI (`uv sync --locked --all-packages`, or `--package themis-<x>`) and by
 the container images alike; pip is used nowhere. One `.venv`, at the root: `--package X` *replaces*
-its contents rather than making a second environment. `pytest` (481 tests / 33 files; 48 need
+its contents rather than making a second environment. `pytest` (538 tests / 39 files; 66 need
 Postgres and skip without `DATABASE_URL`) and `ruff` (line length 100, py311) are configured
 **only in the root `pyproject.toml`** — which fixes pytest's rootdir at the repo root, so always
 invoke it from there. `ruff` lives in the root `dev` group; `pytest` is repeated in every member's
 `dev` group so `--package X` still yields a runnable environment.
+
+**Run `scripts/check.sh --ci` before handing work over, and never read a green local `pytest` as a
+green CI.** CI installs *less* than a development machine: `offline` and `pgvector` sync
+`--all-packages` with no extras, while the local `.venv` carries `scraping`, `embeddings` and
+`mcp`. Anything gated on an extra therefore passes here and fails there — a `conftest.py` calling
+`pytest.importorskip` at module level took down both of those jobs in exactly that way, while the
+one job installing the extra stayed green. `--ci` rehearses all five jobs in scratch environments
+via `UV_PROJECT_ENVIRONMENT`, leaving `.venv` and its 2.27 GB of torch alone; the same script with
+no argument is the fast lint/format/test pass.
 
 **One workflow file, five jobs** — `ci.yml`: `offline` (all members, no network or database),
 `scraper` (`--package themis-scraper --extra scraping`), `pgvector` (a real pgvector service plus
