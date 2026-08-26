@@ -32,7 +32,7 @@ services:
     build:
       context: .
       dockerfile: docker/zora/Dockerfile
-    entrypoint: ["thesis-matchmaker", "init-db"]
+    entrypoint: ["themis-init-db"]
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     depends_on:

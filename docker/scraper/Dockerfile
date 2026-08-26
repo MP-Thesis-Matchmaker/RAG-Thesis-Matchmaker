@@ -28,12 +28,18 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock README.md ./
-COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
+# TODO(workspace-split): these COPY lines and the --package flag were updated
+# mechanically when the distribution became a uv workspace. A proper per-member
+# build context, and a shared builder stage so five images do not each resolve the
+# same lock, are the follow-up -- along with the k8s manifests.
+COPY pyproject.toml uv.lock ./
+COPY libs/shared/ ./libs/shared/
+COPY projects/scraper/ ./projects/scraper/
 # --extra scraping is the whole point of this image; --extra render is what lets it
 # read the three JS-only sources (see the header). --no-default-groups still drops
 # the dev group, so no pytest and no ruff.
-RUN uv sync --locked --no-default-groups --no-editable --extra scraping --extra render
+RUN uv sync --locked --no-default-groups --no-editable \
+    --package themis-scraper --extra scraping --extra render
 
 # The browser is baked into the image, not fetched at runtime -- a CronJob must not
 # download 100 MB from Microsoft's CDN on every scheduled run, and the cluster may
@@ -53,7 +59,7 @@ RUN playwright install --with-deps --only-shell chromium
 
 # The scraper's data tree, and it has to be COPYied rather than left to a mount:
 # `uv sync --no-editable` builds the project into a wheel, so nothing outside
-# src/thesis_matchmaker/ survives on its own. registry/ names the 103 sources and
+# projects/scraper/ survives on its own. registry/ names the 103 sources and
 # specs/ holds the per-source spec.yaml that spec_engine reads AT RUNTIME -- without
 # them the image starts and then finds nothing to scrape.
 #
@@ -78,5 +84,5 @@ RUN mkdir -p data/scraper/cache data/scraper/var data/scraper/output
 # half and is a separate invocation on purpose -- it is the one that talks to
 # uzh.ch, and it is polite (sequential, delayed, honestly identified), so it should
 # never be an accident of running the image with no arguments.
-ENTRYPOINT ["python", "-m", "thesis_matchmaker.scraper.main"]
+ENTRYPOINT ["python", "-m", "themis_scraper.main"]
 CMD ["run", "--resume"]

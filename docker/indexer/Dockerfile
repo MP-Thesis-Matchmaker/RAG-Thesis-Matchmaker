@@ -24,14 +24,20 @@ WORKDIR /app
 # --no-editable builds the project into a wheel instead of linking /app/src,
 # which is why schema.sql has to be declared as package data to survive the
 # trip, and why the runtime stage below needs nothing but the venv.
-COPY pyproject.toml uv.lock README.md ./
-COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
+# TODO(workspace-split): these COPY lines and the --package flag were updated
+# mechanically when the distribution became a uv workspace. A proper per-member
+# build context, and a shared builder stage so five images do not each resolve the
+# same lock, are the follow-up -- along with the k8s manifests.
+COPY pyproject.toml uv.lock ./
+COPY libs/shared/ ./libs/shared/
+COPY projects/matcher/ ./projects/matcher/
 # --extra embeddings is the whole point of this image: SentenceTransformerEmbedder
 # instead of HashEmbedder. --no-default-groups still drops the dev group, so no
 # pytest and no ruff. The lock resolves a CPU-only torch on linux (see the
 # [tool.uv.sources] comment in pyproject.toml); nothing here asks for that, it is
 # a property of uv.lock, which is exactly where such a decision belongs.
-RUN uv sync --locked --no-default-groups --no-editable --extra embeddings
+RUN uv sync --locked --no-default-groups --no-editable \
+    --package themis-matcher --extra embeddings
 
 FROM python:3.12-slim AS runtime
 
@@ -67,5 +73,5 @@ USER 10001
 # --source db is what a deployed indexer does: read the harvested publication
 # table, not the 50 checked-in samples. Override the whole entrypoint (compose
 # and the chart's shellCommand both can) to index a directory instead.
-ENTRYPOINT ["thesis-matchmaker", "index"]
+ENTRYPOINT ["themis-matcher", "index"]
 CMD ["--source", "db"]

@@ -19,11 +19,16 @@ WORKDIR /app
 # the source are also needed because --no-editable builds the project into a
 # wheel rather than linking /app/src -- which is why schema.sql has to be
 # declared as package data to survive the trip.
-COPY pyproject.toml uv.lock README.md ./
-COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
+# TODO(workspace-split): these COPY lines and the --package flag were updated
+# mechanically when the distribution became a uv workspace. A proper per-member
+# build context, and a shared builder stage so five images do not each resolve the
+# same lock, are the follow-up -- along with the k8s manifests.
+COPY pyproject.toml uv.lock ./
+COPY libs/shared/ ./libs/shared/
+COPY projects/zora/ ./projects/zora/
 COPY scripts/ ./scripts/
 # --no-default-groups drops the dev group: no pytest, no ruff in a batch image.
-RUN uv sync --locked --no-default-groups --no-editable
+RUN uv sync --locked --no-default-groups --no-editable --package themis-zora
 
 # data/ is expected to be bind-mounted at runtime, but it is now ONLY the
 # raw-response cache (data/raw/). Harvest output and the incremental watermark
@@ -57,5 +62,5 @@ RUN mkdir -p data/raw
 #
 # Default: one-shot incremental harvest. A scheduled run is this same invocation
 # with a --mode flag, issued by a Kubernetes CronJob — see k8s/.
-ENTRYPOINT ["python", "-m", "thesis_matchmaker.zora.harvest"]
+ENTRYPOINT ["python", "-m", "themis_zora.harvest"]
 CMD ["--mode", "incremental"]

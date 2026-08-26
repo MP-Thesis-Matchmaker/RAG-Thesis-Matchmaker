@@ -19,9 +19,16 @@ ENV UV_NO_CACHE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock README.md ./
-COPY src/thesis_matchmaker/ ./src/thesis_matchmaker/
+# TODO(workspace-split): these COPY lines and the --package flag were updated
+# mechanically when the distribution became a uv workspace. A proper per-member
+# build context, and a shared builder stage so five images do not each resolve the
+# same lock, are the follow-up -- along with the k8s manifests.
+COPY pyproject.toml uv.lock ./
+COPY libs/shared/ ./libs/shared/
+COPY projects/matcher/ ./projects/matcher/
+COPY projects/gateway/ ./projects/gateway/
 RUN uv sync --locked --no-default-groups --no-editable \
+    --package themis-gateway \
     --extra embeddings \
     --extra mcp
 
@@ -58,4 +65,4 @@ USER 10001
 # MCP inspector and is not how this is deployed.
 EXPOSE 8000
 
-ENTRYPOINT ["thesis-matchmaker-mcp"]
+ENTRYPOINT ["themis-gateway-mcp"]

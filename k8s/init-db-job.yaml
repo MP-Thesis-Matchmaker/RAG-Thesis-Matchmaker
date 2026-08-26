@@ -1,5 +1,5 @@
 # Applies the database schema. Runs once before a rollout; safe to re-run, since
-# thesis-matchmaker init-db compares src/thesis_matchmaker/schema.sql's fingerprint
+# themis-init-db compares libs/shared/src/themis_shared/schema.sql's fingerprint
 # against the schema_version row and does nothing when they match.
 #
 # It refuses rather than migrating when they differ -- there is no migration path
@@ -34,7 +34,7 @@ spec:
           image: TODO(ci)/TODO(ci)/thesis-matchmaker:TODO(ci)
           # Overrides the image's harvester entrypoint: this is the same
           # distribution applying its own schema, not a separate role.
-          command: ["thesis-matchmaker", "init-db"]
+          command: ["themis-init-db"]
           env:
             - name: DATABASE_URL
               valueFrom:
