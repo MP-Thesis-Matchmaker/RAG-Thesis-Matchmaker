@@ -47,11 +47,13 @@ Three caveats that shape everything on this page:
   names, publication titles and abstracts all go into the synthesis prompt. Against a hosted API
   that is UZH personal data leaving the university. Worth knowing which endpoint is configured
   before running these; the pipeline does not warn.
-- **A supervisor is never evidenced by both a paper and a posting.** Retrieval groups people by
-  exact name, and the two sources spell them differently — `"Davide Scaramuzza"` on a posting
-  against `"Scaramuzza, D"` on a paper. Zero of 403 supervisor names match a publication author
-  across the whole corpus, so every candidate below is either publication-backed or posting-backed,
-  never both. See [`data/samples/README.md`](../data/samples/README.md).
+- **A supervisor is essentially never evidenced by both a paper and a posting.** Retrieval groups
+  people by exact name, and the two sources spell them differently — `"Davide Scaramuzza"` on a
+  posting against `"Scaramuzza, D"` on a paper. Of 403 supervisor names in the corpus, **zero**
+  match any of the 2,942 `uzh_authors`; three match a plain author entry, and only through the
+  unaffiliated fallback. So every candidate below is either publication-backed or posting-backed.
+  This is the first thing the unbuilt `ranking` package has to fix — see
+  [`retrieval/README.md`](../projects/matcher/src/themis_matcher/retrieval/README.md).
 
 ## Example 1 — offline, no model, no key
 

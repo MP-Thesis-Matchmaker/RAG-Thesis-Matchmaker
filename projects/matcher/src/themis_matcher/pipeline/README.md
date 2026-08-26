@@ -81,6 +81,13 @@ the fake retriever.
   `VectorRetriever._group_by_person` — see
   [`../retrieval/README.md`](../retrieval/README.md). When multi-signal ranking is
   built, this is where it slots in, between retrieve and synthesise.
+
+  One thing to know before designing that step: candidates arrive keyed on an exact
+  name string, and publication names and posting names never collide (403 supervisor
+  names, 0 matching `uzh_authors`, measured 2026-08-26). So a `SupervisorMatch` that
+  reaches here carries publications or postings, effectively never both — a score
+  weighing one against the other has nothing to weigh until the identity problem is
+  solved upstream.
 - **The index-exists check is duplicated** in `cli.py` and
   `themis_gateway/service.py`. It arguably belongs here, so that no future adapter can
   forget it and silently serve `FakeRetriever` output.

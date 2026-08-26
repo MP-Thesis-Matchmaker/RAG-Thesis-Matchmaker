@@ -48,13 +48,16 @@ The postings also fix what this file used to confess about the fixtures: they we
 supervisor and one degree level, where a quarter of real topics name nobody and half take two.
 Here 6 of 20 name nobody and 6 take two.
 
-## Known limitation: publications and postings never meet
+## Known limitation: publications and postings effectively never meet
 
 Retrieval groups by person on an exact name match, and the two sources spell people differently —
 `"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured over the whole
-corpus: 403 distinct supervisor names, **zero** exact matches against publication authors. So
-every result is either publication-backed or posting-backed, never both, and a supervisor with an
-open position is never evidenced by their own papers.
+corpus: 403 distinct supervisor names, **zero** of them matching any of the 2,942 `uzh_authors`.
+Three match a plain `authors` entry, and only through the unaffiliated-author fallback — so a merge
+happens exactly where the UZH signal is missing, in 3 of 403 cases. In practice, then, every result
+is either publication-backed or posting-backed, and a supervisor with an open position is not
+evidenced by their own papers.
 
 No choice of sample records can hide this and none should try. The fix is name normalisation or an
-identity join through `person`, which belongs with the unbuilt `ranking` package.
+identity join through `person`, which belongs with the unbuilt `ranking` package — see
+[`retrieval/README.md`](../../projects/matcher/src/themis_matcher/retrieval/README.md).

@@ -40,6 +40,19 @@ so both ends stay typed without either importing the other.
 Not built: a **`ranking` package.** Ranking is one line inside
 `themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
 
+**The first thing that package has to fix is the person key, not the score.**
+`_group_by_person` groups on an exact name string, and the two sources spell people
+differently — `"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
+2026-08-26: **403 distinct supervisor names, 0 matching any of the 2,942 `uzh_authors`**; 3 match a
+plain `authors` entry, and only through the unaffiliated fallback, so a merge happens exactly where
+the UZH signal is absent. So `publication_count` and `posting_count` are effectively never both
+non-zero, a supervisor with an open position is never evidenced by their own papers, and any
+multi-signal score combining the two would be scoring a join that does not happen — while looking
+correct in review. The fix is name normalisation or an identity join through the `person` table
+(which already carries the CRIS UUIDs `uzh_authors` derives from); postings carry no identifier at
+all, so that side is the harder half. Detail:
+[`retrieval/README.md`](projects/matcher/src/themis_matcher/retrieval/README.md).
+
 Two of the scraper's three record kinds are stored and unread: `researcher_profile` (569 rows) and
 `application_process` (45) have tables but no consumer. Only `posting` reaches the index.
 

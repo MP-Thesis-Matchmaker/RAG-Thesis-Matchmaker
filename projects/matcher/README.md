@@ -106,3 +106,13 @@ Ranking is one line inside `retrieval/vector.py` — `score = max(hit.score)` in
 `_group_by_person`, plus a two-level sort for `uzh_first`. The separate `ranking`
 package the architecture calls for does not exist yet. The slot is between
 retrieve and synthesise.
+
+**What it has to fix first is the person key, not the score.** `_group_by_person`
+groups on an exact name string, and the two sources spell people differently:
+`"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
+2026-08-26 — 403 distinct supervisor names, **0** matching any of the 2,942
+`uzh_authors`. So `publication_count` and `posting_count` are effectively never
+both non-zero, and a multi-signal score combining "publishes here" with "has an
+open position" would be scoring a join that never happens. Full detail and the
+proposed fix in
+[`retrieval/README.md`](src/themis_matcher/retrieval/README.md#known-gaps).
