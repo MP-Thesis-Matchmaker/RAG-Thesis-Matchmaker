@@ -35,7 +35,7 @@ from pathlib import Path
 from pydantic import AliasChoices, Field
 from pydantic_settings import SettingsConfigDict
 
-from themis_shared.config import Settings
+from themis_shared.config import Settings, warn_on_unprefixed_env
 
 __all__ = ["ScraperSettings", "get_settings"]
 
@@ -217,4 +217,8 @@ class ScraperSettings(Settings):
 
 def get_settings() -> ScraperSettings:
     """Return the scraper's settings, read fresh from the environment."""
+    # No scraper variable was renamed, so in practice this only fires when a
+    # matcher or gateway name is set. Wired up anyway so the four members behave
+    # the same and nobody has to remember which one is the exception.
+    warn_on_unprefixed_env(ScraperSettings)
     return ScraperSettings()

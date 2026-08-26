@@ -33,7 +33,7 @@ from typing import ClassVar
 from pydantic import field_validator
 from pydantic_settings import SettingsConfigDict
 
-from themis_shared.config import Settings
+from themis_shared.config import Settings, warn_on_unprefixed_env
 
 __all__ = ["ZoraSettings", "get_settings"]
 
@@ -165,4 +165,7 @@ class ZoraSettings(Settings):
 
 def get_settings() -> ZoraSettings:
     """Return the harvester's settings, read fresh from the environment."""
+    # DSPACE_API_ENDPOINT has no field behind it any more -- the API origin is a
+    # ClassVar now -- so it has to be named explicitly to be noticed at all.
+    warn_on_unprefixed_env(ZoraSettings, also=["DSPACE_API_ENDPOINT"])
     return ZoraSettings()

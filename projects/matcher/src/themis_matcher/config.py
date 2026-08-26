@@ -19,7 +19,7 @@ from typing import Literal
 
 from pydantic_settings import SettingsConfigDict
 
-from themis_shared.config import Settings
+from themis_shared.config import Settings, warn_on_unprefixed_env
 
 __all__ = ["MatcherSettings", "get_settings"]
 
@@ -178,4 +178,5 @@ class MatcherSettings(Settings):
 
 def get_settings() -> MatcherSettings:
     """Return the matcher's settings, read fresh from the environment."""
+    warn_on_unprefixed_env(MatcherSettings)
     return MatcherSettings()

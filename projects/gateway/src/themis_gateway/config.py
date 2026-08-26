@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from pydantic_settings import SettingsConfigDict
 
-from themis_shared.config import Settings
+from themis_shared.config import Settings, warn_on_unprefixed_env
 
 __all__ = ["GatewaySettings", "get_settings"]
 
@@ -44,4 +44,5 @@ class GatewaySettings(Settings):
 
 def get_settings() -> GatewaySettings:
     """Return the gateway's settings, read fresh from the environment."""
+    warn_on_unprefixed_env(GatewaySettings)
     return GatewaySettings()
