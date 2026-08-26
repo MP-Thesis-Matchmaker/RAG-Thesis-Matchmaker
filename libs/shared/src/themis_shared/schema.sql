@@ -78,6 +78,49 @@ CREATE TABLE index_manifest (
     built_at        timestamptz NOT NULL DEFAULT now()
 );
 
+-- One row per index run, written by the matcher's HTTP trigger endpoints.
+--
+-- index_manifest describes the index that is in place; this describes the
+-- attempts to build it. The split matters because a manifest row only appears
+-- once a run has finished, so a run that dies mid-way is invisible in it while
+-- having already written documents.
+--
+-- state is 'running', 'succeeded' or 'failed'.
+CREATE TABLE index_run (
+    id            bigserial PRIMARY KEY,
+    -- 'publication', 'thesis_posting', or 'all' for a run covering both.
+    kind          text        NOT NULL,
+    state         text        NOT NULL CHECK (state IN ('running', 'succeeded', 'failed')),
+    -- SourceReader.label: 'postgres', or the directory a JSONL run read.
+    source        text        NOT NULL,
+    embedded      int         NOT NULL DEFAULT 0,
+    skipped       int         NOT NULL DEFAULT 0,
+    deleted       int         NOT NULL DEFAULT 0,
+    truncated     int         NOT NULL DEFAULT 0,
+    invalid_lines int         NOT NULL DEFAULT 0,
+    error         text,
+    started_at    timestamptz NOT NULL DEFAULT now(),
+    -- Bumped at every committed chunk. A 'running' row whose heartbeat has gone
+    -- stale is a run whose process died; without it one crash would hold the
+    -- single-active lock below forever.
+    heartbeat_at  timestamptz NOT NULL DEFAULT now(),
+    finished_at   timestamptz
+);
+
+-- The lock. Two concurrent index runs interleave their upserts and their orphan
+-- sweeps, so the second must be refused rather than queued -- and refused by the
+-- database, since the API may one day run more than one replica and a Python
+-- lock would not span them. A partial unique index on a constant expression
+-- permits exactly one row in the 'running' state; the second INSERT raises
+-- unique_violation, which the API answers with 409.
+--
+-- Preferred over pg_advisory_lock because a session-scoped advisory lock would
+-- have to be held for the life of the run, occupying one of only five pooled
+-- connections for what can be hours.
+CREATE UNIQUE INDEX index_run_single_active ON index_run ((true)) WHERE state = 'running';
+
+CREATE INDEX index_run_started_at ON index_run (started_at DESC);
+
 
 -- ---------------------------------------------------------------------------
 -- Ingestion: harvested ZORA publications, and the incremental watermark.
