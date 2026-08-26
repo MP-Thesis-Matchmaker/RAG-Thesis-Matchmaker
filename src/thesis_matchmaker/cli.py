@@ -15,7 +15,7 @@ import contextlib
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
-from thesis_matchmaker import __version__, db, schema
+from thesis_matchmaker import __version__, db, dbcli
 from thesis_matchmaker.config import Settings, get_settings
 from thesis_matchmaker.contracts import SupervisorMatch
 from thesis_matchmaker.indexing import (
@@ -52,16 +52,7 @@ def _index_exists(settings: Settings) -> bool:
 
 
 def _run_init_db(settings: Settings, args: argparse.Namespace) -> None:
-    try:
-        result = schema.apply(settings.database_url, reset=args.reset)
-    except schema.SchemaChangedError as exc:
-        raise SystemExit(f"error: {exc}") from exc
-    for name in result.dropped:
-        print(f"dropped table {name}")
-    if result.applied:
-        print(f"schema applied ({result.fingerprint})")
-    else:
-        print(f"schema already up to date ({result.fingerprint})")
+    dbcli.run(settings, reset=args.reset)
 
 
 def _run_index(settings: Settings, args: argparse.Namespace) -> None:
@@ -214,12 +205,7 @@ def main(argv: list[str] | None = None) -> None:
         "init-db",
         help="create the database schema (idempotent; safe to re-run)",
     )
-    init_db_parser.add_argument(
-        "--reset",
-        action="store_true",
-        help="DROP every table first, then recreate. Destroys all data. Needed after "
-        "editing schema.sql, until the first harvest worth keeping exists.",
-    )
+    dbcli.add_arguments(init_db_parser)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")

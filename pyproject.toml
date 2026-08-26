@@ -131,6 +131,9 @@ torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
 [project.scripts]
 thesis-matchmaker = "thesis_matchmaker.cli:main"
+# Same work as `thesis-matchmaker init-db`, reachable without the matcher's
+# dependency closure. The cluster's init-db Job uses this one.
+thesis-matchmaker-init-db = "thesis_matchmaker.dbcli:main"
 thesis-matchmaker-mcp = "thesis_matchmaker.adapters.mcp_server:main"
 
 [tool.setuptools.packages.find]
