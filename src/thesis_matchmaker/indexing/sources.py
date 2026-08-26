@@ -46,17 +46,30 @@ THESES_FILE = "theses.jsonl"
 # eligibility decision (CRIS-vs-ORCID authorities) a configuration change rather
 # than another re-index.
 
-# Postings the scraper wrote. `status` IS filtered here, and the contrast with the
-# publications above is the point: availability is not eligibility. A topic already
-# assigned to a student is not a recommendation under any query, from any user, under
-# any setting -- there is no configuration in which returning it would be correct, so
-# it stays a query rather than a knob. NULL status is kept: 12 of 713 scraped topics
-# say nothing about availability, and "the page did not say" is not "taken".
+# Postings the scraper wrote. No status filter here either, and the reversal is worth
+# recording. This query used to read
+# `WHERE status IS NULL OR status NOT IN ('assigned', 'private')`, defended as
+# "availability is not eligibility": a topic already assigned to a student is not a
+# recommendation under any query, from any user, under any setting, so it stayed a
+# query rather than a knob.
+#
+# That claim about correctness still holds -- what it got wrong was where to enforce
+# it. Enforced here it costs a re-index to change, which is the same trap the
+# publications filter above fell into: turning `retrieval_require_available_posting`
+# off would return nothing extra until someone re-embedded. The input is also less
+# stable than the vector it gates -- a topic's status changes on the source page
+# between scrapes while its text usually does not, so the cheap-to-recompute half of
+# the record was deciding the fate of the expensive half.
+#
+# And the cost of taking no position is trivial here: 695 postings against 214,756
+# publications. The rule now lives as `is_available` in posting metadata (see
+# indexing/documents.py) and is applied by retrieval, on by default. NULL still counts
+# as available: 12 of 713 scraped topics say nothing about availability, and "the page
+# did not say" is not "taken".
 _SELECT_POSTINGS = """
 SELECT id, title, description, supervisors, faculty, department, degree_levels,
        status, keywords, language, url, listed_on, source_id, scraped_at
 FROM posting
-WHERE status IS NULL OR status NOT IN ('assigned', 'private')
 ORDER BY id
 """
 
@@ -87,7 +100,7 @@ class SourceReader(Protocol):
         ...
 
     def postings(self) -> Iterator[ThesisPosting]:
-        """Every open thesis posting."""
+        """Every thesis posting, whether or not it is still available."""
         ...
 
 
@@ -133,11 +146,11 @@ class JsonlSourceReader:
 
 
 class PostgresSourceReader:
-    """Reads harvested publications from the `publication` table.
+    """Reads harvested publications and scraped postings from Postgres.
 
-    Yields only publications with at least one registered UZH author -- see
-    `_SELECT_PUBLICATIONS`. No parse step and so no invalid records: rows were
-    validated against `ZoraPublication` on the way in.
+    Yields every row of both tables: neither query filters, for the reasons the two
+    comment blocks above give. No parse step and so no invalid records -- rows were
+    validated against `ZoraPublication` / `ThesisPosting` on the way in.
     """
 
     def __init__(self, dsn: str) -> None:

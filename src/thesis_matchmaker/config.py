@@ -120,6 +120,21 @@ class Settings(BaseSettings):
     # predicate, which needs a schema change.
     retrieval_require_uzh_author: bool = False
 
+    # Whether a thesis posting has to still be available to be retrievable. False means
+    # assigned and private topics compete on similarity like any other posting.
+    #
+    # On by default, and for a firmer reason than the knob above: a topic already
+    # assigned to a student is not a recommendation under any query, from any user.
+    # Note that no ranking strategy softens this one -- there is no "demote the taken
+    # ones" mode, so turning it off puts them in the results outright.
+    #
+    # It is a setting rather than a WHERE clause in indexing/sources.py because the
+    # index no longer takes a position on availability either: all 695 postings are
+    # embedded, `is_available` rides along in their metadata, and flipping this needs
+    # no re-embed. The 17 unavailable ones cost nothing to carry next to 214,756
+    # publications, which is what makes the guarantee affordable.
+    retrieval_require_available_posting: bool = True
+
     # How candidates are ordered once retrieval has grouped hits per person.
     #
     #   uzh_first -- people credited by at least one UZH-authored publication (or by

@@ -20,6 +20,7 @@ def build_retriever(settings: Settings) -> Retriever:
         embedder=build_embedder(settings),
         store=build_store(settings),
         require_uzh_author=settings.retrieval_require_uzh_author,
+        require_available_posting=settings.retrieval_require_available_posting,
         ranking_strategy=settings.retrieval_ranking_strategy,
     )
 

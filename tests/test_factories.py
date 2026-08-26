@@ -66,6 +66,9 @@ def test_affiliation_settings_default_to_permissive_but_demoted(tmp_path: Path) 
     settings = _settings(tmp_path)
     assert settings.retrieval_require_uzh_author is False
     assert settings.retrieval_ranking_strategy == "uzh_first"
+    # Availability is the one eligibility rule that stays on: no strategy demotes a
+    # topic that is already taken, so leaving it off would put taken topics in results.
+    assert settings.retrieval_require_available_posting is True
 
 
 def test_affiliation_settings_reach_the_retriever(tmp_path: Path) -> None:
@@ -73,11 +76,13 @@ def test_affiliation_settings_reach_the_retriever(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     settings.retrieval_require_uzh_author = True
     settings.retrieval_ranking_strategy = "score"
+    settings.retrieval_require_available_posting = False
 
     retriever = build_retriever(settings)
 
     assert retriever.require_uzh_author is True
     assert retriever.ranking_strategy == "score"
+    assert retriever.require_available_posting is False
 
 
 def test_an_unknown_ranking_strategy_is_refused_at_load(tmp_path: Path) -> None:
