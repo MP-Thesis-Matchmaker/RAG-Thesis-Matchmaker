@@ -1,9 +1,8 @@
 import pytest
 
+from fake_dso import FakeDSO
 from thesis_matchmaker.zora import config
 from thesis_matchmaker.zora.normalize import normalize_item, normalize_org_unit, normalize_person
-
-from .fake_dso import FakeDSO
 
 
 def test_normalize_single_author_with_orcid():

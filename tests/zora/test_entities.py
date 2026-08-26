@@ -10,9 +10,8 @@ import json
 
 import pytest
 
+from fake_dso import FakeDSO
 from thesis_matchmaker.zora import config, entities, store
-
-from .fake_dso import FakeDSO
 
 
 @pytest.fixture()

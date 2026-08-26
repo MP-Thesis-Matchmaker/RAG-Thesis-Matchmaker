@@ -13,11 +13,10 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+import replay_util as R
 from thesis_matchmaker.scraper import dataset as ST
 from thesis_matchmaker.scraper import title_check as T
 from thesis_matchmaker.scraper import validate as V
-
-from . import replay_util as R
 
 # The real ifi--5 block that started this: a posting date in the h3, the actual
 # title in a bold paragraph below it.

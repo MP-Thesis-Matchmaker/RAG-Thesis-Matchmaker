@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import unittest
 
-from . import replay_util as R
+import replay_util as R
 
 
 class ContractReplayTest(unittest.TestCase):

@@ -144,7 +144,10 @@ thesis_matchmaker = ["schema.sql"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+# tests/zora and tests/scraper are listed for the same reason pytest's pythonpath
+# lists them: their support modules (fake_dso, replay_util) are imported by bare
+# name, and without this isort files them under third-party next to pytest.
+src = ["src", "tests", "tests/zora", "tests/scraper"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -152,3 +155,10 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# tests/zora and tests/scraper hold support modules (fake_dso, replay_util) that
+# their test files import by bare name. Without __init__.py, pytest's prepend
+# import mode inserts each test file's own directory on sys.path anyway, so this
+# is belt-and-braces -- it removes any dependence on collection order, and it is
+# what keeps the imports resolving once these directories move into their own
+# workspace members.
+pythonpath = ["tests/zora", "tests/scraper"]
