@@ -57,6 +57,30 @@ We want to keep our codebase clean, collaborative, and professional.
   `[project.optional-dependencies]` — an extra is published metadata that anyone installing this
   package can request, and our test runner is not that
 
+### IDE setup (PyCharm)
+
+PyCharm reports `Unresolved reference 'themis_shared'` on every cross-member import — for example
+`from themis_shared.config import get_settings` in `projects/gateway/`. **The code is fine**; it
+imports and runs. Only the IDE's analysis is wrong.
+
+Why: PyCharm generates one module per workspace member from the `pyproject.toml` files
+(`usePyprojectToml=true`), and each module gets its own directory as its only source root. It does
+not read `themis-shared = { workspace = true }` as a module dependency, so gateway's module never
+learns where `themis_shared` lives.
+
+Fix it once, on the interpreter rather than the modules — **quit PyCharm first**, or it overwrites
+the change on exit:
+
+1. Settings → Project → Python Interpreter → ⚙ → **Show All…**
+2. Select `uv (backend-core)`, then the **Show paths for the selected interpreter** icon.
+3. `+` each of the five source roots: `libs/shared/src`, `projects/matcher/src`,
+   `projects/gateway/src`, `projects/zora/src`, `projects/scraper/src`.
+
+Do it here rather than as module dependencies for two reasons: PyCharm regenerates the `.iml`
+files from the manifests, so per-module entries get wiped, and `tests/integration/` belongs to no
+module at all (the workspace root has no `[project]` table), so only an interpreter-level fix
+reaches it.
+
 ---
 
 ## Code Quality
