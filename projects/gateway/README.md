@@ -70,8 +70,8 @@ CLI, a demo, a REST client. Same retrieval, different last step.
 
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| `mcp_host` | `MCP_HOST` | `127.0.0.1` | Bind address for the HTTP transport. |
-| `mcp_port` | `MCP_PORT` | `8000` | Port; the server is served at `http://<host>:<port>/mcp`. |
+| `mcp_host` | `GATEWAY_MCP_HOST` | `127.0.0.1` | Bind address for the HTTP transport. |
+| `mcp_port` | `GATEWAY_MCP_PORT` | `8000` | Port; the server is served at `http://<host>:<port>/mcp`. |
 | `matcher_base_url` | `MATCHER_BASE_URL` | unset | Where the matcher's API is. **Unset means no matcher**: both functions then raise `MatcherUnavailableError` rather than guessing at localhost. |
 
 That is the whole list, and the short list is the point: this process holds no

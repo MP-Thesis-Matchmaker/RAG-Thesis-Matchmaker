@@ -22,9 +22,4 @@ def test_the_shared_floor_holds_only_what_more_than_one_member_reads():
     every member inherits, so adding one should be a deliberate act that fails
     this test first.
     """
-    assert set(Settings.model_fields) == {
-        "database_url",
-        "matcher_base_url",
-        "mcp_host",
-        "mcp_port",
-    }
+    assert set(Settings.model_fields) == {"database_url", "matcher_base_url"}

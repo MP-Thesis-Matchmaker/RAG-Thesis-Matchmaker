@@ -40,10 +40,11 @@ RUN uv sync --locked --no-default-groups --no-editable \
 
 FROM python:3.12-slim AS runtime
 
-# MCP_HOST must be 0.0.0.0, not config.py's 127.0.0.1 default: a server bound to
-# loopback inside a container is unreachable from its own Service. This is the
-# one setting that is a property of running in a container rather than a
-# deployment choice, so it belongs in the image and not in a ConfigMap.
+# GATEWAY_MCP_HOST must be 0.0.0.0, not themis_gateway/config.py's 127.0.0.1
+# default: a server bound to loopback inside a container is unreachable from its
+# own Service. This is the one setting that is a property of running in a
+# container rather than a deployment choice, so it belongs in the image and not
+# in a ConfigMap.
 #
 # No HF_HOME any more: this image holds no model and reads no weights cache. The
 # RWX requirement on the storage class was driven by this pod sharing that cache
@@ -56,8 +57,8 @@ FROM python:3.12-slim AS runtime
 # connection to localhost.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    MCP_HOST=0.0.0.0 \
-    MCP_PORT=8000 \
+    GATEWAY_MCP_HOST=0.0.0.0 \
+    GATEWAY_MCP_PORT=8000 \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app

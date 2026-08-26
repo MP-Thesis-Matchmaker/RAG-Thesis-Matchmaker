@@ -67,12 +67,6 @@ class Settings(BaseSettings):
     # harvest that otherwise succeeded.
     matcher_base_url: str | None = Field(default=None, validation_alias="MATCHER_BASE_URL")
 
-    # MCP server. This is deployed as a standalone service that the AI Buddy
-    # agent points at, so the tools are served over HTTP at
-    # http://<mcp_host>:<mcp_port>/mcp. Use 0.0.0.0 as the host in a container.
-    mcp_host: str = "127.0.0.1"
-    mcp_port: int = 8000
-
 
 def get_settings() -> Settings:
     """Return settings, read fresh from the environment."""

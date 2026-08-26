@@ -118,8 +118,9 @@ services:
   # only forwards to MATCHER_BASE_URL. That is also what removed its share in the
   # RWX requirement on the cluster storage class.
   #
-  # The image already sets MCP_HOST=0.0.0.0; binding to config.py's 127.0.0.1
-  # default would make the port unreachable from outside the container.
+  # The image already sets GATEWAY_MCP_HOST=0.0.0.0; binding to
+  # themis_gateway/config.py's 127.0.0.1 default would make the port unreachable
+  # from outside the container.
   serving:
     build:
       context: .

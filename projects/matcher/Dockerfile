@@ -68,7 +68,7 @@ FROM python:3.12-slim AS runtime
 #
 # MATCHER_API_HOST must be 0.0.0.0, not themis_matcher/config.py's 127.0.0.1
 # default: a server bound to loopback inside a container is unreachable from its
-# own Service. Same reasoning as MCP_HOST in projects/gateway/Dockerfile -- a
+# own Service. Same reasoning as GATEWAY_MCP_HOST in projects/gateway/Dockerfile -- a
 # property of running in a container rather than a deployment choice, so it
 # belongs in the image.
 ENV PYTHONUNBUFFERED=1 \

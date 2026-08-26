@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import httpx
 
-from themis_shared.config import get_settings
+from themis_gateway.config import get_settings
 from themis_shared.contracts import MatchRequest
 
 # Long enough for a cold query -- the matcher may still be loading the embedding
