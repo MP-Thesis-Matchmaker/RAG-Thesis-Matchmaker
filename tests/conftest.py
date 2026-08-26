@@ -22,7 +22,7 @@ import pytest
 from thesis_matchmaker import db, llm, schema
 from thesis_matchmaker.indexing.store import PgVectorStore
 
-_ALLOW_DESTRUCTIVE = "THESIS_MATCHMAKER_ALLOW_DESTRUCTIVE_TESTS"
+_ALLOW_DESTRUCTIVE = "THEMIS_ALLOW_DESTRUCTIVE_TESTS"
 
 
 @pytest.fixture(scope="session")
