@@ -10,7 +10,7 @@ import another, so anything more than one of them needs lives here.
 | `config.py` | `Settings`, loaded from the environment and an optional `.env` |
 | `db.py` | Postgres connection pooling, and the pgvector literal helper |
 | `schema.py` | Applies `schema.sql` idempotently, fingerprint-guarded |
-| `schema.sql` | All ten tables, in one file with one fingerprint |
+| `schema.sql` | All nine tables, in one file with one fingerprint |
 | `initdb.py` | The `themis-init-db` command |
 
 ## Install and run

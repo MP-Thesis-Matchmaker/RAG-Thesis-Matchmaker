@@ -14,9 +14,17 @@
 
 What is here describes the **ZORA harvester** and the **schema step**.
 
+> [!NOTE]
+> These files still carry the pre-split names — `app.kubernetes.io/name: thesis-matchmaker`, the
+> `thesis-matchmaker-db` Secret, and a single `thesis-matchmaker` image. That is **deliberate,
+> not an oversight**: renaming the Secret means whoever created it has to recreate it, and these
+> manifests are being replaced wholesale anyway (see below), so the identifiers get renamed once,
+> as a set, rather than twice. Note also that one image can no longer serve both roles — since
+> the workspace split, `init-db` belongs to `themis-shared` and the harvester to `themis-zora`.
+
 | Manifest | Kind | What it does |
 |---|---|---|
-| `init-db-job.yaml` | `Job` | `thesis-matchmaker init-db` — applies `schema.sql`. Run before a rollout. |
+| `init-db-job.yaml` | `Job` | `themis-init-db` — applies `schema.sql`. Run before a rollout. |
 | `zora-harvest-full-cronjob.yaml` | `CronJob` | `--mode full`, Mondays 01:00 UTC. Authoritative snapshot; prunes withdrawn items. |
 | `zora-harvest-incremental-cronjob.yaml` | `CronJob` | `--mode incremental`, the other six days at 01:00 UTC. Upserts only, deletes nothing. |
 
@@ -34,7 +42,7 @@ extras they need, so a manifest would have referenced an image whose entrypoint
 could not import its own dependencies:
 
 ```console
-$ docker run --rm --entrypoint thesis-matchmaker-mcp <harvester-image> --stdio
+$ docker run --rm --entrypoint themis-gateway-mcp <harvester-image> --stdio
     from mcp.server.fastmcp import FastMCP
 ModuleNotFoundError: No module named 'mcp'
 ```

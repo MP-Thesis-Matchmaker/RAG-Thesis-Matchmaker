@@ -3,7 +3,7 @@
 Turns a student's free-text description of their interests into a `ParsedQuery`:
 topics, keywords, degree level, department. This is the *Query Parser* box at the
 start of the *Retrieval + Generation* lane of
-[`docs/architecture.png`](../../../docs/architecture.png).
+[`docs/architecture.png`](../../../../../docs/architecture.png).
 
 Read-only. No I/O except the optional LLM call.
 
@@ -71,7 +71,7 @@ should know which provider is in use.
 
 ## Status
 
-**Implemented and tested.** `tests/test_parsing.py` (5 tests) covers the
+**Implemented and tested.** `projects/matcher/tests/test_parsing.py` (19 tests) covers the
 rule-based extractor and the factory's branch on `LLM_BASE_URL`.
 
 `RuleBasedExtractor` describes itself in its own docstring as a stand-in, and that

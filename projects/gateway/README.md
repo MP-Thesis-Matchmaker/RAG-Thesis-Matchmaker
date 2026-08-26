@@ -2,7 +2,7 @@
 
 The front doors. Transport-specific wrappers that expose the application-service
 functions to the outside world without containing any logic of their own. In
-[`docs/architecture.png`](../../../docs/architecture.png) these are the two orange
+[`docs/architecture.png`](../../docs/architecture.png) these are the two orange
 boxes on the left of the *Retrieval + Generation* lane — *REST API* and
 *MCP Adapter (AI Buddy)*.
 
@@ -64,13 +64,13 @@ CLI, a demo, a REST client. Same retrieval, different last step.
 | `mcp_port` | `MCP_PORT` | `8000` | Port; the server is served at `http://<host>:<port>/mcp`. |
 
 Everything else is inherited from whatever `Pipeline` builds — see
-[`../indexing/README.md`](../indexing/README.md) and
-[`../synthesis/README.md`](../synthesis/README.md).
+[`../indexing/README.md`](../../projects/matcher/src/themis_matcher/indexing/README.md) and
+[`../synthesis/README.md`](../../projects/matcher/src/themis_matcher/synthesis/README.md).
 
 ## Running it
 
 ```
-uv sync --extra mcp                       # add --extra dev too if you want the test tooling
+uv sync --package themis-gateway --extra mcp   # the root is virtual; --package is required
 uv run themis-gateway-mcp              # streamable HTTP on 127.0.0.1:8000/mcp
 uv run themis-gateway-mcp --stdio      # stdio, for the MCP inspector
 ```
@@ -88,7 +88,7 @@ logic.
 ## Status
 
 **MCP adapter implemented** (merged in PR #16) and exposed as a console script.
-`tests/test_mcp_service.py` (2 tests) covers `service.py` with an injected
+`projects/gateway/tests/test_mcp_service.py` (4 tests) covers `service.py` with an injected
 pipeline.
 
 **REST API: design-only.** The diagram shows it; no code exists yet. When it is

@@ -4,18 +4,18 @@ Harvests publication metadata from ZORA, the Zurich Open Repository and Archive,
 into the `publication` table that the rest of the system indexes, plus two
 entity mirrors: `person` (DSpace-CRIS researcher profiles) and `org_unit` (the
 UZH community tree — faculties and institutes). This is the *Data Extraction*
-lane of [`docs/architecture.png`](../../../docs/architecture.png), upper half.
+lane of [`docs/architecture.png`](../../docs/architecture.png), upper half.
 
 **This package owns all writes to source data (invariant 1).** `store.py` is the
 only writer of `publication`, `harvest_state`, `person` and `org_unit`; nothing
-in `indexing/`, `retrieval/`, `pipeline/`, or `adapters/` may write them. The
+in `themis_matcher` or `themis_gateway` may write them. The
 read side of the publication table is
-`indexing/sources.py::PostgresSourceReader`. If you need new data, it enters the
+`themis_matcher.indexing.sources.PostgresSourceReader`. If you need new data, it enters the
 system through this package.
 
 ZORA runs DSpace-CRIS and is accessed through its REST API — **not** OAI-PMH. See
 `CLAUDE.md` for the API facts confirmed with the ZORA maintainers, and
-[`docs/zora-harvester.md`](../../../docs/zora-harvester.md) for operator-facing
+[`docs/zora-harvester.md`](../../docs/zora-harvester.md) for operator-facing
 run instructions.
 
 ## Role in the pipeline
@@ -78,7 +78,7 @@ The mirrors come first because they are what a publication's author authorities
 
 **The models are not here.** `contracts.ZoraPublication`, `ZoraPerson`,
 `ZoraOrgUnit` and `AuthorAuthority` live in
-[`../contracts/`](../contracts/README.md); this package maps onto them. Until
+[`../contracts/`](../../libs/shared/src/themis_shared/contracts/README.md); this package maps onto them. Until
 2026-08-24 it kept its own parallel copies in `output_schema.py`, and they drifted
 — see that README for what broke.
 
@@ -186,8 +186,9 @@ publication dump cannot stand in for a re-harvest: it predates
 `owning_collection_uuid` and the typed `author_authority_map`, and fails validation
 against the current contract.
 
-Note this is reachable only via `python -m`; unlike `themis-matcher` and
-`themis-gateway-mcp`, the harvester has no console-script entry point.
+Reachable two ways, both installed by `themis-zora`: the console script
+`themis-zora-harvest`, or `python -m themis_zora.harvest`. The workspace split gave it a script
+of its own; before that it was `python -m` only, and this README said so.
 
 ### The schema preflight
 
@@ -244,8 +245,8 @@ items — the communities are the org structure.
 
 This package does not decide when to run. There was an in-process poll loop
 (`scheduler.py`, deleted); the cluster's CronJobs replace it, and
-[`k8s/`](../../../k8s/README.md) holds the two schedules. See
-[`docs/deployment.md`](../../../docs/deployment.md).
+[`k8s/`](../../k8s/README.md) holds the two schedules. See
+[`docs/deployment.md`](../../docs/deployment.md).
 
 What the CronJobs replaced is narrower than it looks. They took over the *when* —
 the "is a run due yet?" decision. They did not touch the *what*: `--mode
@@ -286,7 +287,7 @@ without the indexer noticing. The DSpace field names are all isolated in
   file ownership stays sane.
 - **Scheduling** — harvesting is a cluster concern, not a CI concern. The image is
   invoked as a one-shot job with `--mode incremental` / `--mode full`; see
-  [`docs/deployment.md`](../../../docs/deployment.md). Harvest output **never**
+  [`docs/deployment.md`](../../docs/deployment.md). Harvest output **never**
   goes back into git.
 - **`scripts/zora_inspect_fields.py`** — one-off live-API diagnostic. Prints every
   metadata field present on real items, checks the field names assumed in
@@ -365,17 +366,17 @@ re-implementing the rule in SQL.
 pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
 the only file a run still leaves behind is its raw-response dump in `data/raw/`.
 
-Test coverage: `tests/zora/test_normalize.py` and `tests/zora/test_mapping.py`
+Test coverage: `projects/zora/tests/test_normalize.py` and `projects/zora/tests/test_mapping.py`
 are thorough on the pure functions; `store.py` is covered from
-`tests/test_zora_store.py` (Postgres-gated); `tests/zora/test_harvest_run.py`
+`projects/zora/tests/test_zora_store.py` (Postgres-gated); `projects/zora/tests/test_harvest_run.py`
 covers the orchestration — step order, each opt-out, an aborted mirror stopping
 the run, and dump routing across every combination — with ZORA and the store faked;
-`tests/zora/test_raw_dump.py` round-trips `write_raw_dump` through `dump_kind` for
-each kind; `tests/zora/test_entities.py` covers the two mirror steps, fetch and
+`projects/zora/tests/test_raw_dump.py` round-trips `write_raw_dump` through `dump_kind` for
+each kind; `projects/zora/tests/test_entities.py` covers the two mirror steps, fetch and
 replay alike, and
-`tests/zora/test_org_tree.py` the community walk, including pagination and the
+`projects/zora/tests/test_org_tree.py` the community walk, including pagination and the
 fail-on-a-bad-page rule. `zora_client.get_client` itself (auth, retries,
-timeouts) is still only exercised through `tests/zora/test_config_auth.py`'s token
+timeouts) is still only exercised through `projects/zora/tests/test_config_auth.py`'s token
 resolution.
 
 `state.py` used to be on that list and is no longer, which is worth stating
@@ -492,6 +493,5 @@ behaviour, so the untested surface went away without anything new being verified
 - **`author_orcid` is normalised but never emitted** — `mapping.to_publication`
   drops it. It is an item-level single value, whereas the per-author identifiers
   in `author_authority_map` are what a person-level join needs.
-- `config.py` refers to the inspect script by its old name `scripts.inspect_fields`.
-- `projects/zora/Dockerfile.dockerignore` ends with a stray `pytest tests/zora/ -v`
-  line — harmless as an ignore pattern, clearly accidental.
+- Nothing outstanding here since the workspace split; both former gaps (a stale script name in
+  `config.py`, a stray line in the dockerignore) are fixed.

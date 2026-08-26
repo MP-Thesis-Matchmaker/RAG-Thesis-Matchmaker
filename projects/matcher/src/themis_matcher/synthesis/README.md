@@ -2,7 +2,7 @@
 
 Turns a ranked list of `SupervisorMatch` objects into prose a student can read.
 This is the *LLM Synthesis* box at the end of the *Retrieval + Generation* lane of
-[`docs/architecture.png`](../../../docs/architecture.png).
+[`docs/architecture.png`](../../../../../docs/architecture.png).
 
 Read-only. Its single job is presentation — it must never introduce a fact that is
 not already in the matches it was handed.
@@ -78,7 +78,7 @@ roles at once — the offline implementation *and* the fallback injected into
 
 ## Status
 
-**Implemented and tested.** `tests/test_synthesis.py` (6 tests), including an
+**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (9 tests), including an
 assertion that a below-threshold match produces an answer **without** calling the
 LLM.
 

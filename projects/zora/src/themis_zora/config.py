@@ -85,7 +85,7 @@ def resolve_api_token() -> str:
 # --- Dublin Core field names ---------------------------------------------
 # These are the DSpace defaults. UZH's DSpace-CRIS install *may* extend or
 # rename some of these (especially author-identifier fields). Before trusting
-# this list, run `python -m scripts.inspect_fields` against a handful of real
+# this list, run `python projects/zora/scripts/zora_inspect_fields.py` against a handful of real
 # WWF records and diff the printed field names against what's below.
 FIELD_TITLE = "dc.title"
 FIELD_AUTHOR = "uzh.contributor.author"  # UZH custom — NOT dc.contributor.author

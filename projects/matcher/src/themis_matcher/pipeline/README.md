@@ -2,7 +2,7 @@
 
 Wires the read-side packages together into the use cases the system actually
 offers. This is the plumbing behind the *Retrieval + Generation* lane of
-[`docs/architecture.png`](../../../docs/architecture.png) — it owns the order of
+[`docs/architecture.png`](../../../../../docs/architecture.png) — it owns the order of
 operations, and nothing else.
 
 This is the **application-service layer** of invariant 2: adapters (CLI, MCP, a
@@ -51,7 +51,7 @@ are what the adapters call.
 
 So a bare `Pipeline()` returns plausible-looking fake results. Every real caller
 must check that the index exists and pass a real retriever; `cli.py` and
-`adapters/service.py` both do this by testing for
+`themis_gateway/service.py` both do this by testing for
 the `index_manifest` row. That check is duplicated in two places rather
 than living here.
 
@@ -70,7 +70,7 @@ touching this file (invariant 3).
 
 ## Status
 
-**Implemented and tested**, but thin. `tests/test_pipeline.py` (3 tests), using
+**Implemented and tested**, but thin. `projects/matcher/tests/test_pipeline.py` (3 tests), using
 the fake retriever.
 
 ## Known gaps
@@ -82,11 +82,11 @@ the fake retriever.
   [`../retrieval/README.md`](../retrieval/README.md). When multi-signal ranking is
   built, this is where it slots in, between retrieve and synthesise.
 - **The index-exists check is duplicated** in `cli.py` and
-  `adapters/service.py`. It arguably belongs here, so that no future adapter can
+  `themis_gateway/service.py`. It arguably belongs here, so that no future adapter can
   forget it and silently serve `FakeRetriever` output.
 - **`cli.py` does not use `recommend()`** — it calls `run()` and then the
   synthesizer separately, which is the same two calls in the same order.
-  `adapters/service.py` does use `recommend()`. Harmless duplication, but it means
+  `themis_gateway/service.py` does use `recommend()`. Harmless duplication, but it means
   the CLI path and the MCP path are not literally the same code.
 - No timing, tracing, or structured logging. Anything you want to measure for the
   evaluation section (latency per stage, retrieval hit counts) has to be added

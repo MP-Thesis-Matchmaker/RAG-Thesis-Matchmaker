@@ -3,7 +3,7 @@
 Answers the question "which UZH researchers match this student's interests?" by
 searching the vector index and grouping the hits into ranked people. This is the
 middle of the *Retrieval + Generation* lane of
-[`docs/architecture.png`](../../../docs/architecture.png): embed query → two
+[`docs/architecture.png`](../../../../../docs/architecture.png): embed query → two
 filtered top-k queries → group per person → rank.
 
 **Read-only (invariant 1).** This package never writes to the index. It also holds
@@ -182,14 +182,14 @@ repository and run `themis-matcher match` before indexing anything.
 
 ## Status
 
-**Implemented and tested.** `tests/test_vector_retriever.py` (6 tests) covers
+**Implemented and tested.** `projects/matcher/tests/test_vector_retriever.py` (15 tests) covers
 ranking order, the degree-level filter, evidence back-references, the UZH-author
 pre-filter, and multi-author credit. It runs against `InMemoryVectorStore`, so it
 needs no database — the retriever depends only on the protocol, which is what
 made the store swap a rename here rather than a rewrite.
 
 One thing to be aware of: `Pipeline()` still defaults to `FakeRetriever`. The real
-retriever is wired in by the callers (`cli.py`, `adapters/service.py`) only when
+retriever is wired in by the callers (`cli.py`, `themis_gateway/service.py`) only when
 `read_manifest(settings)` returns a row. A caller that forgets that check silently
 serves fake results.
 
@@ -221,7 +221,7 @@ serves fake results.
   open position. The renderers therefore print a posting clause only when it is
   non-zero and **must stay that way**: the earlier "no open position" text became
   "not currently accepting new students" about a named academic in the LLM's prose
-  (see [`../../../docs/example-run.md`](../../../docs/example-run.md)).
+  (see [`../../../../../docs/example-run.md`](../../../../../docs/example-run.md)).
 - **A posting nobody is named on reaches nobody.** `_persons` fans a posting out to
   every entry in its `supervisors` list, so a posting with an empty list credits no
   one and never appears in a result. That is **63 of 247** scraped topics -- a
@@ -230,5 +230,5 @@ serves fake results.
 - **`degree_level` filtering goes through booleans, not the field itself.** A
   posting can be open to several levels, and neither store can filter a list-valued
   metadata field, so the filter is `degree_<level>: True` against the companions
-  `posting_to_document` emits. See [`../scraper/README.md`](../scraper/README.md)
+  `posting_to_document` emits. See [`../scraper/README.md`](../../../../../projects/scraper/README.md)
   for the measured distribution behind that.

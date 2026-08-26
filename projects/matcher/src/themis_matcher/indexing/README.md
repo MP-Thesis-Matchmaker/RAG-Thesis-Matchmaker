@@ -2,12 +2,12 @@
 
 Turns the records that ingestion produces into a searchable vector index.
 This is the *Ingestion + Indexing Pipeline* lane of
-[`docs/architecture.png`](../../../docs/architecture.png): JSONL → `Document` →
+[`docs/architecture.png`](../../../../../docs/architecture.png): JSONL → `Document` →
 content-hash diff → embed → Postgres/pgvector, with an `index_manifest` row
 guarding against an embedding-model mismatch.
 
 This is the last package in the write path. Everything downstream of it —
-`retrieval/`, `pipeline/`, `adapters/` — is strictly read-only (invariant 1).
+`retrieval/`, `pipeline/`, and `themis_gateway` — is strictly read-only (invariant 1).
 
 ## Role in the pipeline
 
@@ -35,7 +35,7 @@ SourceReader (publication table, or JSONL files)
 | `prepare_text` | `documents.py` | Strips markup and collapses whitespace before the text is hashed and embedded. |
 | `SourceReader` | `sources.py` | Protocol: `publications()`, `postings()`, `label`, `invalid_records`. Where records come from. |
 | `PostgresSourceReader` | `sources.py` | Reads the harvested `publication` table, **UZH-authored publications only**. What a deployed indexer uses. |
-| `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data, the scraper is not built, and CI runs without a database. |
+| `JsonlSourceReader` | `sources.py` | Reads `publications.jsonl` / `theses.jsonl`. Still needed: `data/samples` is fixture data and CI runs without a database. |
 | `zora_to_document` | `documents.py` | `ZoraPublication` → `Document`. |
 | `posting_to_document` | `documents.py` | `ThesisPosting` → `Document`. |
 | `VectorStore` | `store.py` | Protocol: `upsert`, `delete`, `existing_hashes`, `query`, `read_manifest`, `write_manifest`, `clear`. |
@@ -225,9 +225,9 @@ retrieval tests without a model download.
 
 ## Status
 
-**Implemented and well tested.** `tests/test_embedder.py`,
-`tests/test_documents.py`, `tests/test_store_contract.py`,
-`tests/test_indexer.py`, `tests/test_factories.py` — including the incremental
+**Implemented and well tested.** `projects/matcher/tests/test_embedder.py`,
+`projects/matcher/tests/test_documents.py`, `projects/matcher/tests/test_store_contract.py`,
+`projects/matcher/tests/test_indexer.py`, `projects/matcher/tests/test_factories.py` — including the incremental
 diff, the manifest guard and the vector-width guard.
 
 `test_store_contract.py` is parametrised over both implementations. The in-memory
@@ -264,8 +264,8 @@ at a Postgres with the extension, which CI always does via a
   partial index matching the predicate, and it needs a schema reset. The two existing
   partial HNSW indexes on `source_type` are unaffected and still do real work, since
   the index holds both publications and postings.
-- **Both halves of the index now have real producers.** `zora/` writes
-  `publication`, `scraper/` writes `posting`, and `PostgresSourceReader` reads
+- **Both halves of the index now have real producers.** `themis-zora` writes
+  `publication`, `themis-scraper` writes `posting`, and `PostgresSourceReader` reads
   both. `theses.jsonl` stays because the offline path and CI need a source with no
   database behind it -- but note those 20 fixtures are unrepresentative of scraped
   reality in two ways: each names exactly one supervisor and exactly one degree

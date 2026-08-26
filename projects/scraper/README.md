@@ -2,7 +2,7 @@
 
 Collects open thesis topics, supervisor profiles and application procedures from UZH
 departmental websites. This is the second producer in the *Data Extraction* lane of
-[`docs/architecture.png`](../../../docs/architecture.png), beside
+[`docs/architecture.png`](../../docs/architecture.png), beside
 [`zora/`](../zora/README.md): where that one asks a REST API for publications, this one
 reads 103 human-chosen web pages and turns them into records.
 
@@ -12,7 +12,7 @@ disagreed about the shape of a posting, the package won** — `contracts.ThesisP
 was written before any scraper existed and had guessed wrong in four places.
 
 **Owns all writes to its three tables (invariant 1).** Serving code reads them through
-`indexing.sources.PostgresSourceReader`, never from here.
+`themis_matcher.indexing.sources.PostgresSourceReader`, never from here.
 
 ## Role in the pipeline
 
@@ -95,10 +95,10 @@ level's queries.
 That list then cannot be filtered directly, in either store: Postgres uses
 `metadata @> …` and jsonb containment does not match a scalar against a nested array,
 while `InMemoryVectorStore` compares with `==`. They fail *identically*, so
-`tests/test_store_contract.py` — parametrised over both — could not have caught it. So
+`projects/matcher/tests/test_store_contract.py` — parametrised over both — could not have caught it. So
 `posting_to_document` also emits `degree_bachelor` / `degree_master` / `degree_phd`
 booleans, following the `has_uzh_author` precedent
-[`../indexing/README.md`](../indexing/README.md) sets for exactly this problem. In SQL
+[`../indexing/README.md`](../../projects/matcher/src/themis_matcher/indexing/README.md) sets for exactly this problem. In SQL
 the `posting.degree_levels text[]` column is queried with `&&` instead.
 
 ### Why `status` had to exist
@@ -115,12 +115,12 @@ available one, and the system would recommend work nobody can do.
 Process-page summarisation, spec drafting at onboarding, and a run-time fallback when a
 template matches nothing (always flagged). Everything else is deterministic, which is
 what makes "same cached page + same template ⇒ identical records" testable at all —
-`tests/scraper/test_specs.py` asserts exactly that against a committed baseline.
+`projects/scraper/tests/test_specs.py` asserts exactly that against a committed baseline.
 
 ## Configuration
 
 `SCRAPER_`-prefixed throughout, so nothing here can collide with the unprefixed settings
-in [`../config.py`](../config.py). The DSN is the one exception: it belongs to the
+in [`../config.py`](../../libs/shared/src/themis_shared/config.py). The DSN is the one exception: it belongs to the
 system, and `store.py` reads it via `get_settings().database_url`.
 
 | Setting | Env var | Default | Effect |
@@ -136,12 +136,12 @@ system, and `store.py` reads it via `get_settings().database_url`.
 
 Deliberately **not** configurable: the title thresholds in `title_check.py`, and the
 field lists, regexes and prompts. They are calibrated against
-`tests/scraper/golden_specs.json`; an env var moving them would break the determinism
+`projects/scraper/tests/golden_specs.json`; an env var moving them would break the determinism
 invariant and the test that guards it.
 
 ## Swappable seams
 
-Like [`zora/`](../zora/README.md), this package does **not** follow the `base.py`
+Like [`themis-zora`](../zora/README.md), this member does **not** follow the `base.py`
 Protocol + `build_*(settings)` idiom `parsing/`, `indexing/`, `retrieval/` and
 `synthesis/` use. It is a concrete scraper for concrete websites, and the swap point is
 the *table* boundary: anything that fills `posting` correctly is a substitute.
@@ -156,18 +156,19 @@ Two invocations, kept separate on purpose: `fetch` is the stage that talks to uz
 
 ```bash
 # Stage 1: fetch (polite, sequential, resumable). Needs SCRAPER_CONTACT set.
-python -m themis_scraper.main fetch --resume
+themis-scraper fetch --resume
 # Stage 2: extract, validate, write to Postgres. Reads only the cache.
-python -m themis_scraper.main run --resume
+themis-scraper run --resume
 
-python -m themis_scraper.main status             # per-source lifecycle
-python -m themis_scraper.main check <source_id>  # one source, verbose
-python -m themis_scraper.main onboard --next     # interactive: add a source
+themis-scraper status             # per-source lifecycle
+themis-scraper check <source_id>  # one source, verbose
+themis-scraper onboard --next     # interactive: add a source
 ```
 
-No console script, deliberately — same as `zora/harvest.py`. `themis-matcher` and
-`themis-gateway-mcp` are front doors over the application service; this is an
-operator tool with an interactive flow, and it does not belong behind the same command.
+Exposed as the console script `themis-scraper`, or `python -m themis_scraper`. This README used
+to argue against a script on the grounds that an operator tool does not belong behind the same
+command as the front doors — an argument the workspace split retired, because each member now
+owns its own command rather than sharing one.
 
 In the cluster: `projects/scraper/Dockerfile`, whose `ENTRYPOINT` is already the module and
 whose `CMD` is the `run --resume` half. Locally,
@@ -201,14 +202,14 @@ off the front silently retitles every posting in every result.
 
 ## Status
 
-**Ported and tested.** 131 tests in `tests/scraper/` (4 files) plus 11 in
-`tests/test_scraper_store.py`. The 131 replay 103 frozen page snapshots and need no
+**Ported and tested.** 148 tests in `projects/scraper/tests/` (7 files), of which 9 are the
+Postgres-gated store tests. The rest replay 103 frozen page snapshots and need no
 network and no database — the same property the rest of the repository's offline path
 has, arrived at independently in the prototype. CI runs them in a dedicated `scraper`
 job, because the `offline` job installs no extras and would otherwise skip them
 silently.
 
-`tests/scraper/test_specs.py` replays every topics/people spec against its snapshot and
+`projects/scraper/tests/test_specs.py` replays every topics/people spec against its snapshot and
 compares against `golden_specs.json`, so extraction drift fails a build rather than a
 run.
 
@@ -234,17 +235,17 @@ process entries, zero quarantined.
   against every topic on it. Fan-out credits all of them equally, which will distort any
   per-person score built on posting counts.
 - **Process-page extraction and PDF enrichment have no tests.**
-  `tests/scraper/replay_util.py` says so outright: they need the network and are out of
+  `projects/scraper/tests/replay_util.py` says so outright: they need the network and are out of
   scope for the offline replay. That is 50 of 103 sources whose extraction path is
   exercised by nothing.
 - **`requests`, not the `httpx` the rest of the repository uses.** Entangled with the
   politeness delay and the Playwright fallback in `fetch.py`. Converting it is mechanical
-  but touches the one file all 131 tests run through.
-- **A second LLM client.** `llm.py` here and [`../llm.py`](../llm.py) both speak
+  but touches the one file nearly every test runs through.
+- **A second LLM client.** `llm.py` here and [`../llm.py`](../../projects/matcher/src/themis_matcher/llm.py) both speak
   OpenAI-compatible endpoints. This one has retries with backoff and pluggable providers;
   that one has neither, and a 30 s timeout with no `Settings` knob. They should converge,
   and the honest direction is this one absorbing that one.
-- **`main.py` is 1,580 lines.** Orchestration only, but still the largest single file in
+- **`main.py` is 1,894 lines.** Orchestration only, but still the largest single file in
   the repository by a wide margin.
 - **Onboarding state is untracked, so the committed specs are inert without it.**
   `var/state.json` is the only record of which sources are verified and which page_type
@@ -261,7 +262,7 @@ process entries, zero quarantined.
   Deriving verification from the committed triple would make the repository
   self-sufficient; decide it with the PVC question below.
 - **The page cache is not persisted in the cluster.** The same open question
-  [`../../../docs/deployment.md`](../../../docs/deployment.md) raises about the ZORA raw
+  [`../../docs/deployment.md`](../../docs/deployment.md) raises about the ZORA raw
   cache: an `emptyDir` throws away the property the cache exists for.
 - **Personal data and politeness.** Supervisor and profile emails are personal data the
   departments chose to publish; they are stored, never embedded, and `office`/`phone` are

@@ -7,16 +7,20 @@ This file contains a small sample of ZORA publications for development and testi
 - **Source**: Full UZH-wide ZORA harvest (all faculties)
 - **Content**: 30 most recent publications by accession date
 - **Generated**: 2026-07-16
-- **Schema**: Same as `data/publications.jsonl` — see `src/thesis_matchmaker/zora/schema/zora_publication.schema.json`
+- **Schema**: `ZoraPublication` in
+  [`libs/shared/src/themis_shared/contracts/sources.py`](../../libs/shared/src/themis_shared/contracts/sources.py)
 
 ## Purpose
 
 Use this file for:
-- Local development without downloading the full dataset (~47MB)
+- Local development without harvesting or indexing the full corpus
 - Unit/integration testing of downstream components (indexing, retrieval)
 - Quick validation that the publication schema hasn't changed
 
 ## Full Dataset
 
-The full `publications.jsonl` (~22K records, ~47MB) is committed at `data/publications.jsonl`.
-For the complete UZH-wide dataset (~238K records, ~346MB), see the shared OneDrive upload.
+The full corpus lives in the `publication` table — **214,756 publications**, harvested from the
+DSpace REST API. Nothing writes `data/publications.jsonl` any more and it is not tracked; that
+file was the pre-Postgres artefact, and the JSON-schema file this document used to cite has not
+existed for some time. To fill the table yourself, see
+[`docs/zora-harvester.md`](../../docs/zora-harvester.md).

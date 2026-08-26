@@ -22,10 +22,10 @@ a committed manifest is worse than an obvious blank.
 | Component | Runtime | Trigger | Manifest |
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
-| `thesis_matchmaker.zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — image exists (`projects/matcher/`) |
-| `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
-| `thesis_matchmaker.scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
+| `themis_zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
+| `themis-matcher index` | `CronJob` | after each harvest | **none** — image exists (`projects/matcher/`) |
+| `themis-gateway-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
+| `themis_scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
 The last two rows now lack only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
@@ -80,12 +80,12 @@ browser three sources are permanently unreadable. The browser is baked in at bui
 time — a CronJob must not download 100 MB from a CDN on every scheduled run.
 
 The scraper image also carries something none of the others do: `data/scraper/`.
-`uv sync --no-editable` builds the project into a wheel, so nothing outside
-`src/thesis_matchmaker/` survives on its own — and the 103 `spec.yaml` files are read
+`uv sync --no-editable` builds the member into a wheel, so nothing outside
+`projects/scraper/src/themis_scraper/` survives on its own — and the 103 `spec.yaml` files are read
 at *runtime*, not just by tests. Without that COPY the image starts and finds nothing
 to scrape.
 
-The indexer and the serving adapter both need `[embeddings]` — the query has to be
+The matcher and the gateway both need `[embeddings]` — the query has to be
 embedded with the same model as the corpus — so splitting them buys lifecycle
 separation rather than size: one is a batch job that writes and exits, the other is
 a long-lived read-only process. That is reason enough to version and roll them
@@ -100,9 +100,8 @@ Helm chart exposes no GPU, `nodeSelector` or `tolerations` key at all, so nothin
 we deploy can ever land on an accelerator. `pyproject.toml` therefore pins the
 `pytorch-cpu` index behind a `sys_platform == 'linux'` marker; macOS never matches
 it, so Apple Silicon keeps the stock wheel and MPS keeps working locally. Measured
-effect: the CPU pin alone drops the linux resolution from 132 packages to 114
-(capping `mcp` below 2.0 took it to 109), and an
-`linux/amd64` indexer image weighs **~1.6 GB unpacked / ~0.45 GB compressed**
+effect: **zero `nvidia-*` packages in the lock**, confirmed inside a built linux image as
+`torch 2.12.1+cpu`. A `linux/amd64` matcher image weighs **~1.6 GB unpacked / ~0.45 GB compressed**
 instead of the several GB a CUDA build produces. Compressed is the number that
 matters for the Harbor quota and for pull time, since that is what a registry
 stores; `docker images` reports the unpacked figure, which is why the two disagree.
@@ -110,7 +109,7 @@ stores; `docker images` reports the unpacked figure, which is why the two disagr
 **The model weights are not baked in.** `BAAI/bge-m3` is 2.27 GB and publishes no
 safetensors, so it is a single `pytorch_model.bin`. Both images set
 `HF_HOME=/var/cache/huggingface` and expect that path to be an **RWX** PVC shared
-between the indexer and the serving pod, so the download happens once. Baking it
+between the matcher and the gateway pod, so the download happens once. Baking it
 in would re-push 2.27 GB of unchanged weights on every dependency rebuild. Cluster
 egress to the Internet is permitted, so the one-time fetch works.
 
@@ -120,9 +119,10 @@ egress to the Internet is permitted, so the one-time fetch works.
 cosmetic, on a 1.95 GB one it is not.
 
 **`init-db` shares the harvester image**, and `docker-compose.yml` builds it for
-both. That is correct rather than a shortcut: `init-db` is not a role, it is this
-same distribution applying its own schema, and it needs no extras. It moves to a
-shared image if `src/` is ever split.
+both. That is now a convenience rather than a structural fact: since the split,
+`themis-init-db` belongs to `themis-shared`, which the harvester image installs anyway as a
+dependency. A dedicated image whose closure is pydantic + psycopg is the cheaper option if the
+init Job ever needs to be independent of a harvest rollout.
 
 **Images install from `uv.lock`, never from version ranges.** The Dockerfile copies
 the lockfile in and runs `uv sync --locked --no-default-groups --no-editable`, so
@@ -132,33 +132,30 @@ pytest, ruff — never reaches the artefact. uv itself is pinned in the
 the lock. That pin is a tag rather than a digest, which is a weaker guarantee than
 it looks: a re-pushed tag would go unnoticed.
 
-### Why `src/` is still one tree
+### Why five distributions
 
-Several images do not require several source trees: one distribution can produce
-all four, differing only in entrypoint and installed extras. So the flat
-`src/thesis_matchmaker/` layout and the per-role `docker/` layout are not in
-conflict, they are answering different questions.
+The split landed on 2026-08-26. `src/thesis_matchmaker/` is gone; in its place are five members —
+`libs/shared` plus `projects/{matcher,gateway,zora,scraper}` — each its own distribution, resolved
+by one root `uv.lock`.
 
-Whether to go further — a `uv` workspace of `projects/zora`, `projects/scraper`,
-`projects/serving`, `projects/shared`, each its own distribution — is **open**. It
-would make invariant 4 mechanical instead of social: a harvester image that never
-installs `retrieval` cannot import it, and the boundary stops depending on review.
-It also means four `pyproject.toml` files, a regenerated `uv.lock`, every import
-path rewritten, and the whole test suite relocated.
+What it bought is **invariant 4 mechanically rather than socially**: an image built with
+`uv sync --package themis-zora` does not have `themis_matcher` on disk, so a harvester that
+imports `retrieval` fails at import time instead of at review time. CI's `boundaries` job installs
+each member alone for the same reason.
 
-**Trigger for deciding was the scraper migration, and it has now happened.** The
-scraper landed as `src/thesis_matchmaker/scraper/` — a peer of `zora/`, in the same
-flat tree — deliberately *without* taking the workspace question with it. Splitting
-`src/` and porting 5,000 lines in one change would have meant one commit answering
-two questions, with no way to tell which one had gone wrong if either did.
+The measured seam that made this cheap: the two producers share only `contracts/`, `config.py` and
+`db.py` — now `themis-shared` — and their dependency sets are disjoint apart from pydantic and
+dotenv. `themis-gateway` is the one deliberate cross-edge, importing `themis_matcher` from
+`service.py` and nowhere else, which is what keeps the eventual HTTP swap a one-file change.
 
-So the seam is now observable, which is what this section asked for. What it shows:
-the two producers share `contracts/`, `config.py` and `db.py` and nothing else, and
-their dependency sets are disjoint apart from pydantic and dotenv. That is a clean
-enough boundary that a workspace would buy import-time *enforcement* rather than
-decoupling — real, but a different and smaller claim than the one made before there
-was anything to look at. Decide it together with the `ingestion/` parent question,
-which is the same question at a different granularity.
+Cost, for the record: six `pyproject.toml` files, a regenerated `uv.lock`, every import path
+rewritten, and the whole test suite relocated. The scraper port went first, deliberately, so that
+one commit was not answering two questions at once.
+
+**One trap the split introduced.** `uv sync --locked` validates the *entire* workspace against the
+lock, not just the selected package. An image that copies only its own member sees fewer members
+than the lock describes and fails with `the lockfile needs to be updated`. Every Dockerfile
+therefore copies all five manifests before any source — manifests only, so the layer stays warm.
 
 ## Deploying
 
@@ -180,6 +177,9 @@ appComponents:
         image: registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
         ...
 ```
+
+The image names in these examples still read `thesis-matchmaker-*`, matching what `k8s/` says
+today. They are renamed as a set when those manifests are rewritten — see [`k8s/README.md`](../k8s/README.md).
 
 **This is why the manifests in [`k8s/`](../k8s/) cannot be used as they stand** —
 they are raw `Job` and `CronJob` objects, which is a different thing from chart
@@ -260,7 +260,7 @@ Blocking for deployment, not for local development against a Postgres container.
 1. **Is `CREATE EXTENSION vector` permitted for our database role?** It normally
    requires superuser unless the extension is marked trusted. If it is not, the
    extension has to be pre-created for us. **Ask this first** — it is the most
-   likely blocker, and `src/thesis_matchmaker/schema.sql` opens with that
+   likely blocker, and `libs/shared/src/themis_shared/schema.sql` opens with that
    statement.
 2. **pgvector version** and the Postgres major version. This is not idle
    curiosity: HNSW needs >= 0.5.0, and **`hnsw.iterative_scan` needs >= 0.8.0**.
@@ -289,7 +289,7 @@ Blocking for deployment, not for local development against a Postgres container.
    into Postgres as a `jsonb` table and drop the volume entirely.
 10. **Two quota raises.** The default namespace quota is `limits.cpu: 2`,
    `limits.memory: 4Gi`, `pods: 10`. bge-m3 is a 568M-parameter model held in
-   memory, so an always-on serving pod and a scheduled indexer pod cannot both fit
+   memory, so an always-on gateway pod and a scheduled matcher pod cannot both fit
    under a 4 Gi *namespace-wide* ceiling. The Harbor project's 10 GB is the second.
    Both go to `container.services.support@zi.uzh.ch`, and both want a measured
    number rather than an estimate — see **Known limitations**.
@@ -351,8 +351,8 @@ Not questions for Central Informatics — things we owe ourselves.
   if the pre-filter is ever relaxed — so it is not done here.
 
   Two things follow. First, **peak RSS is ~3.6 GiB whatever the CPU budget**, and
-  the namespace ceiling is 4 Gi *in total* — so one indexer pod all but exhausts
-  the quota on its own, and an always-on serving pod holding its own copy of the
+  the namespace ceiling is 4 Gi *in total* — so one matcher pod all but exhausts
+  the quota on its own, and an always-on gateway pod holding its own copy of the
   model cannot coexist with it. That is the number the quota request rests on.
 
   Second, **a Kubernetes CPU limit does not reduce `os.cpu_count()`**. It is a CFS
@@ -380,7 +380,7 @@ Not questions for Central Informatics — things we owe ourselves.
   dominant term".
 - **The `[mcp]` extra now requires SDK 2.x, and the adapter was ported to it.**
   `mcp>=1.2` had resolved to **2.0.0**, which removed `FastMCP`, so
-  `thesis-matchmaker-mcp` could not start at all — CI never installs the extra, so
+  `themis-gateway-mcp` could not start at all — CI never installs the extra, so
   nothing caught it until an image was built. The adapter uses `MCPServer` from
   `mcp.server.mcpserver`, and passes `host`/`port` to `run()` instead of poking
   `mcp.settings`. The wire format was checked before and after: tool names,
@@ -388,7 +388,7 @@ Not questions for Central Informatics — things we owe ourselves.
   One field moved on purpose — `serverInfo.version` was reporting the SDK's version
   (`1.29.0`) and now reports the distribution's (`0.0.1`).
   **The module is still untested**, which is how this got missed; see
-  [`adapters/README.md`](../src/thesis_matchmaker/adapters/README.md).
+  [`projects/gateway/README.md`](../projects/gateway/README.md).
 
 ## Registry
 
