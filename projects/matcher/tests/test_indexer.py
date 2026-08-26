@@ -283,9 +283,7 @@ def test_single_kind_run_still_deletes_its_own_orphans(
     assert set(store.existing_hashes()) == {"zora:1", "posting:1"}
 
 
-def test_manifest_counts_the_corpus_not_the_run(
-    tmp_path: Path, store: InMemoryVectorStore
-) -> None:
+def test_manifest_counts_the_corpus_not_the_run(tmp_path: Path, store: InMemoryVectorStore) -> None:
     """A single-kind run must not report its own kind as the size of the index."""
     _write_sources(tmp_path / "src", [_publication("zora:1"), _publication("zora:2")], [_posting()])
     _indexer(store).run(JsonlSourceReader(tmp_path / "src"))

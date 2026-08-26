@@ -279,9 +279,7 @@ def main(argv: list[str] | None = None) -> int:
         written_posts = _write(out / THESES_FILE, postings)
         print(f"wrote {written_pubs} publications and {written_posts} postings to {out}")
 
-        missing = (pub_ids - {p.id for p in publications}) | (
-            post_ids - {p.id for p in postings}
-        )
+        missing = (pub_ids - {p.id for p in publications}) | (post_ids - {p.id for p in postings})
         if missing:
             print(f"warning: {len(missing)} selected id(s) never came back from the reader")
             return 1

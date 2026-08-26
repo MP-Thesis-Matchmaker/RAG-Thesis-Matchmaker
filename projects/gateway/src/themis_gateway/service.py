@@ -89,9 +89,7 @@ def _raise_for(response: httpx.Response) -> None:
     )
 
 
-def find_researchers(
-    query: str, top_k: int = 5, client: httpx.Client | None = None
-) -> list[dict]:
+def find_researchers(query: str, top_k: int = 5, client: httpx.Client | None = None) -> list[dict]:
     """Ranked researchers and supervisors matching a topic, as structured data."""
     body = _post("/v1/match", MatchRequest(query=query, top_k=top_k), client)
     return body["matches"]

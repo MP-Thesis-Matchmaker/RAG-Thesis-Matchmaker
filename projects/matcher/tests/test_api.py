@@ -131,9 +131,7 @@ def test_match_returns_supervisor_matches(client: TestClient) -> None:
 
 
 def test_recommend_returns_prose(client: TestClient) -> None:
-    response = client.post(
-        "/v1/recommend", json={"query": "dense retrieval and embeddings"}
-    )
+    response = client.post("/v1/recommend", json={"query": "dense retrieval and embeddings"})
 
     assert response.status_code == 200
     assert isinstance(response.json()["answer"], str)

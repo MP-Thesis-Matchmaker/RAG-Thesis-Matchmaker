@@ -112,9 +112,7 @@ def test_no_index_raises_instead_of_serving_fake_matches() -> None:
     caller is unchanged: an unbuilt index is an error, not an empty list and
     certainly not canned people.
     """
-    refusal = _responder(
-        409, {"code": "index_not_built", "message": "No index has been built."}
-    )
+    refusal = _responder(409, {"code": "index_not_built", "message": "No index has been built."})
 
     for call in (
         lambda: service.find_researchers("nlp thesis on rag", client=_client(refusal)),

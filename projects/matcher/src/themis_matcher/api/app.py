@@ -74,9 +74,7 @@ def _require_index(service: MatcherService) -> None:
         )
 
 
-def create_app(
-    settings: Settings | None = None, service: MatcherService | None = None
-) -> FastAPI:
+def create_app(settings: Settings | None = None, service: MatcherService | None = None) -> FastAPI:
     """Build the app. `service` is injectable so tests need no database."""
 
     @asynccontextmanager

@@ -34,8 +34,9 @@ def sources(tmp_path: Path) -> Path:
     source.mkdir()
     (source / "publications.jsonl").write_text(
         "\n".join(
-            ZoraPublication(id=f"zora:{n}", title=f"Paper {n}", abstract="dense retrieval").
-            model_dump_json()
+            ZoraPublication(
+                id=f"zora:{n}", title=f"Paper {n}", abstract="dense retrieval"
+            ).model_dump_json()
             for n in (1, 2)
         )
         + "\n"
