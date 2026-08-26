@@ -1,4 +1,4 @@
-"""Config tests — the contract of `config.Settings`.
+"""Config tests — the contract of `config.ScraperSettings`.
 
 Two jobs. First, pin every default to the literal the code used *before*
 config.py existed, so the centralization provably changed no behaviour. Second,
@@ -16,7 +16,7 @@ from unittest import mock
 from pydantic import ValidationError
 
 from themis_scraper import dataset, llm, title_check
-from themis_scraper.config import Settings, get_settings
+from themis_scraper.config import ScraperSettings, get_settings
 
 
 def _clean_env(**overrides):
@@ -43,7 +43,7 @@ class DefaultsTest(unittest.TestCase):
 
     def setUp(self):
         with _clean_env():
-            self.s = Settings(_env_file=None)
+            self.s = ScraperSettings(_env_file=None)
 
     def test_politeness_defaults(self):
         self.assertEqual(self.s.polite_delay_seconds, 2.0)  # was fetch.py
@@ -69,7 +69,7 @@ class DefaultsTest(unittest.TestCase):
 
     def test_user_agent_names_the_tool_and_a_reachable_contact(self):
         with _clean_env(SCRAPER_CONTACT="themis@example.uzh.ch"):
-            ua = Settings(_env_file=None).user_agent
+            ua = ScraperSettings(_env_file=None).user_agent
         self.assertIn("UZH-Thesis-Scraper", ua)
         self.assertIn("academic research", ua)
         self.assertIn("mailto:themis@example.uzh.ch", ua)
@@ -95,7 +95,7 @@ class DefaultsTest(unittest.TestCase):
         The prototype anchored this to its own checkout by counting parent
         directories, which is wrong one level deeper here and meaningless in the
         container image, where the package is installed non-editable into
-        site-packages. `sources_path = "data/samples"` in themis_shared/config.py
+        site-packages. `sources_path = "data/samples"` in themis_matcher/config.py
         makes the same choice.
         """
         self.assertEqual(self.s.data_root, Path("data/scraper"))
@@ -163,7 +163,7 @@ class ApiKeyTest(unittest.TestCase):
         machine running the tests cannot supply a key behind our back.
         """
         with _clean_env():
-            self.assertIsNone(Settings(_env_file=None).llm_api_key)
+            self.assertIsNone(ScraperSettings(_env_file=None).llm_api_key)
         with _clean_env(SCRAPER_LLM_API_KEY=""):
             self.assertFalse(get_settings().llm_api_key)
             self.assertFalse(llm.is_available())
@@ -199,7 +199,7 @@ class DeliberatelyNotConfigurableTest(unittest.TestCase):
     """
 
     def test_the_thresholds_are_not_settings_fields(self):
-        fields = set(Settings.model_fields)
+        fields = set(ScraperSettings.model_fields)
         for name in (
             "plausible_min",
             "max_title_chars",
@@ -217,3 +217,27 @@ class DeliberatelyNotConfigurableTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SharedFloorTest(unittest.TestCase):
+    """The two fields ScraperSettings inherits, and the prefix they escape.
+
+    Before the fold these lived on a second Settings object that main.py imported
+    under an alias; store.py reached for one and index_trigger for the other, and
+    picking the wrong one produced no error, just a missing matcher_base_url.
+    """
+
+    def test_the_dsn_arrives_on_the_same_object_and_stays_unprefixed(self) -> None:
+        with _clean_env(
+            DATABASE_URL="postgresql://u@h/unprefixed",
+            SCRAPER_DATABASE_URL="postgresql://u@h/prefixed",
+        ):
+            self.assertEqual(
+                ScraperSettings(_env_file=None).database_url, "postgresql://u@h/unprefixed"
+            )
+
+    def test_the_matcher_address_arrives_on_the_same_object(self) -> None:
+        with _clean_env(MATCHER_BASE_URL="http://matcher-api:8100"):
+            self.assertEqual(
+                ScraperSettings(_env_file=None).matcher_base_url, "http://matcher-api:8100"
+            )

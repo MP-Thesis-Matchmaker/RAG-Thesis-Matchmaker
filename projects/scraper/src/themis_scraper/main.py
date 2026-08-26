@@ -18,12 +18,7 @@ import time
 
 import yaml
 
-# get_shared_settings is aliased because this module's own `get_settings`, from
-# .config below, is the SCRAPER_-prefixed scraper config -- a different object
-# that knows nothing about the matcher. Confusing the two is silent: the wrong
-# one simply has no matcher_base_url.
 from themis_shared import db
-from themis_shared.config import get_settings as get_shared_settings
 
 from . import (
     cache,
@@ -1500,7 +1495,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         # Only when postings were actually written. Never affects the exit code
         # below: a flagged source is this run's business, an unreachable matcher
         # is not.
-        index_trigger.trigger_index(get_shared_settings())
+        index_trigger.trigger_index(get_settings())
     return 1 if sm["flagged"] else 0
 
 

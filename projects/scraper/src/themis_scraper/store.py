@@ -29,10 +29,10 @@ import logging
 from pydantic import BaseModel
 
 from themis_shared import db
-from themis_shared.config import get_settings
 from themis_shared.contracts import ApplicationProcess, ResearcherProfile, ThesisPosting
 
 from . import normalize
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,11 @@ class ScrapeWriteResult(BaseModel):
 
 
 def _dsn(dsn: str | None) -> str:
-    """The scraper's own Settings owns scraper knobs; the DSN belongs to the system."""
+    """The DSN is the shared floor's, inherited by ScraperSettings -- one object now.
+
+    It used to come from a second, separately imported Settings, which is what
+    made the two easy to confuse at the call site.
+    """
     return dsn if dsn is not None else get_settings().database_url
 
 

@@ -1,10 +1,25 @@
-"""Application settings, loaded from environment variables and an optional .env file.
+"""Settings the posting scraper owns, layered onto the shared floor.
 
 This is the *only* place a configurable default lives. Before it existed, config was
 scattered across four shapes — `os.environ.get` at import time, `os.environ.get` inside
 functions, module constants, and class attributes — so half the knobs needed a code edit
 and `SCRAPER_DATA_ROOT` only relocated part of the data tree (the output paths were bound
 at import). Everything now resolves through `get_settings()`, at call time.
+
+It used to be an *independent* `BaseSettings` rather than a subclass, which meant the
+scraper ran on two settings objects at once and `main.py` had to import the other one
+under an alias to keep them apart — with a comment warning that confusing them was
+silent, because the wrong object simply has no `matcher_base_url`. It subclasses
+`themis_shared.config.Settings` now, so `database_url` and `matcher_base_url` arrive on
+the same object as everything below and that hazard is gone.
+
+The `SCRAPER_` prefix stays, and now earns its keep for a narrower reason than before:
+`llm_model`, `llm_base_url` and `llm_api_key` exist on the matcher's settings too, under
+`MATCHER_`, meaning a different model for a different job (a query parser there, an
+extraction fallback here). Two spellings for two things is the point. `database_url` and
+`matcher_base_url` are exempt from the prefix through the `validation_alias` pinned in
+`themis_shared.config` — without it, `env_prefix` would re-prefix those inherited fields
+and the scraper would look for `SCRAPER_DATABASE_URL` while compose sets `DATABASE_URL`.
 
 Deliberately *not* configurable: the title-plausibility thresholds in `title_check.py`
 and the field lists, regexes and prompts elsewhere. Those are calibrated against the
@@ -18,17 +33,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from pydantic import AliasChoices, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
+
+from themis_shared.config import Settings
+
+__all__ = ["ScraperSettings", "get_settings"]
 
 
-class Settings(BaseSettings):
+class ScraperSettings(Settings):
     """Central config for the posting scraper.
 
     Values are read from environment variables first, then from a local .env file.
-    Every variable is prefixed `SCRAPER_` (so `data_root` is `SCRAPER_DATA_ROOT`),
-    which keeps them from colliding with the unprefixed settings of the backend-core
-    project this prototype gets folded into. See .env.example for the full list.
-    .env is gitignored, so keys and local paths stay off the repo.
+    Every variable declared here is prefixed `SCRAPER_` (so `data_root` is
+    `SCRAPER_DATA_ROOT`), which is what keeps the LLM fields from colliding with the
+    matcher's `MATCHER_LLM_*`. See .env.example for the full list. .env is gitignored,
+    so keys and local paths stay off the repo.
     """
 
     model_config = SettingsConfigDict(
@@ -36,14 +55,15 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     # --- Data tree ----------------------------------------------------------
     # Root of everything the scraper reads or writes (registry/, specs/, cache/,
     # output/, var/). Relative to the working directory, which is the same choice the
     # rest of the repository makes -- `sources_path = "data/samples"` in
-    # themis_shared/config.py, `ZORA_DATA_DIR` defaulting to "data" in
-    # zora/config.py. Deriving it from the package location instead would break in the
+    # themis_matcher/config.py, `data_dir` defaulting to "data" in
+    # themis_zora/config.py. Deriving it from the package location instead would break in the
     # container image, where `uv sync --no-editable` installs into site-packages and
     # there is no repository above the module at all.
     data_root: Path = Path("data/scraper")
@@ -195,6 +215,6 @@ class Settings(BaseSettings):
         return f"UZH-Thesis-Scraper/0.1 (academic research; +mailto:{self.contact})"
 
 
-def get_settings() -> Settings:
-    """Return settings, read fresh from the environment."""
-    return Settings()
+def get_settings() -> ScraperSettings:
+    """Return the scraper's settings, read fresh from the environment."""
+    return ScraperSettings()
