@@ -1,13 +1,20 @@
+![THEMIS — THEsis Matching and Information System. Finding the right supervisor match for you.](docs/branding/themis-banner.png)
+
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 
-# RAG-Thesis-Matchmaker
+# THEMIS
 
-Finds thesis supervisors and open thesis positions at the University of Zurich.
-A student describes their interests in plain language, and the system searches
-UZH publications (ZORA) and scraped thesis postings, ranks the researchers
-behind them, and answers with the evidence for each suggestion.
+**THE**sis **M**atching and **I**nformation **S**ystem — finds thesis supervisors and open thesis
+positions at the University of Zurich. A student describes their interests in plain language, and
+THEMIS searches UZH publications (ZORA) and scraped thesis postings, ranks the researchers behind
+them, and answers with the evidence for each suggestion.
+
+This repository is the matchmaking core — ingestion, indexing, retrieval, synthesis, and the MCP
+adapter over them; the Python package is `thesis_matchmaker`. Start at
+[Quickstart](#quickstart). THEMIS is orientation, not endorsement, and a graded master's project
+rather than an official University of Zurich service.
 
 ## How it fits askUZH
 
