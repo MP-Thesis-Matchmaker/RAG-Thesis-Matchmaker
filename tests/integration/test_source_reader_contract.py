@@ -154,7 +154,7 @@ def test_postgres_source_reader_reads_publications_without_a_uzh_author(
     """Indexing takes no position on UZH authorship; retrieval decides.
 
     This asserted the opposite until 2026-08-25. Filtering in SQL made
-    `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable in practice: turning it off would
+    `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable in practice: turning it off would
     return nothing extra until someone re-embedded the corpus. Reading everything
     costs ~2.3x the embedding work once and makes the rule a setting.
     """

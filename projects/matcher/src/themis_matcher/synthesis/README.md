@@ -12,7 +12,7 @@ not already in the matches it was handed.
 ```
 list[SupervisorMatch] ──▶ Synthesizer.synthesize(query, matches) ──▶ str
                                 │
-                                ├── LLMSynthesizer   (when LLM_BASE_URL is set)
+                                ├── LLMSynthesizer   (when MATCHER_LLM_BASE_URL is set)
                                 │     ├─ no matches           → template fallback
                                 │     ├─ none ≥ min_score     → _no_strong_match, NO LLM CALL
                                 │     ├─ LLMError             → template fallback
@@ -57,15 +57,18 @@ lands on deterministic, grounded output rather than on generated text.
 
 ## Configuration
 
+The subset of `MatcherSettings` this sub-package reads; the whole list is in
+[the package README](../../../README.md#configuration).
+
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| `llm_base_url` | `LLM_BASE_URL` | unset | **The switch.** Unset → `TemplateSynthesizer`. Set → `LLMSynthesizer`. |
-| `llm_model` | `LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
-| `llm_reasoning_effort` | `LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
-| `llm_api_key` | `LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
-| `synthesis_min_score` | `SYNTHESIS_MIN_SCORE` | `0.0` | Threshold below which a match counts as weak. |
+| `llm_base_url` | `MATCHER_LLM_BASE_URL` | unset | **The switch.** Unset → `TemplateSynthesizer`. Set → `LLMSynthesizer`. |
+| `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
+| `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
+| `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
+| `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Threshold below which a match counts as weak. |
 
-`SYNTHESIS_MIN_SCORE` is compared against `SupervisorMatch.score`, which is a
+`MATCHER_SYNTHESIS_MIN_SCORE` is compared against `SupervisorMatch.score`, which is a
 cosine similarity in `[-1, 1]` — not a percentage. Pick a value from observed
 scores on real queries; see [`../indexing/README.md`](../indexing/README.md).
 

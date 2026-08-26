@@ -98,7 +98,7 @@ note at the top), so editing them now would be churn on files with no future.
 `vault.vso.{name,path,mount}` to materialise a `VaultStaticSecret`, `vaultEnv` to
 map its keys onto environment variables, and `vault.injector` to write a file into
 the pod — which is how the ZORA token should arrive, since
-`config.resolve_api_token` prefers a file over the inline variable.
+`ZoraSettings.api_token` prefers a file over the inline variable.
 
 The commands below are therefore the **local / debugging** form, not the deployed
 one. Neither command's value should ever reach a file in this repository:
@@ -109,7 +109,7 @@ kubectl create secret generic thesis-matchmaker-db \
   --from-literal=database-url='postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require'
 
 # ZORA personal API token, mounted as a file at /run/secrets/zora/token.
-# config.resolve_api_token prefers the file over the inline variable, so the file
+# ZoraSettings.api_token prefers the file over the inline variable, so the file
 # is the deployed truth. Read it from disk rather than pasting it into a shell,
 # which would put it in your history.
 kubectl create secret generic zora-api-token --from-file=token=./token.secret

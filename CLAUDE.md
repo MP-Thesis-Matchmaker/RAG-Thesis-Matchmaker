@@ -14,7 +14,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-26)
 
 A **five-member `uv` workspace**, every member `requires-python >=3.11`, ~11,750 LOC across the
-five `src/` trees, 538 tests in 39 files (472 pass / 66 skip without `DATABASE_URL`). The
+five `src/` trees, 560 tests in 43 files (494 pass / 66 skip without `DATABASE_URL`). The
 workspace root has **no `[project]` table** — it is virtual, which is why a bare `uv sync`
 installs nothing and errors; always `--all-packages` or `--package themis-<x>`.
 **Per-member detail lives in the member's `README.md`; read those instead of expanding this
@@ -23,7 +23,7 @@ section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png
 
 | Member | Import root | Status | Concern |
 |---|---|---|---|
-| [`libs/shared/`](libs/shared/README.md) | `themis_shared` | implemented | The floor everything stands on: [`contracts/`](libs/shared/src/themis_shared/contracts/README.md) (**every** data model), `config`, `db`, `schema` + `schema.sql`, `initdb`. Imports no other member |
+| [`libs/shared/`](libs/shared/README.md) | `themis_shared` | implemented | The floor everything stands on: [`contracts/`](libs/shared/src/themis_shared/contracts/README.md) (**every** data model), `config` (**two fields** — see below), `db`, `schema` + `schema.sql`, `initdb`. Imports no other member |
 | [`projects/zora/`](projects/zora/README.md) | `themis_zora` | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
 | [`projects/scraper/`](projects/scraper/README.md) | `themis_scraper` | implemented, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`projects/matcher/`](projects/matcher/README.md) | `themis_matcher` | implemented | The engine, in five sub-packages — [`indexing/`](projects/matcher/src/themis_matcher/indexing/README.md), [`retrieval/`](projects/matcher/src/themis_matcher/retrieval/README.md) (**also holds the only ranking**), [`parsing/`](projects/matcher/src/themis_matcher/parsing/README.md), [`synthesis/`](projects/matcher/src/themis_matcher/synthesis/README.md), [`pipeline/`](projects/matcher/src/themis_matcher/pipeline/README.md) — plus `llm.py` and `cli.py` |
@@ -58,7 +58,7 @@ Two of the scraper's three record kinds are stored and unread: `researcher_profi
 
 **Matcher-wide idiom — respect it.** `themis_matcher`'s `parsing/`, `indexing/`, `retrieval/`,
 `synthesis/` each have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
-`build_*(settings)` factory selecting one from `themis_shared.config.Settings`. That is invariant 3
+`build_*(settings)` factory selecting one from `themis_matcher.config.MatcherSettings`. That is invariant 3
 in code form. Each also ships a real offline implementation (`HashEmbedder`, `FakeRetriever`,
 `RuleBasedExtractor`, `TemplateSynthesizer`, `InMemoryVectorStore`) — not mocks, which is why CI's
 `offline` job runs the whole pipeline with no model download, no database and no network.
@@ -78,7 +78,7 @@ Entry points — one console script per member: `themis-init-db` (shared), `them
 `python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
 delegates to `themis_shared.initdb`, so the two spellings cannot drift.
 
-**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `themis-matcher index`
+**Gotcha:** `MATCHER_SOURCES_PATH` defaults to `data/samples`, so a bare `themis-matcher index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
 corpus lives in the `publication` table — **214,756 publications** as of 2026-08-25, of which
 **53,545 (24.9%)** carry a UZH author, naming **2,942** distinct researchers. That figure was
@@ -88,13 +88,13 @@ linked to a local Person. Those publications are still indexed and still retriev
 ranked below CRIS-backed candidates rather than excluded. See
 [`zora/README.md`](projects/zora/README.md). `--source db` indexes **all** of them,
 plus **all 695 postings**. It briefly indexed only the UZH-authored ones (2026-08-21 to
-08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
+08-25); that filter is gone because it made `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
 turning it off would have returned nothing extra until someone re-embedded the corpus. Eligibility
-is now a retrieval-time setting, with `RETRIEVAL_RANKING_STRATEGY=uzh_first` demoting
+is now a retrieval-time setting, with `MATCHER_RETRIEVAL_RANKING_STRATEGY=uzh_first` demoting
 unaffiliated researchers rather than excluding them. The posting side made the same move on
 2026-08-26: it used to index only the 678 available topics, and now indexes the 15 `assigned` and
 2 `private` ones too, flagged `is_available: false` and excluded by
-`RETRIEVAL_REQUIRE_AVAILABLE_POSTING` (on by default) instead of by a `WHERE` clause.
+`MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` (on by default) instead of by a `WHERE` clause.
 `data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no longer
 tracked.
 
@@ -118,10 +118,33 @@ the "one reset for everything" plan did not survive, because the entity mirrors 
 before those changes were designed. Details:
 [`zora/README.md`](projects/zora/README.md).
 
+**Configuration is owned by the member that reads it (2026-08-27).** `themis_shared.config.Settings`
+is **two fields** — `database_url` and `matcher_base_url`, the only two more than one member reads.
+Everything else lives in a prefixed subclass: `MatcherSettings` (`MATCHER_`, 17 fields),
+`GatewaySettings` (`GATEWAY_`), `ZoraSettings` (`ZORA_`), `ScraperSettings` (`SCRAPER_`). Adding a
+field to the shared class means every member inherits it; `test_smoke.py` fails first, deliberately.
+
+Three things about this that are not obvious and cost time to rediscover:
+
+- **`env_prefix` on a subclass re-prefixes *inherited* fields too.** The shared floor's two fields
+  carry an explicit `validation_alias`, which is inherited as part of the `FieldInfo` and beats any
+  subclass prefix — that is the only reason `DATABASE_URL` is not `MATCHER_DATABASE_URL` inside the
+  matcher. `populate_by_name=True` rides along, because an explicit alias otherwise makes the alias
+  the *only* accepted constructor keyword and `extra="ignore"` silently drops `Settings(database_url=…)`.
+- **A wrong or stale variable name is silent**, for the same `extra="ignore"` reason: not rejected,
+  just not read, and the default applies. `get_settings()` logs a warning for the pre-rename
+  spellings; that helper is a migration aid with an expiry date, not a compatibility layer.
+- **Values that must not be environment-settable are `ClassVar`** — `ZoraSettings.ZORA_DSPACE_API_URL`
+  and its four siblings. `ClassVar` is the only mechanism that works: pydantic registers no field, so
+  there is no name to override. `Field(frozen=True)` blocks assignment but **still loads from the
+  environment**, and a bare `Final` is deprecated for this since pydantic 2.11.
+
+`.env.example` is the full inventory, grouped by owning member.
+
 Tooling: `uv` everywhere — a **single root `uv.lock` covering all five members**, tracked, and what
 actually gets installed by CI (`uv sync --locked --all-packages`, or `--package themis-<x>`) and by
 the container images alike; pip is used nowhere. One `.venv`, at the root: `--package X` *replaces*
-its contents rather than making a second environment. `pytest` (538 tests / 39 files; 66 need
+its contents rather than making a second environment. `pytest` (560 tests / 43 files; 66 need
 Postgres and skip without `DATABASE_URL`) and `ruff` (line length 100, py311) are configured
 **only in the root `pyproject.toml`** — which fixes pytest's rootdir at the repo root, so always
 invoke it from there. `ruff` lives in the root `dev` group; `pytest` is repeated in every member's

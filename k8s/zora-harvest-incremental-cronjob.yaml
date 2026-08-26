@@ -65,7 +65,7 @@ spec:
                     secretKeyRef:
                       name: thesis-matchmaker-db
                       key: database-url
-                # A file, not an inline value: config.resolve_api_token prefers
+                # A file, not an inline value: ZoraSettings.api_token prefers
                 # the file and this mirrors how the token arrives here.
                 - name: ZORA_UZH_API_KEY_FILE
                   value: /run/secrets/zora/token
