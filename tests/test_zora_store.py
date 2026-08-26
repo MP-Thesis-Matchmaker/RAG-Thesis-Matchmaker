@@ -9,8 +9,6 @@ from __future__ import annotations
 import pytest
 
 from thesis_matchmaker import db
-from thesis_matchmaker.contracts import AuthorAuthority
-from thesis_matchmaker.indexing.sources import PostgresSourceReader
 from thesis_matchmaker.zora import store
 
 _RATIO = 0.5
@@ -151,21 +149,6 @@ def test_state_roundtrip_and_full_run_stamps_both_modes(clean_db: str) -> None:
     assert after_full.last_incremental_run_at is not None
 
 
-def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) -> None:
-    """The read side of the same table, which is what the indexer consumes."""
-    _write(clean_db, [_row("zora:1"), _row("zora:2")], mode="full")
-    reader = PostgresSourceReader(dsn=clean_db)
-    records = list(reader.publications())
-    assert [r.id for r in records] == ["zora:1", "zora:2"]
-    assert records[0].uzh_authors == ["A. Müller"]
-    assert records[0].author_authority_map == {
-        "A. Müller": AuthorAuthority(type="cris", id="uuid-1"),
-        "X. External": None,
-    }
-    assert records[0].keywords == ["retrieval", "german"]
-    assert reader.invalid_records == 0
-
-
 def test_first_ever_run_is_full_and_still_stamps_both_modes(clean_db: str) -> None:
     """The regression: a fresh deployment has no state row, so its first harvest is
     a full one *inserting* the row rather than updating it. The INSERT and UPDATE
@@ -182,38 +165,6 @@ def test_incremental_run_does_not_stamp_the_full_column(clean_db: str) -> None:
     state = store.load_state(clean_db)
     assert state.last_incremental_run_at is not None
     assert state.last_full_run_at is None
-
-
-def test_postgres_source_reader_reads_publications_without_a_uzh_author(clean_db: str) -> None:
-    """Indexing takes no position on UZH authorship; retrieval decides.
-
-    This asserted the opposite until 2026-08-25. Filtering in SQL made
-    `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable in practice: turning it off would
-    return nothing extra until someone re-embedded the corpus. Reading everything
-    costs ~2.3x the embedding work once and makes the rule a setting.
-    """
-    _write(
-        clean_db,
-        [
-            _row("zora:1"),
-            _row(
-                "zora:2",
-                authors=["X. External", "Y. Elsewhere"],
-                uzh_authors=[],
-                author_authority_map={"X. External": None, "Y. Elsewhere": None},
-            ),
-        ],
-        mode="full",
-    )
-    reader = PostgresSourceReader(dsn=clean_db)
-    records = list(reader.publications())
-
-    assert [r.id for r in records] == ["zora:1", "zora:2"]
-    # Read faithfully, so retrieval can tell the two apart: the empty list is what
-    # `documents.py` turns into `has_uzh_author: False`, and what the retriever's
-    # fallback keys on when it credits `authors` instead.
-    assert records[1].uzh_authors == []
-    assert records[1].authors == ["X. External", "Y. Elsewhere"]
 
 
 # --- Entity mirrors: person and org_unit ---

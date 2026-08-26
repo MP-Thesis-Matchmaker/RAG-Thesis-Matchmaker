@@ -15,7 +15,6 @@ from __future__ import annotations
 import pytest
 
 from thesis_matchmaker import db
-from thesis_matchmaker.indexing.sources import PostgresSourceReader
 from thesis_matchmaker.scraper import store
 
 
@@ -103,8 +102,9 @@ def _truncate(dsn: str) -> None:
 def clean_db(dsn: str) -> str:
     """Empty before and after, like conftest.py's pg_store.
 
-    Leaving rows behind is not a private mess: `PostgresSourceReader.postings()` now
-    reads this table, so a leftover posting shows up in another module's assertions.
+    Leaving rows behind is not a private mess: the indexer's source reader reads
+    this table, so a leftover posting shows up in another module's assertions.
+    See tests/integration/test_source_reader_contract.py.
     """
     _truncate(dsn)
     yield dsn
@@ -155,16 +155,6 @@ def test_degree_levels_are_queryable_by_overlap(clean_db: str) -> None:
     assert [r[0] for r in master] == ["both", "master_only"]
 
 
-def test_supervisors_round_trip_with_their_profile_links(clean_db: str) -> None:
-    """contact_url is one of three keys a profile link hides behind."""
-    store.write_dataset(_dataset(topics=[_topic("t1", "src--1")]), dsn=clean_db)
-    postings = list(PostgresSourceReader(clean_db).postings())
-    assert len(postings) == 1
-    assert [s.name for s in postings[0].supervisors] == ["A. Example"]
-    assert postings[0].supervisors[0].profile_url == "https://example.org/a"
-    assert postings[0].supervisors[0].email is None
-
-
 def test_rewriting_a_source_replaces_only_its_own_rows(clean_db: str) -> None:
     """The prune is scoped to the sources a run covered.
 
@@ -202,30 +192,6 @@ def test_an_updated_topic_overwrites_rather_than_duplicating(clean_db: str) -> N
     with db.connection(clean_db) as conn:
         row = conn.execute("SELECT title, status FROM posting WHERE id = 't1'").fetchone()
     assert row == ("Renamed", "assigned")
-
-
-def test_every_posting_is_offered_to_the_indexer_regardless_of_status(clean_db: str) -> None:
-    """Availability is decided at retrieval now, not here.
-
-    This reader used to drop assigned and private topics so they were never embedded.
-    They are embedded now, carrying `is_available: False`, and
-    `retrieval_require_available_posting` -- on by default -- is what keeps them out of
-    results. The point of moving it is that flipping that setting needs no re-index.
-    """
-    store.write_dataset(
-        _dataset(
-            topics=[
-                _topic("open1", "src--1"),
-                _topic("taken1", "src--1", status="taken"),
-                _topic("private1", "src--1", status="private"),
-                _topic("silent1", "src--1", status=None),
-            ]
-        ),
-        dsn=clean_db,
-    )
-    assert store.posting_count(dsn=clean_db) == 4
-    offered = {p.id for p in PostgresSourceReader(clean_db).postings()}
-    assert offered == {"open1", "taken1", "private1", "silent1"}
 
 
 def test_a_faculty_scope_process_has_no_department(clean_db: str) -> None:
