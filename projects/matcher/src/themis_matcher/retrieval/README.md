@@ -56,8 +56,8 @@ Filters applied:
 | `source_type` | `publication` | `thesis_posting` |
 | `department` | if the query names one | if the query names one |
 | `degree_level` | — | *(not filtered directly -- see below)* |
-| `has_uzh_author` | **`True`** *only when `RETRIEVAL_REQUIRE_UZH_AUTHOR`* | — |
-| `is_available` | — | **`True`** *unless `RETRIEVAL_REQUIRE_AVAILABLE_POSTING=false`* |
+| `has_uzh_author` | **`True`** *only when `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`* | — |
+| `is_available` | — | **`True`** *unless `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING=false`* |
 | `degree_<level>` | — | **`True`** if the query names one |
 
 ### Two eligibility rules, both applied here rather than at index time
@@ -71,9 +71,9 @@ different claims.
 
 | setting | default | effect |
 |---|---|---|
-| `RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | adds `has_uzh_author: True` to the publication query |
-| `RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, score)`; `score` on similarity alone |
-| `RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | adds `is_available: True` to the posting query |
+| `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | adds `has_uzh_author: True` to the publication query |
+| `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, score)`; `score` on similarity alone |
+| `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | adds `is_available: True` to the posting query |
 
 The default is **permissive but demoted**: an external researcher is reachable and
 always ranks below every UZH match. The second setting is inert while the first is
@@ -94,7 +94,7 @@ Two consequences worth knowing:
   says which is which; callers should not re-sort on `score` and expect the order back.
 
 Indexing deliberately takes no position now — see the comment at the top of
-`indexing/sources.py`. A `WHERE` clause there would make `RETRIEVAL_REQUIRE_UZH_AUTHOR`
+`indexing/sources.py`. A `WHERE` clause there would make `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`
 unflippable in practice: turning it off would return nothing extra until someone
 re-embedded the corpus, hours of work triggered by an environment variable.
 
@@ -111,7 +111,7 @@ changes on the source page between scrapes while its text does not.
 So postings now follow publications. All 695 are embedded, each carrying
 `is_available` (false for `assigned` and `private`; `pending` and a missing status
 both count as available, because "not yet settled" and "the page did not say" are not
-"taken"), and `RETRIEVAL_REQUIRE_AVAILABLE_POSTING` — on by default — decides whether
+"taken"), and `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` — on by default — decides whether
 the rule applies. Cost of the reversal: 17 extra documents against 214,756
 publications.
 
@@ -132,7 +132,7 @@ in `docs/example-run.md`, so it was left alone rather than weakened for a
 non-default path — but flipping the setting without fixing the phrasing is a
 correctness regression, not just a recall change.
 
-#### Known gap: `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` under-returns
+#### Known gap: `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR=true` under-returns
 
 pgvector applies metadata filters **after** the HNSW scan (see the partial-index
 comment in `schema.sql`), and the two partial indexes key on `source_type` only. Over
@@ -165,13 +165,21 @@ signal.
 
 ## Configuration
 
+The subset of `MatcherSettings` this sub-package reads; the whole list is in
+[the package README](../../../README.md#configuration).
+
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Must match the model that built the index; the manifest guard enforces this. |
+| `embedding_model` | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3` | Must match the model that built the index; the manifest guard enforces this. |
 | `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Which Postgres to read the index from. |
+| `retrieval_require_uzh_author` | `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | Whether a publication needs a registered UZH author to be retrievable at all. See the eligibility section above, including why a filtered query can come back short. |
+| `retrieval_require_available_posting` | `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | Whether a posting has to still be open. No ranking strategy softens this one — off puts assigned topics in the results outright. |
+| `retrieval_ranking_strategy` | `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` or `score`. Inert while the UZH-author filter is on. |
 
-`build_retriever` reads these indirectly, by calling `indexing.build_embedder` and
-`indexing.build_store`.
+The first two rows are read indirectly: `build_retriever` calls
+`indexing.build_embedder` and `indexing.build_store`. The last three it reads
+itself — they were discussed at length above and missing from this table until
+2026-08-27.
 
 ## Swappable seams
 
@@ -234,7 +242,7 @@ serves fake results.
 - **Score range**: `ScoredHit.score` is `1.0 - cosine_distance`, so it lives in
   `[-1, 1]` and can be negative — see
   [`../indexing/README.md`](../indexing/README.md). Any threshold set against it
-  (notably `SYNTHESIS_MIN_SCORE`) should be chosen from observed values, not
+  (notably `MATCHER_SYNTHESIS_MIN_SCORE`) should be chosen from observed values, not
   assumed to be a percentage.
 - **`department` matching is exact-string.** `parsing/` never populates the field
   from free text today, so the filter is effectively dormant; it will need

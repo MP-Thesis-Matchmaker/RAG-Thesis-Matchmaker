@@ -1,7 +1,7 @@
 """
 Regenerate `data/samples/` from the harvested corpus.
 
-The samples are what a fresh clone indexes: `SOURCES_PATH` defaults to
+The samples are what a fresh clone indexes: `MATCHER_SOURCES_PATH` defaults to
 `data/samples`, so `themis-matcher index` with no arguments reads them, and CI's
 offline job runs the whole pipeline against nothing else. They therefore have to
 parse against the current contracts -- and in 2026-08 they silently stopped,
@@ -48,13 +48,13 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
+from themis_matcher.config import get_settings
 from themis_matcher.indexing.sources import (
     PUBLICATIONS_FILE,
     THESES_FILE,
     PostgresSourceReader,
 )
 from themis_shared import db
-from themis_shared.config import get_settings
 from themis_shared.contracts import ThesisPosting, ZoraPublication
 
 # Four topics that exist on both sides, so a query can match a publication and a
@@ -87,7 +87,7 @@ POSTING_QUOTAS = {
 PUBLICATION_EDGE_CASES = {
     # Embedding falls back to title alone.
     "no abstract": "abstract IS NULL OR abstract = ''",
-    # Without one of these, RETRIEVAL_REQUIRE_UZH_AUTHOR cannot be exercised
+    # Without one of these, MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR cannot be exercised
     # offline at all -- every record would pass the filter either way.
     "no UZH author": "coalesce(array_length(uzh_authors, 1), 0) = 0",
     # The CRIS-vs-ORCID distinction the typed authority exists to carry. Written
@@ -106,7 +106,7 @@ PUBLICATION_EDGE_CASES = {
 }
 
 POSTING_EDGE_CASES = {
-    # These two are why RETRIEVAL_REQUIRE_AVAILABLE_POSTING is flippable.
+    # These two are why MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING is flippable.
     "assigned": "status = 'assigned'",
     "private": "status = 'private'",
     "no status": "status IS NULL",

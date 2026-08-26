@@ -36,7 +36,7 @@ _EF_SEARCH = 100
 # Keep scanning the index until top_k rows survive the WHERE clause, instead of
 # filtering one fixed candidate set and returning short. strict_order preserves
 # exact distance ordering, which matters because the score is surfaced to the
-# user and fed to SYNTHESIS_MIN_SCORE.
+# user and fed to MATCHER_SYNTHESIS_MIN_SCORE.
 _ITERATIVE_SCAN = "strict_order"
 
 

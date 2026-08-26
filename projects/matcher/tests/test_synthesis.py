@@ -1,7 +1,7 @@
 """Tests for the answer synthesiser (offline template path and factory)."""
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.synthesis import TemplateSynthesizer, build_synthesizer
-from themis_shared.config import Settings
 from themis_shared.contracts import Evidence, SupervisorMatch
 
 
@@ -33,21 +33,26 @@ def test_template_handles_no_matches():
 
 
 def test_build_synthesizer_offline_by_default():
-    assert isinstance(build_synthesizer(Settings(llm_base_url=None)), TemplateSynthesizer)
+    assert isinstance(
+        build_synthesizer(MatcherSettings(_env_file=None, llm_base_url=None)), TemplateSynthesizer
+    )
 
 
 def test_build_synthesizer_uses_llm_when_endpoint_set():
     from themis_matcher.synthesis.llm import LLMSynthesizer
 
     synth = build_synthesizer(
-        Settings(llm_base_url="http://localhost:11434/v1", llm_model="llama3.1")
+        MatcherSettings(
+            _env_file=None, llm_base_url="http://localhost:11434/v1", llm_model="llama3.1"
+        )
     )
     assert isinstance(synth, LLMSynthesizer)
 
 
 def test_build_synthesizer_passes_min_score():
     synth = build_synthesizer(
-        Settings(
+        MatcherSettings(
+            _env_file=None,
             llm_base_url="http://localhost:11434/v1",
             llm_model="llama3.1",
             synthesis_min_score=0.7,

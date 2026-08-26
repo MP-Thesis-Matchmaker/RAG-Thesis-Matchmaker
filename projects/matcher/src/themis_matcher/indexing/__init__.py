@@ -8,6 +8,7 @@ Never writes back to the source data.
 
 from __future__ import annotations
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.indexing.documents import (
     Document,
     posting_to_document,
@@ -30,10 +31,9 @@ from themis_matcher.indexing.store import (
     PgVectorStore,
     VectorStore,
 )
-from themis_shared.config import Settings
 
 
-def build_embedder(settings: Settings) -> Embedder:
+def build_embedder(settings: MatcherSettings) -> Embedder:
     """Pick the embedder from config; "hash-fake" selects the offline fake."""
     if settings.embedding_model == "hash-fake":
         return HashEmbedder()
@@ -45,12 +45,12 @@ def build_embedder(settings: Settings) -> Embedder:
     )
 
 
-def build_store(settings: Settings) -> VectorStore:
+def build_store(settings: MatcherSettings) -> VectorStore:
     """Open the configured vector store."""
     return PgVectorStore(dsn=settings.database_url)
 
 
-def build_indexer(settings: Settings) -> Indexer:
+def build_indexer(settings: MatcherSettings) -> Indexer:
     """Wire an indexer over the configured embedder and store."""
     return Indexer(
         embedder=build_embedder(settings),
@@ -63,7 +63,7 @@ def build_indexer(settings: Settings) -> Indexer:
 DATABASE_SOURCE = "db"
 
 
-def build_source_reader(settings: Settings, source: str | None = None) -> SourceReader:
+def build_source_reader(settings: MatcherSettings, source: str | None = None) -> SourceReader:
     """Pick where the indexer reads records from.
 
     `db` reads the harvested `publication` table -- what a deployed indexer does.
@@ -76,7 +76,7 @@ def build_source_reader(settings: Settings, source: str | None = None) -> Source
     return JsonlSourceReader(directory=chosen)
 
 
-def read_manifest(settings: Settings) -> IndexManifest | None:
+def read_manifest(settings: MatcherSettings) -> IndexManifest | None:
     """The manifest of the built index, or None if nothing has been indexed.
 
     None means "no index yet", which the CLI and the MCP adapter answer by

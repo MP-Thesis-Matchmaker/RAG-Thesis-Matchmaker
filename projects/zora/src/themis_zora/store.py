@@ -28,7 +28,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel
 
 from themis_shared import db
-from themis_shared.config import get_settings
+from themis_zora.config import get_settings
 
 logger = logging.getLogger(__name__)
 

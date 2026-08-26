@@ -7,7 +7,7 @@ import another, so anything more than one of them needs lives here.
 | Module | Role |
 |---|---|
 | [`contracts/`](src/themis_shared/contracts/README.md) | Every data model, harvester output shapes included. Imports nothing of ours — it is the base of the dependency graph |
-| `config.py` | `Settings`, loaded from the environment and an optional `.env` |
+| `config.py` | `Settings` — `DATABASE_URL` and `MATCHER_BASE_URL`, and nothing else. Every other knob belongs to the member that reads it, in a prefixed subclass of this one |
 | `db.py` | Postgres connection pooling, and the pgvector literal helper |
 | `schema.py` | Applies `schema.sql` idempotently, fingerprint-guarded. Also creates the eleventh table, `schema_version` |
 | `schema.sql` | Ten of the eleven tables, in one file with one fingerprint |

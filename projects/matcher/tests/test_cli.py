@@ -46,8 +46,8 @@ def offline_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ).model_dump_json()
         + "\n"
     )
-    monkeypatch.setenv("EMBEDDING_MODEL", "hash-fake")
-    monkeypatch.setenv("SOURCES_PATH", str(sources))
+    monkeypatch.setenv("MATCHER_EMBEDDING_MODEL", "hash-fake")
+    monkeypatch.setenv("MATCHER_SOURCES_PATH", str(sources))
     return tmp_path
 
 

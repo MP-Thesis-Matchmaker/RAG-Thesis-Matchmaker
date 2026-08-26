@@ -2,8 +2,8 @@
 
 import pytest
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.parsing import RuleBasedExtractor, build_extractor
-from themis_shared.config import Settings
 from themis_shared.contracts import DegreeLevel
 
 
@@ -26,7 +26,7 @@ def test_rule_based_no_degree_is_none():
 
 
 def test_build_extractor_falls_back_without_endpoint():
-    extractor = build_extractor(Settings(llm_base_url=None))
+    extractor = build_extractor(MatcherSettings(_env_file=None, llm_base_url=None))
     assert isinstance(extractor, RuleBasedExtractor)
 
 
@@ -34,7 +34,9 @@ def test_build_extractor_uses_llm_when_endpoint_set():
     from themis_matcher.parsing.openai_compat import OpenAICompatExtractor
 
     extractor = build_extractor(
-        Settings(llm_base_url="http://localhost:11434/v1", llm_model="llama3.1")
+        MatcherSettings(
+            _env_file=None, llm_base_url="http://localhost:11434/v1", llm_model="llama3.1"
+        )
     )
     assert isinstance(extractor, OpenAICompatExtractor)
 

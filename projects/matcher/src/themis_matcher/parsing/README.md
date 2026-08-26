@@ -15,7 +15,7 @@ Read-only. No I/O except the optional LLM call.
         ▼
   QueryExtractor.extract
         │
-        ├── OpenAICompatExtractor  (when LLM_BASE_URL is set)
+        ├── OpenAICompatExtractor  (when MATCHER_LLM_BASE_URL is set)
         │        └── on LLMError or ValidationError ──▶ falls back to ↓
         └── RuleBasedExtractor     (always available, offline)
         │
@@ -52,12 +52,15 @@ both paths return the same contract.
 
 ## Configuration
 
+The subset of `MatcherSettings` this sub-package reads; the whole list is in
+[the package README](../../../README.md#configuration).
+
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| `llm_base_url` | `LLM_BASE_URL` | unset | **The switch.** Unset → rule-based. Set → LLM extractor with rule-based fallback. |
-| `llm_model` | `LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
-| `llm_reasoning_effort` | `LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
-| `llm_api_key` | `LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
+| `llm_base_url` | `MATCHER_LLM_BASE_URL` | unset | **The switch.** Unset → rule-based. Set → LLM extractor with rule-based fallback. |
+| `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
+| `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
+| `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
 
 Any OpenAI-compatible endpoint works — LibreChat in production, a local Ollama
 during development.
@@ -72,7 +75,7 @@ should know which provider is in use.
 ## Status
 
 **Implemented and tested.** `projects/matcher/tests/test_parsing.py` (19 tests) covers the
-rule-based extractor and the factory's branch on `LLM_BASE_URL`.
+rule-based extractor and the factory's branch on `MATCHER_LLM_BASE_URL`.
 
 `RuleBasedExtractor` describes itself in its own docstring as a stand-in, and that
 is accurate — it is a deliberate offline baseline, not a serious NLP component.

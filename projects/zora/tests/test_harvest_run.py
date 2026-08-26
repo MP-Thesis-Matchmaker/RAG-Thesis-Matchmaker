@@ -16,7 +16,7 @@ import pytest
 
 from fake_dso import FakeDSO
 from themis_shared import db, schema
-from themis_zora import config, entities, harvest, store, zora_client
+from themis_zora import config, entities, fields, harvest, store, zora_client
 
 
 def _dso(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z") -> FakeDSO:
@@ -24,11 +24,11 @@ def _dso(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z") -> FakeDSO:
         handle=handle,
         uuid=f"uuid-{handle}",
         fields={
-            config.FIELD_TITLE: [f"Title {handle}"],
-            config.FIELD_AUTHOR: ["Doe, Jane"],
-            config.FIELD_DATE_ACCESSIONED: [accessioned],
+            fields.FIELD_TITLE: [f"Title {handle}"],
+            fields.FIELD_AUTHOR: ["Doe, Jane"],
+            fields.FIELD_DATE_ACCESSIONED: [accessioned],
         },
-        authorities={config.FIELD_AUTHOR: ["cris-person-1"]},
+        authorities={fields.FIELD_AUTHOR: ["cris-person-1"]},
     )
 
 
@@ -107,7 +107,7 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
         "iter_items",
         lambda client, since=None: iter([_dso("123/1"), _dso("123/2", accessioned="2026-02-02")]),
     )
-    monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
+    monkeypatch.setenv("ZORA_DATA_DIR", str(tmp_path))
     # The preflight is the one part of `run()` that needs a real database. It has
     # its own tests in tests/test_schema.py; here it would only mean every
     # orchestration test required Postgres.
@@ -248,9 +248,9 @@ def test_full_harvest_passes_previous_total_from_state(spy: _Spy) -> None:
 def test_full_harvest_writes_raw_dump_and_saves_watermark(spy: _Spy) -> None:
     assert harvest.run("full") == 0
 
-    dumps = os.listdir(config.RAW_DIR)
+    dumps = os.listdir(config.get_settings().raw_dir)
     assert len(dumps) == 1 and dumps[0].endswith("_full.jsonl")
-    with open(os.path.join(config.RAW_DIR, dumps[0]), encoding="utf-8") as f:
+    with open(os.path.join(config.get_settings().raw_dir, dumps[0]), encoding="utf-8") as f:
         assert [json.loads(line)["handle"] for line in f] == ["123/1", "123/2"]
 
     # The watermark advances to the newest accessioned date seen, not the oldest.
@@ -474,7 +474,10 @@ def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> N
 def test_from_dump_does_not_write_another_raw_dump(spy: _Spy, dump: str) -> None:
     """The source file already *is* the cache; re-dumping it would just duplicate it."""
     assert harvest.run("full", from_dump=dump) == 0
-    assert not os.path.exists(config.RAW_DIR) or os.listdir(config.RAW_DIR) == []
+    assert (
+        not os.path.exists(config.get_settings().raw_dir)
+        or os.listdir(config.get_settings().raw_dir) == []
+    )
 
 
 def test_from_dump_advances_watermark_to_last_record_seen(spy: _Spy, dump: str) -> None:

@@ -2,7 +2,7 @@
 
 Fifty records — 30 `ZoraPublication` and 20 `ThesisPosting` — that stand in for the output of the
 ingestion components. They are what lets `pytest` and a bare `themis-matcher index` run with no
-database and no network. The indexer reads them through `SOURCES_PATH`, which defaults to this
+database and no network. The indexer reads them through `MATCHER_SOURCES_PATH`, which defaults to this
 directory.
 
 **Both files are real data now.** `theses.jsonl` was 20 invented fixtures until 2026-08-26
@@ -40,9 +40,9 @@ are chosen to exercise the paths a happy-path corpus hides:
 | departments | 22 | faculties | 3 of the corpus's 4 |
 
 Two of those rows are load-bearing rather than decorative. Without a publication that has **no UZH
-author**, `RETRIEVAL_REQUIRE_UZH_AUTHOR` cannot be exercised offline — every record passes the
+author**, `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` cannot be exercised offline — every record passes the
 filter whichever way it is set. The **unavailable postings** are the same story for
-`RETRIEVAL_REQUIRE_AVAILABLE_POSTING`. Neither was possible with the previous set.
+`MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING`. Neither was possible with the previous set.
 
 The postings also fix what this file used to confess about the fixtures: they were uniformly one
 supervisor and one degree level, where a quarter of real topics name nobody and half take two.

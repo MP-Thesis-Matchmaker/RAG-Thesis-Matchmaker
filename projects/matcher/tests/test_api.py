@@ -16,17 +16,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 from themis_matcher.api import build_service, create_app
+from themis_matcher.config import MatcherSettings
 from themis_matcher.indexing.embedder import HashEmbedder
 from themis_matcher.indexing.indexer import Indexer
 from themis_matcher.indexing.sources import JsonlSourceReader
 from themis_matcher.indexing.store import InMemoryVectorStore
-from themis_shared.config import Settings
 from themis_shared.contracts import ThesisPosting, ZoraPublication
 
 
-def _settings() -> Settings:
-    """Offline everything. No LLM base url means the rule-based parser."""
-    return Settings(embedding_model="hash-fake", llm_base_url=None)
+def _settings() -> MatcherSettings:
+    """Offline everything. No LLM base url means the rule-based parser.
+
+    _env_file=None keeps a developer's local .env from supplying anything this
+    call does not name.
+    """
+    return MatcherSettings(_env_file=None, embedding_model="hash-fake", llm_base_url=None)
 
 
 def _client(store: InMemoryVectorStore) -> TestClient:

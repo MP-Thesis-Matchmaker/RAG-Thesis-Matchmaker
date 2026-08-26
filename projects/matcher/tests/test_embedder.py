@@ -139,7 +139,7 @@ def _stub_sentence_transformers(monkeypatch: pytest.MonkeyPatch) -> type:
 
 
 def test_device_reaches_the_model_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """EMBEDDING_DEVICE=cpu is the escape hatch from an MPS abort.
+    """MATCHER_EMBEDDING_DEVICE=cpu is the escape hatch from an MPS abort.
 
     On a Mac sentence-transformers auto-detects mps, and moving bge-m3's weights
     into unified memory aborts the process (SIGABRT, no traceback) when the

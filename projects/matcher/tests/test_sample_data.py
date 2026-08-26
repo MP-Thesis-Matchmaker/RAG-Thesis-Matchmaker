@@ -93,7 +93,7 @@ def test_publications_cover_the_awkward_paths(publications: list[ZoraPublication
     """Coverage the selection promises. A corpus that is all happy-path hides bugs.
 
     The UZH-author case is the load-bearing one: without a publication that has
-    none, `RETRIEVAL_REQUIRE_UZH_AUTHOR` cannot be exercised offline, because
+    none, `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` cannot be exercised offline, because
     every record passes the filter whichever way it is set.
     """
     authority_types = {
@@ -114,7 +114,7 @@ def test_postings_cover_the_awkward_paths(postings: list[ThesisPosting]) -> None
     """Same, for postings.
 
     The unavailable posting is the load-bearing one here, for the same reason:
-    it is what makes `RETRIEVAL_REQUIRE_AVAILABLE_POSTING` mean anything offline.
+    it is what makes `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` mean anything offline.
     """
     unavailable = {PostingStatus.assigned, PostingStatus.private}
 

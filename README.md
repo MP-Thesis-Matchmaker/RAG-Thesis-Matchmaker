@@ -74,7 +74,7 @@ uv run themis-matcher index    # indexes the 50 checked-in samples
 uv run themis-matcher match "I want a master's thesis in NLP on RAG"
 ```
 
-**`--source` decides what you are searching.** It defaults to `SOURCES_PATH`,
+**`--source` decides what you are searching.** It defaults to `MATCHER_SOURCES_PATH`,
 which is `data/samples` — right for a fresh clone, but only 50 documents. Once
 the harvester has run, the corpus is in the `publication` table and wants
 `themis-matcher index --source db`. Nothing warns you about the difference.
@@ -91,8 +91,12 @@ Optional extras belong to the member that owns them:
 `uv sync --all-packages --all-extras` is the everything option. Note there is one `.venv`, at
 the root: unlike `pip install`, `uv sync` makes it *match* what you named, so `--package X`
 replaces its contents rather than adding to them. All configuration is documented in
-`.env.example`; to use an LLM, point `LLM_BASE_URL` at any OpenAI-compatible
-endpoint (LibreChat in production, or a local Ollama during development).
+`.env.example`, grouped by the member that owns it — `MATCHER_`, `GATEWAY_`, `ZORA_`,
+`SCRAPER_`, plus `DATABASE_URL` and `MATCHER_BASE_URL`, the only two more than one
+member reads. A variable set under the wrong prefix is ignored rather than refused,
+so copy the names rather than guessing at them. To use an LLM, point
+`MATCHER_LLM_BASE_URL` at any OpenAI-compatible endpoint (LibreChat in production,
+or a local Ollama during development).
 
 Real example output is in [docs/example-run.md](docs/example-run.md).
 
@@ -163,7 +167,7 @@ uv run pytest
 the root `pyproject.toml`, so `cd projects/zora && pytest` sees none of them. To run one member's
 tests, name the directory instead: `uv run pytest projects/scraper/tests`.
 
-538 tests across 39 files. 66 of them need Postgres and skip when `DATABASE_URL` is unset; point it
+560 tests across 43 files. 66 of them need Postgres and skip when `DATABASE_URL` is unset; point it
 at a database whose name ends in `_test` (`docker compose up -d postgres` creates
 `matchmaker_test` for exactly this), because the fixtures TRUNCATE between tests and the guard in
 `conftest.py` will refuse anything else.

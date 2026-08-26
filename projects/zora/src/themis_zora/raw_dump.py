@@ -45,9 +45,13 @@ def write_raw_dump(records: list[dict], kind: str) -> str:
                   ("persons"/"orgunits"). It becomes part of the filename, so a
                   replay can tell the kinds apart.
     """
-    os.makedirs(config.RAW_DIR, exist_ok=True)
+    # Resolved per call, not at import: ZORA_DATA_DIR used to be read once when
+    # this module was first imported, which is why three test modules had to
+    # patch the constant by attribute instead of setting the variable.
+    raw_dir = config.get_settings().raw_dir
+    os.makedirs(raw_dir, exist_ok=True)
     ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    dump_path = os.path.join(config.RAW_DIR, f"{ts}_{kind}.jsonl")
+    dump_path = os.path.join(raw_dir, f"{ts}_{kind}.jsonl")
     with open(dump_path, "w", encoding="utf-8") as f:
         for record in records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

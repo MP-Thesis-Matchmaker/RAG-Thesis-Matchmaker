@@ -119,9 +119,16 @@ what makes "same cached page + same template ⇒ identical records" testable at 
 
 ## Configuration
 
-`SCRAPER_`-prefixed throughout, so nothing here can collide with the unprefixed settings
-in [`../config.py`](../../libs/shared/src/themis_shared/config.py). The DSN is the one exception: it belongs to the
-system, and `store.py` reads it via `get_settings().database_url`.
+`ScraperSettings` in [`config.py`](src/themis_scraper/config.py), a `SCRAPER_`-prefixed
+subclass of the shared [`Settings`](../../libs/shared/src/themis_shared/config.py).
+The prefix is what keeps `llm_model` and friends from colliding with the matcher's
+`MATCHER_LLM_*`, which mean a different model for a different job.
+
+The last two rows are inherited and deliberately **not** prefixed — a
+`validation_alias` on the shared class pins them, so `env_prefix` cannot rename
+them out from under docker-compose. They used to live on a *separate* Settings
+object that `main.py` imported under an alias; one object now, which is what
+removed the hazard that comment warned about.
 
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
@@ -133,6 +140,8 @@ system, and `store.py` reads it via `get_settings().database_url`.
 | `llm_provider` / `llm_model` | `SCRAPER_LLM_*` | `openai` / `gpt-5-mini` | Its own LLM, not the matchmaker's. |
 | `llm_api_key` | `SCRAPER_LLM_API_KEY`, or `OPENAI_API_KEY` | none | Absent ⇒ `is_available()` is false and every caller keeps deterministic output. |
 | `render_idle_ms` / `render_settle_ms` | `SCRAPER_RENDER_*` | `6000` / `700` | Only meaningful with the `render` extra. |
+| `database_url` | `DATABASE_URL` | local Postgres | *Inherited.* Where `store.py` writes `posting`, `researcher_profile` and `application_process`. |
+| `matcher_base_url` | `MATCHER_BASE_URL` | unset | *Inherited.* Where the post-run index trigger goes. Unset means the trigger is skipped rather than the run failing. |
 
 Deliberately **not** configurable: the title thresholds in `title_check.py`, and the
 field lists, regexes and prompts. They are calibrated against

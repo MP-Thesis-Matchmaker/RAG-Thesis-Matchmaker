@@ -8,6 +8,10 @@ Everything below is real output, recorded on 2026-08-26 against the regenerated 
 not illustrative filler, and where a run exposed a defect the defect is recorded rather than tidied
 away — see [What these runs revealed](#what-these-runs-revealed).
 
+> The environment variables in the commands were renamed on 2026-08-27, when configuration moved to
+> the member that reads it (`EMBEDDING_MODEL` → `MATCHER_EMBEDDING_MODEL`, and so on). The output is
+> unchanged and was not re-recorded: the settings are the same settings, reached by a different name.
+
 ## Reproducing it
 
 All three examples run over the checked-in samples in `data/samples` — 50 documents, 30 real ZORA
@@ -17,27 +21,27 @@ postings used to be invented fixtures. See [`data/samples/README.md`](../data/sa
 ```bash
 docker compose up -d postgres
 themis-init-db
-EMBEDDING_MODEL=hash-fake themis-matcher index --source data/samples --rebuild
+MATCHER_EMBEDDING_MODEL=hash-fake themis-matcher index --source data/samples --rebuild
 ```
 
-**Example 1 needs no model and no API key** — with `LLM_BASE_URL` unset, both parsing and synthesis
+**Example 1 needs no model and no API key** — with `MATCHER_LLM_BASE_URL` unset, both parsing and synthesis
 use their offline implementations. **Examples 2 and 3 add an LLM.** These were recorded against
 OpenAI, because that is what the recording machine had configured:
 
 ```bash
-export LLM_BASE_URL=https://api.openai.com/v1
-export LLM_MODEL=gpt-5-mini
-export LLM_API_KEY=...
+export MATCHER_LLM_BASE_URL=https://api.openai.com/v1
+export MATCHER_LLM_MODEL=gpt-5-mini
+export MATCHER_LLM_API_KEY=...
 ```
 
 Any OpenAI-compatible endpoint works, and a local one avoids the second caveat below.
-`docker-compose.yml` ships an `ollama` service for that; set `LLM_REASONING_EFFORT=none` if you
+`docker-compose.yml` ships an `ollama` service for that; set `MATCHER_LLM_REASONING_EFFORT=none` if you
 point it at a reasoning model such as `qwen3:8b`, or hidden reasoning will push the synthesis call
 past `LLMClient`'s 30 s timeout and the answer will silently degrade to Example 1's template.
 
 Three caveats that shape everything on this page:
 
-- **`EMBEDDING_MODEL=hash-fake` ranks pseudo-randomly, not semantically.** It is the deterministic
+- **`MATCHER_EMBEDDING_MODEL=hash-fake` ranks pseudo-randomly, not semantically.** It is the deterministic
   offline embedder, so candidate *ordering* here is noise — which is why a query about RAG returns
   neurosurgery papers below. That is deliberate: it keeps the page reproducible with no 4 GB model
   download, and it makes the pipeline's grounding behaviour easy to see, because a semantically
@@ -60,7 +64,7 @@ Three caveats that shape everything on this page:
 **Query:** `retrieval-augmented generation and misinformation detection`
 
 ```
-$ EMBEDDING_MODEL=hash-fake themis-matcher match \
+$ MATCHER_EMBEDDING_MODEL=hash-fake themis-matcher match \
     "retrieval-augmented generation and misinformation detection" --top-k 5
 
 query: retrieval-augmented generation and misinformation detection
@@ -233,7 +237,7 @@ the fallback branch preserved case. The Example 3 query now parses offline to
 **4. A slow LLM used to be indistinguishable from no LLM.** Writing this page, three runs produced
 Example 1's output while an LLM was configured and reachable: the synthesis call exceeded the 30 s
 timeout by about a second and a half, and the `LLMError` was swallowed without a log. Both fallback
-sites now log a warning, and `LLM_REASONING_EFFORT` exists so a reasoning model can be told not to
+sites now log a warning, and `MATCHER_LLM_REASONING_EFFORT` exists so a reasoning model can be told not to
 spend its budget thinking.
 
 **Grounding held throughout.** Across all three examples the synthesis named only supervisors from

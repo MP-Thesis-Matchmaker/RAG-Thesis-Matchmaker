@@ -9,7 +9,7 @@ Two thin tools over the app-service functions in ``service``:
 
 Deployment: this runs as a standalone server that AI Buddy points its agent at,
 so the default transport is streamable HTTP and the tools are served at
-``http://<MCP_HOST>:<MCP_PORT>/mcp``. Nothing is merged into AI Buddy itself.
+``http://<GATEWAY_MCP_HOST>:<GATEWAY_MCP_PORT>/mcp``. Nothing is merged into AI Buddy itself.
 
 Run with ``themis-gateway-mcp``, or ``--stdio`` for local testing with an MCP
 inspector. Needs the ``mcp`` extra.
@@ -22,7 +22,7 @@ import argparse
 from mcp.server.mcpserver import MCPServer
 
 from themis_gateway import __version__, service
-from themis_shared.config import get_settings
+from themis_gateway.config import get_settings
 
 # MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from
 # mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than `mcp` on

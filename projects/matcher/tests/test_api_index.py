@@ -17,10 +17,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from themis_matcher.api import build_service, create_app
+from themis_matcher.config import MatcherSettings
 from themis_matcher.indexing.embedder import HashEmbedder
 from themis_matcher.indexing.store import PgVectorStore
 from themis_shared import db
-from themis_shared.config import Settings
 from themis_shared.contracts import IndexRunKind, IndexRunState, ThesisPosting, ZoraPublication
 
 # Generous: the work is two hash-fake documents, so anything approaching this
@@ -54,7 +54,8 @@ def sources(tmp_path: Path) -> Path:
 def client(dsn: str, pg_store: PgVectorStore, sources: Path) -> TestClient:
     with db.connection(dsn) as conn:
         conn.execute("TRUNCATE index_run")
-    settings = Settings(
+    settings = MatcherSettings(
+        _env_file=None,
         database_url=dsn,
         embedding_model="hash-fake",
         llm_base_url=None,

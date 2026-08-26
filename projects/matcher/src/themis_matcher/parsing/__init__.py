@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+from themis_matcher.config import MatcherSettings, get_settings
 from themis_matcher.parsing.base import QueryExtractor
 from themis_matcher.parsing.rule_based import RuleBasedExtractor
-from themis_shared.config import Settings, get_settings
 
 
-def build_extractor(settings: Settings | None = None) -> QueryExtractor:
+def build_extractor(settings: MatcherSettings | None = None) -> QueryExtractor:
     """Pick an extractor from config.
 
     Uses the configured LLM endpoint (LibreChat in production, a free local
-    model in development) when Settings.llm_base_url is set, otherwise the
+    model in development) when MatcherSettings.llm_base_url is set, otherwise the
     offline rule-based fallback. This keeps the pipeline runnable with no LLM.
     """
     settings = settings or get_settings()

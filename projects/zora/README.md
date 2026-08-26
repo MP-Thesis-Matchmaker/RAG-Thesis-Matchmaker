@@ -227,7 +227,7 @@ department or email** on these items, and CRIS coverage is sparse — most UZH
 authors have no Person record, so *absent from `person` does not mean not UZH*.
 
 **`org_unit`** mirrors the community tree under the UZH root
-(`config.UZH_ROOT_COMMUNITY_UUID`): root → 13 faculties → institutes/clinics,
+(`ZoraSettings.ZORA_ROOT_COMMUNITY_UUID`): root → 13 faculties → institutes/clinics,
 with `parent_uuid` / `faculty_uuid` / `depth` precomputed by the walk, plus
 `dc.zora.subjectid` (UZH's own numeric org id) and the attached
 "Publications of X" collection. ZORA's OrgUnit *entity type* exists but has 0
@@ -262,13 +262,27 @@ stamps the incremental column" is easy to get wrong.
 
 ## Configuration
 
+`ZoraSettings` in [`config.py`](src/themis_zora/config.py), a `ZORA_`-prefixed
+subclass of the shared `Settings`.
+
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| Database | `DATABASE_URL` | see `config.py` in the package root | Postgres holding `publication` and `harvest_state`. Create the schema with `themis-init-db`. |
-| Data directory | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
-| API endpoint | `DSPACE_API_ENDPOINT` | `https://www.zora.uzh.ch/server/api` | Defined in `zora_client.py`, not `config.py`. |
-| API token (file) | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
-| API token (inline) | `ZORA_UZH_API_KEY` | — | The token itself, for local runs. Both are resolved by `config.resolve_api_token` and assigned to the DSpace client. **Never commit the token.** |
+| `database_url` | `DATABASE_URL` | local Postgres | Holds `publication`, `person`, `org_unit` and `harvest_state`. Inherited from the shared floor, and unprefixed on purpose. Create the schema with `themis-init-db`. |
+| `data_dir` | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
+| `uzh_api_key_file` | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
+| `uzh_api_key` | `ZORA_UZH_API_KEY` | — | The token itself, for local runs. Both are resolved by `ZoraSettings.api_token` and assigned to the DSpace client. **Never commit the token.** |
+
+Five more values are reachable as `ZoraSettings.ZORA_*` and are deliberately
+**not** environment variables — `ZORA_DSPACE_API_URL`, `ZORA_ROOT_COMMUNITY_UUID`,
+`ZORA_PUBLICATIONS_COLLECTION_PREFIX`, `ZORA_SCOPE_UUID` and
+`ZORA_MIN_RETENTION_RATIO`. They are `ClassVar`s, so pydantic registers no field
+and there is no name for `.env` to set. The API origin is the one that matters:
+a harvest pointed at another DSpace would write that server's records into
+`publication` under our provenance with nothing in the log to say so. Changing
+one is a source edit and a commit.
+
+> The `DSPACE_API_ENDPOINT` override that used to sit in `zora_client.py` was
+> removed on 2026-08-27. Nothing set it.
 
 ## Swappable seams
 
@@ -420,7 +434,7 @@ behaviour, so the untested surface went away without anything new being verified
   Zurich Collabo`.
 
   Adopting the strict rule was safe only because excluding is no longer the cost it
-  was. Since `8590d7c` the whole corpus is indexed, `RETRIEVAL_REQUIRE_UZH_AUTHOR`
+  was. Since `8590d7c` the whole corpus is indexed, `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`
   defaults off, and `vector.py::_persons` falls back to `authors` — so a narrower
   `uzh_authors` **demotes rather than excludes**. The ~38,190 records that lost their
   ORCID-only entries stay searchable and stay creditable, ranked below CRIS-backed
@@ -487,7 +501,7 @@ behaviour, so the untested surface went away without anything new being verified
   edit to a Person or a community shows up the next time a harvest runs.
 - **The `--since` range query is untested against the live API** — the code says
   so itself in a warning log.
-- **The harvested table is not what gets indexed by default.** `SOURCES_PATH`
+- **The harvested table is not what gets indexed by default.** `MATCHER_SOURCES_PATH`
   defaults to `data/samples`, so `themis-matcher index` indexes the 50 sample
   documents unless you pass `--source db`. Easy to miss.
 - **`author_orcid` is normalised but never emitted** — `mapping.to_publication`

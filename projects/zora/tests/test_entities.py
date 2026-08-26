@@ -11,13 +11,13 @@ import json
 import pytest
 
 from fake_dso import FakeDSO
-from themis_zora import config, entities, store
+from themis_zora import entities, fields, store
 
 
 @pytest.fixture()
 def raw_dir(tmp_path, monkeypatch):
     """Point the raw-dump cache at a temp directory for the duration of a test."""
-    monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
+    monkeypatch.setenv("ZORA_DATA_DIR", str(tmp_path))
     return tmp_path / "raw"
 
 
@@ -26,10 +26,10 @@ def _person_dso(uuid: str) -> FakeDSO:
         handle=f"20.500.14742/{uuid}",
         uuid=uuid,
         fields={
-            config.FIELD_TITLE: [f"Person, {uuid}"],
-            config.FIELD_PERSON_FAMILY: ["Person"],
-            config.FIELD_PERSON_GIVEN: [uuid],
-            config.FIELD_PERSON_ORCID: ["0000-0002-0450-9897"],
+            fields.FIELD_TITLE: [f"Person, {uuid}"],
+            fields.FIELD_PERSON_FAMILY: ["Person"],
+            fields.FIELD_PERSON_GIVEN: [uuid],
+            fields.FIELD_PERSON_ORCID: ["0000-0002-0450-9897"],
         },
     )
 

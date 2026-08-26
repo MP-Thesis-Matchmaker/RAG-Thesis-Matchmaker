@@ -59,8 +59,8 @@ otherwise; plus the `index_manifest` row.
 695 postings. Neither query filters any more, and both stopped for the same reason:
 an eligibility rule enforced here can only be revisited by re-embedding the corpus,
 which turns an environment variable into hours of work. The publication filter went
-on 2026-08-25 (`RETRIEVAL_REQUIRE_UZH_AUTHOR`), the posting one on 2026-08-26
-(`RETRIEVAL_REQUIRE_AVAILABLE_POSTING`); `sources.py` carries both arguments in full,
+on 2026-08-25 (`MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`), the posting one on 2026-08-26
+(`MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING`); `sources.py` carries both arguments in full,
 including what each one used to be.
 
 **Writes:** the `document` table and the `index_manifest` row, both in the
@@ -195,19 +195,22 @@ Malformed JSONL lines are counted and skipped, not fatal.
 
 ## Configuration
 
+The subset of `MatcherSettings` this sub-package reads; the whole list is in
+[the package README](../../../README.md#configuration).
+
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
-| `embedding_model` | `EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
+| `embedding_model` | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3` | Passing `hash-fake` selects `HashEmbedder`; anything else loads sentence-transformers. |
 | `database_url` | `DATABASE_URL` | `postgresql://matchmaker:matchmaker@localhost:5432/matchmaker` | Postgres holding `document` and `index_manifest`. Create the schema with `themis-init-db`. |
-| `sources_path` | `SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
-| `embedding_max_seq_length` | `EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap per document. Recorded in the manifest and guarded: changing it needs `--rebuild`. |
-| `embedding_batch_size` | `EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer together with the cap; cannot replace it. |
-| `embedding_device` | `EMBEDDING_DEVICE` | unset | Torch device the model loads onto; unset means auto-detect. Deliberately *not* manifest-guarded -- unlike the token cap it changes neither the model nor which text is embedded. Set `cpu` on a Mac if a run dies with no message: auto-detect picks `mps`, and a short-of-memory `mps` load aborts the process instead of raising. |
-| `index_chunk_size` | `INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Lower it to cut peak memory. |
+| `sources_path` | `MATCHER_SOURCES_PATH` | `data/samples` | Default `--source`. A directory of JSONL files, or `db` for the harvested table. |
+| `embedding_max_seq_length` | `MATCHER_EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap per document. Recorded in the manifest and guarded: changing it needs `--rebuild`. |
+| `embedding_batch_size` | `MATCHER_EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer together with the cap; cannot replace it. |
+| `embedding_device` | `MATCHER_EMBEDDING_DEVICE` | unset | Torch device the model loads onto; unset means auto-detect. Deliberately *not* manifest-guarded -- unlike the token cap it changes neither the model nor which text is embedded. Set `cpu` on a Mac if a run dies with no message: auto-detect picks `mps`, and a short-of-memory `mps` load aborts the process instead of raising. |
+| `index_chunk_size` | `MATCHER_INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Lower it to cut peak memory. |
 
 > **Watch out:** `sources_path` still defaults to `data/samples`, so a bare
 > `themis-matcher index` indexes the sample rows. The real harvest now lives in
-> Postgres: use `themis-matcher index --source db`, or set `SOURCES_PATH=db`.
+> Postgres: use `themis-matcher index --source db`, or set `MATCHER_SOURCES_PATH=db`.
 > The output line reports which source was used, so at least it is visible.
 
 ## Swappable seams
@@ -241,7 +244,7 @@ at a Postgres with the extension, which CI always does via a
   `1 - cosine_distance`.** pgvector's `<=>` returns cosine distance over `[0, 2]`,
   exactly as Chroma did, so the score is a cosine similarity in `[-1, 1]` and
   **can be negative**. Anything downstream that treats it as a probability —
-  including `SYNTHESIS_MIN_SCORE` — is working with a wrong mental model. The
+  including `MATCHER_SYNTHESIS_MIN_SCORE` — is working with a wrong mental model. The
   migration did not change this; it only moved where it is computed.
 - **Filtered HNSW recall is not verified at corpus scale by the test suite.**
   pgvector applies `WHERE` after the index scan, which is why `schema.sql` creates
@@ -257,7 +260,7 @@ at a Postgres with the extension, which CI always does via a
   publications, every row in a DB-sourced index satisfied
   `metadata @> '{"has_uzh_author": true}'`, so the predicate was unselective and
   merely wasteful. Since 2026-08-25 the source is unfiltered — 53,545 of 214,756
-  publications carry a UZH author — so with `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` that
+  publications carry a UZH author — so with `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR=true` that
   predicate discards ~75% of the candidates the HNSW scan returns, **after** the
   scan, which is precisely the under-return that `schema.sql`'s partial-index comment
   describes. `VectorRetriever` over-fetches 4x to compensate; the real fix is a third

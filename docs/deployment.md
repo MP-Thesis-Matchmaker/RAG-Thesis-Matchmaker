@@ -258,23 +258,38 @@ exposes three routes: `vault.vso.{name,path,mount}` materialises a
 `vault.injector` writes a file into the pod (an `.env`, say). `vault.dockerPullSecret`
 covers the registry credential.
 
+Variables are prefixed by the member that reads them — `MATCHER_`, `GATEWAY_`,
+`ZORA_`, `SCRAPER_` — except `DATABASE_URL` and `MATCHER_BASE_URL`, which more
+than one member reads and which are pinned unprefixed. A variable set under the
+wrong name is **not an error**: it is ignored and the default applies, so check
+this table rather than assuming a chart value took effect. The full inventory is
+`.env.example`; this is what the cluster has to supply.
+
 | Variable | Purpose | Source in the cluster |
 |---|---|---|
 | `DATABASE_URL` | Postgres DSN, pointing at `postgres.uzh.ch` | Vault via `vaultEnv` — `TODO(ci)` |
+| `MATCHER_BASE_URL` | where the harvester, scraper and gateway reach the matcher | chart `env`, the in-cluster Service address |
 | `ZORA_UZH_API_KEY_FILE` | ZORA API token path | Vault, mounted as a file |
 | `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
-| `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
+| `ZORA_DATA_DIR` | root of the raw-response cache | chart `env`; an `emptyDir` in both CronJobs |
+| `MATCHER_LLM_BASE_URL` / `MATCHER_LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
+| `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
+| `MATCHER_API_HOST` / `MATCHER_API_PORT` | must be `0.0.0.0` in a container | baked into `projects/matcher/Dockerfile` |
+| `GATEWAY_MCP_HOST` / `GATEWAY_MCP_PORT` | must be `0.0.0.0` in a container | baked into `projects/gateway/Dockerfile` |
+| `SCRAPER_CONTACT` | the address advertised in the scraper's User-Agent | chart `env`; the scraper refuses to fetch without it |
+| `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into the matcher image |
 
-**What goes to that endpoint.** The synthesis step puts retrieved supervisor and author
+**What goes to the LLM endpoint.** The synthesis step puts retrieved supervisor and author
 names, publication titles, abstracts and posting descriptions into the prompt, and the LLM
-parser sends the student's query. Pointing `LLM_BASE_URL` at a hosted API therefore sends
+parser sends the student's query. Pointing `MATCHER_LLM_BASE_URL` at a hosted API therefore sends
 UZH personal data off-campus on every recommendation, with no warning in the logs. The
 cluster target is a UZH-hosted LibreChat endpoint, so this is a development-machine
 concern rather than a deployment one — but it is one variable away in either direction.
 
-| `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
-| `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | baked into `projects/gateway/` |
-| `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into both `[embeddings]` images |
+There is deliberately no variable for the ZORA API origin. It is a `ClassVar` on
+`ZoraSettings`, so pydantic registers no field and no chart value can move it: a
+harvest pointed at another DSpace would write that server's records into
+`publication` under our provenance with nothing in the log to say so.
 
 ## Open questions for Central Informatics
 

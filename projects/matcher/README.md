@@ -76,17 +76,55 @@ Worth stating plainly, because it is easy to miss and the pipeline does not warn
 
 `synthesis/llm.py` puts the retrieved candidates into the prompt: **supervisor and author names,
 publication titles, abstracts and posting descriptions**. All of it goes to whatever
-`LLM_BASE_URL` points at, on every `match`, `repl` and `POST /v1/recommend` call. Against a local
+`MATCHER_LLM_BASE_URL` points at, on every `match`, `repl` and `POST /v1/recommend` call. Against a local
 endpoint that is a loopback connection; against a hosted API it is UZH personal data leaving the
 university, and the difference is one environment variable with no visible signal either way.
 
 `parsing/openai_compat.py` sends the student's query to the same endpoint. Retrieval and indexing
 send nothing anywhere — only these two steps talk to an LLM, and both fall back to offline
-implementations when `LLM_BASE_URL` is unset.
+implementations when `MATCHER_LLM_BASE_URL` is unset.
 
 Not a recommendation either way: the deployment target is a UZH-hosted LibreChat endpoint, for
 which this is a non-issue. It matters for development machines, where the convenient thing to
 configure is a hosted API.
+
+## Configuration
+
+`MatcherSettings` in [`config.py`](src/themis_matcher/config.py), a `MATCHER_`-prefixed
+subclass of the shared `Settings`. Seventeen variables, every one read by this
+package and no other — which is why they live here rather than in `themis-shared`.
+The sub-package READMEs below repeat the handful each of them uses; this is the
+whole list.
+
+| Setting | Env var | Default | Effect |
+|---|---|---|---|
+| `llm_base_url` | `MATCHER_LLM_BASE_URL` | unset | OpenAI-compatible endpoint for query parsing and prose synthesis. Unset selects the offline rule-based parser and the template synthesiser. |
+| `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to that endpoint. |
+| `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token for it. |
+| `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | `none` / `low` / `medium` / `high`, for reasoning models only. Leave unset otherwise: some servers reject fields they do not know. |
+| `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Below this, the answer says there is no strong match instead of overselling a weak one. Meaningless with `hash-fake`, whose scores are arbitrary. |
+| `embedding_model` | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3` | `hash-fake` selects the deterministic offline embedder — no download, no network. |
+| `embedding_max_seq_length` | `MATCHER_EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap before embedding. **Changing it invalidates every vector in the index**, and `document.embedding` is `vector(1024)`. |
+| `embedding_batch_size` | `MATCHER_EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer with the cap above; cannot substitute for it. |
+| `embedding_device` | `MATCHER_EMBEDDING_DEVICE` | auto-detect | Passed to torch verbatim. Set `cpu` on a Mac if a run dies with no traceback at all. |
+| `index_chunk_size` | `MATCHER_INDEX_CHUNK_SIZE` | `1000` | Documents embedded and committed per round trip. Keeps peak memory flat and makes an interrupted run resumable. |
+| `sources_path` | `MATCHER_SOURCES_PATH` | `data/samples` | Where the indexer reads from. `db` indexes the harvested tables instead. |
+| `retrieval_require_uzh_author` | `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | Whether a publication needs a registered UZH author to be retrievable. Flipping it needs no re-index. |
+| `retrieval_require_available_posting` | `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | Whether a posting has to still be open. No ranking strategy softens this one. |
+| `retrieval_ranking_strategy` | `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` or `score`. A `Literal`, so a typo fails at load naming the valid values. |
+| `api_host` | `MATCHER_API_HOST` | `127.0.0.1` | Bind address for `themis-matcher serve`. The image sets `0.0.0.0`. |
+| `api_port` | `MATCHER_API_PORT` | `8100` | Port. 8100 so it does not collide with the gateway's 8000 on a laptop. |
+| `index_run_heartbeat_timeout_s` | `MATCHER_INDEX_RUN_HEARTBEAT_TIMEOUT_S` | `900` | How long an index run may go without committing a chunk before its slot is released. Bounds the gap between chunks, not the run. |
+
+Two more arrive inherited and stay **unprefixed**: `DATABASE_URL` and
+`MATCHER_BASE_URL`. They are the shared floor's — more than one member reads each —
+and a `validation_alias` pins them so the `MATCHER_` prefix cannot rename them.
+`MATCHER_BASE_URL` is not `MATCHER_` in the prefix sense; it is the matcher's
+address, and the gateway, harvester and scraper set the same variable.
+
+> A stale unprefixed name is **silent**: `extra="ignore"` means `EMBEDDING_MODEL`
+> is not rejected, just not read, and the default quietly applies.
+> `get_settings()` logs a warning for the pre-2026-08-27 spellings.
 
 ## Dependencies
 

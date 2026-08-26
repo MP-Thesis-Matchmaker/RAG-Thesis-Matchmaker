@@ -16,6 +16,7 @@ import logging
 from urllib.parse import urlsplit, urlunsplit
 
 from themis_matcher import __version__
+from themis_matcher.config import MatcherSettings, get_settings
 from themis_matcher.indexing import (
     DATABASE_SOURCE,
     build_indexer,
@@ -26,7 +27,6 @@ from themis_matcher.indexing import (
 from themis_matcher.pipeline import Pipeline
 from themis_matcher.retrieval import build_retriever
 from themis_shared import db, initdb
-from themis_shared.config import Settings, get_settings
 from themis_shared.contracts import SupervisorMatch
 
 
@@ -48,15 +48,15 @@ def _print_matches(matches: list[SupervisorMatch]) -> None:
             print(f"     - {e.title}")
 
 
-def _index_exists(settings: Settings) -> bool:
+def _index_exists(settings: MatcherSettings) -> bool:
     return read_manifest(settings) is not None
 
 
-def _run_init_db(settings: Settings, args: argparse.Namespace) -> None:
+def _run_init_db(settings: MatcherSettings, args: argparse.Namespace) -> None:
     initdb.run(settings, reset=args.reset)
 
 
-def _run_index(settings: Settings, args: argparse.Namespace) -> None:
+def _run_index(settings: MatcherSettings, args: argparse.Namespace) -> None:
     if args.rebuild:
         build_store(settings).clear()
     indexer = build_indexer(settings)
@@ -77,7 +77,7 @@ def _run_index(settings: Settings, args: argparse.Namespace) -> None:
         )
 
 
-def _build_pipeline(settings: Settings) -> Pipeline:
+def _build_pipeline(settings: MatcherSettings) -> Pipeline:
     """Pipeline over the real retriever if an index exists, else the fake one."""
     if _index_exists(settings):
         return Pipeline(retriever=build_retriever(settings))
@@ -96,11 +96,11 @@ def _answer(pipeline: Pipeline, query: str, top_k: int) -> None:
     _print_matches(matches)
 
 
-def _run_match(settings: Settings, args: argparse.Namespace) -> None:
+def _run_match(settings: MatcherSettings, args: argparse.Namespace) -> None:
     _answer(_build_pipeline(settings), args.query, args.top_k)
 
 
-def _run_repl(settings: Settings, args: argparse.Namespace) -> None:
+def _run_repl(settings: MatcherSettings, args: argparse.Namespace) -> None:
     """Interactive local session: build the pipeline once, answer until EOF.
 
     Purely stdin/stdout -- nothing listens on a port, so "local only" holds by
@@ -158,7 +158,7 @@ def _redacted_dsn(dsn: str) -> str:
     return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
-def _index_status(settings: Settings) -> str:
+def _index_status(settings: MatcherSettings) -> str:
     """Human-readable index state, without turning a dead database into a crash."""
     try:
         manifest = read_manifest(settings)
@@ -193,7 +193,7 @@ def main(argv: list[str] | None = None) -> None:
         help=(
             f"'{DATABASE_SOURCE}' to index the harvested publication table, or a "
             "directory holding publications.jsonl / theses.jsonl "
-            "(default: SOURCES_PATH setting)"
+            "(default: MATCHER_SOURCES_PATH setting)"
         ),
     )
     index_parser.add_argument(
@@ -206,8 +206,8 @@ def main(argv: list[str] | None = None) -> None:
         "serve",
         help="run the HTTP API (match, recommend, and the index triggers)",
     )
-    serve_parser.add_argument("--host", help="default: API_HOST setting")
-    serve_parser.add_argument("--port", type=int, help="default: API_PORT setting")
+    serve_parser.add_argument("--host", help="default: MATCHER_API_HOST setting")
+    serve_parser.add_argument("--port", type=int, help="default: MATCHER_API_PORT setting")
 
     init_db_parser = subparsers.add_parser(
         "init-db",
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> None:
         db.close_pools()
 
 
-def _run_serve(settings: Settings, args: argparse.Namespace) -> None:
+def _run_serve(settings: MatcherSettings, args: argparse.Namespace) -> None:
     """Serve the HTTP API until killed.
 
     Imported here rather than at module scope so `index`, `match` and `repl` do
@@ -249,7 +249,7 @@ def _run_serve(settings: Settings, args: argparse.Namespace) -> None:
     uvicorn.run(create_app(settings), host=host, port=port)
 
 
-def _dispatch(settings: Settings, args: argparse.Namespace) -> None:
+def _dispatch(settings: MatcherSettings, args: argparse.Namespace) -> None:
     if args.command == "init-db":
         _run_init_db(settings, args)
     elif args.command == "index":

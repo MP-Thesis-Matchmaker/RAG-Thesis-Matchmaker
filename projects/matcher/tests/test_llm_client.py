@@ -14,8 +14,8 @@ import logging
 import httpx
 import pytest
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.llm import LLMClient, LLMError
-from themis_shared.config import Settings
 from themis_shared.contracts import Evidence, SupervisorMatch
 
 _URL = "http://localhost:11434/v1"
@@ -135,7 +135,9 @@ def test_settings_reach_the_synthesiser():
     from themis_matcher.synthesis import build_synthesizer
 
     synth = build_synthesizer(
-        Settings(llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none")
+        MatcherSettings(
+            _env_file=None, llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none"
+        )
     )
     assert synth._client._reasoning_effort == "none"
 
@@ -144,7 +146,9 @@ def test_settings_reach_the_parser():
     from themis_matcher.parsing import build_extractor
 
     extractor = build_extractor(
-        Settings(llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none")
+        MatcherSettings(
+            _env_file=None, llm_base_url=_URL, llm_model="qwen3:8b", llm_reasoning_effort="none"
+        )
     )
     assert extractor._client._reasoning_effort == "none"
 

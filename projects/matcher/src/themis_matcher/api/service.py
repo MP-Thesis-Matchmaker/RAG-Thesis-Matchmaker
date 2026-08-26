@@ -17,6 +17,7 @@ import logging
 import threading
 from dataclasses import dataclass
 
+from themis_matcher.config import MatcherSettings, get_settings
 from themis_matcher.indexing import build_embedder, build_source_reader, build_store
 from themis_matcher.indexing.documents import SOURCE_POSTING, SOURCE_PUBLICATION, SOURCE_TYPES
 from themis_matcher.indexing.embedder import Embedder
@@ -27,7 +28,6 @@ from themis_matcher.parsing import build_extractor
 from themis_matcher.pipeline import Pipeline
 from themis_matcher.retrieval.vector import VectorRetriever
 from themis_matcher.synthesis import build_synthesizer
-from themis_shared.config import Settings, get_settings
 from themis_shared.contracts import IndexRun, IndexRunKind
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class MatcherService:
     state, and the routes must not add any.
     """
 
-    settings: Settings
+    settings: MatcherSettings
     embedder: Embedder
     store: VectorStore
     pipeline: Pipeline
@@ -103,7 +103,7 @@ class MatcherService:
 
 
 def build_service(
-    settings: Settings | None = None,
+    settings: MatcherSettings | None = None,
     *,
     embedder: Embedder | None = None,
     store: VectorStore | None = None,

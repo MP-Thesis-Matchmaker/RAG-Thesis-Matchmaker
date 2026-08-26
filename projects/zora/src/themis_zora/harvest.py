@@ -64,7 +64,6 @@ import sys
 from collections.abc import Iterator
 
 from themis_shared import db, schema
-from themis_shared.config import get_settings
 
 from . import (
     config,
@@ -208,7 +207,7 @@ def _harvest_publications(
         rows,
         mode=mode,
         previous_total=st.last_total_publications,
-        min_retention_ratio=config.MIN_RETENTION_RATIO,
+        min_retention_ratio=config.ZoraSettings.ZORA_MIN_RETENTION_RATIO,
     )
     if result.aborted:
         logger.error("Nothing was written. Investigate before re-running.")
@@ -243,7 +242,7 @@ def run(
     # --from-dump replay included -- so a database whose schema predates this code
     # has to be caught in one round-trip rather than by an UndefinedTable after the
     # fetching is already paid for.
-    schema.require_current(get_settings().database_url)
+    schema.require_current(config.get_settings().database_url)
 
     dumps = _as_dump_map(from_dump)
 
@@ -435,7 +434,7 @@ def main() -> None:
             # work for nothing. This is what replaces the "index after each
             # harvest" CronJob that was never written -- a schedule can only
             # guess when a harvest finished, and this knows.
-            index_trigger.trigger_index(get_settings())
+            index_trigger.trigger_index(config.get_settings())
     except (RuntimeError, *db.DB_ERRORS) as exc:
         # Expected failure modes (auth, config, a broken tree walk, an unreachable
         # or out-of-date database) get a clean one-line message in the Actions log

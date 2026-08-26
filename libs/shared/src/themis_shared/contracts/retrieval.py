@@ -62,7 +62,7 @@ class SupervisorMatch(BaseModel):
             "Whether this person is a registered UZH researcher -- a UZH author on "
             "some retrieved publication, or the named supervisor of a UZH thesis "
             "posting. False means an external co-author surfaced only because "
-            "RETRIEVAL_REQUIRE_UZH_AUTHOR is off: relevant work, but nobody a "
+            "MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR is off: relevant work, but nobody a "
             "student here can actually be supervised by, so callers should say so "
             "rather than presenting them as a supervisor. Defaults True because "
             "every producer predating the setting emitted UZH-only matches."

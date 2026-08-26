@@ -55,7 +55,7 @@ import logging
 from psycopg.types.json import Jsonb
 
 from themis_shared import db
-from themis_shared.config import get_settings
+from themis_zora.config import get_settings
 from themis_zora.normalize import _normalize_orcid, _typed_authority
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")

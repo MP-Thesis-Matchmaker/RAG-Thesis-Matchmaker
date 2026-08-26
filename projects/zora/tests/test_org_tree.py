@@ -11,7 +11,7 @@ import pytest
 from themis_zora import config
 from themis_zora.zora_client import iter_org_tree
 
-ROOT = config.UZH_ROOT_COMMUNITY_UUID
+ROOT = config.ZoraSettings.ZORA_ROOT_COMMUNITY_UUID
 
 
 def _community(uuid: str, name: str) -> dict:
