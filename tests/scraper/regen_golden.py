@@ -1,9 +1,9 @@
-"""Regenerate the contract-replay golden baseline (tests/golden_specs.json).
+"""Regenerate the contract-replay golden baseline (tests/scraper/golden_specs.json).
 
 Run this AFTER an intentional change to the spec engine or a spec.yaml, once
 you've confirmed the new extraction is correct:
 
-    python tests/regen_golden.py
+    python tests/scraper/regen_golden.py
 
 It captures the current offline extraction of every replayable contract. The
 test suite (tests/scraper/test_specs.py) then asserts nothing drifts from it.

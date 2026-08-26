@@ -3,7 +3,7 @@
 Every topics/people spec is replayed against its frozen snapshot with NO network
 and must reproduce the committed golden baseline exactly. A failure here means an
 edit to the spec engine or a spec.yaml changed what a source extracts. If the
-change is intended, regenerate the baseline with `python tests/regen_golden.py`
+change is intended, regenerate the baseline with `python tests/scraper/regen_golden.py`
 and commit it.
 
 Run:  python -m unittest -v tests.scraper.test_specs
@@ -26,7 +26,7 @@ class ContractReplayTest(unittest.TestCase):
         """The golden baseline exists and is non-empty (regen if this fails)."""
         self.assertTrue(
             self.golden,
-            "no golden baseline — run `python tests/regen_golden.py`",
+            "no golden baseline — run `python tests/scraper/regen_golden.py`",
         )
 
     def test_contracts_discovered(self):
@@ -40,7 +40,7 @@ class ContractReplayTest(unittest.TestCase):
                 self.assertIn(
                     source_id,
                     self.golden,
-                    f"{source_id} not in golden — run tests/regen_golden.py",
+                    f"{source_id} not in golden — run tests/scraper/regen_golden.py",
                 )
                 self.assertEqual(
                     R.replay(source_id),
@@ -59,7 +59,8 @@ class ContractReplayTest(unittest.TestCase):
         orphans = sorted(set(self.golden) - set(self.ids))
         self.assertFalse(
             orphans,
-            f"golden has entries with no current contract: {orphans} — run tests/regen_golden.py",
+            f"golden has entries with no current contract: {orphans} — "
+            "run tests/scraper/regen_golden.py",
         )
 
     def test_topic_records_carry_stable_ids(self):

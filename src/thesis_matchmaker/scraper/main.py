@@ -284,7 +284,7 @@ def _freeze_contract(
     # records at verification time, INCLUDING enrichment (followed profiles,
     # PDF-parsed supervisors) that is not reproducible offline. It is human-facing
     # documentation, not the test oracle — the contract-replay test asserts
-    # against tests/golden_specs.json (the engine's deterministic, offline
+    # against tests/scraper/golden_specs.json (the engine's deterministic, offline
     # core extraction). See tests/replay_util.py for why the two differ.
     expected = {
         "source_id": src.source_id,

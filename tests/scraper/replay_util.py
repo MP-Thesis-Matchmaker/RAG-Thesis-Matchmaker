@@ -1,9 +1,9 @@
-"""Shared helper for the contract-replay tests (`test_contracts.py`).
+"""Shared helper for the contract-replay tests (`test_specs.py`).
 
 The spec engine is deterministic: a frozen `snapshot.html` (or `snapshot.json`)
 plus a `spec.yaml` must always yield the same records, with no network. This
 module replays that offline extraction and compares it to a committed golden
-baseline (`tests/golden_specs.json`).
+baseline (`tests/scraper/golden_specs.json`).
 
 Why a golden baseline and not the contracts' own `expected.json`? `expected.json`
 is frozen once during onboarding and additionally carries *enrichment* (followed
@@ -13,7 +13,7 @@ file captures exactly what the current engine extracts offline from each
 snapshot, so the test guards against future *regressions* in the engine and
 specs. Regenerate it deliberately (after an intended change) with:
 
-    python tests/regen_golden.py
+    python tests/scraper/regen_golden.py
 
 Only the deterministic, offline-reproducible part of a contract is replayed:
 topics/people specs (including `grouped_people`, `sectioned_people`, and `json`
