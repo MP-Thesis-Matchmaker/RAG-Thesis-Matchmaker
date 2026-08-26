@@ -59,27 +59,38 @@ We want to keep our codebase clean, collaborative, and professional.
 
 ### IDE setup (PyCharm)
 
-PyCharm reports `Unresolved reference 'themis_shared'` on every cross-member import — for example
-`from themis_shared.config import get_settings` in `projects/gateway/`. **The code is fine**; it
-imports and runs. Only the IDE's analysis is wrong.
+PyCharm may report `Unresolved reference 'themis_shared'` on every cross-member import — for
+example `from themis_shared.config import get_settings` in `projects/gateway/`. **The code is
+fine**; it imports and runs. Only the IDE's analysis is stale.
 
-Why: PyCharm generates one module per workspace member from the `pyproject.toml` files
-(`usePyprojectToml=true`), and each module gets its own directory as its only source root. It does
-not read `themis-shared = { workspace = true }` as a module dependency, so gateway's module never
-learns where `themis_shared` lives.
+PyCharm's workspace mode builds one module per member from the `pyproject.toml` files and is
+supposed to derive the edges between them from `[tool.uv.sources] … = { workspace = true }`. When
+the modules are wrong it usually means they were generated before a structural change and never
+regenerated. **Try the supported fix first:** right-click the project root →
+**Sync Project with `pyproject.toml`** (or Find Action → the same name), which rebuilds the model
+from the manifests.
 
-Fix it once, on the interpreter rather than the modules — **quit PyCharm first**, or it overwrites
-the change on exit:
+If workspace mode is off, turn it on at **Settings → Project: backend-core → Project Structure**
+(the stored flag is `usePyprojectToml` in `.idea/pyProjectModel.xml`) and sync again.
 
-1. Settings → Project → Python Interpreter → ⚙ → **Show All…**
-2. Select `uv (backend-core)`, then the **Show paths for the selected interpreter** icon.
-3. `+` each of the five source roots: `libs/shared/src`, `projects/matcher/src`,
-   `projects/gateway/src`, `projects/zora/src`, `projects/scraper/src`.
+Two things worth knowing when it still misbehaves:
 
-Do it here rather than as module dependencies for two reasons: PyCharm regenerates the `.iml`
-files from the manifests, so per-module entries get wiped, and `tests/integration/` belongs to no
-module at all (the workspace root has no `[project]` table), so only an interpreter-level fix
-reaches it.
+- **Do not fix this on the interpreter.** Adding the members' `src/` directories under Python
+  Interpreter → Show All → paths looks like it works and does not survive: PyCharm re-derives an
+  SDK's paths from the virtualenv on every launch and drops them. The module graph is the only
+  durable place.
+- **`tests/integration/` belongs to no member.** The workspace root has no `[project]` table on
+  purpose, so no module covers those four tests. They need a module of their own, with `tests/` as
+  its content root — it cannot be nested inside a member's, since content roots may not overlap.
+
+A last resort, if syncing will not produce a working model: wire the modules by hand in
+`.idea/*.iml` (`<orderEntry type="module" module-name="themis-shared" />` on each dependent,
+matching the real graph — everything on `themis-shared`, gateway also on `themis-matcher`) and set
+`usePyprojectToml` to `false`, or the next sync discards the edits. That trades automatic syncing
+for stability: a new member then has to be added to `.idea/` by hand. Quit PyCharm before editing
+`.idea/` either way — it rewrites the directory on exit — and back the directory up first.
+
+None of this is committable: `.idea/` is gitignored.
 
 ---
 
