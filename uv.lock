@@ -571,6 +571,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0c/cb/3ccc38979d1a3b423e2810fec13d4de572c126487873a5a15c2d8fb3edc3/dspace_rest_client-0.1.20.tar.gz", hash = "sha256:9fb0d9dc16b3152577f846792fd93ae8324e76436ed468f83c1d5183c7ef521d", size = 34916, upload-time = "2026-06-27T10:47:18.017Z" }
 
 [[package]]
+name = "fastapi"
+version = "0.141.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8a/02/91e3416a8fdd715abb903a952a6bec7cdd8d14eed55d415fc8595524c319/fastapi-0.141.1.tar.gz", hash = "sha256:e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1", size = 425799, upload-time = "2026-07-29T17:18:05.568Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl", hash = "sha256:bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3", size = 131954, upload-time = "2026-07-29T17:18:04.364Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.29.5"
 source = { registry = "https://pypi.org/simple" }
@@ -2603,14 +2619,11 @@ name = "themis-gateway"
 version = "0.0.1"
 source = { editable = "projects/gateway" }
 dependencies = [
-    { name = "themis-matcher" },
+    { name = "httpx" },
     { name = "themis-shared" },
 ]
 
 [package.optional-dependencies]
-embeddings = [
-    { name = "themis-matcher", extra = ["embeddings"] },
-]
 mcp = [
     { name = "mcp" },
 ]
@@ -2622,12 +2635,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=2.0" },
-    { name = "themis-matcher", editable = "projects/matcher" },
-    { name = "themis-matcher", extras = ["embeddings"], marker = "extra == 'embeddings'", editable = "projects/matcher" },
     { name = "themis-shared", editable = "libs/shared" },
 ]
-provides-extras = ["embeddings", "mcp"]
+provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]
@@ -2637,8 +2649,10 @@ name = "themis-matcher"
 version = "0.0.1"
 source = { editable = "projects/matcher" }
 dependencies = [
+    { name = "fastapi" },
     { name = "httpx" },
     { name = "themis-shared" },
+    { name = "uvicorn" },
 ]
 
 [package.optional-dependencies]
@@ -2655,11 +2669,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "sentence-transformers", marker = "extra == 'embeddings'", specifier = ">=5.6" },
     { name = "themis-shared", editable = "libs/shared" },
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13" },
+    { name = "uvicorn", specifier = ">=0.30" },
 ]
 provides-extras = ["embeddings"]
 
@@ -2741,6 +2757,7 @@ version = "0.0.1"
 source = { editable = "projects/zora" }
 dependencies = [
     { name = "dspace-rest-client" },
+    { name = "httpx" },
     { name = "themis-shared" },
 ]
 
@@ -2752,6 +2769,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dspace-rest-client", specifier = ">=0.1.20" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "themis-shared", editable = "libs/shared" },
 ]
 

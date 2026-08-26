@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Collection
 from typing import Protocol
 
 import psycopg
@@ -77,8 +78,18 @@ class VectorStore(Protocol):
         """Remove documents by id; unknown ids are ignored."""
         ...
 
-    def existing_hashes(self) -> dict[str, str]:
-        """Map of stored document id -> content hash, for change detection."""
+    def existing_hashes(self, source_types: Collection[str] | None = None) -> dict[str, str]:
+        """Map of stored document id -> content hash, for change detection.
+
+        `source_types` narrows the map to those kinds. This is not an
+        optimisation: `Indexer.run` treats every id in this map that the run did
+        not see as an orphan and deletes it, so an unscoped map during a
+        single-kind run would condemn every document of the other kind.
+        """
+        ...
+
+    def count(self) -> int:
+        """How many documents the store holds, across every kind."""
         ...
 
     def query(
@@ -183,10 +194,23 @@ class PgVectorStore:
         with db.connection(self.dsn) as conn:
             conn.execute("DELETE FROM document WHERE id = ANY(%s)", (list(ids),))
 
-    def existing_hashes(self) -> dict[str, str]:
+    def existing_hashes(self, source_types: Collection[str] | None = None) -> dict[str, str]:
+        # Matched against the column rather than the jsonb blob, for the same
+        # reason `query` does: `source_type` was promoted out of metadata so the
+        # planner can reach the partial indexes.
+        sql = "SELECT id, content_hash FROM document"
+        params: tuple[object, ...] = ()
+        if source_types is not None:
+            sql += " WHERE source_type = ANY(%s)"
+            params = (list(source_types),)
         with db.connection(self.dsn) as conn:
-            rows = conn.execute("SELECT id, content_hash FROM document").fetchall()
+            rows = conn.execute(sql, params).fetchall()
         return {row[0]: row[1] for row in rows}
+
+    def count(self) -> int:
+        with db.connection(self.dsn) as conn:
+            row = conn.execute("SELECT count(*) FROM document").fetchone()
+        return int(row[0]) if row else 0
 
     def query(
         self,
@@ -300,8 +324,16 @@ class InMemoryVectorStore:
         for doc_id in ids:
             self._documents.pop(doc_id, None)
 
-    def existing_hashes(self) -> dict[str, str]:
-        return {doc_id: doc.content_hash for doc_id, (doc, _) in self._documents.items()}
+    def existing_hashes(self, source_types: Collection[str] | None = None) -> dict[str, str]:
+        wanted = set(source_types) if source_types is not None else None
+        return {
+            doc_id: doc.content_hash
+            for doc_id, (doc, _) in self._documents.items()
+            if wanted is None or doc.metadata.get(_SOURCE_TYPE) in wanted
+        }
+
+    def count(self) -> int:
+        return len(self._documents)
 
     def query(
         self,

@@ -5,6 +5,17 @@ data-retrieval, scraping, retrieval, and orchestration parts can be built in
 parallel against a fixed shape.
 """
 
+from themis_shared.contracts.api import (
+    ApiError,
+    IndexRun,
+    IndexRunAccepted,
+    IndexRunKind,
+    IndexRunState,
+    IndexStatus,
+    MatchRequest,
+    MatchResponse,
+    RecommendResponse,
+)
 from themis_shared.contracts.retrieval import Evidence, ParsedQuery, SupervisorMatch
 from themis_shared.contracts.sources import (
     ApplicationProcess,
@@ -20,12 +31,21 @@ from themis_shared.contracts.sources import (
 )
 
 __all__ = [
+    "ApiError",
     "ApplicationProcess",
     "AuthorAuthority",
     "DegreeLevel",
     "Evidence",
+    "IndexRun",
+    "IndexRunAccepted",
+    "IndexRunKind",
+    "IndexRunState",
+    "IndexStatus",
+    "MatchRequest",
+    "MatchResponse",
     "ParsedQuery",
     "PostingStatus",
+    "RecommendResponse",
     "ResearcherProfile",
     "Supervisor",
     "SupervisorMatch",

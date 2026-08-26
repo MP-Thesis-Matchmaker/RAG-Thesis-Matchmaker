@@ -44,9 +44,9 @@ actually exists.*
    [`themis-zora-harvest`](docs/zora-harvester.md) — 214,756
    publications as of 2026-08-25, of which 53,545 carry a UZH author. Scraping is live
    too — [`themis-scraper`](projects/scraper/README.md)
-   reads 103 curated departmental pages and writes the `posting` table, so
-   thesis postings are real rather than the synthetic `theses.jsonl` sample that
-   `data/samples/` still carries for offline runs.
+   reads 103 curated departmental pages and writes the `posting` table. The
+   `data/samples/` fixtures are drawn from both tables now, so the offline path
+   runs on real records too.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash
@@ -163,10 +163,31 @@ uv run pytest
 the root `pyproject.toml`, so `cd projects/zora && pytest` sees none of them. To run one member's
 tests, name the directory instead: `uv run pytest projects/scraper/tests`.
 
-481 tests across 33 files. 48 of them need Postgres and skip when `DATABASE_URL` is unset; point it
+538 tests across 39 files. 66 of them need Postgres and skip when `DATABASE_URL` is unset; point it
 at a database whose name ends in `_test` (`docker compose up -d postgres` creates
 `matchmaker_test` for exactly this), because the fixtures TRUNCATE between tests and the guard in
 `conftest.py` will refuse anything else.
+
+### Before you push
+
+```
+scripts/check.sh          # lint, format and tests in the current .venv, ~1 min
+scripts/check.sh --ci     # rehearse all five CI jobs in throwaway envs, ~5-10 min
+```
+
+The second one is not optional politeness, and the reason is specific: **CI installs less than
+your machine has.** `offline` and `pgvector` sync `--all-packages` with *no extras*, while a
+development `.venv` accumulates `scraping`, `embeddings` and `mcp`. A green local `pytest` is
+therefore evidence about a strictly larger environment than the one CI runs, and the difference
+has been red twice — an `mcp` release that removed FastMCP, and a `conftest.py` whose
+`pytest.importorskip("bs4")` aborted the entire session wherever the `scraping` extra was absent,
+while the one job that installs it stayed green.
+
+`--ci` never touches `.venv`. A uv workspace has a single environment, so `uv sync --package X`
+would *replace* it — uninstalling torch and costing a multi-GB re-download — which is why each
+rehearsal is redirected into a scratch directory with `UV_PROJECT_ENVIRONMENT`. Pass
+`THEMIS_TEST_DATABASE_URL` to include the `pgvector` job; it is deliberately not `DATABASE_URL`,
+and it refuses any database whose name does not end in `_test`, because those fixtures TRUNCATE.
 
 CI is one workflow file, `ci.yml`, with five jobs, all installing from `uv.lock` so they get the
 pinned versions and not whatever has been released since:

@@ -46,6 +46,7 @@ services:
       context: .
       dockerfile: projects/zora/Dockerfile
     environment:
+      MATCHER_BASE_URL: http://matcher-api:8100
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
       # Mirrors the cluster: the token arrives as a mounted file. Running
       # the harvester on the host instead accepts ZORA_UZH_API_KEY inline.
@@ -84,10 +85,38 @@ services:
         condition: service_healthy
     profiles: ["manual"]
 
-  # Long-lived, unlike every other service here: a Deployment plus a Service in
-  # the cluster. Shares hfcache with the indexer on purpose -- the query has to
-  # be embedded with the same model as the corpus, and that sharing is why the
-  # cluster storage class has to support RWX.
+  # The matcher's HTTP API: the same image as `indexer`, with the role chosen by
+  # `command`. Long-lived, unlike the batch services, but still behind the
+  # `manual` profile like `serving` -- `docker compose up` stays infrastructure
+  # only, and this pulls 2.27 GB of weights on first run.
+  #
+  # It holds the model, the database connection and the LLM client. That is the
+  # whole point: one process embeds both the corpus and the incoming query, so
+  # there is one copy of bge-m3 rather than one per role.
+  #
+  # The image sets API_HOST=0.0.0.0; binding to config.py's 127.0.0.1 default
+  # would make the port unreachable from outside the container.
+  matcher-api:
+    build:
+      context: .
+      dockerfile: projects/matcher/Dockerfile
+    command: ["serve"]
+    environment:
+      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./data:/app/data:ro
+      - hfcache:/var/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["manual"]
+
+  # Long-lived, like matcher-api. No hfcache mount and no DATABASE_URL any more:
+  # since the HTTP split this process holds no model and opens no database, it
+  # only forwards to MATCHER_BASE_URL. That is also what removed its share in the
+  # RWX requirement on the cluster storage class.
   #
   # The image already sets MCP_HOST=0.0.0.0; binding to config.py's 127.0.0.1
   # default would make the port unreachable from outside the container.
@@ -96,14 +125,12 @@ services:
       context: .
       dockerfile: projects/gateway/Dockerfile
     environment:
-      DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
+      MATCHER_BASE_URL: http://matcher-api:8100
     ports:
       - "8000:8000"
-    volumes:
-      - hfcache:/var/cache/huggingface
     depends_on:
-      postgres:
-        condition: service_healthy
+      matcher-api:
+        condition: service_started
     profiles: ["manual"]
 
   # One-shot, like the harvester. Two invocations rather than one: `fetch` is the
@@ -120,6 +147,7 @@ services:
       context: .
       dockerfile: projects/scraper/Dockerfile
     environment:
+      MATCHER_BASE_URL: http://matcher-api:8100
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
       SCRAPER_CONTACT: ${SCRAPER_CONTACT:-}
       SCRAPER_LLM_API_KEY: ${SCRAPER_LLM_API_KEY:-}

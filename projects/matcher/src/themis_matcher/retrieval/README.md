@@ -201,6 +201,31 @@ serves fake results.
   frequency, open positions, department affiliation), and
   `pipeline/orchestrator.py`'s docstring already claims a rank step. Neither
   exists yet. Grouping and sorting inside `_group_by_person` is all there is.
+- **The person key is an exact name string, so publications and postings almost
+  never join. This is the biggest single thing the `ranking` package has to fix.**
+  `_group_by_person` keys `by_person` on whatever `_persons` returns, and the two
+  sources spell people differently: `"Davide Scaramuzza"` on a posting against
+  `"Scaramuzza, D"` or `"Scaramuzza, Davide"` on a paper. Measured over the whole
+  corpus on 2026-08-26 — **403 distinct supervisor names, 0 of them matching any of
+  the 2,942 `uzh_authors`**. Three match a plain `authors` entry, and only via the
+  unaffiliated fallback below, so a merge happens precisely where the UZH signal is
+  absent: 3 of 403, 0.7%.
+
+  The consequences run through everything above it. `publication_count` and
+  `posting_count` are effectively never both non-zero, so a supervisor with an open
+  position is never evidenced by their own papers and vice versa — which is most of
+  what a student actually wants to know. Any multi-signal score combining "has
+  publications here" with "has an open position" is therefore scoring a join that
+  does not happen, and would look correct in review while ranking on one signal at
+  a time. No choice of corpus or sample data hides this; it is a property of the
+  key, not of the data volume.
+
+  The fix is name normalisation, or an identity join through the `person` table —
+  which exists, carries CRIS UUIDs, and is already the authority `uzh_authors` is
+  derived from. `author_authority_map` gives publications a typed identifier;
+  postings have none, so the posting side needs the harder half of the work.
+  Belongs with `ranking` rather than here: it changes what a candidate *is*, not
+  how one is scored.
 - **`matched_topics` is not computed.** Every match receives a copy of
   `query.topics` rather than the topics that actually matched. The field looks
   informative and is not.

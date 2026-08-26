@@ -14,7 +14,7 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-26)
 
 A **five-member `uv` workspace**, every member `requires-python >=3.11`, ~11,750 LOC across the
-five `src/` trees, 481 tests in 33 files (433 pass / 48 skip without `DATABASE_URL`). The
+five `src/` trees, 538 tests in 39 files (472 pass / 66 skip without `DATABASE_URL`). The
 workspace root has **no `[project]` table** — it is virtual, which is why a bare `uv sync`
 installs nothing and errors; always `--all-packages` or `--package themis-<x>`.
 **Per-member detail lives in the member's `README.md`; read those instead of expanding this
@@ -27,14 +27,31 @@ section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png
 | [`projects/zora/`](projects/zora/README.md) | `themis_zora` | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
 | [`projects/scraper/`](projects/scraper/README.md) | `themis_scraper` | implemented, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`projects/matcher/`](projects/matcher/README.md) | `themis_matcher` | implemented | The engine, in five sub-packages — [`indexing/`](projects/matcher/src/themis_matcher/indexing/README.md), [`retrieval/`](projects/matcher/src/themis_matcher/retrieval/README.md) (**also holds the only ranking**), [`parsing/`](projects/matcher/src/themis_matcher/parsing/README.md), [`synthesis/`](projects/matcher/src/themis_matcher/synthesis/README.md), [`pipeline/`](projects/matcher/src/themis_matcher/pipeline/README.md) — plus `llm.py` and `cli.py` |
-| [`projects/gateway/`](projects/gateway/README.md) | `themis_gateway` | MCP done, REST design-only | Thin front door; no business logic. The only member importing `themis_matcher`, and only from `service.py` |
+| [`projects/gateway/`](projects/gateway/README.md) | `themis_gateway` | MCP done, REST design-only | Thin front door; no business logic, no model, no database. Reaches the matcher over HTTP from `service.py`; imports no other member |
 
-The dependency graph is a DAG: everything depends on `themis-shared`, `themis-gateway` also on
-`themis-matcher`, and nothing else crosses. CI's `boundaries` job installs each member **alone**,
-so a stray cross-member import fails with `ModuleNotFoundError` rather than passing unnoticed.
+The dependency graph is a star: **every member depends on `themis-shared` and on nothing else of
+ours.** `themis-gateway` used to also depend on `themis-matcher`; since 2026-08-26 it calls the
+matcher over HTTP instead (`/v1/match`, `/v1/recommend`), which is what removed the last cross-edge.
+CI's `boundaries` job installs each member **alone**, so that is now enforced rather than merely
+described: a stray `from themis_matcher import ...` in the gateway fails with `ModuleNotFoundError`.
+The shared wire models live in [`themis_shared.contracts.api`](libs/shared/src/themis_shared/contracts/api.py),
+so both ends stay typed without either importing the other.
 
 Not built: a **`ranking` package.** Ranking is one line inside
 `themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
+
+**The first thing that package has to fix is the person key, not the score.**
+`_group_by_person` groups on an exact name string, and the two sources spell people
+differently — `"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
+2026-08-26: **403 distinct supervisor names, 0 matching any of the 2,942 `uzh_authors`**; 3 match a
+plain `authors` entry, and only through the unaffiliated fallback, so a merge happens exactly where
+the UZH signal is absent. So `publication_count` and `posting_count` are effectively never both
+non-zero, a supervisor with an open position is never evidenced by their own papers, and any
+multi-signal score combining the two would be scoring a join that does not happen — while looking
+correct in review. The fix is name normalisation or an identity join through the `person` table
+(which already carries the CRIS UUIDs `uzh_authors` derives from); postings carry no identifier at
+all, so that side is the harder half. Detail:
+[`retrieval/README.md`](projects/matcher/src/themis_matcher/retrieval/README.md).
 
 Two of the scraper's three record kinds are stored and unread: `researcher_profile` (569 rows) and
 `application_process` (45) have tables but no consumer. Only `posting` reaches the index.
@@ -55,7 +72,8 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
 Entry points — one console script per member: `themis-init-db` (shared), `themis-matcher`
-(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`), `themis-gateway-mcp`
+(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`, `serve --host --port`),
+`themis-gateway-mcp`
 (`--stdio`), `themis-zora-harvest`, and `themis-scraper`. The last two also answer to
 `python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
 delegates to `themis_shared.initdb`, so the two spellings cannot drift.
@@ -103,11 +121,20 @@ before those changes were designed. Details:
 Tooling: `uv` everywhere — a **single root `uv.lock` covering all five members**, tracked, and what
 actually gets installed by CI (`uv sync --locked --all-packages`, or `--package themis-<x>`) and by
 the container images alike; pip is used nowhere. One `.venv`, at the root: `--package X` *replaces*
-its contents rather than making a second environment. `pytest` (481 tests / 33 files; 48 need
+its contents rather than making a second environment. `pytest` (538 tests / 39 files; 66 need
 Postgres and skip without `DATABASE_URL`) and `ruff` (line length 100, py311) are configured
 **only in the root `pyproject.toml`** — which fixes pytest's rootdir at the repo root, so always
 invoke it from there. `ruff` lives in the root `dev` group; `pytest` is repeated in every member's
 `dev` group so `--package X` still yields a runnable environment.
+
+**Run `scripts/check.sh --ci` before handing work over, and never read a green local `pytest` as a
+green CI.** CI installs *less* than a development machine: `offline` and `pgvector` sync
+`--all-packages` with no extras, while the local `.venv` carries `scraping`, `embeddings` and
+`mcp`. Anything gated on an extra therefore passes here and fails there — a `conftest.py` calling
+`pytest.importorskip` at module level took down both of those jobs in exactly that way, while the
+one job installing the extra stayed green. `--ci` rehearses all five jobs in scratch environments
+via `UV_PROJECT_ENVIRONMENT`, leaving `.venv` and its 2.27 GB of torch alone; the same script with
+no argument is the fast lint/format/test pass.
 
 **One workflow file, five jobs** — `ci.yml`: `offline` (all members, no network or database),
 `scraper` (`--package themis-scraper --extra scraping`), `pgvector` (a real pgvector service plus
@@ -157,13 +184,19 @@ still missing:
   now two different distributions, which is what makes the HTTP swap below a contained change
 - Two thin adapter apps: **REST API** and **MCP adapter** — front doors over the
   application-service functions only
-  → **MCP shipped as `themis-gateway`; REST not built.** The gateway still calls the matcher
-  in-process; making that an HTTP call touches only `themis_gateway/service.py`
+  → **MCP shipped as `themis-gateway`; REST not built.** The gateway no longer calls the matcher
+  in-process: since 2026-08-26 `themis_gateway/service.py` is an HTTP client, and the matcher serves
+  [`themis_matcher.api`](projects/matcher/src/themis_matcher/api/) behind `themis-matcher serve`.
+  A REST front door for *students* is still unbuilt; this is the internal seam, not that
 
 ### Invariants
 
 1. **Ingestion owns all writes.** Serving (retrieval / ranking / app-service / adapters) is
-   strictly read-only. No write paths outside ingestion.
+   strictly read-only. No write paths outside ingestion. One qualifier since 2026-08-26: the
+   matcher's API *process* both serves and indexes, because one process means one copy of a
+   2.27 GB model against a 4 GiB namespace quota. The **modules** are unchanged — `retrieval/`
+   still never writes, `indexing/` still owns the `document` table — and the ingestion members
+   still own every source table.
 2. **Core exposes plain application-service functions.** The gateway (MCP, and REST when it
    exists) calls them; it holds no business logic, and no core member imports `themis_gateway`.
 3. **Swappable seams behind interfaces**: the embedding model and LLM provider are

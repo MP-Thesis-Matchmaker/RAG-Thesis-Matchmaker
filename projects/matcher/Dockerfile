@@ -1,6 +1,16 @@
-# The indexer: reads the harvested publication table, embeds each record with the
-# real model, and maintains the pgvector index. A batch job -- it runs, writes,
-# and exits -- so in the cluster it is a CronJob fired after each harvest.
+# The matcher, in both its roles. `serve` is the HTTP API the gateway and the two
+# ingestion jobs talk to -- long-lived, a Deployment plus an in-cluster Service.
+# `index` is the batch build -- it runs, writes and exits.
+#
+# One image, because both roles need the same 2.27 GB model and the same closure;
+# the role is chosen by overriding the CMD (compose's `command`, the chart's
+# `shellCommand`). The default is `index --source db`, so an unqualified run of
+# this image still does what it always did.
+#
+# The batch role has not become redundant: a cold full index is measured in days
+# under the namespace CPU quota, and that is not something to start over HTTP and
+# hope the pod survives. Steady-state incremental runs are what the triggers are
+# for.
 #
 # Multi-stage, unlike projects/zora/Dockerfile. On a 426 MB harvester image the
 # difference is cosmetic; here the [embeddings] closure is 42 packages and torch
@@ -55,9 +65,16 @@ FROM python:3.12-slim AS runtime
 # weights that did not change, against a 10 GB registry quota. In the cluster
 # this path is an RWX PVC on the idnas21zb.uzh.ch storage class, shared with the
 # serving image, so the download happens once; locally it is a compose volume.
+#
+# API_HOST must be 0.0.0.0, not config.py's 127.0.0.1 default: a server bound to
+# loopback inside a container is unreachable from its own Service. Same reasoning
+# as MCP_HOST in projects/gateway/Dockerfile -- a property of running in a
+# container rather than a deployment choice, so it belongs in the image.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HF_HOME=/var/cache/huggingface \
+    API_HOST=0.0.0.0 \
+    API_PORT=8100 \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
@@ -78,8 +95,15 @@ RUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin app \
 
 USER 10001
 
-# --source db is what a deployed indexer does: read the harvested publication
-# table, not the 50 checked-in samples. Override the whole entrypoint (compose
-# and the chart's shellCommand both can) to index a directory instead.
-ENTRYPOINT ["themis-matcher", "index"]
-CMD ["--source", "db"]
+# Documentation only -- EXPOSE publishes nothing by itself. Reachable in the
+# cluster through its Service and nothing else: this image must NOT get an
+# HTTPRoute. Its index triggers start work measured in hours and it answers
+# unauthenticated, so the namespace boundary is the only thing guarding it.
+EXPOSE 8100
+
+# The subcommand is in CMD, not ENTRYPOINT, so the serve role is a `command`
+# override rather than an entrypoint override: `themis-matcher serve`. The
+# default stays `index --source db` -- the harvested publication table, not the
+# 50 checked-in samples -- so nothing that ran this image before changes.
+ENTRYPOINT ["themis-matcher"]
+CMD ["index", "--source", "db"]

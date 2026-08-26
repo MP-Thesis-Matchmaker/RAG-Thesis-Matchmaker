@@ -73,6 +73,39 @@ def test_existing_hashes_roundtrip(store: VectorStore) -> None:
     assert len(hashes) == 3
 
 
+def test_existing_hashes_scoped_by_source_type(store: VectorStore) -> None:
+    """The scoping the index diff relies on, held to the same behaviour in both stores.
+
+    `Indexer.run` deletes every id this map contains that the run did not see, so
+    a store that ignored `source_types` would hand a single-kind run the whole
+    corpus to condemn.
+    """
+    _seed(store)
+
+    assert set(store.existing_hashes(source_types=["publication"])) == {"zora:1"}
+    assert set(store.existing_hashes(source_types=["thesis_posting"])) == {
+        "posting:1",
+        "posting:2",
+    }
+    assert set(store.existing_hashes(source_types=["publication", "thesis_posting"])) == set(
+        store.existing_hashes()
+    )
+
+
+def test_existing_hashes_unknown_source_type_is_empty_not_everything(store: VectorStore) -> None:
+    """Fails closed. An unrecognised kind must narrow to nothing, never widen."""
+    _seed(store)
+    assert store.existing_hashes(source_types=["no_such_kind"]) == {}
+
+
+def test_count_tracks_the_whole_store(store: VectorStore) -> None:
+    assert store.count() == 0
+    _seed(store)
+    assert store.count() == 3
+    store.delete(["posting:2"])
+    assert store.count() == 2
+
+
 def test_delete_removes_points(store: VectorStore) -> None:
     _seed(store)
     store.delete(["posting:2"])

@@ -28,6 +28,20 @@ What is here describes the **ZORA harvester** and the **schema step**.
 | `zora-harvest-full-cronjob.yaml` | `CronJob` | `--mode full`, Mondays 01:00 UTC. Authoritative snapshot; prunes withdrawn items. |
 | `zora-harvest-incremental-cronjob.yaml` | `CronJob` | `--mode incremental`, the other six days at 01:00 UTC. Upserts only, deletes nothing. |
 
+**Two roles the rewrite has to add, and one it must not.** Since 2026-08-26 the
+matcher is an HTTP service as well as a batch job, so it needs a `Deployment`
+(`command: ["serve"]` on the same image) and a `Service`. It must **not** get an
+`HTTPRoute`: its `/v1/index/*` endpoints start work measured in hours, it answers
+unauthenticated, and the namespace boundary is the only thing guarding it. The
+gateway then needs `MATCHER_BASE_URL` pointing at that in-cluster Service.
+
+**And one role the rewrite can drop.** There is no "index after each harvest"
+CronJob to write. The harvester and the scraper POST to the matcher when a run
+commits, so the trigger is the ingestion job rather than a schedule guessing when
+one finished. A one-shot `Job` on the default `CMD` is still the right way to start
+a cold full build, because that one takes days and should not depend on an HTTP
+request surviving.
+
 There is deliberately **no separate CronJob for the `person` and `org_unit`
 mirrors**: every harvest run refreshes them first, as full snapshots, before it
 touches publications. They are steps of a harvest, not a job of their own — a
