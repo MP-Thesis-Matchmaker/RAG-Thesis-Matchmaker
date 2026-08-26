@@ -2619,14 +2619,11 @@ name = "themis-gateway"
 version = "0.0.1"
 source = { editable = "projects/gateway" }
 dependencies = [
-    { name = "themis-matcher" },
+    { name = "httpx" },
     { name = "themis-shared" },
 ]
 
 [package.optional-dependencies]
-embeddings = [
-    { name = "themis-matcher", extra = ["embeddings"] },
-]
 mcp = [
     { name = "mcp" },
 ]
@@ -2638,12 +2635,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=2.0" },
-    { name = "themis-matcher", editable = "projects/matcher" },
-    { name = "themis-matcher", extras = ["embeddings"], marker = "extra == 'embeddings'", editable = "projects/matcher" },
     { name = "themis-shared", editable = "libs/shared" },
 ]
-provides-extras = ["embeddings", "mcp"]
+provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]
