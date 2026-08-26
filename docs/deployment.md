@@ -23,14 +23,18 @@ a committed manifest is worse than an obvious blank.
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
 | `themis_zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `themis-matcher index` | `CronJob` | after each harvest | **none** — image exists (`projects/matcher/`) |
+| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`) |
+| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, default `CMD` |
 | `themis-gateway-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
 | `themis_scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
-The last two rows now lack only a manifest. What used to block them — no image
+Every row but the first two lacks only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
 the committed manifests are in the wrong format for this cluster (see
-**Deploying** below) and that two quota raises are outstanding.
+**Deploying** below) and that two quota raises are outstanding. The matcher's
+`Service` is **in-cluster only, with no `HTTPRoute`**: its index endpoints start
+work measured in hours and it answers unauthenticated, so the namespace boundary
+is what guards it.
 See [`k8s/README.md`](../k8s/README.md).
 
 Harvesting is a **cluster** concern. It is never run in GitHub Actions, and
@@ -58,8 +62,8 @@ done yet.
 | Image | Role | Runtime | Extras it needs | Exists |
 |---|---|---|---|---|
 | `projects/zora/` | ZORA harvester | `CronJob` | none | **yes** |
-| `projects/matcher/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
-| `projects/gateway/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
+| `projects/matcher/` | serve matching **and** build the index | `Deployment` (+ a `Job` for a cold build) | `[embeddings]` | **yes** |
+| `projects/gateway/` | MCP adapter | `Deployment` | `[mcp]` | **yes** |
 | `projects/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
@@ -85,11 +89,20 @@ The scraper image also carries something none of the others do: `data/scraper/`.
 at *runtime*, not just by tests. Without that COPY the image starts and finds nothing
 to scrape.
 
-The matcher and the gateway both need `[embeddings]` — the query has to be
-embedded with the same model as the corpus — so splitting them buys lifecycle
-separation rather than size: one is a batch job that writes and exits, the other is
-a long-lived read-only process. That is reason enough to version and roll them
-independently.
+**The gateway no longer needs `[embeddings]`, and that is the point of the HTTP
+split.** It used to, because it embedded the incoming query in-process — so an
+always-on pod carried its own copy of a 2.27 GB model and peaked around 3.6 GiB,
+against a namespace ceiling of 4 GiB *in total*. The two could not coexist. The
+matcher now embeds both the corpus and the query, in one process with one copy of
+the weights, and the gateway is 296 MB of `httpx` and the MCP SDK. Verified on the
+built image: `torch`, `sentence_transformers` and `themis_matcher` are all absent.
+
+**The matcher image serves two roles, chosen by `CMD`.** `ENTRYPOINT` is
+`themis-matcher` and the default `CMD` is `index --source db`, so `command:
+["serve"]` in the chart's `shellCommand` switches it to the API. One image because
+both roles want the same model and the same closure. The batch role stays because a
+cold full index is measured in days under the CPU quota, and that is not something
+to start over HTTP and hope the pod outlives it.
 
 **Both install a CPU-only torch, and that is a lock decision rather than a
 Dockerfile one.** PyPI's default linux `torch` wheel is the CUDA build — a wheel
@@ -145,8 +158,10 @@ each member alone for the same reason.
 
 The measured seam that made this cheap: the two producers share only `contracts/`, `config.py` and
 `db.py` — now `themis-shared` — and their dependency sets are disjoint apart from pydantic and
-dotenv. `themis-gateway` is the one deliberate cross-edge, importing `themis_matcher` from
-`service.py` and nowhere else, which is what keeps the eventual HTTP swap a one-file change.
+dotenv. `themis-gateway` was the one deliberate cross-edge, importing `themis_matcher` from
+`service.py` and nowhere else — which is exactly what made the HTTP swap, on 2026-08-26, a
+one-file change. There is now no cross-edge at all: every member depends on `themis-shared` and
+nothing else of ours, and the `boundaries` job enforces it.
 
 Cost, for the record: six `pyproject.toml` files, a regenerated `uv.lock`, every import path
 rewritten, and the whole test suite relocated. The scraper port went first, deliberately, so that
@@ -289,8 +304,12 @@ Blocking for deployment, not for local development against a Postgres container.
    into Postgres as a `jsonb` table and drop the volume entirely.
 10. **Two quota raises.** The default namespace quota is `limits.cpu: 2`,
    `limits.memory: 4Gi`, `pods: 10`. bge-m3 is a 568M-parameter model held in
-   memory, so an always-on gateway pod and a scheduled matcher pod cannot both fit
-   under a 4 Gi *namespace-wide* ceiling. The Harbor project's 10 GB is the second.
+   memory, and one matcher pod peaks near 3.6 GiB — so a 4 Gi *namespace-wide*
+   ceiling leaves room for essentially one copy of the model. The HTTP split is
+   what made that survivable rather than impossible: the gateway holds no model
+   now, so the question is one matcher pod against the ceiling instead of two pods
+   that could never both fit. A second matcher replica still cannot. The Harbor
+   project's 10 GB is the second.
    Both go to `container.services.support@zi.uzh.ch`, and both want a measured
    number rather than an estimate — see **Known limitations**.
 
@@ -352,8 +371,11 @@ Not questions for Central Informatics — things we owe ourselves.
 
   Two things follow. First, **peak RSS is ~3.6 GiB whatever the CPU budget**, and
   the namespace ceiling is 4 Gi *in total* — so one matcher pod all but exhausts
-  the quota on its own, and an always-on gateway pod holding its own copy of the
-  model cannot coexist with it. That is the number the quota request rests on.
+  the quota on its own. When the gateway also held a copy of the model the two
+  could not coexist at all; since 2026-08-26 it holds none, so the figure now
+  bounds *replicas of the matcher* rather than ruling out the pair. That is the
+  number the quota request rests on. Note the corollary: with a single replica,
+  a long index run and query traffic share one pod's CPU.
 
   Second, **a Kubernetes CPU limit does not reduce `os.cpu_count()`**. It is a CFS
   bandwidth quota, so torch sees every core on the node and starts that many

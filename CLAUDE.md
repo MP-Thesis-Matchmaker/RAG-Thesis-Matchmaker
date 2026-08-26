@@ -27,11 +27,15 @@ section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png
 | [`projects/zora/`](projects/zora/README.md) | `themis_zora` | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
 | [`projects/scraper/`](projects/scraper/README.md) | `themis_scraper` | implemented, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`projects/matcher/`](projects/matcher/README.md) | `themis_matcher` | implemented | The engine, in five sub-packages — [`indexing/`](projects/matcher/src/themis_matcher/indexing/README.md), [`retrieval/`](projects/matcher/src/themis_matcher/retrieval/README.md) (**also holds the only ranking**), [`parsing/`](projects/matcher/src/themis_matcher/parsing/README.md), [`synthesis/`](projects/matcher/src/themis_matcher/synthesis/README.md), [`pipeline/`](projects/matcher/src/themis_matcher/pipeline/README.md) — plus `llm.py` and `cli.py` |
-| [`projects/gateway/`](projects/gateway/README.md) | `themis_gateway` | MCP done, REST design-only | Thin front door; no business logic. The only member importing `themis_matcher`, and only from `service.py` |
+| [`projects/gateway/`](projects/gateway/README.md) | `themis_gateway` | MCP done, REST design-only | Thin front door; no business logic, no model, no database. Reaches the matcher over HTTP from `service.py`; imports no other member |
 
-The dependency graph is a DAG: everything depends on `themis-shared`, `themis-gateway` also on
-`themis-matcher`, and nothing else crosses. CI's `boundaries` job installs each member **alone**,
-so a stray cross-member import fails with `ModuleNotFoundError` rather than passing unnoticed.
+The dependency graph is a star: **every member depends on `themis-shared` and on nothing else of
+ours.** `themis-gateway` used to also depend on `themis-matcher`; since 2026-08-26 it calls the
+matcher over HTTP instead (`/v1/match`, `/v1/recommend`), which is what removed the last cross-edge.
+CI's `boundaries` job installs each member **alone**, so that is now enforced rather than merely
+described: a stray `from themis_matcher import ...` in the gateway fails with `ModuleNotFoundError`.
+The shared wire models live in [`themis_shared.contracts.api`](libs/shared/src/themis_shared/contracts/api.py),
+so both ends stay typed without either importing the other.
 
 Not built: a **`ranking` package.** Ranking is one line inside
 `themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
@@ -55,7 +59,8 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
 Entry points — one console script per member: `themis-init-db` (shared), `themis-matcher`
-(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`), `themis-gateway-mcp`
+(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`, `serve --host --port`),
+`themis-gateway-mcp`
 (`--stdio`), `themis-zora-harvest`, and `themis-scraper`. The last two also answer to
 `python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
 delegates to `themis_shared.initdb`, so the two spellings cannot drift.
@@ -157,13 +162,19 @@ still missing:
   now two different distributions, which is what makes the HTTP swap below a contained change
 - Two thin adapter apps: **REST API** and **MCP adapter** — front doors over the
   application-service functions only
-  → **MCP shipped as `themis-gateway`; REST not built.** The gateway still calls the matcher
-  in-process; making that an HTTP call touches only `themis_gateway/service.py`
+  → **MCP shipped as `themis-gateway`; REST not built.** The gateway no longer calls the matcher
+  in-process: since 2026-08-26 `themis_gateway/service.py` is an HTTP client, and the matcher serves
+  [`themis_matcher.api`](projects/matcher/src/themis_matcher/api/) behind `themis-matcher serve`.
+  A REST front door for *students* is still unbuilt; this is the internal seam, not that
 
 ### Invariants
 
 1. **Ingestion owns all writes.** Serving (retrieval / ranking / app-service / adapters) is
-   strictly read-only. No write paths outside ingestion.
+   strictly read-only. No write paths outside ingestion. One qualifier since 2026-08-26: the
+   matcher's API *process* both serves and indexes, because one process means one copy of a
+   2.27 GB model against a 4 GiB namespace quota. The **modules** are unchanged — `retrieval/`
+   still never writes, `indexing/` still owns the `document` table — and the ingestion members
+   still own every source table.
 2. **Core exposes plain application-service functions.** The gateway (MCP, and REST when it
    exists) calls them; it holds no business logic, and no core member imports `themis_gateway`.
 3. **Swappable seams behind interfaces**: the embedding model and LLM provider are
