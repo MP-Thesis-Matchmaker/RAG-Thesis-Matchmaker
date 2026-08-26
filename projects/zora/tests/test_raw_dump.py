@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pytest
 
-from themis_zora import config, raw_dump
+from themis_zora import raw_dump
 
 
 @pytest.fixture()
 def raw_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "RAW_DIR", str(tmp_path / "raw"))
+    monkeypatch.setenv("ZORA_DATA_DIR", str(tmp_path))
     return tmp_path / "raw"
 
 

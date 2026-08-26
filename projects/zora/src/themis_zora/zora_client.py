@@ -3,7 +3,7 @@ Thin wrapper around dspace_rest_client.DSpaceClient, scoped to the
 Faculty of Economics community.
 
 Auth: we resolve the personal access token ourselves — from
-ZORA_UZH_API_KEY_FILE or ZORA_UZH_API_KEY, see config.resolve_api_token —
+ZORA_UZH_API_KEY_FILE or ZORA_UZH_API_KEY, see ZoraSettings.api_token —
 and assign it to the constructed client. That overrides the token
 DSpaceClient scrapes from the environment on its own, so resolution is
 deterministic and there is exactly one documented contract. No manual
@@ -11,7 +11,6 @@ header wiring is needed beyond that assignment.
 """
 
 import logging
-import os
 
 from dspace_rest_client.client import DSpaceClient
 from requests.adapters import HTTPAdapter
@@ -36,7 +35,11 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 def get_client() -> DSpaceClient:
     """Construct and authenticate a DSpaceClient against the ZORA API."""
-    endpoint = os.environ.get("DSPACE_API_ENDPOINT", config.DEFAULT_API_ENDPOINT)
+    # Read off the class, not an instance: ZORA_DSPACE_API_URL is a ClassVar, so
+    # there is no environment name that can point a harvest at another origin.
+    # The DSPACE_API_ENDPOINT override this used to honour is gone -- see
+    # themis_zora/config.py on why the API origin is not a deployment knob.
+    endpoint = config.ZoraSettings.ZORA_DSPACE_API_URL
     client = DSpaceClient(api_endpoint=endpoint)
 
     # Configure request timeout (10s connect, 60s read) and automatic retries
@@ -52,7 +55,7 @@ def get_client() -> DSpaceClient:
 
     # Must happen before authenticate(), which branches on api_token being
     # set; overwrites whatever the client picked up from the environment.
-    client.api_token = config.resolve_api_token()
+    client.api_token = config.get_settings().api_token
 
     authenticated = client.authenticate()
     if not authenticated:
@@ -67,7 +70,7 @@ def get_client() -> DSpaceClient:
 
 def iter_items(
     client: DSpaceClient,
-    scope: str | None = config.DEFAULT_SCOPE_UUID,
+    scope: str | None = config.ZoraSettings.ZORA_SCOPE_UUID,
     since: str | None = None,
 ):
     """
@@ -136,7 +139,9 @@ def _iter_paginated(client: DSpaceClient, url: str, embed_key: str):
             return
 
 
-def iter_org_tree(client: DSpaceClient, root_uuid: str = config.UZH_ROOT_COMMUNITY_UUID):
+def iter_org_tree(
+    client: DSpaceClient, root_uuid: str = config.ZoraSettings.ZORA_ROOT_COMMUNITY_UUID
+):
     """
     Walk the community tree breadth-first from the UZH root.
 
@@ -147,7 +152,7 @@ def iter_org_tree(client: DSpaceClient, root_uuid: str = config.UZH_ROOT_COMMUNI
     contains exactly the org units by construction, and parent/depth fall
     out for free.
     """
-    endpoint = os.environ.get("DSPACE_API_ENDPOINT", config.DEFAULT_API_ENDPOINT)
+    endpoint = config.ZoraSettings.ZORA_DSPACE_API_URL
     root = client.fetch_resource(f"{endpoint}/core/communities/{root_uuid}")
     if root is None:
         raise RuntimeError(f"Could not fetch the UZH root community {root_uuid}.")

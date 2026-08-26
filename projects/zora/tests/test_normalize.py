@@ -1,7 +1,7 @@
 import pytest
 
 from fake_dso import FakeDSO
-from themis_zora import config
+from themis_zora import fields
 from themis_zora.normalize import normalize_item, normalize_org_unit, normalize_person
 
 
@@ -10,11 +10,11 @@ def test_normalize_single_author_with_orcid():
         handle="20.500.14742/1001",
         uuid="uuid-1",
         fields={
-            config.FIELD_TITLE: ["Trade Policy and Growth"],
-            config.FIELD_AUTHOR: ["Doe, Jane"],
-            config.FIELD_ABSTRACT: ["This paper examines..."],
-            config.FIELD_DATE_ISSUED: ["2025-03-01"],
-            config.FIELD_TYPE: ["Journal Article"],
+            fields.FIELD_TITLE: ["Trade Policy and Growth"],
+            fields.FIELD_AUTHOR: ["Doe, Jane"],
+            fields.FIELD_ABSTRACT: ["This paper examines..."],
+            fields.FIELD_DATE_ISSUED: ["2025-03-01"],
+            fields.FIELD_TYPE: ["Journal Article"],
             "cris.virtual.orcid": ["https://orcid.org/0000-0002-1111-2222"],
         },
     )
@@ -29,7 +29,7 @@ def test_normalize_single_author_with_orcid():
 
 
 def test_normalize_missing_fields_do_not_crash():
-    dso = FakeDSO(handle="h", uuid="u", fields={config.FIELD_TITLE: ["Only a title"]})
+    dso = FakeDSO(handle="h", uuid="u", fields={fields.FIELD_TITLE: ["Only a title"]})
 
     record = normalize_item(dso)
 
@@ -49,7 +49,7 @@ def test_normalize_year_extracted_from_full_date():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_DATE_ISSUED: ["2024-11-15T00:00:00Z"]},
+        fields={fields.FIELD_DATE_ISSUED: ["2024-11-15T00:00:00Z"]},
     )
 
     record = normalize_item(dso)
@@ -89,8 +89,8 @@ def test_keywords_merged_from_ddc_and_scopus():
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_SUBJECT_DDC: ["330 Economics"],
-            config.FIELD_SCOPUS_SUBJECTS: ["Economics and Econometrics"],
+            fields.FIELD_SUBJECT_DDC: ["330 Economics"],
+            fields.FIELD_SCOPUS_SUBJECTS: ["Economics and Econometrics"],
         },
     )
 
@@ -105,8 +105,8 @@ def test_keywords_deduped_across_fields():
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_SUBJECT_DDC: ["330 Economics"],
-            config.FIELD_SUBJECT: ["330 Economics"],  # duplicate
+            fields.FIELD_SUBJECT_DDC: ["330 Economics"],
+            fields.FIELD_SUBJECT: ["330 Economics"],  # duplicate
         },
     )
 
@@ -119,7 +119,7 @@ def test_keywords_empty_when_no_subject_fields():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper without keywords"]},
+        fields={fields.FIELD_TITLE: ["A paper without keywords"]},
     )
 
     record = normalize_item(dso)
@@ -151,7 +151,7 @@ def test_department_extracted_from_embedded_collection():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "owningCollection": {
                 "uuid": "f61a17ca-109f-481a-bbc3-3f410fa6ef57",
@@ -167,7 +167,7 @@ def test_department_extracted_from_embedded_collection():
 
 def test_department_none_when_no_embedded_collection():
     """Department is None when no owningCollection is embedded."""
-    dso = FakeDSO(handle="h", uuid="u", fields={config.FIELD_TITLE: ["A paper"]})
+    dso = FakeDSO(handle="h", uuid="u", fields={fields.FIELD_TITLE: ["A paper"]})
 
     record = normalize_item(dso)
 
@@ -179,7 +179,7 @@ def test_department_resolved_by_parsing_collection_name_if_not_mapped():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "owningCollection": {
                 "uuid": "unknown-uuid-not-in-mapping",
@@ -198,7 +198,7 @@ def test_department_resolved_by_parsing_collection_name_strips_prefix():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "owningCollection": {
                 "uuid": "unknown-uuid-not-in-mapping",
@@ -217,7 +217,7 @@ def test_department_extracted_from_mapped_collections():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "mappedCollections": {
                 "_embedded": {
@@ -248,10 +248,10 @@ def test_uzh_authors_admits_only_cris_authorities():
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin", "Foreign, Bob"],
+            fields.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin", "Foreign, Bob"],
         },
         authorities={
-            config.FIELD_AUTHOR: [
+            fields.FIELD_AUTHOR: [
                 None,
                 "f45b3ec1-cf2a-43ae-85d4-528afff07a40",
                 "will be referenced::ORCID::0000-0002-1825-0097",
@@ -270,7 +270,7 @@ def test_uzh_authors_empty_when_no_authorities():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Doe, Jane", "Smith, John"]},
+        fields={fields.FIELD_AUTHOR: ["Doe, Jane", "Smith, John"]},
     )
 
     record = normalize_item(dso)
@@ -284,10 +284,10 @@ def test_author_authority_map_includes_all_authors():
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin"],
+            fields.FIELD_AUTHOR: ["External, Alice", "Schmutzler, Armin"],
         },
         authorities={
-            config.FIELD_AUTHOR: [None, "f45b3ec1-cf2a-43ae-85d4-528afff07a40"],
+            fields.FIELD_AUTHOR: [None, "f45b3ec1-cf2a-43ae-85d4-528afff07a40"],
         },
     )
 
@@ -304,7 +304,7 @@ def test_language_extracted():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_LANGUAGE: ["eng"]},
+        fields={fields.FIELD_LANGUAGE: ["eng"]},
     )
 
     record = normalize_item(dso)
@@ -314,7 +314,7 @@ def test_language_extracted():
 
 def test_language_none_when_missing():
     """Language is None when dc.language.iso is not present."""
-    dso = FakeDSO(handle="h", uuid="u", fields={config.FIELD_TITLE: ["A paper"]})
+    dso = FakeDSO(handle="h", uuid="u", fields={fields.FIELD_TITLE: ["A paper"]})
 
     record = normalize_item(dso)
 
@@ -327,10 +327,10 @@ def test_author_authority_map_types_orcid_placeholder():
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_AUTHOR: ["External, Alice", "Theile, Gudrun"],
+            fields.FIELD_AUTHOR: ["External, Alice", "Theile, Gudrun"],
         },
         authorities={
-            config.FIELD_AUTHOR: [None, "will be referenced::ORCID::0000-0002-9454-3617"],
+            fields.FIELD_AUTHOR: [None, "will be referenced::ORCID::0000-0002-9454-3617"],
         },
     )
 
@@ -355,8 +355,8 @@ def test_a_marked_authority_stays_orcid_however_malformed_its_payload():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Broken, Bea"]},
-        authorities={config.FIELD_AUTHOR: ["will be referenced::ORCID::not-an-orcid-at-all"]},
+        fields={fields.FIELD_AUTHOR: ["Broken, Bea"]},
+        authorities={fields.FIELD_AUTHOR: ["will be referenced::ORCID::not-an-orcid-at-all"]},
     )
 
     record = normalize_item(dso)
@@ -376,8 +376,8 @@ def test_an_unmarked_but_well_formed_orcid_is_typed_orcid():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Phantom, Phil"]},
-        authorities={config.FIELD_AUTHOR: ["0000-0002-7695-501X"]},  # no marker
+        fields={fields.FIELD_AUTHOR: ["Phantom, Phil"]},
+        authorities={fields.FIELD_AUTHOR: ["0000-0002-7695-501X"]},  # no marker
     )
 
     record = normalize_item(dso)
@@ -393,8 +393,8 @@ def test_an_unmarked_orcid_is_canonicalised_before_the_shape_test():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Lower, Lena"]},
-        authorities={config.FIELD_AUTHOR: ["0000-0001-5644-045x"]},  # no marker, lowercase x
+        fields={fields.FIELD_AUTHOR: ["Lower, Lena"]},
+        authorities={fields.FIELD_AUTHOR: ["0000-0001-5644-045x"]},  # no marker, lowercase x
     )
 
     record = normalize_item(dso)
@@ -416,8 +416,8 @@ def test_a_cris_uuid_survives_the_shape_test_byte_for_byte():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Real, Researcher"]},
-        authorities={config.FIELD_AUTHOR: [uuid]},
+        fields={fields.FIELD_AUTHOR: ["Real, Researcher"]},
+        authorities={fields.FIELD_AUTHOR: [uuid]},
     )
 
     record = normalize_item(dso)
@@ -433,7 +433,7 @@ def test_owning_collection_uuid_extracted():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "owningCollection": {
                 "uuid": "f61a17ca-109f-481a-bbc3-3f410fa6ef57",
@@ -453,7 +453,7 @@ def test_owning_collection_uuid_from_mapped_fallback():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_TITLE: ["A paper"]},
+        fields={fields.FIELD_TITLE: ["A paper"]},
         embedded={
             "mappedCollections": {
                 "_embedded": {
@@ -475,7 +475,7 @@ def test_owning_collection_uuid_from_mapped_fallback():
 
 
 def test_owning_collection_uuid_none_when_no_collections():
-    dso = FakeDSO(handle="h", uuid="u", fields={config.FIELD_TITLE: ["A paper"]})
+    dso = FakeDSO(handle="h", uuid="u", fields={fields.FIELD_TITLE: ["A paper"]})
 
     record = normalize_item(dso)
 
@@ -490,12 +490,12 @@ def test_normalize_person_extracts_all_fields():
         handle="20.500.14742/239047",
         uuid="00d53153-03a6-4fd3-a581-de9a75a0015a",
         fields={
-            config.FIELD_TITLE: ["Runge, Jan-Niklas"],
-            config.FIELD_PERSON_FAMILY: ["Runge"],
-            config.FIELD_PERSON_GIVEN: ["Jan-Niklas"],
-            config.FIELD_PERSON_ORCID: ["0000-0002-0450-9897"],
-            config.FIELD_URI: ["https://www.zora.uzh.ch/handle/20.500.14742/239047"],
-            config.FIELD_DATE_ACCESSIONED: ["2025-12-08T16:28:41Z"],
+            fields.FIELD_TITLE: ["Runge, Jan-Niklas"],
+            fields.FIELD_PERSON_FAMILY: ["Runge"],
+            fields.FIELD_PERSON_GIVEN: ["Jan-Niklas"],
+            fields.FIELD_PERSON_ORCID: ["0000-0002-0450-9897"],
+            fields.FIELD_URI: ["https://www.zora.uzh.ch/handle/20.500.14742/239047"],
+            fields.FIELD_DATE_ACCESSIONED: ["2025-12-08T16:28:41Z"],
         },
     )
 
@@ -517,7 +517,7 @@ def test_normalize_person_strips_orcid_url_prefix():
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0002-0450-9897"]},
+        fields={fields.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0002-0450-9897"]},
     )
 
     record = normalize_person(dso)
@@ -541,7 +541,7 @@ def test_normalize_person_missing_fields_do_not_crash():
 def _community(uuid: str, name: str, subject_id: str | None = None) -> dict:
     metadata = {}
     if subject_id:
-        metadata[config.FIELD_ORG_SUBJECT_ID] = [{"value": subject_id}]
+        metadata[fields.FIELD_ORG_SUBJECT_ID] = [{"value": subject_id}]
     return {"uuid": uuid, "name": name, "handle": f"20.500.14742/{uuid[:2]}", "metadata": metadata}
 
 
@@ -605,8 +605,8 @@ def _authority_map(authority: str) -> dict:
     dso = FakeDSO(
         handle="h",
         uuid="u",
-        fields={config.FIELD_AUTHOR: ["Preisig, Martina Vanessa"]},
-        authorities={config.FIELD_AUTHOR: [authority]},
+        fields={fields.FIELD_AUTHOR: ["Preisig, Martina Vanessa"]},
+        authorities={fields.FIELD_AUTHOR: [authority]},
     )
     return normalize_item(dso)["author_authority_map"]["Preisig, Martina Vanessa"]
 
@@ -708,8 +708,8 @@ def test_person_orcid_uses_the_same_normalisation() -> None:
         handle="h",
         uuid="u",
         fields={
-            config.FIELD_TITLE: ["Preisig, Martina Vanessa"],
-            config.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0001-5644-045x"],
+            fields.FIELD_TITLE: ["Preisig, Martina Vanessa"],
+            fields.FIELD_PERSON_ORCID: ["https://orcid.org/0000-0001-5644-045x"],
         },
     )
 

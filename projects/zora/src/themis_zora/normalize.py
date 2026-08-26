@@ -15,7 +15,7 @@ import logging
 import re
 from typing import Any
 
-from . import config
+from . import config, fields
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ def _normalize_orcid(raw: str) -> str:
 
 def _first_orcid(dso: Any) -> str | None:
     """Try each candidate ORCID field in order, return the first hit."""
-    for field in config.FIELD_ORCID_CANDIDATES:
+    for field in fields.FIELD_ORCID_CANDIDATES:
         values = _values(dso, field)
         if values:
             return _normalize_orcid(values[0])
@@ -127,8 +127,8 @@ def _first_orcid(dso: Any) -> str | None:
 
 def _department_name(name: str) -> str | None:
     """A collection's display name minus the "Publications of " prefix."""
-    if name.startswith(config.PUBLICATIONS_COLLECTION_PREFIX):
-        return name[len(config.PUBLICATIONS_COLLECTION_PREFIX) :]
+    if name.startswith(config.ZoraSettings.ZORA_PUBLICATIONS_COLLECTION_PREFIX):
+        return name[len(config.ZoraSettings.ZORA_PUBLICATIONS_COLLECTION_PREFIX) :]
     return name if name else None
 
 
@@ -177,7 +177,7 @@ def _get_uzh_authors(dso: Any) -> list[str]:
     Classification goes through `_typed_authority` rather than re-testing the
     marker here, so the two can never disagree about what an authority means.
     """
-    raw = dso.get_metadata_values(config.FIELD_AUTHOR)
+    raw = dso.get_metadata_values(fields.FIELD_AUTHOR)
     return [
         entry["value"]
         for entry in raw
@@ -243,7 +243,7 @@ def _get_author_authority_map(dso: Any) -> dict[str, dict | None]:
     orcid-typed entry is an author of unknown affiliation, None is an author
     with no identifier at all.
     """
-    raw = dso.get_metadata_values(config.FIELD_AUTHOR)
+    raw = dso.get_metadata_values(fields.FIELD_AUTHOR)
     return {
         entry["value"]: _typed_authority(entry.get("authority"))
         for entry in raw
@@ -259,28 +259,28 @@ def normalize_item(dso: Any) -> dict:
     profiles) happens as a separate step, since one publication has many
     authors and one author has many publications.
     """
-    titles = _values(dso, config.FIELD_TITLE)
-    years = _values(dso, config.FIELD_DATE_ISSUED)
+    titles = _values(dso, fields.FIELD_TITLE)
+    years = _values(dso, fields.FIELD_DATE_ISSUED)
     department, owning_collection_uuid = _get_owning_collection(dso)
 
     return {
         "handle": dso.handle,
         "uuid": dso.uuid,
         "title": titles[0] if titles else None,
-        "authors": _values(dso, config.FIELD_AUTHOR),
+        "authors": _values(dso, fields.FIELD_AUTHOR),
         "uzh_authors": _get_uzh_authors(dso),
         "author_authority_map": _get_author_authority_map(dso),
         "author_orcid": _first_orcid(dso),
-        "abstract": next(iter(_values(dso, config.FIELD_ABSTRACT)), None),
+        "abstract": next(iter(_values(dso, fields.FIELD_ABSTRACT)), None),
         "year": _extract_year(years[0]) if years else None,
-        "type": next(iter(_values(dso, config.FIELD_TYPE)), None),
+        "type": next(iter(_values(dso, fields.FIELD_TYPE)), None),
         "department": department,
         "owning_collection_uuid": owning_collection_uuid,
-        "language": next(iter(_values(dso, config.FIELD_LANGUAGE)), None),
-        "doi": next(iter(_values(dso, config.FIELD_DOI)), None),
-        "uri": next(iter(_values(dso, config.FIELD_URI)), None),
+        "language": next(iter(_values(dso, fields.FIELD_LANGUAGE)), None),
+        "doi": next(iter(_values(dso, fields.FIELD_DOI)), None),
+        "uri": next(iter(_values(dso, fields.FIELD_URI)), None),
         "keywords": _collect_keywords(dso),
-        "accessioned": next(iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None),
+        "accessioned": next(iter(_values(dso, fields.FIELD_DATE_ACCESSIONED)), None),
     }
 
 
@@ -304,7 +304,7 @@ def _collect_keywords(dso: Any) -> list[str]:
     """
     seen: set[str] = set()
     result: list[str] = []
-    for field in (config.FIELD_SUBJECT_DDC, config.FIELD_SCOPUS_SUBJECTS, config.FIELD_SUBJECT):
+    for field in (fields.FIELD_SUBJECT_DDC, fields.FIELD_SCOPUS_SUBJECTS, fields.FIELD_SUBJECT):
         for val in _values(dso, field):
             if val not in seen:
                 seen.add(val)
@@ -324,18 +324,18 @@ def normalize_person(dso: Any) -> dict:
     department, or email on these items (probed 2026-08-24), so person-to-org
     attribution has to come from publications, not from this record.
     """
-    titles = _values(dso, config.FIELD_TITLE)
-    orcids = _values(dso, config.FIELD_PERSON_ORCID)
+    titles = _values(dso, fields.FIELD_TITLE)
+    orcids = _values(dso, fields.FIELD_PERSON_ORCID)
 
     return {
         "uuid": dso.uuid,
         "display_name": titles[0] if titles else None,
-        "family_name": next(iter(_values(dso, config.FIELD_PERSON_FAMILY)), None),
-        "given_name": next(iter(_values(dso, config.FIELD_PERSON_GIVEN)), None),
+        "family_name": next(iter(_values(dso, fields.FIELD_PERSON_FAMILY)), None),
+        "given_name": next(iter(_values(dso, fields.FIELD_PERSON_GIVEN)), None),
         "orcid": _normalize_orcid(orcids[0]) if orcids else None,
         "handle": dso.handle,
-        "url": next(iter(_values(dso, config.FIELD_URI)), None),
-        "accessioned": next(iter(_values(dso, config.FIELD_DATE_ACCESSIONED)), None),
+        "url": next(iter(_values(dso, fields.FIELD_URI)), None),
+        "accessioned": next(iter(_values(dso, fields.FIELD_DATE_ACCESSIONED)), None),
     }
 
 
@@ -365,7 +365,7 @@ def normalize_org_unit(
     publication_collections = [
         c
         for c in collections
-        if (c.get("name") or "").startswith(config.PUBLICATIONS_COLLECTION_PREFIX)
+        if (c.get("name") or "").startswith(config.ZoraSettings.ZORA_PUBLICATIONS_COLLECTION_PREFIX)
     ]
     if len(publication_collections) > 1:
         logger.warning(
@@ -384,7 +384,7 @@ def normalize_org_unit(
         "faculty_uuid": faculty_uuid,
         "depth": depth,
         "handle": community.get("handle"),
-        "subject_id": _community_metadata_value(community, config.FIELD_ORG_SUBJECT_ID),
+        "subject_id": _community_metadata_value(community, fields.FIELD_ORG_SUBJECT_ID),
         "collection_uuid": collection.get("uuid") if collection else None,
         "collection_name": collection.get("name") if collection else None,
     }
