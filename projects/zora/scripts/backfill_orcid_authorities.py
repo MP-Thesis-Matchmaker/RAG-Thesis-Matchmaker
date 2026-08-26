@@ -42,7 +42,7 @@ changes. Every edit is printed, so 20 corrections are auditable rather than a
 silent bulk update.
 
 Usage:
-    python -m scripts.backfill_orcid_authorities [--apply]
+    python projects/zora/scripts/backfill_orcid_authorities.py [--apply]
 
 Without --apply it is a dry run and writes nothing.
 """

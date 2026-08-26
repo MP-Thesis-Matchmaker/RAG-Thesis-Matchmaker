@@ -2,7 +2,7 @@
 # real model, and maintains the pgvector index. A batch job -- it runs, writes,
 # and exits -- so in the cluster it is a CronJob fired after each harvest.
 #
-# Multi-stage, unlike docker/zora/Dockerfile. On a 426 MB harvester image the
+# Multi-stage, unlike projects/zora/Dockerfile. On a 426 MB harvester image the
 # difference is cosmetic; here the [embeddings] closure is 42 packages and torch
 # alone is a few hundred MB, so leaving uv, the build context and a build cache
 # in the artefact is real weight. The container Compliance Policy asks images to
@@ -24,11 +24,19 @@ WORKDIR /app
 # --no-editable builds the project into a wheel instead of linking /app/src,
 # which is why schema.sql has to be declared as package data to survive the
 # trip, and why the runtime stage below needs nothing but the venv.
-# TODO(workspace-split): these COPY lines and the --package flag were updated
-# mechanically when the distribution became a uv workspace. A proper per-member
-# build context, and a shared builder stage so five images do not each resolve the
-# same lock, are the follow-up -- along with the k8s manifests.
+# uv validates the ENTIRE workspace against uv.lock, so every member's manifest
+# must be present even though only one member is installed here -- without them uv
+# sees a smaller workspace than the lock describes and --locked fails with
+# "the lockfile needs to be updated". Manifests only, no source: they change far
+# less often than code, so this stays a warm layer.
 COPY pyproject.toml uv.lock ./
+COPY libs/shared/pyproject.toml       ./libs/shared/
+COPY projects/gateway/pyproject.toml  ./projects/gateway/
+COPY projects/matcher/pyproject.toml  ./projects/matcher/
+COPY projects/scraper/pyproject.toml  ./projects/scraper/
+COPY projects/zora/pyproject.toml     ./projects/zora/
+
+# Source for what actually gets installed.
 COPY libs/shared/ ./libs/shared/
 COPY projects/matcher/ ./projects/matcher/
 # --extra embeddings is the whole point of this image: SentenceTransformerEmbedder
@@ -56,7 +64,7 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 
-# A real UID, unlike docker/zora/Dockerfile. That image argues against a USER
+# A real UID, unlike projects/zora/Dockerfile. That image argues against a USER
 # directive and is right to: it is a local batch job writing to a bind mount,
 # where a baked-in UID only matches the host by luck. This one never bind-mounts
 # -- it writes to Postgres and to a PVC -- so the argument does not carry over.

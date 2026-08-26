@@ -109,12 +109,12 @@ when both are due" — is expressed declaratively by putting the two CronJobs on
 
 ## Docker
 
-There is no `Dockerfile` at the repository root — the image is built from `docker/zora/Dockerfile`,
+There is no `Dockerfile` at the repository root — the image is built from `projects/zora/Dockerfile`,
 and `docker-compose.yml` builds the same image for both `init-db` and `harvester`:
 
 ```bash
 # Build
-docker build -f docker/zora/Dockerfile -t zora-harvester .
+docker build -f projects/zora/Dockerfile -t zora-harvester .
 
 # One-shot harvest. DATABASE_URL is required: without it there is nowhere to write.
 docker run --rm \

@@ -280,7 +280,7 @@ without the indexer noticing. The DSpace field names are all isolated in
 
 ## Operations
 
-- **Docker** — `docker/zora/Dockerfile` builds a `python:3.12-slim` image with
+- **Docker** — `projects/zora/Dockerfile` builds a `python:3.12-slim` image with
   entrypoint `python -m themis_zora.harvest`. `data/` is expected to be
   bind-mounted; the container is run with `--user "$(id -u):$(id -g)"` so host
   file ownership stays sane.
@@ -291,7 +291,7 @@ without the indexer noticing. The DSpace field names are all isolated in
 - **`scripts/zora_inspect_fields.py`** — one-off live-API diagnostic. Prints every
   metadata field present on real items, checks the field names assumed in
   `config.py`, and shows per-author `authority` keys. Run with
-  `export ZORA_UZH_API_KEY=... && python -m scripts.zora_inspect_fields 5`.
+  `export ZORA_UZH_API_KEY=... && python projects/zora/scripts/zora_inspect_fields.py 5`.
   Use it before changing any `FIELD_*` constant.
 - **`scripts/zora_authority_audit.py`** — measures the candidate `uzh_authors`
   eligibility rules (first Known gap below) against the harvested corpus, so the
@@ -299,7 +299,7 @@ without the indexer noticing. The DSpace field names are all isolated in
   token, and it writes nothing but a session-scoped TEMP table. Needs the current
   schema *and* a completed `--mode full` run, since it reads
   `author_authority_map`, `owning_collection_uuid` and the `person` mirror.
-  Run with `python -m scripts.zora_authority_audit`.
+  Run with `python projects/zora/scripts/zora_authority_audit.py`.
 
 ## Field mapping
 
@@ -493,5 +493,5 @@ behaviour, so the untested surface went away without anything new being verified
   drops it. It is an item-level single value, whereas the per-author identifiers
   in `author_authority_map` are what a person-level join needs.
 - `config.py` refers to the inspect script by its old name `scripts.inspect_fields`.
-- `docker/zora/Dockerfile.dockerignore` ends with a stray `pytest tests/zora/ -v`
+- `projects/zora/Dockerfile.dockerignore` ends with a stray `pytest tests/zora/ -v`
   line — harmless as an ignore pattern, clearly accidental.

@@ -23,9 +23,9 @@ a committed manifest is worse than an obvious blank.
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
 | `thesis_matchmaker.zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — image exists (`docker/indexer/`) |
-| `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`docker/serving/`) |
-| `thesis_matchmaker.scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`docker/scraper/`) |
+| `thesis-matchmaker index` | `CronJob` | after each harvest | **none** — image exists (`projects/matcher/`) |
+| `thesis-matchmaker-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
+| `thesis_matchmaker.scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
 The last two rows now lack only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
@@ -53,14 +53,14 @@ done yet.
 ## Images
 
 **One image per deployable role, not one image for everything.** All four now exist;
-`docker/<role>/Dockerfile` is where each lives.
+`projects/<member>/Dockerfile` is where each lives.
 
 | Image | Role | Runtime | Extras it needs | Exists |
 |---|---|---|---|---|
-| `docker/zora/` | ZORA harvester | `CronJob` | none | **yes** |
-| `docker/indexer/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
-| `docker/serving/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
-| `docker/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
+| `projects/zora/` | ZORA harvester | `CronJob` | none | **yes** |
+| `projects/matcher/` | build the vector index | `CronJob` | `[embeddings]` | **yes** |
+| `projects/gateway/` | MCP adapter | `Deployment` | `[embeddings]`, `[mcp]` | **yes** |
+| `projects/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
 image from roughly 200 MB to a few GB; a harvester pod that imports neither would
@@ -116,7 +116,7 @@ egress to the Internet is permitted, so the one-time fetch works.
 
 **Both are multi-stage**, copying only `/app/.venv` into a fresh
 `python:3.12-slim`, which keeps `uv` and the build context out of the artefact.
-`docker/zora/Dockerfile` is still single-stage; on a 426 MB image the difference is
+`projects/zora/Dockerfile` is still single-stage; on a 426 MB image the difference is
 cosmetic, on a 1.95 GB one it is not.
 
 **`init-db` shares the harvester image**, and `docker-compose.yml` builds it for
@@ -212,7 +212,7 @@ satisfy all of it without doing anything special.
 Four policies that would bite are **Audit** only, meaning they report rather than
 reject: `require-run-as-nonroot`, `require-run-as-non-root-user`,
 `require-ro-rootfs`, and `require-requests-limits`. Do not read that as licence to
-ignore them — `docker/indexer/` and `docker/serving/` both run as UID 10001
+ignore them — `projects/matcher/` and `projects/gateway/` both run as UID 10001
 anyway, and requests/limits are separately mandatory because of the
 ResourceQuota, whatever Kyverno's verdict.
 
@@ -250,7 +250,7 @@ covers the registry credential.
 | `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
 | `LLM_BASE_URL` / `LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
 | `EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
-| `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | baked into `docker/serving/` |
+| `MCP_HOST` / `MCP_PORT` | must be `0.0.0.0` in a container | baked into `projects/gateway/` |
 | `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into both `[embeddings]` images |
 
 ## Open questions for Central Informatics
@@ -332,7 +332,7 @@ Not questions for Central Informatics — things we owe ourselves.
   onto `python:3.12-slim`). Closing it means a 3.12 leg in the CI matrix, or 3.12
   everywhere.
 - **A full index takes the better part of a week under the default quota.**
-  Measured on an Apple M-series laptop, in the `docker/indexer/` image, embedding
+  Measured on an Apple M-series laptop, in the `projects/matcher/` image, embedding
   the 50 checked-in samples with real `BAAI/bge-m3` and extrapolating linearly to
   the **214,685**-row corpus the 2026-08-21 full harvest produced:
 
@@ -422,7 +422,7 @@ compliance rather than merely unscanned.
 Until the project exists, images are built and pushed by hand:
 
 ```bash
-docker build -f docker/indexer/Dockerfile \
+docker build -f projects/matcher/Dockerfile \
   -t registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha> .
 docker push registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
 ```

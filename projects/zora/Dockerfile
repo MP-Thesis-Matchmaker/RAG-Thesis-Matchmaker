@@ -19,14 +19,21 @@ WORKDIR /app
 # the source are also needed because --no-editable builds the project into a
 # wheel rather than linking /app/src -- which is why schema.sql has to be
 # declared as package data to survive the trip.
-# TODO(workspace-split): these COPY lines and the --package flag were updated
-# mechanically when the distribution became a uv workspace. A proper per-member
-# build context, and a shared builder stage so five images do not each resolve the
-# same lock, are the follow-up -- along with the k8s manifests.
+# uv validates the ENTIRE workspace against uv.lock, so every member's manifest
+# must be present even though only one member is installed here -- without them uv
+# sees a smaller workspace than the lock describes and --locked fails with
+# "the lockfile needs to be updated". Manifests only, no source: they change far
+# less often than code, so this stays a warm layer.
 COPY pyproject.toml uv.lock ./
+COPY libs/shared/pyproject.toml       ./libs/shared/
+COPY projects/gateway/pyproject.toml  ./projects/gateway/
+COPY projects/matcher/pyproject.toml  ./projects/matcher/
+COPY projects/scraper/pyproject.toml  ./projects/scraper/
+COPY projects/zora/pyproject.toml     ./projects/zora/
+
+# Source for what actually gets installed.
 COPY libs/shared/ ./libs/shared/
 COPY projects/zora/ ./projects/zora/
-COPY scripts/ ./scripts/
 # --no-default-groups drops the dev group: no pytest, no ruff in a batch image.
 RUN uv sync --locked --no-default-groups --no-editable --package themis-zora
 
@@ -52,7 +59,7 @@ RUN mkdir -p data/raw
 # for, and this one is the ZORA harvester: a batch job that runs, writes, exits.
 # The remaining roles get their own directories rather than extra entrypoints
 # here, because they differ in what has to be installed, not just in how they are
-# invoked: docker/indexer/ and docker/serving/ need the [embeddings] and [mcp]
+# invoked: projects/matcher/ and projects/gateway/ need the [embeddings] and [mcp]
 # extras this image deliberately leaves out, and the posting scraper arrives with
 # a dependency set of its own. See the Images section of docs/deployment.md.
 #

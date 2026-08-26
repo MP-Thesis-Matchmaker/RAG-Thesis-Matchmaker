@@ -140,7 +140,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 
 Two known inconsistencies worth fixing at some point: the MIT badge and
 `license = { text = "MIT" }` have no `LICENSE` file behind them, and
-`docker/zora/Dockerfile` builds on Python 3.12 while the badge and
+`projects/zora/Dockerfile` builds on Python 3.12 while the badge and
 `requires-python` say 3.11.
 
 ## Contributors

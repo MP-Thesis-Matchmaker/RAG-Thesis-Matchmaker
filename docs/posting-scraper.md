@@ -29,7 +29,7 @@ The `render` extra additionally wants `uv run python -m playwright install chrom
 their listings JS-only, `iff--3`'s profile pages render client-side — so a full run
 without it permanently flags those three. `fetch.py` still imports playwright lazily and
 degrades to the static fetch when it is absent, so every *other* source works either way.
-The container image bakes the browser in (`docker/scraper/Dockerfile`).
+The container image bakes the browser in (`projects/scraper/Dockerfile`).
 
 ## The two stages, and why they are separate
 
@@ -112,7 +112,7 @@ normal path.
 
 ## In the cluster
 
-`docker/scraper/Dockerfile`; `ENTRYPOINT` is the module and `CMD` is `run --resume`, so a
+`projects/scraper/Dockerfile`; `ENTRYPOINT` is the module and `CMD` is `run --resume`, so a
 CronJob overriding `args` chooses the stage. Locally:
 
 ```bash

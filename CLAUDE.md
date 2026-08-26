@@ -117,7 +117,7 @@ shared storage don't need HTTP boundaries, and hard module seams inside one repo
 without multi-repo friction for a four-person, one-semester team.
 **Per-component containerization is decided**: one image per deployable role
 (harvester, indexer, serving adapter, posting scraper), each with its own
-`docker/<role>/Dockerfile`. That does **not** imply one source tree per image — a
+`projects/<member>/Dockerfile`. That does **not** imply one source tree per image — a
 single distribution builds all of them, differing only in entrypoint and installed
 extras. Splitting `src/` into a `projects/` workspace is still open, and the
 scraper migration is what decides it. See the Images section of

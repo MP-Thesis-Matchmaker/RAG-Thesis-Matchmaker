@@ -39,14 +39,14 @@ $ docker run --rm --entrypoint thesis-matchmaker-mcp <harvester-image> --stdio
 ModuleNotFoundError: No module named 'mcp'
 ```
 
-**`docker/indexer/` and `docker/serving/` now exist**, so that blocker is gone.
+**`projects/matcher/` and `projects/gateway/` now exist**, so that blocker is gone.
 What remains is the format problem above, plus two quota raises that have to be
 granted before either could run: the namespace ceiling is `limits.memory: 4Gi` and
 bge-m3 does not leave room for two pods holding it, and the Harbor project defaults
 to 10 GB for all our images together.
 
 The posting scraper is a third case, and a smaller one now: the code is in this
-repository and `docker/scraper/Dockerfile` builds it, so what it lacks is only a
+repository and `projects/scraper/Dockerfile` builds it, so what it lacks is only a
 manifest. It wants the same treatment as the harvester — a CronJob, plus a PVC for
 `data/scraper/cache/` so a scheduled run does not re-fetch 103 pages it already has,
 plus one for `data/scraper/var/` (`state.json` is the only record of which sources

@@ -169,7 +169,7 @@ No console script, deliberately — same as `zora/harvest.py`. `themis-matcher` 
 `themis-gateway-mcp` are front doors over the application service; this is an
 operator tool with an interactive flow, and it does not belong behind the same command.
 
-In the cluster: `docker/scraper/Dockerfile`, whose `ENTRYPOINT` is already the module and
+In the cluster: `projects/scraper/Dockerfile`, whose `ENTRYPOINT` is already the module and
 whose `CMD` is the `run --resume` half. Locally,
 `docker compose run --rm scraper fetch --resume`.
 

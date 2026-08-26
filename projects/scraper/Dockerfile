@@ -2,7 +2,7 @@
 # profiles and application procedures from cached HTML, and writes them to Postgres.
 # A batch job -- it runs, writes, and exits -- so in the cluster it is a CronJob.
 #
-# Single-stage, like docker/zora/Dockerfile and unlike docker/indexer/. The
+# Single-stage, like projects/zora/Dockerfile and unlike projects/matcher/. The
 # [scraping] closure is requests / beautifulsoup4 / PyYAML / pypdf / openai: pure
 # Python, no torch. The render extra IS installed here, browser included -- that
 # was a deliberate revisit (2026-08-22): ibw--1 and ivw--4 serve their listings
@@ -28,11 +28,19 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# TODO(workspace-split): these COPY lines and the --package flag were updated
-# mechanically when the distribution became a uv workspace. A proper per-member
-# build context, and a shared builder stage so five images do not each resolve the
-# same lock, are the follow-up -- along with the k8s manifests.
+# uv validates the ENTIRE workspace against uv.lock, so every member's manifest
+# must be present even though only one member is installed here -- without them uv
+# sees a smaller workspace than the lock describes and --locked fails with
+# "the lockfile needs to be updated". Manifests only, no source: they change far
+# less often than code, so this stays a warm layer.
 COPY pyproject.toml uv.lock ./
+COPY libs/shared/pyproject.toml       ./libs/shared/
+COPY projects/gateway/pyproject.toml  ./projects/gateway/
+COPY projects/matcher/pyproject.toml  ./projects/matcher/
+COPY projects/scraper/pyproject.toml  ./projects/scraper/
+COPY projects/zora/pyproject.toml     ./projects/zora/
+
+# Source for what actually gets installed.
 COPY libs/shared/ ./libs/shared/
 COPY projects/scraper/ ./projects/scraper/
 # --extra scraping is the whole point of this image; --extra render is what lets it
@@ -75,7 +83,7 @@ COPY data/scraper/specs/ ./data/scraper/specs/
 # throws the cache away.
 RUN mkdir -p data/scraper/cache data/scraper/var data/scraper/output
 
-# No USER directive, on the same reasoning as docker/zora/Dockerfile: a short-lived
+# No USER directive, on the same reasoning as projects/zora/Dockerfile: a short-lived
 # batch job whose data directory may be a bind mount, where a baked-in UID matches
 # the host only by luck. `docker run --user "$(id -u):$(id -g)"` is what keeps
 # locally written files owned by the invoking user.

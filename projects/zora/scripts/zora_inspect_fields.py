@@ -9,7 +9,7 @@ against the field names this pipeline assumes.
 Usage:
     export ZORA_UZH_API_KEY=<your ZORA personal API token>
     # or: export ZORA_UZH_API_KEY_FILE=/path/to/your/token.secret
-    python -m scripts.zora_inspect_fields [n_items]
+    python projects/zora/scripts/zora_inspect_fields.py [n_items]
 
 Note: this needs real network access to www.zora.uzh.ch, so it will not run
 inside a sandboxed environment without that access — run it locally or as

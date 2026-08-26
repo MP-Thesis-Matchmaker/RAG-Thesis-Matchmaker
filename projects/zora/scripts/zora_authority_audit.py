@@ -15,7 +15,7 @@ pre-2026-08-24 database.
 Usage:
     themis-init-db --reset          # if the schema is stale
     python -m themis_zora.harvest --mode full
-    python -m scripts.zora_authority_audit
+    python projects/zora/scripts/zora_authority_audit.py
 """
 
 from __future__ import annotations

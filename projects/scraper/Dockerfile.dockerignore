@@ -9,7 +9,12 @@ __pycache__
 data/raw/
 data/publications.jsonl
 data/state.json
+# Test suites, at the root and in every member. Before the workspace split a
+# bare `tests/` covered everything; a dockerignore pattern is anchored at the
+# build context, so it no longer reaches projects/*/tests or libs/*/tests.
 tests/
+projects/*/tests/
+libs/*/tests/
 docs/
 notebooks/
 
