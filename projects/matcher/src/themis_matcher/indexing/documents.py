@@ -29,6 +29,14 @@ from themis_shared.contracts import (
 MetadataScalar = str | int | float | bool
 MetadataValue = MetadataScalar | list[str] | dict[str, dict[str, str] | str | None]
 
+# The two values `source_type` can take. Named rather than spelled out at each
+# site because they are also a column in the schema and the unit an index run is
+# scoped to: `Indexer.run` diffs and deletes within one kind, which is what stops
+# a postings-only run from treating every publication as an orphan.
+SOURCE_PUBLICATION = "publication"
+SOURCE_POSTING = "thesis_posting"
+SOURCE_TYPES = (SOURCE_PUBLICATION, SOURCE_POSTING)
+
 
 class Document(BaseModel):
     """What the vector store holds for one source record."""
@@ -87,7 +95,7 @@ def zora_to_document(record: ZoraPublication) -> Document:
         record.id,
         [record.title, record.abstract, ", ".join(record.keywords) or None],
         {
-            "source_type": "publication",
+            "source_type": SOURCE_PUBLICATION,
             "department": record.department,
             # The join key to `org_unit.collection_uuid`. `department` is the same
             # unit as a display string; this is the one a query can group on
@@ -146,7 +154,7 @@ def posting_to_document(posting: ThesisPosting) -> Document:
         posting.id,
         [posting.title, posting.description, ", ".join(posting.keywords) or None],
         {
-            "source_type": "thesis_posting",
+            "source_type": SOURCE_POSTING,
             "faculty": posting.faculty,
             "department": posting.department,
             # Stored for display and debugging; see the docstring on why the

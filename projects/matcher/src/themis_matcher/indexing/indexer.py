@@ -19,11 +19,18 @@ which is why nothing here knows about either.
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 
 from pydantic import BaseModel
 
-from themis_matcher.indexing.documents import Document, posting_to_document, zora_to_document
+from themis_matcher.indexing.documents import (
+    SOURCE_POSTING,
+    SOURCE_PUBLICATION,
+    SOURCE_TYPES,
+    Document,
+    posting_to_document,
+    zora_to_document,
+)
 from themis_matcher.indexing.embedder import Embedder
 from themis_matcher.indexing.sources import SourceReader
 from themis_matcher.indexing.store import IndexManifest, VectorStore
@@ -57,10 +64,19 @@ class Indexer:
         self.store = store
         self.chunk_size = chunk_size
 
-    def run(self, reader: SourceReader) -> IndexResult:
+    def run(self, reader: SourceReader, kinds: Collection[str] | None = None) -> IndexResult:
+        """One pass over `kinds` (both, by default).
+
+        Scoping matters for more than speed. The orphan sweep below deletes every
+        id the store knows that this run did not see, so the diff and the sweep
+        have to agree on which kinds are in play: a postings-only run against an
+        unscoped map would find all 214,756 publications "missing" and delete
+        them. `known` is therefore narrowed here rather than filtered later.
+        """
         self._check_manifest()
 
-        known = self.store.existing_hashes()
+        scope = tuple(kinds) if kinds is not None else SOURCE_TYPES
+        known = self.store.existing_hashes(source_types=scope)
         # Ids, not Documents. This set is only needed to work out what disappeared
         # from the sources, and at corpus scale keeping whole Documents around to
         # answer that question was most of the memory the eager version used.
@@ -68,7 +84,7 @@ class Indexer:
         buffer: list[Document] = []
         total = embedded = truncated = 0
 
-        for document in self._documents(reader):
+        for document in self._documents(reader, scope):
             total += 1
             current_ids.add(document.id)
             if known.get(document.id) == document.content_hash:
@@ -95,7 +111,13 @@ class Indexer:
             invalid_lines=invalid,
             truncated=truncated,
         )
-        self._write_manifest(document_count=total, sources=reader.label, truncated=truncated)
+        # Counted from the store, not from `total`. `total` is what this run read,
+        # which for a single-kind run is that kind alone -- writing it would have
+        # a postings run report the corpus as 695 documents. The manifest
+        # describes the index; per-run figures are the IndexResult's job.
+        self._write_manifest(
+            document_count=self.store.count(), sources=reader.label, truncated=truncated
+        )
         logger.info(
             "index run: embedded=%d skipped=%d deleted=%d invalid_lines=%d truncated=%d",
             result.embedded,
@@ -107,12 +129,18 @@ class Indexer:
         return result
 
     @staticmethod
-    def _documents(reader: SourceReader) -> Iterator[Document]:
-        """Every source record as a Document, yielded rather than collected."""
-        for record in reader.publications():
-            yield zora_to_document(record)
-        for posting in reader.postings():
-            yield posting_to_document(posting)
+    def _documents(reader: SourceReader, kinds: Collection[str]) -> Iterator[Document]:
+        """Source records of the requested kinds, yielded rather than collected.
+
+        A kind left out is never read at all, rather than read and filtered: for
+        the database reader that is the difference between one query and two.
+        """
+        if SOURCE_PUBLICATION in kinds:
+            for record in reader.publications():
+                yield zora_to_document(record)
+        if SOURCE_POSTING in kinds:
+            for posting in reader.postings():
+                yield posting_to_document(posting)
 
     def _flush(
         self, buffer: list[Document], embedded: int, truncated: int, seen: int

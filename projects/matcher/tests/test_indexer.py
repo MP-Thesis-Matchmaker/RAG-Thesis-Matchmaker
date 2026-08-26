@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from themis_matcher.indexing.documents import SOURCE_POSTING, SOURCE_PUBLICATION
 from themis_matcher.indexing.embedder import HashEmbedder
 from themis_matcher.indexing.indexer import Indexer, ModelMismatchError
 from themis_matcher.indexing.sources import JsonlSourceReader
@@ -233,3 +234,64 @@ def test_changed_token_window_is_refused(tmp_path: Path, store: InMemoryVectorSt
 
     with pytest.raises(ModelMismatchError, match="token window"):
         Indexer(embedder=_CappedEmbedder(), store=store).run(JsonlSourceReader(tmp_path / "src"))
+
+
+def test_single_kind_run_does_not_delete_the_other_kind(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    """The regression that per-kind indexing exists to avoid.
+
+    `run` deletes every id it knew and did not see. Before the diff was scoped by
+    source type, a postings-only run saw no publications and therefore called all
+    of them orphans -- 214,756 documents and roughly six CPU-days of embedding,
+    dropped by a run that was only meant to touch 695 rows.
+    """
+    _write_sources(tmp_path / "src", [_publication("zora:1"), _publication("zora:2")], [_posting()])
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+    assert store.count() == 3
+
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"), kinds=[SOURCE_POSTING])
+
+    assert result.deleted == 0
+    assert set(store.existing_hashes()) == {"zora:1", "zora:2", "posting:1"}
+
+
+def test_single_kind_run_reads_only_its_own_source(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    _write_sources(tmp_path / "src", [_publication()], [_posting()])
+
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"), kinds=[SOURCE_PUBLICATION])
+
+    assert result.embedded == 1
+    assert set(store.existing_hashes()) == {"zora:1"}
+
+
+def test_single_kind_run_still_deletes_its_own_orphans(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    """Scoping narrows the sweep, it does not switch it off."""
+    _write_sources(
+        tmp_path / "src", [_publication()], [_posting("posting:1"), _posting("posting:2")]
+    )
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+
+    _write_sources(tmp_path / "src", [_publication()], [_posting("posting:1")])
+    result = _indexer(store).run(JsonlSourceReader(tmp_path / "src"), kinds=[SOURCE_POSTING])
+
+    assert result.deleted == 1
+    assert set(store.existing_hashes()) == {"zora:1", "posting:1"}
+
+
+def test_manifest_counts_the_corpus_not_the_run(
+    tmp_path: Path, store: InMemoryVectorStore
+) -> None:
+    """A single-kind run must not report its own kind as the size of the index."""
+    _write_sources(tmp_path / "src", [_publication("zora:1"), _publication("zora:2")], [_posting()])
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"))
+
+    _indexer(store).run(JsonlSourceReader(tmp_path / "src"), kinds=[SOURCE_POSTING])
+
+    manifest = store.read_manifest()
+    assert manifest is not None
+    assert manifest.document_count == 3
