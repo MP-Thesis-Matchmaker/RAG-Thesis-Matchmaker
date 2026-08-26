@@ -204,11 +204,13 @@ def test_an_updated_topic_overwrites_rather_than_duplicating(clean_db: str) -> N
     assert row == ("Renamed", "assigned")
 
 
-def test_assigned_and_private_postings_are_not_offered_to_the_indexer(clean_db: str) -> None:
-    """They are stored -- they are still facts about the page -- but not indexed.
+def test_every_posting_is_offered_to_the_indexer_regardless_of_status(clean_db: str) -> None:
+    """Availability is decided at retrieval now, not here.
 
-    An assigned topic cannot be a recommendation under any query, which is the same
-    argument the UZH-author clause makes about eligibility.
+    This reader used to drop assigned and private topics so they were never embedded.
+    They are embedded now, carrying `is_available: False`, and
+    `retrieval_require_available_posting` -- on by default -- is what keeps them out of
+    results. The point of moving it is that flipping that setting needs no re-index.
     """
     store.write_dataset(
         _dataset(
@@ -223,8 +225,7 @@ def test_assigned_and_private_postings_are_not_offered_to_the_indexer(clean_db: 
     )
     assert store.posting_count(dsn=clean_db) == 4
     offered = {p.id for p in PostgresSourceReader(clean_db).postings()}
-    # NULL survives: "the page did not say" is not the same claim as "taken".
-    assert offered == {"open1", "silent1"}
+    assert offered == {"open1", "taken1", "private1", "silent1"}
 
 
 def test_a_faculty_scope_process_has_no_department(clean_db: str) -> None:

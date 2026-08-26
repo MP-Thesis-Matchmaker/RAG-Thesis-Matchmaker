@@ -41,8 +41,9 @@ class _Spy:
         self.write_calls: list[dict] = []
         self.save_calls: list[tuple] = []
         # Which steps ran, in order. `run()` promises persons -> org units ->
-        # publications, and the order is the point: the mirrors are what a
-        # publication's authorities and owning collection resolve against.
+        # publications -> reconcile, and the order is the point: the mirrors are
+        # what a publication's authorities and owning collection resolve against,
+        # and the reconcile derives eligibility from whatever the run just wrote.
         self.steps: list[str] = []
         self.entity_limits: list[int | None] = []
         # Which dump each entity step was handed, if any -- the replay path passes
@@ -63,6 +64,10 @@ class _Spy:
 
     def save_state(self, last_accessioned, total, mode, dsn=None) -> None:
         self.save_calls.append((last_accessioned, total, mode))
+
+    def reconcile_uzh_authors(self, dsn: str | None = None) -> int:
+        self.steps.append("reconcile")
+        return 0
 
     def _entity_step(self, name: str):
         def step(client, limit=None, from_dump=None) -> store.EntityWriteResult:
@@ -88,6 +93,13 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
     monkeypatch.setattr(store, "load_state", s.load_state)
     monkeypatch.setattr(store, "write_harvest", s.write_harvest)
     monkeypatch.setattr(store, "save_state", s.save_state)
+    # Every store call `run()` makes has to be stubbed, not just the ones a test
+    # asserts on: an unstubbed one opens a real connection to `settings.database_url`,
+    # which is a live database on a developer machine and nothing at all in CI. That
+    # is exactly how this arrived -- `reconcile_uzh_authors` joined `run()` without
+    # joining the spy, so 21 offline tests passed locally against the real corpus
+    # (writing to it) and failed in CI with a five-second pool timeout.
+    monkeypatch.setattr(store, "reconcile_uzh_authors", s.reconcile_uzh_authors)
     monkeypatch.setattr(entities, "harvest_persons", s._entity_step("persons"))
     monkeypatch.setattr(entities, "harvest_org_units", s._entity_step("org_units"))
     monkeypatch.setattr(zora_client, "get_client", lambda: object())
@@ -111,20 +123,20 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
 
 def test_default_run_harvests_all_three_entities_first(spy: _Spy) -> None:
     assert harvest.run("full") == 0
-    assert spy.steps == ["persons", "org_units", "publications"]
+    assert spy.steps == ["persons", "org_units", "publications", "reconcile"]
 
 
 def test_each_capability_can_be_opted_out(spy: _Spy) -> None:
     assert harvest.run("full", persons=False) == 0
-    assert spy.steps == ["org_units", "publications"]
+    assert spy.steps == ["org_units", "publications", "reconcile"]
 
     spy.steps.clear()
     assert harvest.run("full", org_units=False) == 0
-    assert spy.steps == ["persons", "publications"]
+    assert spy.steps == ["persons", "publications", "reconcile"]
 
     spy.steps.clear()
     assert harvest.run("full", publications=False) == 0
-    assert spy.steps == ["persons", "org_units"]
+    assert spy.steps == ["persons", "org_units", "reconcile"]
 
 
 def test_no_publications_leaves_the_watermark_untouched(spy: _Spy) -> None:
@@ -137,6 +149,23 @@ def test_no_publications_leaves_the_watermark_untouched(spy: _Spy) -> None:
 def test_limit_applies_to_the_entity_steps_too(spy: _Spy) -> None:
     assert harvest.run("full", limit=5) == 0
     assert spy.entity_limits == [5, 5]
+
+
+def test_the_reconcile_runs_last_on_success_and_not_at_all_on_failure(spy: _Spy) -> None:
+    """Eligibility is derived from what the run just wrote, so it cannot run early.
+
+    `--no-publications` still reconciles -- a refreshed `person` mirror alone can
+    change which authors qualify across the existing corpus, which is what makes
+    that flag worth using on its own. An aborted step, by contrast, means the inputs
+    are not what the run intended, so nothing is derived from them.
+    """
+    assert harvest.run("full", publications=False) == 0
+    assert spy.steps[-1] == "reconcile"
+
+    spy.steps.clear()
+    spy.aborted_step = "org_units"
+    assert harvest.run("full") == 1
+    assert "reconcile" not in spy.steps
 
 
 def test_an_aborted_entity_snapshot_stops_before_publications(spy: _Spy) -> None:
@@ -184,7 +213,7 @@ def test_main_maps_the_no_flags_onto_run(spy: _Spy, monkeypatch: pytest.MonkeyPa
         harvest.main()
 
     assert exc.value.code == 0
-    assert spy.steps == ["publications"]
+    assert spy.steps == ["publications", "reconcile"]
 
 
 def test_disabling_all_three_is_a_usage_error(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -340,7 +369,7 @@ def test_a_lone_publication_dump_runs_only_the_publication_step(
         harvest.main()
 
     assert exc.value.code == 0
-    assert spy.steps == ["publications"]
+    assert spy.steps == ["publications", "reconcile"]
 
 
 # ---------------------------------------------------------------------------
@@ -360,7 +389,7 @@ def persons_dump(tmp_path) -> str:
 def test_a_persons_dump_replays_only_that_mirror(spy: _Spy, persons_dump: str) -> None:
     """The case the stranded 2,018-record dump could not be loaded for."""
     assert harvest.run("full", from_dump=persons_dump) == 0
-    assert spy.steps == ["persons"]
+    assert spy.steps == ["persons", "reconcile"]
     # The path reached the step, and no client was built for it.
     assert spy.entity_dumps == [persons_dump]
     assert spy.entity_clients == [None]
@@ -370,7 +399,7 @@ def test_two_dumps_replay_two_steps_and_skip_the_third(
     spy: _Spy, persons_dump: str, dump: str
 ) -> None:
     assert harvest.run("full", from_dump={"persons": persons_dump, "full": dump}) == 0
-    assert spy.steps == ["persons", "publications"]
+    assert spy.steps == ["persons", "publications", "reconcile"]
 
 
 def test_dumps_that_feed_no_enabled_step_is_a_failure_not_a_silent_pass(
@@ -424,7 +453,7 @@ def test_an_unroutable_name_is_rejected_and_dump_kind_fixes_it(
     with pytest.raises(SystemExit) as exc:
         harvest.main()
     assert exc.value.code == 0
-    assert spy.steps == ["publications"]
+    assert spy.steps == ["publications", "reconcile"]
 
 
 def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> None:

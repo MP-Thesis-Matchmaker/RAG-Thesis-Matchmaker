@@ -55,11 +55,13 @@ SourceReader (publication table, or JSONL files)
 with `--source db`, or `<sources_path>/publications.jsonl` and `theses.jsonl`
 otherwise; plus the `index_manifest` row.
 
-`--source db` reads **only publications with at least one registered UZH author**,
-which is 91,673 of the 214,685 harvested rows. The rest cannot produce a supervisor
-recommendation and were never reachable through `retrieval/`'s pre-filter, so
-embedding them was work spent on vectors no query could return. The filter lives in
-`_SELECT_PUBLICATIONS`; `sources.py` explains why it is there and not a setting.
+`--source db` reads **every row of both tables** — all 214,756 publications and all
+695 postings. Neither query filters any more, and both stopped for the same reason:
+an eligibility rule enforced here can only be revisited by re-embedding the corpus,
+which turns an environment variable into hours of work. The publication filter went
+on 2026-08-25 (`RETRIEVAL_REQUIRE_UZH_AUTHOR`), the posting one on 2026-08-26
+(`RETRIEVAL_REQUIRE_AVAILABLE_POSTING`); `sources.py` carries both arguments in full,
+including what each one used to be.
 
 **Writes:** the `document` table and the `index_manifest` row, both in the
 Postgres at `DATABASE_URL`.
@@ -254,9 +256,9 @@ at a Postgres with the extension, which CI always does via a
   turned it into a live defect. While `--source db` filtered to UZH-authored
   publications, every row in a DB-sourced index satisfied
   `metadata @> '{"has_uzh_author": true}'`, so the predicate was unselective and
-  merely wasteful. Since 2026-08-25 the source is unfiltered — 91,734 of 214,756
+  merely wasteful. Since 2026-08-25 the source is unfiltered — 53,545 of 214,756
   publications carry a UZH author — so with `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` that
-  predicate discards ~57% of the candidates the HNSW scan returns, **after** the
+  predicate discards ~75% of the candidates the HNSW scan returns, **after** the
   scan, which is precisely the under-return that `schema.sql`'s partial-index comment
   describes. `VectorRetriever` over-fetches 4x to compensate; the real fix is a third
   partial index matching the predicate, and it needs a schema reset. The two existing
@@ -272,6 +274,11 @@ at a Postgres with the extension, which CI always does via a
   `degree_master` / `degree_phd`, for the reason the next bullet gives. They are
   the `has_uzh_author` pattern applied to a second list-valued field, and they are
   what a level-filtered posting query actually matches on.
+- **`is_available` is the same pattern applied to a rule rather than a field.**
+  Retrieval wants "not assigned and not private", and the filter API has no negation
+  and no `IN` list, so the predicate is evaluated once at index time and stored as a
+  boolean. Note that a status-less posting carries no `status` key at all (`_build`
+  drops `None`), so equality on `status` could not have expressed it either.
 - List-valued metadata is unfilterable by construction (see above). Any future
   filter on keywords or authors needs another scalar companion field like
   `has_uzh_author`, or a different store.

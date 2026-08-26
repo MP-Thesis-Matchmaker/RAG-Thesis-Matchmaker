@@ -82,6 +82,16 @@ def retriever(tmp_path: Path) -> VectorRetriever:
             description="Representation learning on graphs.",
             url="https://uzh.ch/p3",
         ),
+        # Indexed like any other posting, and excluded by the default retrieval
+        # filter rather than by never having been embedded.
+        ThesisPosting(
+            id="posting:4",
+            title="Already assigned topic on graph learning",
+            description="Representation learning on graphs.",
+            supervisors=[{"name": "Prof. J. Besetzt"}],
+            status="assigned",
+            url="https://uzh.ch/p4",
+        ),
     ]
     (sources / "publications.jsonl").write_text(
         "".join(p.model_dump_json() + "\n" for p in publications)
@@ -215,6 +225,35 @@ def test_require_uzh_author_removes_it_entirely(retriever: VectorRetriever) -> N
     assert "Dr. E. External" not in {m.supervisor for m in matches}
     assert "zora:3" not in {e.source_id for m in matches for e in m.evidence}
     assert all(m.has_uzh_affiliation for m in matches)
+
+
+def test_an_assigned_posting_is_absent_by_default(retriever: VectorRetriever) -> None:
+    """Same exclusion as before, enforced one layer later.
+
+    posting:4 is in the index -- it was embedded alongside the open ones -- and
+    `require_available_posting`, on by default, is what keeps it out of the results.
+    """
+    matches = retriever.retrieve(ParsedQuery(topics=["graph learning"]), top_k=10)
+
+    assert "posting:4" not in {e.source_id for m in matches for e in m.evidence}
+    assert "Prof. J. Besetzt" not in {m.supervisor for m in matches}
+
+
+def test_an_assigned_posting_returns_when_availability_is_not_required(
+    retriever: VectorRetriever,
+) -> None:
+    """The payoff: flipping the rule needs no re-embed, only a different retriever.
+
+    Same store, same vectors, opposite answer -- which is the whole reason the status
+    filter moved out of indexing/sources.py.
+    """
+    permissive = VectorRetriever(
+        embedder=retriever.embedder, store=retriever.store, require_available_posting=False
+    )
+    matches = permissive.retrieve(ParsedQuery(topics=["graph learning"]), top_k=10)
+
+    assert "posting:4" in {e.source_id for m in matches for e in m.evidence}
+    assert "Prof. J. Besetzt" in {m.supervisor for m in matches}
 
 
 def test_a_uzh_author_stays_affiliated_despite_external_co_authors(

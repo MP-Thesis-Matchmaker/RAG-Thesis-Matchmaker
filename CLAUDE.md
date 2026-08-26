@@ -68,14 +68,21 @@ corpus lives in the `publication` table — **214,756 publications** as of 2026-
 linked to a local Person. Those publications are still indexed and still retrievable; they are
 ranked below CRIS-backed candidates rather than excluded. See
 [`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes **all** of them,
-plus the 678 available postings. It briefly indexed only the UZH-authored ones (2026-08-21 to
+plus **all 695 postings**. It briefly indexed only the UZH-authored ones (2026-08-21 to
 08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
 turning it off would have returned nothing extra until someone re-embedded the corpus. Eligibility
 is now a retrieval-time setting, with `RETRIEVAL_RANKING_STRATEGY=uzh_first` demoting
-unaffiliated researchers rather than excluding them. `data/publications.jsonl` is a pre-Postgres
-artefact: nothing writes it and it is no longer tracked.
+unaffiliated researchers rather than excluding them. The posting side made the same move on
+2026-08-26: it used to index only the 678 available topics, and now indexes the 15 `assigned` and
+2 `private` ones too, flagged `is_available: false` and excluded by
+`RETRIEVAL_REQUIRE_AVAILABLE_POSTING` (on by default) instead of by a `WHERE` clause.
+`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no longer
+tracked.
 
-**Schema reset performed (2026-08-25, fingerprint `135ac01a09be`).** `schema.sql` gained the
+**Schema reset performed (2026-08-25, fingerprint `3d4f0475bf80`).** The reset stamped
+`135ac01a09be`; the recorded value changed without any DDL change when `schema.py` started
+fingerprinting normalized DDL instead of raw file text, so a database applied before that
+commit reads as stale and is not. `schema.sql` gained the
 `person` and `org_unit` entity mirrors (refreshed at the start of every `zora.harvest` run —
 persons, then org units, then publications; `--no-persons` / `--no-org-units` /
 `--no-publications` opt out), plus `publication.owning_collection_uuid` and a typed

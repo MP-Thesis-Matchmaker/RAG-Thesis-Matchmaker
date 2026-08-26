@@ -14,7 +14,12 @@ import re
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts import DegreeLevel, ThesisPosting, ZoraPublication
+from thesis_matchmaker.contracts import (
+    DegreeLevel,
+    PostingStatus,
+    ThesisPosting,
+    ZoraPublication,
+)
 
 # The store keeps metadata in a jsonb column, so lists and maps are stored as
 # themselves. Filters are still flat equality over scalars -- that is all
@@ -124,7 +129,17 @@ def posting_to_document(posting: ThesisPosting) -> Document:
     way and the parametrised store contract could not tell. The three
     `degree_*` booleans are what a level query actually filters on, following the
     `has_uzh_author` precedent that `indexing/README.md` sets for exactly this case.
-    `has_supervisor` is the same trick for a different question.
+    `has_supervisor` and `is_available` are the same trick for two more questions.
+
+    `is_available` is the only one of them that encodes a *rule* rather than a fact,
+    so it is worth saying why the rule sits here rather than at query time. The
+    predicate retrieval wants is "not assigned and not private", and the filter API
+    has no negation and no IN list; `status` alone cannot express it. Nor can equality
+    on `status` reach the postings that have none -- `_build` drops None values, so a
+    posting whose page said nothing about availability carries no `status` key at all.
+    Baking the rule into a boolean here keeps both stores honest, and the *decision*
+    stays at query time where it belongs: `retrieval_require_available_posting` picks
+    whether to apply it, and flipping that needs no re-embed.
     """
     levels = {level.value for level in posting.degree_levels}
     return _build(
@@ -141,6 +156,10 @@ def posting_to_document(posting: ThesisPosting) -> Document:
             "degree_master": DegreeLevel.master.value in levels,
             "degree_phd": DegreeLevel.phd.value in levels,
             "status": posting.status.value if posting.status else None,
+            # The filterable companion to `status` -- see the docstring. `pending` and
+            # a missing status both count as available: "not yet settled" and "the page
+            # did not say" are not the same claim as "taken".
+            "is_available": posting.status not in (PostingStatus.assigned, PostingStatus.private),
             "supervisors": [s.name for s in posting.supervisors],
             # A posting nobody is named on cannot become a supervisor
             # recommendation. 63 of 247 scraped topics are in that position, so this

@@ -50,11 +50,13 @@ class VectorRetriever:
         store: VectorStore,
         *,
         require_uzh_author: bool = False,
+        require_available_posting: bool = True,
         ranking_strategy: str = "uzh_first",
     ) -> None:
         self.embedder = embedder
         self.store = store
         self.require_uzh_author = require_uzh_author
+        self.require_available_posting = require_available_posting
         self.ranking_strategy = ranking_strategy
 
     def retrieve(self, query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]:
@@ -74,6 +76,19 @@ class VectorRetriever:
             # jsonb containment will not match a scalar inside an array, and the
             # in-memory store compares with `==`. See posting_to_document.
             posting_filters[f"degree_{query.degree_level.value}"] = True
+        if self.require_available_posting:
+            # Availability as a hard cut, the posting-side twin of has_uzh_author
+            # below: a topic already assigned to a student cannot be recommended to
+            # another one. Indexing takes no position -- assigned and private postings
+            # are embedded like any other and this filter is what keeps them out, so
+            # the rule can be turned off without re-embedding anything.
+            #
+            # No overfetch to match _FILTERED_OVERFETCH: that number exists because the
+            # UZH predicate discards well over half of what the scan returns, while
+            # this one discards 17 of 695 postings. Widening top_k here would inflate
+            # posting_count per person for a recall problem two orders of magnitude
+            # smaller.
+            posting_filters["is_available"] = True
         publication_filters: dict[str, str | bool] = {"source_type": "publication", **shared}
         if self.require_uzh_author:
             # Eligibility as a hard cut: an unaffiliated researcher cannot supervise
