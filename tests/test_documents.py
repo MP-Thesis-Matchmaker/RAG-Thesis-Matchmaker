@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import PostingStatus, ThesisPosting, ZoraPublication
 from thesis_matchmaker.indexing.documents import (
     posting_to_document,
     prepare_text,
@@ -10,14 +10,17 @@ from thesis_matchmaker.indexing.documents import (
 )
 
 
-def _zora(**overrides) -> ZoraRecord:
+def _zora(**overrides) -> ZoraPublication:
     base = dict(
         id="zora:1",
         title="Dense Retrieval for German Text",
         abstract="We study dense retrieval.",
         authors=["A. Müller", "X. External"],
         uzh_authors=["A. Müller"],
-        author_authority_map={"A. Müller": "uuid-1", "X. External": None},
+        author_authority_map={
+            "A. Müller": {"type": "cris", "id": "uuid-1"},
+            "X. External": None,
+        },
         year=2024,
         keywords=["retrieval", "german"],
         department="Department of Informatics",
@@ -25,7 +28,7 @@ def _zora(**overrides) -> ZoraRecord:
         url="https://www.zora.uzh.ch/id/eprint/1",
     )
     base.update(overrides)
-    return ZoraRecord(**base)
+    return ZoraPublication(**base)
 
 
 def test_zora_document_text_contains_title_abstract_keywords() -> None:
@@ -50,7 +53,7 @@ def test_zora_document_keeps_author_fields_as_native_collections() -> None:
     assert doc.metadata["authors"] == ["A. Müller", "X. External"]
     assert doc.metadata["uzh_authors"] == ["A. Müller"]
     assert doc.metadata["author_authority_map"] == {
-        "A. Müller": "uuid-1",
+        "A. Müller": {"type": "cris", "id": "uuid-1"},
         "X. External": None,
     }
     assert doc.metadata["keywords"] == ["retrieval", "german"]
@@ -113,6 +116,35 @@ def test_posting_without_a_supervisor_is_flagged_as_such() -> None:
     doc = posting_to_document(ThesisPosting(id="posting:9", title="Anon", url="https://x"))
     assert doc.metadata["has_supervisor"] is False
     assert doc.metadata["supervisors"] == []
+
+
+def test_unavailable_postings_are_flagged_but_still_become_documents() -> None:
+    """Assigned and private topics are embedded; the boolean is what excludes them.
+
+    Indexing used to drop these rows outright, which made
+    `retrieval_require_available_posting` impossible to turn off without a re-index.
+    """
+    for status in (PostingStatus.assigned, PostingStatus.private):
+        doc = posting_to_document(
+            ThesisPosting(
+                id=f"posting:{status.value}", title="Taken", url="https://x", status=status
+            )
+        )
+        assert doc.metadata["is_available"] is False
+        assert doc.metadata["status"] == status.value
+
+
+def test_open_pending_and_silent_postings_all_count_as_available() -> None:
+    """`pending` and a missing status are not the same claim as "taken"."""
+    for status in (PostingStatus.open, PostingStatus.pending, None):
+        doc = posting_to_document(
+            ThesisPosting(id="posting:11", title="Free", url="https://x", status=status)
+        )
+        assert doc.metadata["is_available"] is True
+    # A status-less posting carries no `status` key at all -- which is why the filter
+    # is a boolean rather than an equality test on `status`.
+    silent = posting_to_document(ThesisPosting(id="posting:12", title="Free", url="https://x"))
+    assert "status" not in silent.metadata
 
 
 def test_posting_title_stays_the_first_line_of_the_embedded_text() -> None:

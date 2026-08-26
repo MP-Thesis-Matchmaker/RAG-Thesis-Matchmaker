@@ -35,29 +35,31 @@ logger = logging.getLogger(__name__)
 _UPSERT = """
 INSERT INTO publication (
     id, doi, title, abstract, authors, uzh_authors, author_authority_map,
-    year, publication_type, department, language, keywords, url, accessioned,
-    harvested_at
+    year, publication_type, department, owning_collection_uuid, language,
+    keywords, url, accessioned, harvested_at
 )
 VALUES (
     %(id)s, %(doi)s, %(title)s, %(abstract)s, %(authors)s, %(uzh_authors)s,
     %(author_authority_map)s, %(year)s, %(publication_type)s, %(department)s,
-    %(language)s, %(keywords)s, %(url)s, %(accessioned)s, now()
+    %(owning_collection_uuid)s, %(language)s, %(keywords)s, %(url)s,
+    %(accessioned)s, now()
 )
 ON CONFLICT (id) DO UPDATE SET
-    doi                  = EXCLUDED.doi,
-    title                = EXCLUDED.title,
-    abstract             = EXCLUDED.abstract,
-    authors              = EXCLUDED.authors,
-    uzh_authors          = EXCLUDED.uzh_authors,
-    author_authority_map = EXCLUDED.author_authority_map,
-    year                 = EXCLUDED.year,
-    publication_type     = EXCLUDED.publication_type,
-    department           = EXCLUDED.department,
-    language             = EXCLUDED.language,
-    keywords             = EXCLUDED.keywords,
-    url                  = EXCLUDED.url,
-    accessioned          = EXCLUDED.accessioned,
-    harvested_at         = now()
+    doi                    = EXCLUDED.doi,
+    title                  = EXCLUDED.title,
+    abstract               = EXCLUDED.abstract,
+    authors                = EXCLUDED.authors,
+    uzh_authors            = EXCLUDED.uzh_authors,
+    author_authority_map   = EXCLUDED.author_authority_map,
+    year                   = EXCLUDED.year,
+    publication_type       = EXCLUDED.publication_type,
+    department             = EXCLUDED.department,
+    owning_collection_uuid = EXCLUDED.owning_collection_uuid,
+    language               = EXCLUDED.language,
+    keywords               = EXCLUDED.keywords,
+    url                    = EXCLUDED.url,
+    accessioned            = EXCLUDED.accessioned,
+    harvested_at           = now()
 """
 
 # Prune everything the authoritative snapshot did not contain.
@@ -131,6 +133,7 @@ def _params(row: dict) -> dict:
                 "year",
                 "publication_type",
                 "department",
+                "owning_collection_uuid",
                 "language",
                 "url",
                 "accessioned",
@@ -204,6 +207,191 @@ def write_harvest(
 def publication_count(dsn: str | None = None) -> int:
     with db.connection(_dsn(dsn)) as conn:
         return conn.execute("SELECT count(*) FROM publication").fetchone()[0]
+
+
+# ---------------------------------------------------------------------------
+# Entity mirrors: person and org_unit
+# ---------------------------------------------------------------------------
+
+_PERSON_UPSERT = """
+INSERT INTO person (
+    uuid, display_name, family_name, given_name, orcid, handle, url,
+    accessioned, harvested_at
+)
+VALUES (
+    %(uuid)s, %(display_name)s, %(family_name)s, %(given_name)s, %(orcid)s,
+    %(handle)s, %(url)s, %(accessioned)s, now()
+)
+ON CONFLICT (uuid) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    family_name  = EXCLUDED.family_name,
+    given_name   = EXCLUDED.given_name,
+    orcid        = EXCLUDED.orcid,
+    handle       = EXCLUDED.handle,
+    url          = EXCLUDED.url,
+    accessioned  = EXCLUDED.accessioned,
+    harvested_at = now()
+"""
+
+_ORG_UNIT_UPSERT = """
+INSERT INTO org_unit (
+    uuid, name, parent_uuid, faculty_uuid, depth, handle, subject_id,
+    collection_uuid, collection_name, harvested_at
+)
+VALUES (
+    %(uuid)s, %(name)s, %(parent_uuid)s, %(faculty_uuid)s, %(depth)s,
+    %(handle)s, %(subject_id)s, %(collection_uuid)s, %(collection_name)s, now()
+)
+ON CONFLICT (uuid) DO UPDATE SET
+    name            = EXCLUDED.name,
+    parent_uuid     = EXCLUDED.parent_uuid,
+    faculty_uuid    = EXCLUDED.faculty_uuid,
+    depth           = EXCLUDED.depth,
+    handle          = EXCLUDED.handle,
+    subject_id      = EXCLUDED.subject_id,
+    collection_uuid = EXCLUDED.collection_uuid,
+    collection_name = EXCLUDED.collection_name,
+    harvested_at    = now()
+"""
+
+# Same anti-join shape as _PRUNE above, and for the same reasons -- see the
+# comment there. The tables are three orders of magnitude smaller, but the
+# pattern is already paid for.
+_ENTITY_PRUNE = """
+DELETE FROM {table} t
+WHERE NOT EXISTS (
+    SELECT 1 FROM unnest(%(kept)s::text[]) AS kept(uuid) WHERE kept.uuid = t.uuid
+)
+"""
+
+
+class EntityWriteResult(BaseModel):
+    """Outcome of one entity snapshot write."""
+
+    total: int
+    upserted: int
+    deleted: int
+    aborted: bool = False
+
+
+def _write_entity_snapshot(table: str, upsert: str, rows: list[dict], dsn: str | None):
+    """Replace a mirror table with an authoritative snapshot, atomically.
+
+    Every run is a full snapshot -- these mirrors have no incremental mode --
+    so anything missing from `rows` is pruned. One safety rail instead of the
+    retention ratio: an empty snapshot against a non-empty table is refused,
+    because "the API returned nothing" means a broken walk or an auth failure
+    far more often than ZORA deleting every researcher or org unit.
+    """
+    kept = [row["uuid"] for row in rows]
+
+    with db.connection(_dsn(dsn)) as conn:
+        with conn.transaction():
+            existing = conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+            if not rows and existing > 0:
+                logger.error(
+                    "Refusing to commit an empty %s snapshot over %d existing rows -- "
+                    "this looks like a failed fetch, not a real deletion of everything.",
+                    table,
+                    existing,
+                )
+                return EntityWriteResult(total=existing, upserted=0, deleted=0, aborted=True)
+
+            if rows:
+                conn.cursor().executemany(upsert, rows)
+            deleted = conn.execute(_ENTITY_PRUNE.format(table=table), {"kept": kept}).rowcount
+            total = conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+
+    return EntityWriteResult(total=total, upserted=len(rows), deleted=deleted, aborted=False)
+
+
+def write_persons(rows: list[dict], dsn: str | None = None) -> EntityWriteResult:
+    """Snapshot-replace the `person` mirror. Rows are validated ZoraPerson dumps."""
+    return _write_entity_snapshot("person", _PERSON_UPSERT, rows, dsn)
+
+
+def write_org_units(rows: list[dict], dsn: str | None = None) -> EntityWriteResult:
+    """Snapshot-replace the `org_unit` mirror. Rows are validated ZoraOrgUnit dumps."""
+    return _write_entity_snapshot("org_unit", _ORG_UNIT_UPSERT, rows, dsn)
+
+
+# Rebuilds `uzh_authors` from the two columns that already hold everything the
+# rule needs: `authors` for the names and their order, `author_authority_map` for
+# each name's authority kind.
+#
+# Driven from `unnest(authors) WITH ORDINALITY` rather than from
+# `jsonb_each(author_authority_map)` on purpose. jsonb orders object keys by
+# length and then bytewise, so rebuilding from the map would quietly reorder
+# `uzh_authors` -- which changes the indexer's content hash and the order
+# `retrieval` returns candidates in, for no reason anyone would ever connect
+# back to this statement.
+#
+# `IS TRUE` is load-bearing. For an author with no authority at all the `->>`
+# yields NULL, so `= 'cris'` is NULL rather than false, and NULL inside FILTER
+# behaves as "not counted" here but flips meaning the moment anyone negates this
+# expression. Collapsing it once, here, is cheaper than remembering.
+#
+# `IS DISTINCT FROM` keeps rows whose value is already correct out of the write
+# set, which is what makes a second run cost almost nothing.
+# The `person` join is the one thing `normalize` cannot do: it classifies one item
+# at a time with no database, so an ORCID-typed authority is all it can see. Here
+# the mirror is available, and an ORCID matching a harvested Person is that
+# researcher however DSpace happened to reference them on that record. Measured
+# 2026-08-25: 2 publications, 0 additional names -- both people already qualify via
+# CRIS-typed entries elsewhere, so this adds evidence to existing candidates rather
+# than new ones. A floor, not a ceiling: it rises on its own as ZORA links more
+# ORCIDs to Person items, with no code change and no re-harvest.
+_RECONCILE_UZH_AUTHORS = """
+UPDATE publication p
+SET uzh_authors = sub.eligible
+FROM (
+    SELECT p2.id,
+           coalesce(
+               array_agg(a.name ORDER BY a.ord) FILTER (
+                   WHERE ((p2.author_authority_map -> a.name) ->> 'type' = 'cris') IS TRUE
+                      OR pe.uuid IS NOT NULL
+               ),
+               '{}'
+           ) AS eligible
+    FROM publication p2
+    CROSS JOIN LATERAL unnest(p2.authors) WITH ORDINALITY AS a(name, ord)
+    LEFT JOIN person pe
+           ON (p2.author_authority_map -> a.name) ->> 'type' = 'orcid'
+          AND pe.orcid = (p2.author_authority_map -> a.name) ->> 'id'
+    GROUP BY p2.id
+) sub
+WHERE p.id = sub.id
+  AND p.uzh_authors IS DISTINCT FROM sub.eligible
+"""
+
+
+def reconcile_uzh_authors(dsn: str | None = None) -> int:
+    """Recompute `uzh_authors` for every publication. Returns rows changed.
+
+    `normalize._get_uzh_authors` decides eligibility at fetch time, so it only
+    ever fixes records a harvest is currently writing. This fixes the corpus that
+    already exists -- and it can, because `authors` and `author_authority_map`
+    together are a complete input for the rule, so no API call is involved. That
+    is the difference between deploying a rule change in seconds and re-harvesting
+    215k records over several hours.
+
+    It also makes the rule self-correcting: run after the `person` mirror
+    refreshes, it picks up whatever ZORA's authority coverage looks like now
+    rather than what it looked like when a publication was first harvested.
+
+    So this is deliberately a shade wider than `_get_uzh_authors`, not a copy of
+    it. Both admit CRIS-typed authorities; only this one can also resolve an
+    ORCID-typed authority against `person.orcid`, because only this one has a
+    database in front of it. Running last in every harvest is what keeps the column
+    at the wider rule rather than at whichever of the two happened to write last.
+
+    Idempotent by construction -- the UPDATE only touches rows whose value would
+    actually change, so calling it twice reports zero the second time.
+    """
+    with db.connection(_dsn(dsn)) as conn:
+        updated = conn.execute(_RECONCILE_UZH_AUTHORS).rowcount
+    logger.info("Reconciled uzh_authors: %d publication rows changed", updated)
+    return updated
 
 
 def load_state(dsn: str | None = None) -> HarvestState:

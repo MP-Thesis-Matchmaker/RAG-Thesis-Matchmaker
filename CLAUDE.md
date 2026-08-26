@@ -14,15 +14,15 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-22)
 
 `thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,197 LOC,
-317 test functions in 26 files (344 pass with a database, 308 pass / 36 skip offline).
+442 test functions in 30 files (all pass with a database, 398 pass / 44 skip offline).
 **Per-package detail lives in a `README.md` inside each package; read those instead of expanding
 this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API and multi-signal ranking in it are not built yet).
 
 | Package | Status | Concern |
 |---|---|---|
-| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | Pydantic models every package speaks; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication` |
+| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | **Every** data model, harvester output shapes included; imports nothing of ours |
+| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
 | [`scraper/`](src/thesis_matchmaker/scraper/README.md) | ported, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
 | [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
 | [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
@@ -61,18 +61,46 @@ Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match
 
 **Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
-corpus lives in the `publication` table — **214,685 publications** as of 2026-08-21, of which
-**91,673 (42.7%)** pass the UZH-author filter — a figure the `uzh_authors` ORCID conflation
-inflates by 38,157 records; see the first known gap in
-[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes only those: a publication
-with no UZH author cannot yield a supervisor recommendation, and `retrieval/` already filtered it
-out at query time, so embedding it was work spent on unreachable vectors.
-`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no
-longer tracked.
+corpus lives in the `publication` table — **214,756 publications** as of 2026-08-25, of which
+**53,545 (24.9%)** carry a UZH author, naming **2,942** distinct researchers. That figure was
+**91,734 (42.7%)** and 58,218 names until 2026-08-25, when
+`uzh_authors` stopped admitting ORCID-only authorities — 38,190 records whose authors DSpace never
+linked to a local Person. Those publications are still indexed and still retrievable; they are
+ranked below CRIS-backed candidates rather than excluded. See
+[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes **all** of them,
+plus **all 695 postings**. It briefly indexed only the UZH-authored ones (2026-08-21 to
+08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
+turning it off would have returned nothing extra until someone re-embedded the corpus. Eligibility
+is now a retrieval-time setting, with `RETRIEVAL_RANKING_STRATEGY=uzh_first` demoting
+unaffiliated researchers rather than excluding them. The posting side made the same move on
+2026-08-26: it used to index only the 678 available topics, and now indexes the 15 `assigned` and
+2 `private` ones too, flagged `is_available: false` and excluded by
+`RETRIEVAL_REQUIRE_AVAILABLE_POSTING` (on by default) instead of by a `WHERE` clause.
+`data/publications.jsonl` is a pre-Postgres artefact: nothing writes it and it is no longer
+tracked.
+
+**Schema reset performed (2026-08-25, fingerprint `3d4f0475bf80`).** The reset stamped
+`135ac01a09be`; the recorded value changed without any DDL change when `schema.py` started
+fingerprinting normalized DDL instead of raw file text, so a database applied before that
+commit reads as stale and is not. `schema.sql` gained the
+`person` and `org_unit` entity mirrors (refreshed at the start of every `zora.harvest` run —
+persons, then org units, then publications; `--no-persons` / `--no-org-units` /
+`--no-publications` opt out), plus `publication.owning_collection_uuid` and a typed
+`author_authority_map` (`{"type": "cris"|"orcid", "id": ...}` — the CRIS-vs-ORCID distinction the
+known `uzh_authors` gap needed). The local database was reset and re-harvested from the API:
+**2,018 persons, 497 org units, 214,756 publications**, every one carrying
+`owning_collection_uuid`. Postings were restored from the scraper's response cache (695 rows, no
+re-fetch). The `document` table is empty — **the re-index has not run yet.**
+
+Two consequences. Old raw dumps predate the new fields, so `--from-dump` cannot rebuild this
+corpus; only an API harvest can. And the **posting-side follow-up will need its own reset** —
+the "one reset for everything" plan did not survive, because the entity mirrors were needed
+before those changes were designed. Details:
+[`zora/README.md`](src/thesis_matchmaker/zora/README.md).
 
 Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (344 tests /
-26 files; 36 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
+(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (442 tests /
+30 files; 44 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
 live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
 on every PR, `dev` group only — never installs `mcp`/`embeddings`).
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,

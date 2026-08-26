@@ -88,10 +88,77 @@ def schema_sql() -> str:
     return resources.files("thesis_matchmaker").joinpath("schema.sql").read_text(encoding="utf-8")
 
 
+def _normalize_sql(text: str) -> str:
+    """The DDL alone: comments removed, whitespace collapsed, literals untouched.
+
+    One left-to-right pass, and the direction is the whole design. `schema.sql` is
+    full of possessives inside comments -- "the scraper's topic_id", "the record's
+    own seed" -- so anything that locates string literals *before* it locates
+    comments reads those apostrophes as quote delimiters and mis-parses everything
+    after them. Not hypothetical: `grep -o "'[^']*'"` over the real file returns
+    `'s topic_id: sha1 over the source url and the record'`, which is not a literal
+    at all. Scanning forwards fixes it, because a comment always announces itself
+    before the apostrophe inside it does.
+
+    The two failure modes are symmetric and both silent, which is why each has its
+    own test: strip too little and a comment edit still forces a reset; strip too
+    much and a `--` inside a string literal quietly rewrites the DDL.
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        char = text[i]
+
+        if char == "'":  # literal: everything is content until it closes
+            start = i
+            i += 1
+            while i < n:
+                if text[i] == "'":
+                    if i + 1 < n and text[i + 1] == "'":  # '' is an escaped quote
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            out.append(text[start:i])
+            continue
+
+        if text.startswith("--", i):
+            newline = text.find("\n", i)
+            if newline == -1:
+                break
+            i = newline
+            continue
+
+        if text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            i = n if end == -1 else end + 2
+            continue
+
+        if char.isspace():
+            if out and out[-1] != " ":
+                out.append(" ")
+            i += 1
+            continue
+
+        out.append(char)
+        i += 1
+
+    return "".join(out).strip()
+
+
 def fingerprint(sql_text: str | None = None) -> str:
-    """Short sha256 of the schema definition."""
+    """Short sha256 of the schema's DDL.
+
+    Comments and formatting are normalized away first, so this answers "do the
+    tables differ?" rather than "did the file change?". Those are not the same
+    question, and conflating them made every documentation fix cost an
+    `init-db --reset` -- which is how `schema.sql` ended up carrying a comment the
+    team knew was wrong and deliberately left alone. A mismatch now means the schema
+    really moved.
+    """
     text = sql_text if sql_text is not None else schema_sql()
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+    return hashlib.sha256(_normalize_sql(text).encode("utf-8")).hexdigest()[:12]
 
 
 def applied_fingerprint(dsn: str) -> str | None:
@@ -100,6 +167,36 @@ def applied_fingerprint(dsn: str) -> str | None:
         conn.execute(_VERSION_TABLE)
         row = conn.execute("SELECT fingerprint FROM schema_version WHERE id = 1").fetchone()
     return row[0] if row else None
+
+
+def require_current(dsn: str) -> None:
+    """Refuse to go on unless `dsn` has the current `schema.sql` applied.
+
+    The check `apply` already performs for `init-db`, made available to the code
+    that *uses* the schema rather than only to the code that creates it. Without
+    it, a database left on an older version fails at whichever relation the query
+    happened to touch first -- `zora/harvest.py --no-publications` fetched 2,018
+    person records before finding out the `person` table did not exist.
+
+    A plain `RuntimeError` rather than `SchemaChangedError`, because the callers
+    that need this are the ones with a one-line error handler for operator
+    conditions (`zora/harvest.py::main`); `cli.py` maps `SchemaChangedError` onto
+    its own `init-db`-specific `SystemExit` and should not catch this too.
+    """
+    want = fingerprint()
+    have = applied_fingerprint(dsn)
+    if have == want:
+        return
+    if have is None:
+        raise RuntimeError(
+            f"this database has no schema applied (the code expects {want}). "
+            "Run `thesis-matchmaker init-db` first."
+        )
+    raise RuntimeError(
+        f"this database has schema {have} applied but the code expects {want}. "
+        "Run `thesis-matchmaker init-db --reset` to drop every table and recreate "
+        "from the current schema.sql. That DESTROYS ALL DATA in the database."
+    )
 
 
 _TABLES_QUERY = "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"

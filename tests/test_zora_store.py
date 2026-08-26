@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from thesis_matchmaker import db
+from thesis_matchmaker.contracts import AuthorAuthority
 from thesis_matchmaker.indexing.sources import PostgresSourceReader
 from thesis_matchmaker.zora import store
 
@@ -23,10 +24,14 @@ def _row(pub_id: str, **overrides) -> dict:
         "abstract": "We study dense retrieval.",
         "authors": ["A. Müller", "X. External"],
         "uzh_authors": ["A. Müller"],
-        "author_authority_map": {"A. Müller": "uuid-1", "X. External": None},
+        "author_authority_map": {
+            "A. Müller": {"type": "cris", "id": "uuid-1"},
+            "X. External": None,
+        },
         "year": 2024,
         "publication_type": "article",
         "department": "Department of Informatics",
+        "owning_collection_uuid": "coll-uuid-1",
         "language": "eng",
         "keywords": ["retrieval", "german"],
         "url": f"https://www.zora.uzh.ch/{pub_id}",
@@ -40,6 +45,8 @@ def _row(pub_id: str, **overrides) -> dict:
 def clean_db(dsn: str) -> str:
     with db.connection(dsn) as conn:
         conn.execute("TRUNCATE publication")
+        conn.execute("TRUNCATE person")
+        conn.execute("TRUNCATE org_unit")
         conn.execute("DELETE FROM harvest_state")
     return dsn
 
@@ -151,7 +158,10 @@ def test_postgres_source_reader_returns_what_the_harvester_wrote(clean_db: str) 
     records = list(reader.publications())
     assert [r.id for r in records] == ["zora:1", "zora:2"]
     assert records[0].uzh_authors == ["A. Müller"]
-    assert records[0].author_authority_map == {"A. Müller": "uuid-1", "X. External": None}
+    assert records[0].author_authority_map == {
+        "A. Müller": AuthorAuthority(type="cris", id="uuid-1"),
+        "X. External": None,
+    }
     assert records[0].keywords == ["retrieval", "german"]
     assert reader.invalid_records == 0
 
@@ -174,12 +184,13 @@ def test_incremental_run_does_not_stamp_the_full_column(clean_db: str) -> None:
     assert state.last_full_run_at is None
 
 
-def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db: str) -> None:
-    """The index only holds what could actually produce a supervisor recommendation.
+def test_postgres_source_reader_reads_publications_without_a_uzh_author(clean_db: str) -> None:
+    """Indexing takes no position on UZH authorship; retrieval decides.
 
-    A publication whose author list contains no registered UZH researcher cannot
-    produce one -- nobody on it works here -- so it is filtered out in SQL rather
-    than embedded and then discarded by retrieval's query-time pre-filter.
+    This asserted the opposite until 2026-08-25. Filtering in SQL made
+    `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable in practice: turning it off would
+    return nothing extra until someone re-embedded the corpus. Reading everything
+    costs ~2.3x the embedding work once and makes the rule a setting.
     """
     _write(
         clean_db,
@@ -195,4 +206,217 @@ def test_postgres_source_reader_skips_publications_without_a_uzh_author(clean_db
         mode="full",
     )
     reader = PostgresSourceReader(dsn=clean_db)
-    assert [r.id for r in reader.publications()] == ["zora:1"]
+    records = list(reader.publications())
+
+    assert [r.id for r in records] == ["zora:1", "zora:2"]
+    # Read faithfully, so retrieval can tell the two apart: the empty list is what
+    # `documents.py` turns into `has_uzh_author: False`, and what the retriever's
+    # fallback keys on when it credits `authors` instead.
+    assert records[1].uzh_authors == []
+    assert records[1].authors == ["X. External", "Y. Elsewhere"]
+
+
+# --- Entity mirrors: person and org_unit ---
+
+
+def _person(uuid: str, **overrides) -> dict:
+    base = {
+        "uuid": uuid,
+        "display_name": f"Person {uuid}",
+        "family_name": "Person",
+        "given_name": uuid,
+        "orcid": f"0000-0000-0000-{uuid[-4:].zfill(4)}",
+        "handle": f"20.500.14742/{uuid}",
+        "url": f"https://www.zora.uzh.ch/handle/20.500.14742/{uuid}",
+        "accessioned": "2025-12-08T16:28:41Z",
+    }
+    base.update(overrides)
+    return base
+
+
+def _org_unit(uuid: str, **overrides) -> dict:
+    base = {
+        "uuid": uuid,
+        "name": f"Institute {uuid}",
+        "parent_uuid": "root",
+        "faculty_uuid": "faculty-1",
+        "depth": 2,
+        "handle": f"20.500.14742/{uuid}",
+        "subject_id": None,
+        "collection_uuid": f"coll-{uuid}",
+        "collection_name": f"Publications of Institute {uuid}",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_write_persons_snapshot_replaces(clean_db: str) -> None:
+    first = store.write_persons([_person("p1"), _person("p2")], dsn=clean_db)
+    assert (first.total, first.upserted, first.deleted, first.aborted) == (2, 2, 0, False)
+
+    # The next snapshot no longer contains p2: it must be pruned.
+    second = store.write_persons([_person("p1", orcid="0000-0001-0001-0001")], dsn=clean_db)
+    assert (second.total, second.deleted, second.aborted) == (1, 1, False)
+
+    with db.connection(clean_db) as conn:
+        row = conn.execute("SELECT orcid FROM person WHERE uuid = 'p1'").fetchone()
+    assert row[0] == "0000-0001-0001-0001"
+
+
+def test_write_persons_refuses_empty_snapshot_over_existing_rows(clean_db: str) -> None:
+    store.write_persons([_person("p1")], dsn=clean_db)
+    result = store.write_persons([], dsn=clean_db)
+    assert result.aborted is True
+    with db.connection(clean_db) as conn:
+        assert conn.execute("SELECT count(*) FROM person").fetchone()[0] == 1
+
+
+def test_write_persons_empty_snapshot_on_empty_table_is_fine(clean_db: str) -> None:
+    result = store.write_persons([], dsn=clean_db)
+    assert result.aborted is False
+    assert result.total == 0
+
+
+def test_write_org_units_snapshot_replaces(clean_db: str) -> None:
+    first = store.write_org_units(
+        [
+            _org_unit("root", parent_uuid=None, faculty_uuid=None, depth=0, collection_uuid=None),
+            _org_unit("faculty-1", parent_uuid="root", depth=1),
+            _org_unit("inst-1"),
+        ],
+        dsn=clean_db,
+    )
+    assert (first.total, first.aborted) == (3, False)
+
+    second = store.write_org_units(
+        [
+            _org_unit("root", parent_uuid=None, faculty_uuid=None, depth=0, collection_uuid=None),
+            _org_unit("faculty-1", parent_uuid="root", depth=1),
+        ],
+        dsn=clean_db,
+    )
+    assert (second.total, second.deleted) == (2, 1)
+
+
+def test_write_org_units_is_idempotent(clean_db: str) -> None:
+    rows = [_org_unit("inst-1"), _org_unit("inst-2")]
+    store.write_org_units(rows, dsn=clean_db)
+    again = store.write_org_units(rows, dsn=clean_db)
+    assert (again.total, again.deleted, again.aborted) == (2, 0, False)
+
+
+def test_reconcile_uzh_authors_keeps_only_cris_backed_authors(clean_db: str) -> None:
+    """The rule is recomputed from what is stored, with author order preserved.
+
+    This is what lets an eligibility change reach the existing corpus without a
+    re-harvest: `authors` plus `author_authority_map` are a complete input.
+    """
+    _write(
+        clean_db,
+        [
+            _row(
+                "mixed",
+                authors=["Cris, Clara", "Orcid, Otto", "Nobody, Nina", "Cris, Carl"],
+                # Deliberately wrong on the way in -- the any-authority rule this
+                # replaces would have written exactly this.
+                uzh_authors=["Cris, Clara", "Orcid, Otto", "Cris, Carl"],
+                author_authority_map={
+                    "Cris, Clara": {"type": "cris", "id": "uuid-clara"},
+                    "Orcid, Otto": {"type": "orcid", "id": "0000-0002-1825-0097"},
+                    "Nobody, Nina": None,
+                    "Cris, Carl": {"type": "cris", "id": "uuid-carl"},
+                },
+            ),
+            _row(
+                "orcid-only",
+                authors=["Orcid, Olga"],
+                uzh_authors=["Orcid, Olga"],
+                author_authority_map={
+                    "Orcid, Olga": {"type": "orcid", "id": "0000-0003-1111-1111"}
+                },
+            ),
+        ],
+        mode="full",
+    )
+
+    assert store.reconcile_uzh_authors(dsn=clean_db) == 2
+
+    with db.connection(clean_db) as conn:
+        rows = dict(conn.execute("SELECT id, uzh_authors FROM publication").fetchall())
+
+    # Order follows `authors`, not the jsonb key order the map would have given.
+    assert rows["mixed"] == ["Cris, Clara", "Cris, Carl"]
+    assert rows["orcid-only"] == []
+
+
+def test_reconcile_uzh_authors_resolves_an_orcid_against_the_person_mirror(
+    clean_db: str,
+) -> None:
+    """An ORCID-typed authority still counts when it names a harvested Person.
+
+    DSpace's marker is a statement about the *record* -- "this item is not linked
+    to a local Person" -- not about the human. Where the mirror holds someone with
+    that ORCID, they are a UZH researcher whatever the record says. `normalize`
+    cannot see this (no database at fetch time), which is why it lands here.
+    """
+    store.write_persons(
+        [
+            {
+                "uuid": "uuid-known",
+                "display_name": "Known, Kim",
+                "family_name": "Known",
+                "given_name": "Kim",
+                "orcid": "0000-0002-1825-0097",
+                "handle": None,
+                "url": None,
+                "accessioned": None,
+            }
+        ],
+        dsn=clean_db,
+    )
+    _write(
+        clean_db,
+        [
+            _row(
+                "resolves",
+                authors=["Known, Kim", "Stranger, Sam"],
+                uzh_authors=[],
+                author_authority_map={
+                    # Same person, referenced by ORCID rather than by Person UUID.
+                    "Known, Kim": {"type": "orcid", "id": "0000-0002-1825-0097"},
+                    # An ORCID the mirror has never seen: unknown affiliation.
+                    "Stranger, Sam": {"type": "orcid", "id": "0000-0003-9999-9999"},
+                },
+            )
+        ],
+        mode="full",
+    )
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+
+    with db.connection(clean_db) as conn:
+        eligible = conn.execute("SELECT uzh_authors FROM publication").fetchone()[0]
+
+    assert eligible == ["Known, Kim"]
+
+
+def test_reconcile_uzh_authors_is_idempotent(clean_db: str) -> None:
+    """A second run changes nothing, because the UPDATE skips already-correct rows."""
+    _write(clean_db, [_row("a"), _row("b")], mode="full")
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+    assert store.reconcile_uzh_authors(dsn=clean_db) == 0
+
+
+def test_reconcile_uzh_authors_leaves_authorless_publications_alone(clean_db: str) -> None:
+    """No authors at all yields an empty array rather than a NULL or a crash."""
+    _write(
+        clean_db,
+        [_row("empty", authors=[], uzh_authors=[], author_authority_map={})],
+        mode="full",
+    )
+
+    store.reconcile_uzh_authors(dsn=clean_db)
+
+    with db.connection(clean_db) as conn:
+        assert conn.execute("SELECT uzh_authors FROM publication").fetchone()[0] == []

@@ -56,23 +56,97 @@ Filters applied:
 | `source_type` | `publication` | `thesis_posting` |
 | `department` | if the query names one | if the query names one |
 | `degree_level` | — | *(not filtered directly -- see below)* |
-| `has_uzh_author` | **`True`** | — |
+| `has_uzh_author` | **`True`** *only when `RETRIEVAL_REQUIRE_UZH_AUTHOR`* | — |
+| `is_available` | — | **`True`** *unless `RETRIEVAL_REQUIRE_AVAILABLE_POSTING=false`* |
 | `degree_<level>` | — | **`True`** if the query names one |
 
-### The UZH-author pre-filter
+### Two eligibility rules, both applied here rather than at index time
 
-A publication whose author list contains no registered UZH researcher cannot
-produce a valid supervisor recommendation — the people on it do not work here.
-`has_uzh_author=True` removes those records at query time rather than filtering
-them out afterwards, so they never consume a top-k slot.
+A publication whose author list contains no registered UZH researcher cannot produce
+a supervisor a student here could actually work with. Until 2026-08-25 that was
+enforced twice and absolutely — `has_uzh_author=True` hardcoded into every
+publication query, mirrored by a `WHERE` clause in `indexing/sources.py`. It is now
+two settings, because "cannot supervise" and "is not worth showing" turned out to be
+different claims.
 
-Indexing now applies the same rule at its source: `indexing/sources.py` selects only
-publications with a UZH author, so nothing ineligible from the harvested table is
-embedded in the first place. That makes this filter the **invariant** rather than the
-only line of defence — it still covers records that reached the index by an unfiltered
-route, such as a JSONL dump — but on a DB-sourced index every row already satisfies
-it, so it no longer narrows anything. Do not remove it on the strength of that: it is
-what makes the guarantee hold regardless of how the index was built.
+| setting | default | effect |
+|---|---|---|
+| `RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | adds `has_uzh_author: True` to the publication query |
+| `RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, score)`; `score` on similarity alone |
+| `RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | adds `is_available: True` to the posting query |
+
+The default is **permissive but demoted**: an external researcher is reachable and
+always ranks below every UZH match. The second setting is inert while the first is
+on — nothing unaffiliated survives the filter for a strategy to reorder.
+
+Two consequences worth knowing:
+
+- **Crediting falls back.** `_persons` credits a publication to its `uzh_authors`, or
+  to `authors` when there are none. Without that fallback the permissive default
+  would do nothing at all: an unaffiliated publication credits nobody, so it is
+  grouped into nothing and discarded after being embedded and retrieved. 118,110 of
+  the 123,022 unaffiliated publications name authors; the other 4,912 name nobody and
+  stay unreachable, since there is no one to credit. A publication that *does* have
+  UZH authors never falls back, so external co-authors on a UZH paper are not
+  promoted to supervisors.
+- **`SupervisorMatch` is no longer sorted by score.** Under `uzh_first` a
+  lower-scored UZH supervisor precedes a higher-scored external one. `has_uzh_affiliation`
+  says which is which; callers should not re-sort on `score` and expect the order back.
+
+Indexing deliberately takes no position now — see the comment at the top of
+`indexing/sources.py`. A `WHERE` clause there would make `RETRIEVAL_REQUIRE_UZH_AUTHOR`
+unflippable in practice: turning it off would return nothing extra until someone
+re-embedded the corpus, hours of work triggered by an environment variable.
+
+#### Availability: the same move, made for the posting side on 2026-08-26
+
+`indexing/sources.py` used to drop assigned and private postings before they were
+embedded, on the reasoning that availability is not eligibility: a topic already
+taken cannot be a recommendation under any setting, so it belonged in a query rather
+than in a knob. The conclusion was right and the location was wrong. Enforced at
+index time it cost a re-index to revisit — the exact trap the UZH filter had just been
+pulled out of — and the input is the unstable half of the record: a topic's status
+changes on the source page between scrapes while its text does not.
+
+So postings now follow publications. All 695 are embedded, each carrying
+`is_available` (false for `assigned` and `private`; `pending` and a missing status
+both count as available, because "not yet settled" and "the page did not say" are not
+"taken"), and `RETRIEVAL_REQUIRE_AVAILABLE_POSTING` — on by default — decides whether
+the rule applies. Cost of the reversal: 17 extra documents against 214,756
+publications.
+
+Two differences from the UZH knob, both deliberate:
+
+- **No ranking counterpart.** There is no strategy that demotes taken topics instead
+  of excluding them, so `false` puts them in results outright. That is why this one
+  defaults to on and the other defaults to off.
+- **No over-fetch.** `_FILTERED_OVERFETCH` exists because the UZH predicate discards
+  well over half of what the HNSW scan returns; this one discards 17 of 695 postings.
+  Widening `top_k` on the posting query to chase that would inflate `posting_count`
+  per person for a recall problem two orders of magnitude smaller.
+
+**Known gap.** `synthesis/` renders `"{posting_count} open thesis posting(s)"`, and
+that word "open" is only guaranteed while this setting is on. With it off, a taken
+topic is described as open. The wording is load-bearing against a hallucination seen
+in `docs/example-run.md`, so it was left alone rather than weakened for a
+non-default path — but flipping the setting without fixing the phrasing is a
+correctness regression, not just a recall change.
+
+#### Known gap: `RETRIEVAL_REQUIRE_UZH_AUTHOR=true` under-returns
+
+pgvector applies metadata filters **after** the HNSW scan (see the partial-index
+comment in `schema.sql`), and the two partial indexes key on `source_type` only. Over
+a full index roughly 43% of publications carry a UZH author, so a filtered query
+returns about that fraction of the candidates it asked for and silently comes back
+short of `top_k`. This did not bite before, because the indexing filter guaranteed
+every row in the graph satisfied the predicate.
+
+`VectorRetriever` compensates by over-fetching 4x when the filter is on
+(`_FILTERED_OVERFETCH`). That is a mitigation, not a fix. The fix is a third partial
+HNSW index whose predicate matches the filter, which means editing `schema.sql` — a
+fingerprint change, so a full `init-db --reset` and re-harvest. Worth doing when
+something else already forces a reset; not worth forcing one on its own, for an
+opt-in path whose default is off.
 
 ### Fan-out and attribution
 

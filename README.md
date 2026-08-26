@@ -1,13 +1,20 @@
+![THEMIS — THEsis Matching and Information System. Finding the right supervisor match for you.](docs/branding/themis-banner.png)
+
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 
-# RAG-Thesis-Matchmaker
+# THEMIS
 
-Finds thesis supervisors and open thesis positions at the University of Zurich.
-A student describes their interests in plain language, and the system searches
-UZH publications (ZORA) and scraped thesis postings, ranks the researchers
-behind them, and answers with the evidence for each suggestion.
+**THE**sis **M**atching and **I**nformation **S**ystem — finds thesis supervisors and open thesis
+positions at the University of Zurich. A student describes their interests in plain language, and
+THEMIS searches UZH publications (ZORA) and scraped thesis postings, ranks the researchers behind
+them, and answers with the evidence for each suggestion.
+
+This repository is the matchmaking core — ingestion, indexing, retrieval, synthesis, and the MCP
+adapter over them; the Python package is `thesis_matchmaker`. Start at
+[Quickstart](#quickstart). THEMIS is orientation, not endorsement, and a graded master's project
+rather than an official University of Zurich service.
 
 ## How it fits askUZH
 
@@ -95,6 +102,7 @@ with its public API, data flow, configuration, and known gaps.
 
 | Package | What it does |
 |---|---|
+| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
 | [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
 | [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to `publication`. |
 | [`scraper/`](src/thesis_matchmaker/scraper/README.md) | Scrapes thesis postings, profiles and application procedures from 103 UZH pages. Owns all writes to `posting`. |
@@ -103,7 +111,6 @@ with its public API, data flow, configuration, and known gaps.
 | [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
 | [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
 | [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | The application-service functions the adapters call. |
-| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
 
 Plus `cli.py`, `config.py` (pydantic-settings), and `llm.py` (OpenAI-compatible
 client).

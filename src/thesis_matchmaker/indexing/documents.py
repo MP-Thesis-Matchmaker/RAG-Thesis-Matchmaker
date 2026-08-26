@@ -14,13 +14,20 @@ import re
 
 from pydantic import BaseModel, Field
 
-from thesis_matchmaker.contracts import DegreeLevel, ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import (
+    DegreeLevel,
+    PostingStatus,
+    ThesisPosting,
+    ZoraPublication,
+)
 
 # The store keeps metadata in a jsonb column, so lists and maps are stored as
 # themselves. Filters are still flat equality over scalars -- that is all
 # retrieval asks for, and it maps onto one jsonb containment predicate.
+# The nested-dict variant exists solely for author_authority_map, whose values
+# are typed authorities ({"type": "cris"|"orcid", "id": ...}) or None.
 MetadataScalar = str | int | float | bool
-MetadataValue = MetadataScalar | list[str] | dict[str, str | None]
+MetadataValue = MetadataScalar | list[str] | dict[str, dict[str, str] | str | None]
 
 
 class Document(BaseModel):
@@ -74,7 +81,7 @@ def _build(
     return Document(id=doc_id, text=text, metadata=clean_meta, content_hash=content_hash)
 
 
-def zora_to_document(record: ZoraRecord) -> Document:
+def zora_to_document(record: ZoraPublication) -> Document:
     """Compose a publication into one embeddable document."""
     return _build(
         record.id,
@@ -82,12 +89,21 @@ def zora_to_document(record: ZoraRecord) -> Document:
         {
             "source_type": "publication",
             "department": record.department,
+            # The join key to `org_unit.collection_uuid`. `department` is the same
+            # unit as a display string; this is the one a query can group on
+            # without depending on how a collection happens to be named.
+            "owning_collection_uuid": record.owning_collection_uuid,
             "year": record.year,
             "language": record.language,
             "url": record.url,
             "authors": record.authors,
             "uzh_authors": record.uzh_authors,
-            "author_authority_map": record.author_authority_map,
+            # Dumped to plain dicts: metadata goes through json.dumps for the
+            # content hash, which does not serialize pydantic models.
+            "author_authority_map": {
+                name: (authority.model_dump() if authority else None)
+                for name, authority in record.author_authority_map.items()
+            },
             "keywords": record.keywords,
             # Query-time eligibility filter: only publications with at least one
             # registered UZH researcher can lead to a supervisor match. Kept as
@@ -113,7 +129,17 @@ def posting_to_document(posting: ThesisPosting) -> Document:
     way and the parametrised store contract could not tell. The three
     `degree_*` booleans are what a level query actually filters on, following the
     `has_uzh_author` precedent that `indexing/README.md` sets for exactly this case.
-    `has_supervisor` is the same trick for a different question.
+    `has_supervisor` and `is_available` are the same trick for two more questions.
+
+    `is_available` is the only one of them that encodes a *rule* rather than a fact,
+    so it is worth saying why the rule sits here rather than at query time. The
+    predicate retrieval wants is "not assigned and not private", and the filter API
+    has no negation and no IN list; `status` alone cannot express it. Nor can equality
+    on `status` reach the postings that have none -- `_build` drops None values, so a
+    posting whose page said nothing about availability carries no `status` key at all.
+    Baking the rule into a boolean here keeps both stores honest, and the *decision*
+    stays at query time where it belongs: `retrieval_require_available_posting` picks
+    whether to apply it, and flipping that needs no re-embed.
     """
     levels = {level.value for level in posting.degree_levels}
     return _build(
@@ -130,6 +156,10 @@ def posting_to_document(posting: ThesisPosting) -> Document:
             "degree_master": DegreeLevel.master.value in levels,
             "degree_phd": DegreeLevel.phd.value in levels,
             "status": posting.status.value if posting.status else None,
+            # The filterable companion to `status` -- see the docstring. `pending` and
+            # a missing status both count as available: "not yet settled" and "the page
+            # did not say" are not the same claim as "taken".
+            "is_available": posting.status not in (PostingStatus.assigned, PostingStatus.private),
             "supervisors": [s.name for s in posting.supervisors],
             # A posting nobody is named on cannot become a supervisor
             # recommendation. 63 of 247 scraped topics are in that position, so this

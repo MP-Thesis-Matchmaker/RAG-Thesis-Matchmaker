@@ -20,6 +20,12 @@ What is here describes the **ZORA harvester** and the **schema step**.
 | `zora-harvest-full-cronjob.yaml` | `CronJob` | `--mode full`, Mondays 01:00 UTC. Authoritative snapshot; prunes withdrawn items. |
 | `zora-harvest-incremental-cronjob.yaml` | `CronJob` | `--mode incremental`, the other six days at 01:00 UTC. Upserts only, deletes nothing. |
 
+There is deliberately **no separate CronJob for the `person` and `org_unit`
+mirrors**: every harvest run refreshes them first, as full snapshots, before it
+touches publications. They are steps of a harvest, not a job of their own — a
+third schedule would just be a way for the mirrors to be stale relative to the
+publications that reference them.
+
 ## Not here yet, and why
 
 Two components in `docs/deployment.md`'s "What runs where" table still have no

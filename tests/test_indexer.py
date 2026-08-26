@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from thesis_matchmaker.contracts import ThesisPosting, ZoraRecord
+from thesis_matchmaker.contracts import ThesisPosting, ZoraPublication
 from thesis_matchmaker.indexing.embedder import HashEmbedder
 from thesis_matchmaker.indexing.indexer import Indexer, ModelMismatchError
 from thesis_matchmaker.indexing.sources import JsonlSourceReader
@@ -15,7 +15,7 @@ from thesis_matchmaker.indexing.store import InMemoryVectorStore
 
 
 def _write_sources(
-    sources: Path, publications: list[ZoraRecord], postings: list[ThesisPosting]
+    sources: Path, publications: list[ZoraPublication], postings: list[ThesisPosting]
 ) -> None:
     sources.mkdir(parents=True, exist_ok=True)
     (sources / "publications.jsonl").write_text(
@@ -24,8 +24,10 @@ def _write_sources(
     (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
 
 
-def _publication(pub_id: str = "zora:1", abstract: str = "We study dense retrieval.") -> ZoraRecord:
-    return ZoraRecord(id=pub_id, title=f"Paper {pub_id}", abstract=abstract)
+def _publication(
+    pub_id: str = "zora:1", abstract: str = "We study dense retrieval."
+) -> ZoraPublication:
+    return ZoraPublication(id=pub_id, title=f"Paper {pub_id}", abstract=abstract)
 
 
 def _posting(post_id: str = "posting:1") -> ThesisPosting:

@@ -16,7 +16,13 @@ def build_retriever(settings: Settings) -> Retriever:
     from thesis_matchmaker.indexing import build_embedder, build_store
     from thesis_matchmaker.retrieval.vector import VectorRetriever
 
-    return VectorRetriever(embedder=build_embedder(settings), store=build_store(settings))
+    return VectorRetriever(
+        embedder=build_embedder(settings),
+        store=build_store(settings),
+        require_uzh_author=settings.retrieval_require_uzh_author,
+        require_available_posting=settings.retrieval_require_available_posting,
+        ranking_strategy=settings.retrieval_ranking_strategy,
+    )
 
 
 __all__ = ["FakeRetriever", "Retriever", "build_retriever"]

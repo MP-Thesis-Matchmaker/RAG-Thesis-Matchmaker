@@ -97,15 +97,34 @@ CREATE TABLE publication (
     -- Real arrays rather than JSON strings: unlike the index's metadata blob,
     -- these are queryable (see the GIN index below).
     authors              text[] NOT NULL DEFAULT '{}',
-    -- Authors carrying a CRIS authority key, i.e. registered UZH researchers.
-    -- Only these are supervisor-eligible.
+    -- The supervisor-eligible subset of `authors`, in the same order. WHICH authors
+    -- qualify is decided by the harvester and deliberately not restated here -- two
+    -- statements of one rule drift, and the code is the one that runs. The map below
+    -- records every author's authority kind, which is what keeps an alternative rule
+    -- computable from the table rather than needing a fresh harvest.
+    -- Current rule and its open questions: zora/README.md.
     uzh_authors          text[] NOT NULL DEFAULT '{}',
-    -- author name -> CRIS Person UUID, null for external co-authors. A map, so
+    -- author name -> typed authority, null for authors with no authority at all:
+    --   {"type": "cris",  "id": "<Person item UUID>"}  -- resolves in person.uuid
+    --   {"type": "orcid", "id": "<bare ORCID>"}        -- this item is not
+    --                                                     linked to a Person;
+    --                                                     affiliation unknown
+    -- DSpace's own "will be referenced::ORCID::" marker decides the type wherever
+    -- it is present, however malformed the payload behind it -- upstream ORCIDs
+    -- frequently are, and demoting those to cris would invent researchers who
+    -- resolve to nobody. Shape decides only UNMARKED values, which is what stops a
+    -- bare ORCID sent without the marker being filed as a Person id. A map, so
     -- jsonb rather than an array.
     author_authority_map jsonb NOT NULL DEFAULT '{}'::jsonb,
     year                 int,
     publication_type     text,
     department           text,
+    -- UUID of the "Publications of X" collection this item lives in (or the
+    -- first mapped collection when the owning one is unnamed -- same precedence
+    -- as `department`, which is the parsed display name of the same collection).
+    -- Joins to org_unit.collection_uuid at query time; a re-walk of the
+    -- community tree never invalidates publication rows.
+    owning_collection_uuid text,
     language             text,
     keywords             text[] NOT NULL DEFAULT '{}',
     url                  text,
@@ -116,6 +135,8 @@ CREATE TABLE publication (
 );
 
 CREATE INDEX publication_department ON publication (department);
+
+CREATE INDEX publication_owning_collection ON publication (owning_collection_uuid);
 
 -- Answers "which publications is this researcher on?" without a table scan.
 -- This is the join key a future researcher-level rollup or the ranking package
@@ -134,12 +155,87 @@ CREATE TABLE harvest_state (
     -- check that refuses a harvest which lost most of the corpus.
     last_total_publications   int NOT NULL DEFAULT 0,
     last_run_at               timestamptz,
-    -- Per-mode stamps. Only the in-process scheduler reads these; they become
-    -- redundant the moment Kubernetes CronJobs own the cadence, since the cluster
-    -- tracks its own run history.
+    -- Per-mode stamps. Nothing reads these now that the CronJobs own the cadence,
+    -- but they are not redundant: a CronJob's history records that a pod FIRED,
+    -- whereas these record that a harvest COMMITTED. The retention rail can roll a
+    -- run back while the pod still exits 0, so the two disagree exactly when it
+    -- matters most.
     last_incremental_run_at   timestamptz,
     last_full_run_at          timestamptz
 );
+
+-- ---------------------------------------------------------------------------
+-- ZORA entity mirrors: researchers and organizational units.
+-- Written only by thesis_matchmaker.zora (invariant 1), by
+-- `python -m thesis_matchmaker.zora.harvest_entities`. Both are pure API
+-- mirrors, refreshed as full snapshots -- no watermark, no incremental mode.
+-- ---------------------------------------------------------------------------
+
+-- DSpace-CRIS Person entities (~2,017 as of 2026-08-24). These are the
+-- researchers with a CRIS profile -- what a cris-typed entry in
+-- publication.author_authority_map points at. Sparse by construction: most
+-- UZH authors have no CRIS record, so "not in this table" does not mean
+-- "not UZH". Upstream carries no affiliation, department or email on these
+-- items; person-to-org-unit attribution has to come from publications.
+CREATE TABLE person (
+    -- CRIS item UUID: the join key cris-typed author_authority_map ids carry.
+    uuid         text PRIMARY KEY,
+    -- dc.title, "Family, Given" -- the same string publication.authors uses,
+    -- which is what makes name-level joins possible at all.
+    display_name text,
+    family_name  text,
+    given_name   text,
+    -- Bare ORCID (URL prefix stripped). The join key for orcid-typed
+    -- author_authority_map entries that belong to a person who *also* has a
+    -- CRIS record -- the "seen both ways" cases.
+    orcid        text,
+    handle       text,
+    url          text,
+    accessioned  text,
+    harvested_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX person_orcid ON person (orcid);
+
+-- The ZORA community tree under the UZH root community. ZORA's OrgUnit entity
+-- type is empty upstream (0 items, probed 2026-08-24); the org structure lives
+-- in communities: root -> 13 faculties -> institutes/clinics, each org unit
+-- with an attached "Publications of X" collection that publications actually
+-- belong to.
+CREATE TABLE org_unit (
+    -- Community UUID.
+    uuid            text PRIMARY KEY,
+    -- Verbatim, including the "03 " ordering prefix ("03 Faculty of
+    -- Economics") -- it is a stable sort key, and stripping it is a display
+    -- concern for consumers.
+    name            text NOT NULL,
+    -- NULL only for the UZH root.
+    parent_uuid     text,
+    -- The depth-1 ancestor (itself for a faculty), NULL for the root. Rolls an
+    -- institute up to its faculty without a recursive query.
+    faculty_uuid    text,
+    -- 0 = UZH root, 1 = faculty, 2+ = institute/clinic.
+    depth           int  NOT NULL,
+    handle          text,
+    -- dc.zora.subjectid: UZH's own numeric org-unit id, a second stable
+    -- identifier independent of DSpace.
+    subject_id      text,
+    -- The attached "Publications of X" collection. This -- not the community
+    -- uuid -- is what publication.owning_collection_uuid joins against,
+    -- because publications belong to collections, never to communities.
+    -- NULL for non-leaf units that only group others.
+    collection_uuid text,
+    collection_name text,
+    harvested_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX org_unit_parent ON org_unit (parent_uuid);
+
+-- Unique partial index: one org unit per publications collection. If ZORA ever
+-- attaches one collection to two communities, the harvest fails loudly here
+-- rather than silently double-attributing every publication in it.
+CREATE UNIQUE INDEX org_unit_collection ON org_unit (collection_uuid)
+    WHERE collection_uuid IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- Scraped thesis postings

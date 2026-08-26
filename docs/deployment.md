@@ -298,12 +298,16 @@ Blocking for deployment, not for local development against a Postgres container.
 
 Not questions for Central Informatics — things we owe ourselves.
 
-- **`schema.sql` has no migration path.** `schema.py` fingerprints the file's raw
-  text and refuses to run when the stored fingerprint differs, which is a strong
-  guarantee that no DDL edit goes unapplied. The cost is that *comments are part of
-  the schema's identity*: editing a comment demands `init-db --reset`, which DROPs
-  every table. Hashing normalized SQL instead would fix it, and costs one reset, so
-  it should ride along with a reset that is happening anyway.
+- **`schema.sql` has no migration path.** `schema.py` fingerprints the schema and
+  refuses to run when the stored fingerprint differs, which is a strong guarantee
+  that no DDL edit goes unapplied. It used to hash the file's raw text, which made
+  *comments part of the schema's identity*: editing one demanded `init-db --reset`,
+  and the predictable result was a comment the team knew was wrong and left in place
+  rather than pay for. Fixed 2026-08-25 — `_normalize_sql` strips comments and
+  collapses whitespace before hashing, so the fingerprint answers "do the tables
+  differ?" and documentation is free to be correct. Adopting it moved the
+  fingerprint once, to `3d4f0475bf80`; the DDL was unchanged, so existing databases
+  are re-stamped with an UPDATE rather than a reset.
 - **`resources` are unset on every committed container, and in this cluster that
   means the pods do not start.** This was written up as a considered trade-off —
   better BestEffort than an invented limit that OOM-kills a harvest — and that
