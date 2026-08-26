@@ -169,7 +169,10 @@ still missing:
 
 ## Git workflow (from CONTRIBUTING.md)
 
-- Never commit to `main`; branch per task: `feature/…`, `fix/…`, `docs/…`.
+- Never commit to `main`; branch per task, naming it `<kind>/#<issue>-<slug>` where `<kind>` is one
+  of `feature`, `bugfix`, `docs`, `refactor`, or `experimental` (the last for work that may never
+  merge). Work not covered by an issue uses `NOREF` in place of the number —
+  `docs/#NOREF-fix-broken-links`.
 - **AI-generated branches use the `ai/` prefix**; every AI PR needs a summary + reasoning and
   human review before merge. AI agents must not touch `.env`, config files, or dependency lock
   files without explicit human instruction.

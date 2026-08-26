@@ -9,10 +9,13 @@ We want to keep our codebase clean, collaborative, and professional.
 
 - Always create a new branch for each feature, fix, or task — never commit directly to `main`
 - Name branches clearly and consistently:
-  - `feature/your-feature-name`
-  - `fix/your-bug-description`
-  - `docs/what-you-updated`
+  - `feature/#ISSUE_NR-your-feature-name`
+  - `bugfix/#ISSUE_NR-your-bug-description`
+  - `docs/#ISSUE_NR-what-you-updated`
+  - `refactor/#ISSUE_NR-what-you-refactor`
+  - `experimental/#ISSUE_NR-not-necessarily-merged-into-main`
 - Keep branches short-lived — merge and delete them once the task is complete
+- For minor work which is not covered by an issue `#ISSUE_NR` should be set to `NOREF`
 
 ---
 
