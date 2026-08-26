@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.retrieval.base import Retriever
 from themis_matcher.retrieval.fake import FakeRetriever
-from themis_shared.config import Settings
 
 
-def build_retriever(settings: Settings) -> Retriever:
+def build_retriever(settings: MatcherSettings) -> Retriever:
     """Wire the real retriever over the configured embedder and store.
 
     Imported lazily so importing the retrieval package (e.g. for the fake) does

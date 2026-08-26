@@ -65,10 +65,10 @@ services:
   # table; pass `--source data/samples` to index the 50 checked-in samples
   # instead (the ./data mount below is what makes that path exist in-container).
   #
-  # EMBEDDING_MODEL is deliberately NOT set here. The image exists to run the
-  # real model, so it inherits config.py's BAAI/bge-m3 default; set
-  # EMBEDDING_MODEL=hash-fake on the command line for a fast structural check
-  # that skips the 2.27 GB download.
+  # MATCHER_EMBEDDING_MODEL is deliberately NOT set here. The image exists to run
+  # the real model, so it inherits themis_matcher/config.py's BAAI/bge-m3
+  # default; set MATCHER_EMBEDDING_MODEL=hash-fake on the command line for a fast
+  # structural check that skips the 2.27 GB download.
   indexer:
     build:
       context: .
@@ -94,8 +94,8 @@ services:
   # whole point: one process embeds both the corpus and the incoming query, so
   # there is one copy of bge-m3 rather than one per role.
   #
-  # The image sets API_HOST=0.0.0.0; binding to config.py's 127.0.0.1 default
-  # would make the port unreachable from outside the container.
+  # The image sets MATCHER_API_HOST=0.0.0.0; binding to themis_matcher/config.py's
+  # 127.0.0.1 default would make the port unreachable from outside the container.
   matcher-api:
     build:
       context: .

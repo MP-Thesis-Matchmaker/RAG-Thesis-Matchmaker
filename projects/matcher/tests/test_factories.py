@@ -7,18 +7,21 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from themis_matcher.config import MatcherSettings
 from themis_matcher.indexing import build_embedder, build_indexer
 from themis_matcher.indexing.embedder import HashEmbedder, SentenceTransformerEmbedder
 from themis_matcher.indexing.store import PgVectorStore
 from themis_matcher.retrieval import build_retriever
 from themis_matcher.retrieval.vector import VectorRetriever
-from themis_shared.config import Settings
 
 _DSN = "postgresql://nobody@localhost:1/unused"
 
 
-def _settings(tmp_path: Path) -> Settings:
-    return Settings(
+def _settings(tmp_path: Path) -> MatcherSettings:
+    # _env_file=None keeps a developer's local .env out of the test: pydantic
+    # would otherwise load it for every field this call does not name.
+    return MatcherSettings(
+        _env_file=None,
         embedding_model="hash-fake",
         database_url=_DSN,
         sources_path=str(tmp_path / "src"),
@@ -88,7 +91,8 @@ def test_affiliation_settings_reach_the_retriever(tmp_path: Path) -> None:
 def test_an_unknown_ranking_strategy_is_refused_at_load(tmp_path: Path) -> None:
     """A typo must fail loudly, not silently select a strategy nobody asked for."""
     with pytest.raises(ValidationError, match="uzh_first"):
-        Settings(
+        MatcherSettings(
+            _env_file=None,
             embedding_model="hash-fake",
             database_url=_DSN,
             sources_path=str(tmp_path / "src"),

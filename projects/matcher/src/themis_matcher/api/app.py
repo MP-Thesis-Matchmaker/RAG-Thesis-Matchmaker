@@ -22,10 +22,10 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from themis_matcher.api.service import MatcherService, build_service
+from themis_matcher.config import MatcherSettings
 from themis_matcher.indexing.indexer import ModelMismatchError
 from themis_matcher.indexing.runs import IndexRunInProgress
 from themis_shared import db
-from themis_shared.config import Settings
 from themis_shared.contracts import (
     ApiError,
     IndexRun,
@@ -74,7 +74,9 @@ def _require_index(service: MatcherService) -> None:
         )
 
 
-def create_app(settings: Settings | None = None, service: MatcherService | None = None) -> FastAPI:
+def create_app(
+    settings: MatcherSettings | None = None, service: MatcherService | None = None
+) -> FastAPI:
     """Build the app. `service` is injectable so tests need no database."""
 
     @asynccontextmanager

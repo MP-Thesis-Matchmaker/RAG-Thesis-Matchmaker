@@ -66,15 +66,16 @@ FROM python:3.12-slim AS runtime
 # this path is an RWX PVC on the idnas21zb.uzh.ch storage class, shared with the
 # serving image, so the download happens once; locally it is a compose volume.
 #
-# API_HOST must be 0.0.0.0, not config.py's 127.0.0.1 default: a server bound to
-# loopback inside a container is unreachable from its own Service. Same reasoning
-# as MCP_HOST in projects/gateway/Dockerfile -- a property of running in a
-# container rather than a deployment choice, so it belongs in the image.
+# MATCHER_API_HOST must be 0.0.0.0, not themis_matcher/config.py's 127.0.0.1
+# default: a server bound to loopback inside a container is unreachable from its
+# own Service. Same reasoning as MCP_HOST in projects/gateway/Dockerfile -- a
+# property of running in a container rather than a deployment choice, so it
+# belongs in the image.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HF_HOME=/var/cache/huggingface \
-    API_HOST=0.0.0.0 \
-    API_PORT=8100 \
+    MATCHER_API_HOST=0.0.0.0 \
+    MATCHER_API_PORT=8100 \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
