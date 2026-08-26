@@ -31,8 +31,8 @@ services:
   init-db:
     build:
       context: .
-      dockerfile: docker/zora/Dockerfile
-    entrypoint: ["thesis-matchmaker", "init-db"]
+      dockerfile: projects/zora/Dockerfile
+    entrypoint: ["themis-init-db"]
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     depends_on:
@@ -44,7 +44,7 @@ services:
   harvester:
     build:
       context: .
-      dockerfile: docker/zora/Dockerfile
+      dockerfile: projects/zora/Dockerfile
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
       # Mirrors the cluster: the token arrives as a mounted file. Running
@@ -71,7 +71,7 @@ services:
   indexer:
     build:
       context: .
-      dockerfile: docker/indexer/Dockerfile
+      dockerfile: projects/matcher/Dockerfile
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     volumes:
@@ -94,7 +94,7 @@ services:
   serving:
     build:
       context: .
-      dockerfile: docker/serving/Dockerfile
+      dockerfile: projects/gateway/Dockerfile
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     ports:
@@ -118,7 +118,7 @@ services:
   scraper:
     build:
       context: .
-      dockerfile: docker/scraper/Dockerfile
+      dockerfile: projects/scraper/Dockerfile
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
       SCRAPER_CONTACT: ${SCRAPER_CONTACT:-}

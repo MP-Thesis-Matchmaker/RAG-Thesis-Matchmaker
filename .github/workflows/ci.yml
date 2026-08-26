@@ -41,11 +41,13 @@ jobs:
           # Keyed on uv.lock, so the cache invalidates exactly when the
           # dependency set does.
           enable-cache: true
-      # The dev group is a default group, so plain `uv sync` is the whole dev
-      # environment. The mcp and embeddings extras are not requested and so are
-      # not installed -- that is the seam this job exists to keep honest.
+      # --all-packages because the root is virtual: there is no project for a
+      # bare `uv sync` to install. The dev group is a default group, so this is
+      # the whole dev environment. The mcp, embeddings and scraping extras are
+      # not requested and so are not installed -- that is the seam this job
+      # exists to keep honest.
       - name: Install
-        run: uv sync --locked
+        run: uv sync --locked --all-packages
       # --no-sync: the environment was just built from the lock; re-checking it
       # per step buys nothing and would let a step quietly change it.
       - name: Lint
@@ -61,7 +63,7 @@ jobs:
   # A separate job rather than adding the extra to `offline`, because that job's
   # value is proving the base install runs the whole pipeline on its own. But they
   # have to run *somewhere*: the last time an extra went untested, `mcp>=1.2`
-  # resolved to 2.0.0, removed FastMCP, and broke `thesis-matchmaker-mcp` entirely
+  # resolved to 2.0.0, removed FastMCP, and broke the MCP adapter entirely
   # -- caught only when an image was built by hand, because CI never installed it.
   # 131 tests behind an uninstalled extra is that same hole, five times the size.
   scraper:
@@ -73,12 +75,17 @@ jobs:
           version: "0.11.17"
           python-version: "3.11"
           enable-cache: true
+      # --package: only the scraper and its closure, which makes this job
+      # strictly stronger than before the workspace split. It used to install the
+      # whole monolith plus an extra; now a scraper module that reached into the
+      # matcher would fail here with ModuleNotFoundError.
+      #
       # The render extra is deliberately absent: it downloads a browser, and
       # fetch.py imports playwright lazily so nothing here needs it.
       - name: Install
-        run: uv sync --locked --extra scraping
+        run: uv sync --locked --package themis-scraper --extra scraping
       - name: Test
-        run: uv run --no-sync pytest tests/scraper
+        run: uv run --no-sync pytest projects/scraper/tests
 
   # The same store contract against real pgvector: real SQL, real HNSW, real
   # jsonb containment. Skipped locally when DATABASE_URL is unset.
@@ -109,9 +116,95 @@ jobs:
           version: "0.11.17"
           python-version: "3.11"
           enable-cache: true
+      # --all-packages is required here, not just convenient:
+      # tests/integration asserts a contract spanning shared, zora, scraper and
+      # the matcher at once.
       - name: Install
-        run: uv sync --locked
+        run: uv sync --locked --all-packages
       - name: Create schema
-        run: uv run --no-sync thesis-matchmaker init-db
+        run: uv run --no-sync themis-init-db
       - name: Test
         run: uv run --no-sync pytest
+
+  # The job that makes the split real rather than aspirational.
+  #
+  # Every other job installs enough to hide a boundary violation: add
+  # `from themis_zora import ...` to a matcher module and `offline` still passes,
+  # because --all-packages installed zora anyway. Here each member is installed
+  # alone, so the same line fails with ModuleNotFoundError before any test runs.
+  #
+  # A uv workspace has one virtual environment, so --package does not build a
+  # second one -- it replaces the root .venv with just that member's closure.
+  # What this proves is therefore the dependency graph, not process isolation,
+  # which is exactly the property the four seams are supposed to have.
+  #
+  # No extras anywhere except the scraper's, which has its own job above: the
+  # offline implementations are real, so every member's tests run without a
+  # model download. The gateway's tests never import mcp either.
+  boundaries:
+    runs-on: ubuntu-latest
+    strategy:
+      # One red member should not hide the others.
+      fail-fast: false
+      matrix:
+        include:
+          - member: shared
+            package: themis-shared
+            tests: libs/shared/tests
+          - member: matcher
+            package: themis-matcher
+            tests: projects/matcher/tests
+          - member: gateway
+            package: themis-gateway
+            tests: projects/gateway/tests
+          - member: zora
+            package: themis-zora
+            tests: projects/zora/tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.11.17"
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install ${{ matrix.package }} alone
+        run: uv sync --locked --package ${{ matrix.package }}
+      # Separate from the tests: an import error here means the package cannot be
+      # installed on its own at all, which is a different failure from a test
+      # that needs something the package does not declare.
+      - name: Import themis_${{ matrix.member }}
+        run: uv run --no-sync python -c "import themis_${{ matrix.member }}"
+      - name: Test
+        run: uv run --no-sync pytest ${{ matrix.tests }}
+
+  # schema.sql is package data, and that is only provable against a built wheel.
+  # An editable install resolves it through the source tree whether or not
+  # [tool.setuptools.package-data] names it, so every test can pass while the
+  # container image is broken -- and the first place that surfaces is the
+  # cluster's init-db Job.
+  wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.11.17"
+          python-version: "3.11"
+          enable-cache: true
+      - name: Build every member
+        run: uv build --all-packages
+      - name: schema.sql must be inside the wheel
+        run: |
+          python -m zipfile -l dist/themis_shared-*-py3-none-any.whl \
+            | grep -q 'themis_shared/schema.sql'
+      # --isolated --no-project: no source tree on the path, so this reads the
+      # wheel or it fails.
+      - name: schema.sql must resolve from the installed wheel
+        run: |
+          uv run --isolated --no-project --with dist/themis_shared-*-py3-none-any.whl \
+            python -c "
+          from importlib import resources
+          sql = resources.files('themis_shared').joinpath('schema.sql').read_text(encoding='utf-8')
+          assert 'create table' in sql.lower(), 'schema.sql is present but not readable as DDL'
+          print(f'ok: {len(sql)} chars')
+          "

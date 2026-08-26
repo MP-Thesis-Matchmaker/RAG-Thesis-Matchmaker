@@ -11,41 +11,40 @@ first**; AI Buddy integration via MCP is a downstream possibility, never a depen
 Because this is graded work: never fabricate results, citations, data, or evaluation numbers. When
 a decision is unmade or a fact is unknown, say so explicitly.
 
-## Current repo state (as of 2026-08-22)
+## Current repo state (as of 2026-08-26)
 
-`thesis_matchmaker` (src layout, `requires-python >=3.11`) — 10 packages, ~10,197 LOC,
-442 test functions in 30 files (all pass with a database, 398 pass / 44 skip offline).
-**Per-package detail lives in a `README.md` inside each package; read those instead of expanding
-this section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
+A **five-member `uv` workspace**, every member `requires-python >=3.11`, ~11,750 LOC across the
+five `src/` trees, 481 tests in 33 files (433 pass / 48 skip without `DATABASE_URL`). The
+workspace root has **no `[project]` table** — it is virtual, which is why a bare `uv sync`
+installs nothing and errors; always `--all-packages` or `--package themis-<x>`.
+**Per-member detail lives in the member's `README.md`; read those instead of expanding this
+section.** Architecture diagram: [`docs/architecture.png`](docs/architecture.png)
 (target state — the REST API and multi-signal ranking in it are not built yet).
 
-| Package | Status | Concern |
-|---|---|---|
-| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | implemented | **Every** data model, harvester output shapes included; imports nothing of ours |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
-| [`scraper/`](src/thesis_matchmaker/scraper/README.md) | ported, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | implemented | JSONL → `Document` → content-hash diff → Postgres/pgvector |
-| [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | implemented | Dual filtered queries + UZH-author pre-filter; **also holds the only ranking** |
-| [`parsing/`](src/thesis_matchmaker/parsing/README.md) | implemented | Free text → `ParsedQuery`; rule-based baseline, optional LLM |
-| [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | implemented | Grounded prose; weak matches short-circuit before any LLM call |
-| [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | implemented, thin | Application-service functions the adapters call |
-| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP done, REST design-only | Thin front doors; no business logic |
+| Member | Import root | Status | Concern |
+|---|---|---|---|
+| [`libs/shared/`](libs/shared/README.md) | `themis_shared` | implemented | The floor everything stands on: [`contracts/`](libs/shared/src/themis_shared/contracts/README.md) (**every** data model), `config`, `db`, `schema` + `schema.sql`, `initdb`. Imports no other member |
+| [`projects/zora/`](projects/zora/README.md) | `themis_zora` | implemented, running | DSpace REST harvester; **owns all writes** to `publication`, `person`, `org_unit` |
+| [`projects/scraper/`](projects/scraper/README.md) | `themis_scraper` | implemented, tested | Posting scraper over 103 UZH pages; **owns all writes** to `posting` |
+| [`projects/matcher/`](projects/matcher/README.md) | `themis_matcher` | implemented | The engine, in five sub-packages — [`indexing/`](projects/matcher/src/themis_matcher/indexing/README.md), [`retrieval/`](projects/matcher/src/themis_matcher/retrieval/README.md) (**also holds the only ranking**), [`parsing/`](projects/matcher/src/themis_matcher/parsing/README.md), [`synthesis/`](projects/matcher/src/themis_matcher/synthesis/README.md), [`pipeline/`](projects/matcher/src/themis_matcher/pipeline/README.md) — plus `llm.py` and `cli.py` |
+| [`projects/gateway/`](projects/gateway/README.md) | `themis_gateway` | MCP done, REST design-only | Thin front door; no business logic. The only member importing `themis_matcher`, and only from `service.py` |
 
-Not built: a **`ranking` package** (`pipeline/`'s docstring claims a rank step; in reality
-ranking is `score = max(hit.score)` inside `VectorRetriever`).
+The dependency graph is a DAG: everything depends on `themis-shared`, `themis-gateway` also on
+`themis-matcher`, and nothing else crosses. CI's `boundaries` job installs each member **alone**,
+so a stray cross-member import fails with `ModuleNotFoundError` rather than passing unnoticed.
 
-The **web scraper now exists** — ported in from `Webscraping-Prototype` as
-[`scraper/`](src/thesis_matchmaker/scraper/README.md), so `ThesisPosting` has a real producer for
-the first time. Two of its three record kinds are stored and unread: `researcher_profile` (565
-rows) and `application_process` (57) have tables but no consumer. Only `posting` reaches the
-index.
+Not built: a **`ranking` package.** Ranking is one line inside
+`themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
 
-**Repository-wide idiom — respect it.** `parsing/`, `indexing/`, `retrieval/`, `synthesis/` each
-have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
-`build_*(settings)` factory selecting one from `config.Settings`. That is invariant 3 in code
-form. Each also ships a real offline implementation (`HashEmbedder`, `FakeRetriever`,
-`RuleBasedExtractor`, `TemplateSynthesizer`, `InMemoryVectorStore`) — not mocks, which is why CI
-runs the whole pipeline with no model download, no database and no network.
+Two of the scraper's three record kinds are stored and unread: `researcher_profile` (569 rows) and
+`application_process` (45) have tables but no consumer. Only `posting` reaches the index.
+
+**Matcher-wide idiom — respect it.** `themis_matcher`'s `parsing/`, `indexing/`, `retrieval/`,
+`synthesis/` each have `base.py` = `Protocol`, sibling modules = implementations, `__init__.py` = a
+`build_*(settings)` factory selecting one from `themis_shared.config.Settings`. That is invariant 3
+in code form. Each also ships a real offline implementation (`HashEmbedder`, `FakeRetriever`,
+`RuleBasedExtractor`, `TemplateSynthesizer`, `InMemoryVectorStore`) — not mocks, which is why CI's
+`offline` job runs the whole pipeline with no model download, no database and no network.
 
 Seam status. The **vector store is now decided: Postgres + pgvector** (cosine, HNSW) — not a
 preference but a constraint of the deployment environment UZH Central Informatics confirmed on
@@ -55,11 +54,13 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 `document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points: `thesis-matchmaker` (`init-db`, `index --source --rebuild`, `match --top-k`),
-`thesis-matchmaker-mcp` (`--stdio`), and `python -m thesis_matchmaker.zora.harvest`
-(**no console script**).
+Entry points — one console script per member: `themis-init-db` (shared), `themis-matcher`
+(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`), `themis-gateway-mcp`
+(`--stdio`), `themis-zora-harvest`, and `themis-scraper`. The last two also answer to
+`python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
+delegates to `themis_shared.initdb`, so the two spellings cannot drift.
 
-**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `thesis-matchmaker index`
+**Gotcha:** `SOURCES_PATH` defaults to `data/samples`, so a bare `themis-matcher index`
 indexes the 50 checked-in sample documents (30 publications + 20 postings). The harvested
 corpus lives in the `publication` table — **214,756 publications** as of 2026-08-25, of which
 **53,545 (24.9%)** carry a UZH author, naming **2,942** distinct researchers. That figure was
@@ -67,7 +68,7 @@ corpus lives in the `publication` table — **214,756 publications** as of 2026-
 `uzh_authors` stopped admitting ORCID-only authorities — 38,190 records whose authors DSpace never
 linked to a local Person. Those publications are still indexed and still retrievable; they are
 ranked below CRIS-backed candidates rather than excluded. See
-[`zora/README.md`](src/thesis_matchmaker/zora/README.md). `--source db` indexes **all** of them,
+[`zora/README.md`](projects/zora/README.md). `--source db` indexes **all** of them,
 plus **all 695 postings**. It briefly indexed only the UZH-authored ones (2026-08-21 to
 08-25); that filter is gone because it made `RETRIEVAL_REQUIRE_UZH_AUTHOR` unflippable —
 turning it off would have returned nothing extra until someone re-embedded the corpus. Eligibility
@@ -90,86 +91,102 @@ persons, then org units, then publications; `--no-persons` / `--no-org-units` /
 known `uzh_authors` gap needed). The local database was reset and re-harvested from the API:
 **2,018 persons, 497 org units, 214,756 publications**, every one carrying
 `owning_collection_uuid`. Postings were restored from the scraper's response cache (695 rows, no
-re-fetch). The `document` table is empty — **the re-index has not run yet.**
+re-fetch). **The re-index has since run:** the `document` table holds **215,451** rows
+(214,756 publications + 695 postings), embedded with the real `BAAI/bge-m3`, zero null embeddings.
 
 Two consequences. Old raw dumps predate the new fields, so `--from-dump` cannot rebuild this
 corpus; only an API harvest can. And the **posting-side follow-up will need its own reset** —
 the "one reset for everything" plan did not survive, because the entity mirrors were needed
 before those changes were designed. Details:
-[`zora/README.md`](src/thesis_matchmaker/zora/README.md).
+[`zora/README.md`](projects/zora/README.md).
 
-Tooling: `uv` everywhere — `uv.lock` **is tracked and is what actually gets installed**, by CI
-(`uv sync --locked`) and by the container image alike; pip is used nowhere. `pytest` (442 tests /
-30 files; 44 need Postgres and skip without `DATABASE_URL`), `ruff` (line length 100, py311); both
-live in a PEP 735 `dev` dependency group, not an extra. **One workflow**: `ci.yml` (ruff + pytest
-on every PR, `dev` group only — never installs `mcp`/`embeddings`).
+Tooling: `uv` everywhere — a **single root `uv.lock` covering all five members**, tracked, and what
+actually gets installed by CI (`uv sync --locked --all-packages`, or `--package themis-<x>`) and by
+the container images alike; pip is used nowhere. One `.venv`, at the root: `--package X` *replaces*
+its contents rather than making a second environment. `pytest` (481 tests / 33 files; 48 need
+Postgres and skip without `DATABASE_URL`) and `ruff` (line length 100, py311) are configured
+**only in the root `pyproject.toml`** — which fixes pytest's rootdir at the repo root, so always
+invoke it from there. `ruff` lives in the root `dev` group; `pytest` is repeated in every member's
+`dev` group so `--package X` still yields a runnable environment.
+
+**One workflow file, five jobs** — `ci.yml`: `offline` (all members, no network or database),
+`scraper` (`--package themis-scraper --extra scraping`), `pgvector` (a real pgvector service plus
+`themis-init-db`), `boundaries` (a 4-leg matrix installing each member alone, so a cross-member
+import fails loudly), and `wheels` (proves `schema.sql` ships as package data — it is resolved by
+name at runtime, so a missing declaration would fail only inside a container). `mcp` and
+`embeddings` are still never installed in CI.
 Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
 with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
 are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in
 CI, and **never committing data back to the repo**.
 
-Keep this table current as modules land; put the detail in the package README, not here.
+Keep this table current as modules land; put the detail in the member README, not here.
 
 ## Architecture (agreed decisions — respect them)
 
 **Modular monolith in a single monorepo.** Not microservices: batch ingestion pipelines writing to
 shared storage don't need HTTP boundaries, and hard module seams inside one repo give decoupling
 without multi-repo friction for a four-person, one-semester team.
-**Per-component containerization is decided**: one image per deployable role
-(harvester, indexer, serving adapter, posting scraper), each with its own
-`docker/<role>/Dockerfile`. That does **not** imply one source tree per image — a
-single distribution builds all of them, differing only in entrypoint and installed
-extras. Splitting `src/` into a `projects/` workspace is still open, and the
-scraper migration is what decides it. See the Images section of
+**Per-component containerization**: one image per deployable role (harvester, matcher, gateway,
+posting scraper), each built from `projects/<member>/Dockerfile` by
+`uv sync --package themis-<member>` — so an image installs that member's closure and nothing else.
+**`src/` was split into this workspace on 2026-08-26** (`d79f9d2`…`f5c1460`); the scraper port is
+what forced the question, and `src/thesis_matchmaker/` no longer exists. See the Images section of
 [`docs/deployment.md`](docs/deployment.md).
 
 Target layout (~6–8 packages). Names in the code drifted from this list; the mapping and what is
 still missing:
 
 - `common` — shared schemas / domain types (the contract between modules)
-  → **shipped as `contracts/`**
+  → **shipped as `themis_shared.contracts`**, inside the `themis-shared` distribution
 - `ingestion` — **owns all writes**; sub-packages for ZORA and the scraper, plus a store layer;
   includes a scheduled ingest runner
-  → **shipped as two peer packages, `zora/` and `scraper/`** (the cluster's CronJobs own
-  scheduling). Whether they should sit under a shared `ingestion/` parent is **still open** and
-  was deliberately not decided by the scraper port: the move would rename every
-  `thesis_matchmaker.zora.*` import plus the harvester image's ENTRYPOINT, both CronJobs and
-  `tests/zora/`, for no functional gain. Decide it together with the `projects/` workspace
-  question, which is the same kind of question.
+  → **shipped as two separate distributions, `themis-zora` and `themis-scraper`**, both under
+  `projects/` (the cluster's CronJobs own scheduling). An `ingestion/` parent is now only a
+  workspace-*grouping* question — a `libs`/`projects`-style directory — because the import rename
+  it used to cost was already paid by the split. Still open, on those reduced terms.
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped
 - `ranking` — multi-signal scoring over retrieved candidates; read-only
-  → **not built.** Ranking is currently one line inside `VectorRetriever._group_by_person`
-  (`score = max(hit.score)`). Keep the intent; the slot is between retrieve and synthesise
+  → **not built.** Ranking is currently one line inside `themis_matcher.retrieval`'s
+  `VectorRetriever._group_by_person` (`score = max(hit.score)`). Keep the intent; the slot is
+  between retrieve and synthesise
 - `application service` — plain functions orchestrating retrieval → ranking → LLM synthesis;
   exposes the core use cases
-  → **shipped as `pipeline/`** (plus `adapters/service.py`)
+  → **shipped as `themis_matcher.pipeline`**, plus `themis_gateway.service` — note these are
+  now two different distributions, which is what makes the HTTP swap below a contained change
 - Two thin adapter apps: **REST API** and **MCP adapter** — front doors over the
   application-service functions only
-  → **MCP shipped; REST not built**
+  → **MCP shipped as `themis-gateway`; REST not built.** The gateway still calls the matcher
+  in-process; making that an HTTP call touches only `themis_gateway/service.py`
 
 ### Invariants
 
 1. **Ingestion owns all writes.** Serving (retrieval / ranking / app-service / adapters) is
    strictly read-only. No write paths outside ingestion.
-2. **Core exposes plain application-service functions.** Adapters (REST, MCP) call them; adapters
-   contain no business logic, and core code never imports from adapters.
-3. **Swappable seams behind interfaces**: embedding model, vector store, and LLM provider are
+2. **Core exposes plain application-service functions.** The gateway (MCP, and REST when it
+   exists) calls them; it holds no business logic, and no core member imports `themis_gateway`.
+3. **Swappable seams behind interfaces**: the embedding model and LLM provider are
    **not finalized** — keep each replaceable without touching the rest. Do not hardcode a choice;
-   if code later picks one, record what the code actually uses here and note it may change.
+   if code later picks one, record what the code actually uses here and note it may change. The
+   vector store is settled (pgvector) but stays behind `VectorStore` all the same.
 4. **Module boundaries map to team ownership** to minimize merge conflicts. Respect the seams.
 
 ## Tech stack
 
 - **Python** unless a package explicitly states otherwise (README targets 3.11). State key
   library/version assumptions when they matter.
-- Embedding model, vector store, LLM provider: undecided (see invariant 3).
+- Embedding model and LLM provider: undecided (see invariant 3). **Vector store: decided** —
+  Postgres + pgvector, a deployment constraint rather than a preference; see Seam status above.
 - Project management: **GitHub Projects v2** (org-level), Issues as the atomic ticket unit,
   Iteration field for sprints, custom fields (Module, Priority, Assignee, Status).
 
 ## Git workflow (from CONTRIBUTING.md)
 
-- Never commit to `main`; branch per task: `feature/…`, `fix/…`, `docs/…`.
+- Never commit to `main`; branch per task, naming it `<kind>/#<issue>-<slug>` where `<kind>` is one
+  of `feature`, `bugfix`, `docs`, `refactor`, or `experimental` (the last for work that may never
+  merge). Work not covered by an issue uses `NOREF` in place of the number —
+  `docs/#NOREF-fix-broken-links`.
 - **AI-generated branches use the `ai/` prefix**; every AI PR needs a summary + reasoning and
   human review before merge. AI agents must not touch `.env`, config files, or dependency lock
   files without explicit human instruction.

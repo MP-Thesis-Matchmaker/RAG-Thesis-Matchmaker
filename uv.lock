@@ -12,6 +12,21 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'linux'",
 ]
 
+[manifest]
+members = [
+    "themis-gateway",
+    "themis-matcher",
+    "themis-scraper",
+    "themis-shared",
+    "themis-zora",
+]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "ruff", specifier = ">=0.6" },
+]
+
 [[package]]
 name = "annotated-doc"
 version = "0.0.4"
@@ -2584,17 +2599,46 @@ wheels = [
 ]
 
 [[package]]
-name = "thesis-matchmaker"
+name = "themis-gateway"
 version = "0.0.1"
-source = { editable = "." }
+source = { editable = "projects/gateway" }
 dependencies = [
-    { name = "dspace-rest-client" },
+    { name = "themis-matcher" },
+    { name = "themis-shared" },
+]
+
+[package.optional-dependencies]
+embeddings = [
+    { name = "themis-matcher", extra = ["embeddings"] },
+]
+mcp = [
+    { name = "mcp" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=2.0" },
+    { name = "themis-matcher", editable = "projects/matcher" },
+    { name = "themis-matcher", extras = ["embeddings"], marker = "extra == 'embeddings'", editable = "projects/matcher" },
+    { name = "themis-shared", editable = "libs/shared" },
+]
+provides-extras = ["embeddings", "mcp"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
+name = "themis-matcher"
+version = "0.0.1"
+source = { editable = "projects/matcher" }
+dependencies = [
     { name = "httpx" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "psycopg-pool" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-dotenv" },
+    { name = "themis-shared" },
 ]
 
 [package.optional-dependencies]
@@ -2603,9 +2647,34 @@ embeddings = [
     { name = "torch", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
     { name = "torch", version = "2.12.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
 ]
-mcp = [
-    { name = "mcp" },
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "sentence-transformers", marker = "extra == 'embeddings'", specifier = ">=5.6" },
+    { name = "themis-shared", editable = "libs/shared" },
+    { name = "torch", marker = "sys_platform == 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torch", marker = "sys_platform != 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13" },
+]
+provides-extras = ["embeddings"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
+name = "themis-scraper"
+version = "0.0.1"
+source = { editable = "projects/scraper" }
+dependencies = [
+    { name = "themis-shared" },
+]
+
+[package.optional-dependencies]
 render = [
     { name = "playwright" },
 ]
@@ -2620,36 +2689,74 @@ scraping = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
-    { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'scraping'", specifier = ">=4.12" },
-    { name = "dspace-rest-client", specifier = ">=0.1.20" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=2.0" },
     { name = "openai", marker = "extra == 'scraping'", specifier = ">=1.30" },
     { name = "playwright", marker = "extra == 'render'", specifier = ">=1.40" },
+    { name = "pypdf", marker = "extra == 'scraping'", specifier = ">=4.0" },
+    { name = "pyyaml", marker = "extra == 'scraping'", specifier = ">=6.0" },
+    { name = "requests", marker = "extra == 'scraping'", specifier = ">=2.31" },
+    { name = "themis-shared", editable = "libs/shared" },
+]
+provides-extras = ["scraping", "render"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
+name = "themis-shared"
+version = "0.0.1"
+source = { editable = "libs/shared" }
+dependencies = [
+    { name = "psycopg", extra = ["binary"] },
+    { name = "psycopg-pool" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "psycopg-pool", specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-settings", specifier = ">=2.2" },
-    { name = "pypdf", marker = "extra == 'scraping'", specifier = ">=4.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", marker = "extra == 'scraping'", specifier = ">=6.0" },
-    { name = "requests", marker = "extra == 'scraping'", specifier = ">=2.31" },
-    { name = "sentence-transformers", marker = "extra == 'embeddings'", specifier = ">=5.6" },
-    { name = "torch", marker = "sys_platform == 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "torch", marker = "sys_platform != 'linux' and extra == 'embeddings'", specifier = ">=2.6,<2.13" },
 ]
-provides-extras = ["embeddings", "mcp", "scraping", "render"]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff", specifier = ">=0.6" },
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
+name = "themis-zora"
+version = "0.0.1"
+source = { editable = "projects/zora" }
+dependencies = [
+    { name = "dspace-rest-client" },
+    { name = "themis-shared" },
 ]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dspace-rest-client", specifier = ">=0.1.20" },
+    { name = "themis-shared", editable = "libs/shared" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
 
 [[package]]
 name = "threadpoolctl"

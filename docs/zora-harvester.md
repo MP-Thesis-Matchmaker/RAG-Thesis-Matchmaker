@@ -22,13 +22,13 @@ export DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
 export ZORA_UZH_API_KEY=<your ZORA personal API token>
 
 # Smoke test — fetch 5 records
-python -m thesis_matchmaker.zora.harvest --mode full --limit 5
+themis-zora-harvest --mode full --limit 5
 
 # Full harvest (all of UZH, ~238K records, ~2 hours)
-python -m thesis_matchmaker.zora.harvest --mode full
+themis-zora-harvest --mode full
 
 # Incremental harvest (records accessioned since the watermark)
-python -m thesis_matchmaker.zora.harvest --mode incremental
+themis-zora-harvest --mode incremental
 ```
 
 `--since <ISO date>` narrows a **full** harvest to items accessioned on or after that date. It is
@@ -42,7 +42,7 @@ where `<kind>` is the publication mode (`full`/`incremental`) or the entity kind
 hours of ZORA requests are already on disk, so replay the dump instead of repeating them.
 
 ```bash
-python -m thesis_matchmaker.zora.harvest --mode full \
+themis-zora-harvest --mode full \
     --from-dump data/raw/20260101T120000Z_full.jsonl
 ```
 
@@ -50,7 +50,7 @@ python -m thesis_matchmaker.zora.harvest --mode full \
 one does, and `--from-dump` is repeatable — once per kind — for a run that died partway:
 
 ```bash
-python -m thesis_matchmaker.zora.harvest \
+themis-zora-harvest \
     --from-dump data/raw/20260101T120000Z_persons.jsonl \
     --from-dump data/raw/20260101T120100Z_orgunits.jsonl
 ```
@@ -102,19 +102,19 @@ docker compose run --rm harvester --mode incremental
 The schedules, and the two crontab lines that mirror them on a dev machine, are in
 [`deployment.md`](deployment.md) — they are not repeated here so there is one place to change them.
 
-There used to be an in-process poll loop (`zora/scheduler.py`) that decided *when* to harvest from
+There used to be an in-process poll loop (`themis_zora.scheduler`) that decided *when* to harvest from
 inside the process. That was the right answer while the only alternative was a CI cron pushing data
 into git. The cluster owns scheduling now, so it is gone, and its one non-obvious rule — "full wins
 when both are due" — is expressed declaratively by putting the two CronJobs on disjoint days.
 
 ## Docker
 
-There is no `Dockerfile` at the repository root — the image is built from `docker/zora/Dockerfile`,
+There is no `Dockerfile` at the repository root — the image is built from `projects/zora/Dockerfile`,
 and `docker-compose.yml` builds the same image for both `init-db` and `harvester`:
 
 ```bash
 # Build
-docker build -f docker/zora/Dockerfile -t zora-harvester .
+docker build -f projects/zora/Dockerfile -t zora-harvester .
 
 # One-shot harvest. DATABASE_URL is required: without it there is nowhere to write.
 docker run --rm \
@@ -139,8 +139,8 @@ docker compose run --rm harvester --mode incremental
 
 ## Output
 
-A run writes three tables (schema in `src/thesis_matchmaker/schema.sql`, all written
-only by `zora/store.py` — invariant 1): `person` and `org_unit` first, as full
+A run writes three tables (schema in `libs/shared/src/themis_shared/schema.sql`, all written
+only by `themis_zora.store` — invariant 1): `person` and `org_unit` first, as full
 snapshots, then `publication`. Skip any of them with `--no-persons`,
 `--no-org-units`, `--no-publications`.
 
@@ -180,12 +180,12 @@ Only `harvested_at` is outside it, set by the `INSERT` rather than by the harves
 - **`author_authority_map`** — maps each author to their CRIS Person UUID (or `null` for external co-authors)
 
 The incremental watermark is `harvest_state.last_accessioned`, a single row — not a file. The
-indexer reads the `publication` table with `thesis-matchmaker index --source db`.
+indexer reads the `publication` table with `themis-matcher index --source db`.
 
 ## Module Layout
 
 ```
-src/thesis_matchmaker/zora/
+projects/zora/src/themis_zora/
 ├── config.py           # constants — API endpoint, field names, raw-cache path
 ├── zora_client.py      # thin wrapper around dspace_rest_client
 ├── normalize.py        # raw DSpace item → flat dict (publications, persons, org units)
@@ -197,6 +197,6 @@ src/thesis_matchmaker/zora/
 ```
 
 The data models are **not** in this package — they live in
-`src/thesis_matchmaker/contracts/sources.py` (`ZoraPublication`, `ZoraPerson`,
+`libs/shared/src/themis_shared/contracts/sources.py` (`ZoraPublication`, `ZoraPerson`,
 `ZoraOrgUnit`, `AuthorAuthority`), so the harvester and the indexer cannot drift
 apart.

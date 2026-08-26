@@ -1,103 +1,20 @@
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "thesis-matchmaker"
-version = "0.0.1"
-description = "Thesis matchmaking assistant for UZH: recommends supervisors and open thesis positions from a student's research interests."
-readme = "README.md"
-requires-python = ">=3.11"
-license = { text = "MIT" }
-authors = [
-    { name = "Shayan Sooratgar" },
-    { name = "Nicolas Peyer" },
-    { name = "Gregory Frommelt" },
-    { name = "Ilya Kruchenetskiy" },
-]
-dependencies = [
-    "pydantic>=2.6",
-    "pydantic-settings>=2.2",
-    "python-dotenv>=1.0",
-    "httpx>=0.27",
-    "psycopg[binary]>=3.2",
-    "psycopg-pool>=3.2",
-    "dspace-rest-client>=0.1.20",
-]
-
-[project.optional-dependencies]
-# Local embedding model (BGE-M3). Kept out of the default install because it
-# pulls in torch; CI and the fake embedder do not need it.
-embeddings = [
-    # Floor is 5.6 because SentenceTransformerEmbedder calls
-    # get_embedding_dimension, which only exists in 5.x -- it lives in the
-    # sentence_transformers/sentence_transformer/ subpackage introduced by that
-    # restructure, and the 3.x/4.x name warns on every call. >=3.0 was promising
-    # support for versions whose API we do not call.
-    "sentence-transformers>=5.6",
-    # torch is a transitive dependency of sentence-transformers and would resolve
-    # perfectly well without being named here. It is listed because
-    # [tool.uv.sources] below is only honoured for OUR OWN dependencies -- a
-    # source override on a purely transitive package is silently ignored, which
-    # would leave the CUDA wheels in place while looking like it had worked.
-    #
-    # The upper bound keeps the two platforms on the SAME upstream version.
-    # PyPI and the CPU index advance independently, so an open range resolved
-    # 2.12.1 on macOS and 2.13.0+cpu on linux -- a laptop and the cluster running
-    # different torch minors is the drift this lockfile exists to prevent. Raise
-    # the ceiling deliberately, once, when both indexes carry the newer version.
-    "torch>=2.6,<2.13",
-]
-# MCP server adapter. Optional: only needed to run the tool server.
+# Workspace root. Deliberately no [project] table: there is no `themis`
+# distribution, and a virtual root cannot be installed by accident.
 #
-# Floor is 2.0 because the adapter uses the 2.x API: MCPServer, from
-# mcp.server.mcpserver, with host and port as run() arguments. 1.x had FastMCP
-# at mcp.server.fastmcp and configured the address through mcp.settings, so the
-# two majors are not interchangeable and a range spanning both would be a lie.
-mcp = [
-    "mcp>=2.0",
-]
-# Posting scraper. Its dependency set is almost disjoint from the core's -- the
-# core speaks httpx / psycopg / dspace-rest-client, this speaks requests / bs4 /
-# PyYAML / pypdf / openai -- which is why it is an extra and why the scraper gets
-# its own image rather than riding along in the harvester's. See the Images
-# section of docs/deployment.md.
-#
-# requests rather than the httpx the rest of the repository uses: the fetch layer
-# entangles it with the politeness delay and the Playwright fallback, and the 131
-# tests that make this port trustworthy all replay through it. Converting it is a
-# follow-up, not a port step. requests and PyYAML were already in uv.lock as
-# transitive dependencies before this extra existed; naming them here makes them
-# direct, which is what lets a floor or a source override apply to them at all.
-#
-# The openai floor spans three majors, and that needed checking rather than
-# assuming: >=1.30 resolves to 3.3.1 today, which is the same shape as the mcp>=1.2
-# range that silently resolved to 2.0.0 and broke the MCP adapter. It is not the
-# same problem. Verified against 3.3.1 -- every symbol scraper/llm.py imports still
-# exists (OpenAI plus the five error classes), the constructor still takes
-# api_key/timeout/max_retries/base_url, and chat.completions.create still takes
-# model and messages. The Responses API arrived in 2.x alongside that surface, not
-# in place of it. Re-check on a major bump: nothing in the test suite would notice,
-# because every LLM call is stubbed.
-scraping = [
-    "requests>=2.31",
-    "beautifulsoup4>=4.12",
-    "PyYAML>=6.0",
-    "pypdf>=4.0",
-    "openai>=1.30",
-]
-# JS-rendered pages. Separate from `scraping` because installing it downloads a
-# browser: `python -m playwright install chromium`. fetch.py imports it lazily and
-# degrades to the static fetch when it is absent, so most runs never need it.
-render = [
-    "playwright>=1.40",
-]
+# Consequence worth knowing before you type it: bare `uv sync` is no longer the
+# whole dev setup. Use `uv sync --all-packages --all-extras` for everything, or
+# `uv sync --package themis-<member>` to install one member's closure alone --
+# which replaces the contents of the single root .venv rather than making a
+# second one. A workspace has exactly one virtual environment.
+[tool.uv.workspace]
+members = ["projects/*", "libs/*"]
 
-# Test tooling is not an optional feature of the distribution -- nobody
-# installing thesis-matchmaker wants our test runner -- so it is a PEP 735
-# dependency group rather than an extra. `uv sync` installs it by default,
-# which makes that command the whole dev setup; the container image opts out
-# with --no-default-groups.
+# Test tooling is not an optional feature of any distribution -- nobody
+# installing themis-shared wants our test runner -- so it is a PEP 735
+# dependency group rather than an extra. Each member repeats pytest in its own
+# group so that `uv sync --package themis-X` yields an environment its tests can
+# actually run in; ruff is only here, because linting is a whole-repository
+# operation run once from the root.
 [dependency-groups]
 dev = [
     "pytest>=8.0",
@@ -119,6 +36,14 @@ dev = [
 # matches sys_platform == 'linux', so Apple Silicon still resolves the stock
 # universal wheel, and MPS keeps working -- MPS ships inside that wheel, there is
 # no separate build to opt into.
+#
+# Both blocks MUST live at the workspace root. uv reads index *settings* from the
+# root only and warns-and-ignores a [[tool.uv.index]] in a member, which would
+# leave the source override below pointing at an index that does not exist.
+# tool.uv.sources, by contrast, is metadata and is inherited by every member --
+# verified on uv 0.11.17: with torch named only in themis-matcher and this block
+# only here, the lock carries 2.12.1+cpu from download.pytorch.org under
+# sys_platform == 'linux', stock 2.12.1 from PyPI elsewhere, and zero nvidia-*.
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
@@ -129,26 +54,52 @@ explicit = true
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
-[project.scripts]
-thesis-matchmaker = "thesis_matchmaker.cli:main"
-thesis-matchmaker-mcp = "thesis_matchmaker.adapters.mcp_server:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-# schema.sql is package data, not a top-level file: the init-db Job runs from an
-# installed package inside the container image.
-[tool.setuptools.package-data]
-thesis_matchmaker = ["schema.sql"]
-
+# Ruff config lives here and only here. Ruff treats a pyproject.toml as a config
+# file only if it contains a [tool.ruff] table, so with none in the members it
+# walks up to this one from every file -- one configuration, no drift.
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
+src = [
+    "libs/shared/src",
+    "projects/matcher/src",
+    "projects/gateway/src",
+    "projects/zora/src",
+    "projects/scraper/src",
+    # The two test-support directories, for the same reason pytest's pythonpath
+    # lists them: fake_dso and replay_util are imported by bare name, and
+    # without this isort files them under third-party next to pytest.
+    "projects/zora/tests",
+    "projects/scraper/tests",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.isort]
+# Naming the packages is sturdier than relying on src alone to infer them.
+known-first-party = [
+    "themis_shared",
+    "themis_matcher",
+    "themis_gateway",
+    "themis_zora",
+    "themis_scraper",
+]
+
+# Pytest config lives here and only here, which fixes rootdir at the repository
+# root. Three things depend on that: the root conftest.py is loaded for every
+# member's tests, `sources_path = "data/samples"` and
+# `data_root = Path("data/scraper")` are CWD-relative and keep resolving, and
+# `pytest projects/scraper/tests` works from the root. Always invoke pytest from
+# the repository root -- `cd projects/zora && pytest` sees none of this.
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = [
+    "tests/integration",
+    "libs/shared/tests",
+    "projects/matcher/tests",
+    "projects/gateway/tests",
+    "projects/zora/tests",
+    "projects/scraper/tests",
+]
 addopts = "-q"
+pythonpath = ["projects/zora/tests", "projects/scraper/tests"]

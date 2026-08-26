@@ -14,9 +14,17 @@
 
 What is here describes the **ZORA harvester** and the **schema step**.
 
+> [!NOTE]
+> These files still carry the pre-split names — `app.kubernetes.io/name: thesis-matchmaker`, the
+> `thesis-matchmaker-db` Secret, and a single `thesis-matchmaker` image. That is **deliberate,
+> not an oversight**: renaming the Secret means whoever created it has to recreate it, and these
+> manifests are being replaced wholesale anyway (see below), so the identifiers get renamed once,
+> as a set, rather than twice. Note also that one image can no longer serve both roles — since
+> the workspace split, `init-db` belongs to `themis-shared` and the harvester to `themis-zora`.
+
 | Manifest | Kind | What it does |
 |---|---|---|
-| `init-db-job.yaml` | `Job` | `thesis-matchmaker init-db` — applies `schema.sql`. Run before a rollout. |
+| `init-db-job.yaml` | `Job` | `themis-init-db` — applies `schema.sql`. Run before a rollout. |
 | `zora-harvest-full-cronjob.yaml` | `CronJob` | `--mode full`, Mondays 01:00 UTC. Authoritative snapshot; prunes withdrawn items. |
 | `zora-harvest-incremental-cronjob.yaml` | `CronJob` | `--mode incremental`, the other six days at 01:00 UTC. Upserts only, deletes nothing. |
 
@@ -34,19 +42,19 @@ extras they need, so a manifest would have referenced an image whose entrypoint
 could not import its own dependencies:
 
 ```console
-$ docker run --rm --entrypoint thesis-matchmaker-mcp <harvester-image> --stdio
+$ docker run --rm --entrypoint themis-gateway-mcp <harvester-image> --stdio
     from mcp.server.fastmcp import FastMCP
 ModuleNotFoundError: No module named 'mcp'
 ```
 
-**`docker/indexer/` and `docker/serving/` now exist**, so that blocker is gone.
+**`projects/matcher/` and `projects/gateway/` now exist**, so that blocker is gone.
 What remains is the format problem above, plus two quota raises that have to be
 granted before either could run: the namespace ceiling is `limits.memory: 4Gi` and
 bge-m3 does not leave room for two pods holding it, and the Harbor project defaults
 to 10 GB for all our images together.
 
 The posting scraper is a third case, and a smaller one now: the code is in this
-repository and `docker/scraper/Dockerfile` builds it, so what it lacks is only a
+repository and `projects/scraper/Dockerfile` builds it, so what it lacks is only a
 manifest. It wants the same treatment as the harvester — a CronJob, plus a PVC for
 `data/scraper/cache/` so a scheduled run does not re-fetch 103 pages it already has,
 plus one for `data/scraper/var/` (`state.json` is the only record of which sources
