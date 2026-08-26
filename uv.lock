@@ -2757,6 +2757,7 @@ version = "0.0.1"
 source = { editable = "projects/zora" }
 dependencies = [
     { name = "dspace-rest-client" },
+    { name = "httpx" },
     { name = "themis-shared" },
 ]
 
@@ -2768,6 +2769,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dspace-rest-client", specifier = ">=0.1.20" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "themis-shared", editable = "libs/shared" },
 ]
 

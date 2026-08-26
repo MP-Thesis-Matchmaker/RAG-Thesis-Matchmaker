@@ -19,6 +19,10 @@ dependencies = [
     "themis-shared",
     # The DSpace-CRIS client, used by nothing else in the workspace.
     "dspace-rest-client>=0.1.20",
+    # One POST at the end of a successful harvest, telling the matcher to index
+    # what just landed. That call is what replaces the "index after each harvest"
+    # CronJob: a schedule guesses when a harvest finished, this knows.
+    "httpx>=0.27",
 ]
 # No extras. zora/config.py is an independent settings module (ZORA_-prefixed)
 # that does not import themis_shared.config, and the harvester needs no optional

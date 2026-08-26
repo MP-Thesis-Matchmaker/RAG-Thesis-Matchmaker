@@ -66,7 +66,16 @@ from collections.abc import Iterator
 from themis_shared import db, schema
 from themis_shared.config import get_settings
 
-from . import config, entities, mapping, normalize, raw_dump, store, zora_client
+from . import (
+    config,
+    entities,
+    index_trigger,
+    mapping,
+    normalize,
+    raw_dump,
+    store,
+    zora_client,
+)
 from .raw_dump import read_raw_dump, write_raw_dump
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -420,6 +429,13 @@ def main() -> None:
             org_units=org_units,
             publications=publications,
         )
+        if exit_code == 0 and publications:
+            # Only on success, and only when publications were actually written:
+            # asking the matcher to re-read a table this run did not touch is
+            # work for nothing. This is what replaces the "index after each
+            # harvest" CronJob that was never written -- a schedule can only
+            # guess when a harvest finished, and this knows.
+            index_trigger.trigger_index(get_settings())
     except (RuntimeError, *db.DB_ERRORS) as exc:
         # Expected failure modes (auth, config, a broken tree walk, an unreachable
         # or out-of-date database) get a clean one-line message in the Actions log
