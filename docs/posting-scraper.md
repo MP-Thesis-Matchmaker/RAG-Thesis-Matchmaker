@@ -1,8 +1,8 @@
 # Posting scraper — operator guide
 
-Runbook for `python -m thesis_matchmaker.scraper.main`. What the package *is* and why it
+Runbook for `themis-scraper`. What the package *is* and why it
 is shaped that way lives in
-[`src/thesis_matchmaker/scraper/README.md`](../src/thesis_matchmaker/scraper/README.md);
+[`projects/scraper/README.md`](../projects/scraper/README.md);
 this page is about running it.
 
 Companion to [`zora-harvester.md`](zora-harvester.md). The two producers differ in one way
@@ -13,10 +13,10 @@ what looks like friction below is that difference.
 ## Before the first run
 
 ```bash
-uv sync --extra scraping --extra render  # render: 3 sources are JS-only (see below)
-export SCRAPER_CONTACT='thesis-matchmaker@example.uzh.ch'
+uv sync --package themis-scraper --extra scraping --extra render  # render: 3 JS-only sources
+export SCRAPER_CONTACT='themis@example.uzh.ch'
 export DATABASE_URL='postgresql://matchmaker:matchmaker@localhost:5432/matchmaker'
-thesis-matchmaker init-db                # the posting/* tables have to exist
+themis-init-db                # the posting/* tables have to exist
 ```
 
 `SCRAPER_CONTACT` is **required and has no default**. It is advertised in the `User-Agent`
@@ -29,13 +29,13 @@ The `render` extra additionally wants `uv run python -m playwright install chrom
 their listings JS-only, `iff--3`'s profile pages render client-side — so a full run
 without it permanently flags those three. `fetch.py` still imports playwright lazily and
 degrades to the static fetch when it is absent, so every *other* source works either way.
-The container image bakes the browser in (`docker/scraper/Dockerfile`).
+The container image bakes the browser in (`projects/scraper/Dockerfile`).
 
 ## The two stages, and why they are separate
 
 ```bash
-python -m thesis_matchmaker.scraper.main fetch --resume   # talks to uzh.ch
-python -m thesis_matchmaker.scraper.main run --resume     # reads only the cache
+themis-scraper fetch --resume   # talks to uzh.ch
+themis-scraper run --resume     # reads only the cache
 ```
 
 `fetch` is the only stage that makes network requests. It is sequential, waits
@@ -54,8 +54,8 @@ subset. `--only` takes its ids as one space-separated list, not as a repeated fl
 ## Day to day
 
 ```bash
-python -m thesis_matchmaker.scraper.main status             # per-source lifecycle table
-python -m thesis_matchmaker.scraper.main check <source_id>  # one source, verbose
+themis-scraper status             # per-source lifecycle table
+themis-scraper check <source_id>  # one source, verbose
 ```
 
 `run` exits **non-zero when any source is flagged** — that is the alarm, not a failure of
@@ -78,7 +78,7 @@ a source — and a run covering one source cannot touch the other 102.
 ## Adding a source
 
 ```bash
-python -m thesis_matchmaker.scraper.main onboard --next
+themis-scraper onboard --next
 # or: onboard <source_id> --page-type topics --hint "the table under 'Open theses'"
 ```
 
@@ -90,7 +90,7 @@ so onboarding a source is also what gives it a regression test.
 Afterwards regenerate the committed baseline and commit both:
 
 ```bash
-uv run python tests/scraper/regen_golden.py
+uv run python projects/scraper/tests/regen_golden.py
 uv run pytest tests/scraper
 ```
 
@@ -112,7 +112,7 @@ normal path.
 
 ## In the cluster
 
-`docker/scraper/Dockerfile`; `ENTRYPOINT` is the module and `CMD` is `run --resume`, so a
+`projects/scraper/Dockerfile`; `ENTRYPOINT` is the module and `CMD` is `run --resume`, so a
 CronJob overriding `args` chooses the stage. Locally:
 
 ```bash

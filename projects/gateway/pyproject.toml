@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "themis-gateway"
+version = "0.0.1"
+description = "THEMIS front door: the MCP tool server over the matching pipeline."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Shayan Sooratgar" },
+    { name = "Nicolas Peyer" },
+    { name = "Gregory Frommelt" },
+    { name = "Ilya Kruchenetskiy" },
+]
+dependencies = [
+    # service.py and mcp_server.py both import themis_shared.config directly, so
+    # this is a real edge rather than something inherited through the matcher.
+    "themis-shared",
+    # The seam. Every gateway-to-matcher call funnels through the two functions in
+    # service.py, and service.py is the only module in this distribution that
+    # imports themis_matcher at all. When the matcher grows HTTP endpoints, that
+    # file and this line are the entire blast radius.
+    "themis-matcher",
+]
+
+[project.optional-dependencies]
+# Not a copy of the matcher's extra. Re-exporting keeps torch a direct dependency
+# of exactly one distribution, so the pytorch-cpu override has one place to apply
+# and the <2.13 ceiling one place to be raised. A duplicated pin here would be a
+# second thing to keep in step, and could disagree silently.
+#
+# The gateway needs it at all because it embeds the incoming query in-process.
+# That is what the follow-up HTTP split removes; until then this is not cruft.
+embeddings = ["themis-matcher[embeddings]"]
+# Floor is 2.0 because the adapter uses the 2.x API: MCPServer, from
+# mcp.server.mcpserver, with host and port as run() arguments. 1.x had FastMCP
+# at mcp.server.fastmcp and configured the address through mcp.settings, so the
+# two majors are not interchangeable and a range spanning both would be a lie.
+mcp = ["mcp>=2.0"]
+
+[project.scripts]
+themis-gateway-mcp = "themis_gateway.mcp_server:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+themis-shared = { workspace = true }
+themis-matcher = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]

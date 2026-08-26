@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "themis-matcher"
+version = "0.0.1"
+description = "THEMIS matching engine: indexing, retrieval, query parsing and answer synthesis."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Shayan Sooratgar" },
+    { name = "Nicolas Peyer" },
+    { name = "Gregory Frommelt" },
+    { name = "Ilya Kruchenetskiy" },
+]
+dependencies = [
+    "themis-shared",
+    # httpx is the matcher's alone. themis_matcher.llm is the only httpx client in
+    # the workspace, reached from parsing/openai_compat.py and synthesis/llm.py.
+    # The scraper's llm.py is a separate, openai-based module and is not this.
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# Local embedding model (BGE-M3). Kept out of the default install because it
+# pulls in torch; CI and the fake embedder do not need it.
+embeddings = [
+    # Floor is 5.6 because SentenceTransformerEmbedder calls
+    # get_embedding_dimension, which only exists in 5.x -- it lives in the
+    # sentence_transformers/sentence_transformer/ subpackage introduced by that
+    # restructure, and the 3.x/4.x name warns on every call. >=3.0 was promising
+    # support for versions whose API we do not call.
+    "sentence-transformers>=5.6",
+    # torch is a transitive dependency of sentence-transformers and would resolve
+    # perfectly well without being named here. It is listed because
+    # [tool.uv.sources] is only honoured for a distribution's OWN dependencies --
+    # a source override on a purely transitive package is silently ignored, which
+    # would leave the CUDA wheels in place while looking like it had worked.
+    #
+    # This is now the ONLY place in the workspace where torch is direct, which is
+    # the point: the root's pytorch-cpu override has exactly one thing to bite,
+    # and the ceiling below has exactly one place to be raised. themis-gateway
+    # re-exports this extra rather than restating the pin.
+    #
+    # The upper bound keeps the two platforms on the SAME upstream version.
+    # PyPI and the CPU index advance independently, so an open range resolved
+    # 2.12.1 on macOS and 2.13.0+cpu on linux -- a laptop and the cluster running
+    # different torch minors is the drift this lockfile exists to prevent. Raise
+    # the ceiling deliberately, once, when both indexes carry the newer version.
+    "torch>=2.6,<2.13",
+]
+
+[project.scripts]
+# index | match | repl, plus init-db delegated to themis_shared.initdb so the
+# familiar spelling keeps working for people.
+themis-matcher = "themis_matcher.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+themis-shared = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]

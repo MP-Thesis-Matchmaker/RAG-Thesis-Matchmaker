@@ -12,7 +12,8 @@ THEMIS searches UZH publications (ZORA) and scraped thesis postings, ranks the r
 them, and answers with the evidence for each suggestion.
 
 This repository is the matchmaking core — ingestion, indexing, retrieval, synthesis, and the MCP
-adapter over them; the Python package is `thesis_matchmaker`. Start at
+adapter over them, built as a five-member `uv` workspace: `themis-shared`, `themis-matcher`,
+`themis-gateway`, `themis-zora`, `themis-scraper`. Start at
 [Quickstart](#quickstart). THEMIS is orientation, not endorsement, and a graded master's project
 rather than an official University of Zurich service.
 
@@ -38,18 +39,18 @@ actually exists.*
 
 1. **Ingestion.** ZORA harvesting and departmental web scraping produce
    publication and thesis-posting records, validated against the shared pydantic
-   contracts in `src/thesis_matchmaker/contracts`. Harvesting is live and writes
+   contracts in `libs/shared/src/themis_shared/contracts`. Harvesting is live and writes
    rows into the `publication` table —
-   [`python -m thesis_matchmaker.zora.harvest`](docs/zora-harvester.md), roughly
-   22.5k records for the faculty scope currently configured. Scraping is live
-   too — [`python -m thesis_matchmaker.scraper.main`](src/thesis_matchmaker/scraper/README.md)
+   [`themis-zora-harvest`](docs/zora-harvester.md) — 214,756
+   publications as of 2026-08-25, of which 53,545 carry a UZH author. Scraping is live
+   too — [`themis-scraper`](projects/scraper/README.md)
    reads 103 curated departmental pages and writes the `posting` table, so
    thesis postings are real rather than the synthetic `theses.jsonl` sample that
    `data/samples/` still carries for offline runs.
 2. **Indexing.** Records are embedded (BGE-M3, swappable; a deterministic
    `hash-fake` stand-in keeps tests and CI offline) and upserted into a
    Postgres table with a pgvector column, incrementally via a content-hash
-   diff. Create the schema first with `thesis-matchmaker init-db`.
+   diff. Create the schema first with `themis-init-db`.
 3. **Query.** Free text is parsed into topics, degree level, and department,
    by a rule-based parser offline or any OpenAI-compatible LLM when one is
    configured. The query is embedded with the same model, matched against
@@ -65,24 +66,31 @@ actually exists.*
 Needs [uv](https://docs.astral.sh/uv/) and Python 3.11+.
 
 ```
-uv sync                           # installs exactly what uv.lock pins, dev tooling included
+uv sync --all-packages            # installs exactly what uv.lock pins, dev tooling included
 cp .env.example .env              # optional, everything runs offline by default
 docker compose up -d postgres     # Postgres + pgvector on localhost:5432
-uv run thesis-matchmaker init-db  # creates the schema
-uv run thesis-matchmaker index    # indexes the 50 checked-in samples
-uv run thesis-matchmaker match "I want a master's thesis in NLP on RAG"
+uv run themis-init-db  # creates the schema
+uv run themis-matcher index    # indexes the 50 checked-in samples
+uv run themis-matcher match "I want a master's thesis in NLP on RAG"
 ```
 
 **`--source` decides what you are searching.** It defaults to `SOURCES_PATH`,
 which is `data/samples` — right for a fresh clone, but only 50 documents. Once
 the harvester has run, the corpus is in the `publication` table and wants
-`thesis-matchmaker index --source db`. Nothing warns you about the difference.
+`themis-matcher index --source db`. Nothing warns you about the difference.
 
-Optional extras: `uv sync --extra embeddings` adds the real embedding model
-(pulls in torch), `uv sync --extra mcp` adds the MCP server. Ask for both in one
-command if you want both — unlike `pip install`, `uv sync` makes the environment
-*match* what you named, so it uninstalls whatever you left out. All
-configuration is documented in
+**A bare `uv sync` is an error here.** The workspace root is virtual — it has no `[project]`
+table — so there is nothing for it to install. Pass `--all-packages`, or `--package themis-<x>`
+for one member.
+
+Optional extras belong to the member that owns them:
+`--package themis-matcher --extra embeddings` adds the real embedding model (pulls in torch),
+`--package themis-gateway --extra mcp` adds the MCP server, and
+`--package themis-scraper --extra scraping` is what the scraper needs to run at all
+(`--extra render` adds the Playwright fallback for pages that need a browser).
+`uv sync --all-packages --all-extras` is the everything option. Note there is one `.venv`, at
+the root: unlike `pip install`, `uv sync` makes it *match* what you named, so `--package X`
+replaces its contents rather than adding to them. All configuration is documented in
 `.env.example`; to use an LLM, point `LLM_BASE_URL` at any OpenAI-compatible
 endpoint (LibreChat in production, or a local Ollama during development).
 
@@ -91,56 +99,95 @@ Real example output is in [docs/example-run.md](docs/example-run.md).
 Other entry points:
 
 ```
-thesis-matchmaker-mcp                                    # MCP server, HTTP on :8000/mcp
-python -m thesis_matchmaker.zora.harvest --mode full     # ZORA harvest
+themis-gateway-mcp                     # MCP server, HTTP on :8000/mcp
+themis-zora-harvest --mode full        # ZORA harvest
+themis-scraper fetch --resume          # scrape postings (needs the scraping extra)
+themis-matcher repl                    # interactive query loop
+
+# operator scripts, run as files rather than modules
+python projects/zora/scripts/zora_inspect_fields.py
+python projects/zora/scripts/zora_authority_audit.py
+python projects/zora/scripts/backfill_orcid_authorities.py
 ```
 
 ## Layout
 
-Everything lives under `src/thesis_matchmaker/`. Each package has its own README
-with its public API, data flow, configuration, and known gaps.
+One library in `libs/`, four deployables in `projects/`, one distribution each. Every member has
+its own README with its public API, data flow, configuration, and known gaps.
 
-| Package | What it does |
+| Member | Distribution | What it does |
+|---|---|---|
+| [`libs/shared/`](libs/shared/README.md) | `themis-shared` | Settings, the connection pool, the schema and `themis-init-db`, and [`contracts/`](libs/shared/src/themis_shared/contracts/README.md) — the Pydantic models every other member speaks. Imports nothing of ours. |
+| [`projects/zora/`](projects/zora/README.md) | `themis-zora` | Harvests ZORA via the DSpace REST API. Owns all writes to `publication`, `person`, `org_unit`. |
+| [`projects/scraper/`](projects/scraper/README.md) | `themis-scraper` | Scrapes thesis postings, profiles and application procedures from 103 UZH pages. Owns all writes to `posting`. |
+| [`projects/matcher/`](projects/matcher/README.md) | `themis-matcher` | The engine — see its five sub-packages below. |
+| [`projects/gateway/`](projects/gateway/README.md) | `themis-gateway` | MCP server. A REST API is planned, not built. |
+
+Inside `themis-matcher`:
+
+| Sub-package | What it does |
 |---|---|
-| [`adapters/`](src/thesis_matchmaker/adapters/README.md) | MCP server. A REST API is planned, not built. |
-| [`contracts/`](src/thesis_matchmaker/contracts/README.md) | The Pydantic models every other package speaks. Imports nothing of ours. |
-| [`zora/`](src/thesis_matchmaker/zora/README.md) | Harvests ZORA via the DSpace REST API. Owns all writes to `publication`. |
-| [`scraper/`](src/thesis_matchmaker/scraper/README.md) | Scrapes thesis postings, profiles and application procedures from 103 UZH pages. Owns all writes to `posting`. |
-| [`indexing/`](src/thesis_matchmaker/indexing/README.md) | JSONL → `Document` → content-hash diff → Postgres/pgvector. No chunking. |
-| [`retrieval/`](src/thesis_matchmaker/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
-| [`parsing/`](src/thesis_matchmaker/parsing/README.md) | Free text → topics, degree level, department. |
-| [`synthesis/`](src/thesis_matchmaker/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
-| [`pipeline/`](src/thesis_matchmaker/pipeline/README.md) | The application-service functions the adapters call. |
+| [`indexing/`](projects/matcher/src/themis_matcher/indexing/README.md) | JSONL → `Document` → content-hash diff → Postgres/pgvector. No chunking. |
+| [`retrieval/`](projects/matcher/src/themis_matcher/retrieval/README.md) | Filtered semantic search, UZH-author pre-filter, grouping per person. |
+| [`parsing/`](projects/matcher/src/themis_matcher/parsing/README.md) | Free text → topics, degree level, department. |
+| [`synthesis/`](projects/matcher/src/themis_matcher/synthesis/README.md) | Grounded prose answers, with an offline template fallback. |
+| [`pipeline/`](projects/matcher/src/themis_matcher/pipeline/README.md) | The application-service functions the gateway calls. |
 
-Plus `cli.py`, `config.py` (pydantic-settings), and `llm.py` (OpenAI-compatible
-client).
+Plus `cli.py` and `llm.py` (the OpenAI-compatible client) in the matcher. `themis-zora` and
+`themis-scraper` each carry their own `config.py`, and the scraper its own `llm.py` — a separate,
+`openai`-based module, not the matcher's.
 
-One idiom runs through `parsing`, `indexing`, `retrieval`, and `synthesis`:
+Three things stay at the repository root on purpose: `data/` (the config defaults that reach it are
+CWD-relative), `conftest.py` (the `dsn` fixture and the guard that refuses to TRUNCATE a database
+whose name does not end in `_test`), and `tests/integration/`, whose four tests assert that what
+zora and scraper write into shared's schema is what the matcher reads back — a contract belonging
+to no single member. `docker/` holds no Dockerfile; the four live beside the code they build, and
+what is left there is local-dev Postgres setup.
+
+One idiom runs through the matcher's `parsing`, `indexing`, `retrieval`, and `synthesis`:
 `base.py` defines a `Protocol`, sibling modules implement it, and `__init__.py`
 exposes a `build_*(settings)` factory that picks one. Each also ships a real
 offline implementation — `HashEmbedder`, `FakeRetriever`, `RuleBasedExtractor`,
-`TemplateSynthesizer` — which is why the whole pipeline runs in CI with no model
-download and no network.
+`TemplateSynthesizer`, `InMemoryVectorStore` — which is why the whole pipeline runs in CI with no
+model download and no network.
 
 ## Development
 
 ```
+uv sync --all-packages --all-extras
 uv run ruff check . && uv run ruff format --check .
 uv run pytest
 ```
 
-CI (`ci.yml`) runs both on every pull request, installing with `uv sync --locked`
-so it gets the versions in `uv.lock` and not whatever has been released since —
-the `dev` group only, so the `mcp` and `embeddings` code paths are not exercised
-there. It is the only workflow: container images are built by hand until the UZH
-Harbor registry is wired up, and harvesting runs in the cluster, never in CI. See
-[docs/deployment.md](docs/deployment.md).
+**Run pytest from the repository root.** `testpaths`, `pythonpath` and the rootdir live only in
+the root `pyproject.toml`, so `cd projects/zora && pytest` sees none of them. To run one member's
+tests, name the directory instead: `uv run pytest projects/scraper/tests`.
+
+481 tests across 33 files. 48 of them need Postgres and skip when `DATABASE_URL` is unset; point it
+at a database whose name ends in `_test` (`docker compose up -d postgres` creates
+`matchmaker_test` for exactly this), because the fixtures TRUNCATE between tests and the guard in
+`conftest.py` will refuse anything else.
+
+CI is one workflow file, `ci.yml`, with five jobs, all installing from `uv.lock` so they get the
+pinned versions and not whatever has been released since:
+
+| Job | What it proves |
+|---|---|
+| `offline` | the whole pipeline runs with no model download, no database, no network |
+| `scraper` | `--package themis-scraper --extra scraping` — the scraper works, and needs nothing from the matcher |
+| `pgvector` | a real pgvector service plus `themis-init-db`; the DB-gated tests actually run |
+| `boundaries` | each member installed **alone**, so a cross-member import fails loudly instead of passing because everything happened to be installed |
+| `wheels` | `schema.sql` ships as package data — it is resolved by name at runtime, so a missing declaration would fail only inside a container |
+
+`mcp` and `embeddings` are still never installed in CI. Container images are built by hand from
+`projects/<member>/Dockerfile` until the UZH Harbor registry is wired up, and harvesting runs in
+the cluster, never in CI. See [docs/deployment.md](docs/deployment.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 
 Two known inconsistencies worth fixing at some point: the MIT badge and
-`license = { text = "MIT" }` have no `LICENSE` file behind them, and
-`docker/zora/Dockerfile` builds on Python 3.12 while the badge and
+`license = { text = "MIT" }` (now in all five member manifests) have no `LICENSE` file behind
+them, and all four `projects/*/Dockerfile` build on Python 3.12 while the badge and every
 `requires-python` say 3.11.
 
 ## Contributors

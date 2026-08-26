@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "themis-shared"
+version = "0.0.1"
+description = "THEMIS shared foundation: data contracts, settings, database access and the schema."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Shayan Sooratgar" },
+    { name = "Nicolas Peyer" },
+    { name = "Gregory Frommelt" },
+    { name = "Ilya Kruchenetskiy" },
+]
+dependencies = [
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    # A hard dependency of pydantic-settings, but named here because config.py's
+    # `env_file = ".env"` is what makes it load-bearing rather than incidental.
+    "python-dotenv>=1.0",
+    "psycopg[binary]>=3.2",
+    "psycopg-pool>=3.2",
+]
+
+# init-db, and nothing else. Deliberately not part of themis-matcher: the
+# cluster's init-db Job should run from an image whose closure is pydantic plus
+# psycopg, not one that also carries httpx, sentence-transformers and torch.
+[project.scripts]
+themis-init-db = "themis_shared.initdb:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# schema.sql is package data, not a top-level file: the init-db Job runs from an
+# installed package inside the container image, and themis_shared.schema resolves
+# it with importlib.resources against this exact package name. Omitting this
+# passes every test -- an editable install resolves through the source tree -- and
+# fails only inside a built wheel. Only the wheel assertion in CI catches it.
+[tool.setuptools.package-data]
+themis_shared = ["schema.sql"]

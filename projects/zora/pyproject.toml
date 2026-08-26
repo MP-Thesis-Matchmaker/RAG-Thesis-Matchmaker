@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "themis-zora"
+version = "0.0.1"
+description = "THEMIS ZORA harvester: mirrors UZH publications, persons and org units into Postgres."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Shayan Sooratgar" },
+    { name = "Nicolas Peyer" },
+    { name = "Gregory Frommelt" },
+    { name = "Ilya Kruchenetskiy" },
+]
+dependencies = [
+    "themis-shared",
+    # The DSpace-CRIS client, used by nothing else in the workspace.
+    "dspace-rest-client>=0.1.20",
+]
+# No extras. zora/config.py is an independent settings module (ZORA_-prefixed)
+# that does not import themis_shared.config, and the harvester needs no optional
+# dependency at all.
+
+[project.scripts]
+themis-zora-harvest = "themis_zora.harvest:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.sources]
+themis-shared = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]

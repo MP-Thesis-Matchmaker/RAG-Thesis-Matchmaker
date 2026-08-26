@@ -12,6 +12,6 @@
 
 These files stand in for the output of the ingestion components. Both producers now exist —
 `zora/` writes `publication`, `scraper/` writes `posting` — so the purpose of these files is
-narrower than it was: they are what lets `pytest` and a bare `thesis-matchmaker index` run with
+narrower than it was: they are what lets `pytest` and a bare `themis-matcher index` run with
 no database and no network. The indexer reads them via the `SOURCES_PATH` setting, which defaults
 to this directory.

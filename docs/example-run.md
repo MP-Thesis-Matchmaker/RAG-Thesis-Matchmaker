@@ -11,12 +11,12 @@ run exposed a defect the defect is recorded rather than tidied away — see
 ## Reproducing it
 
 Both examples run over the checked-in samples in `data/samples` — 50 documents (30 real ZORA
-publications, 20 synthetic thesis postings, since the scraper is not built yet):
+publications, 20 synthetic thesis postings, kept as the offline fixture set):
 
 ```bash
 docker compose up -d postgres
-thesis-matchmaker init-db
-EMBEDDING_MODEL=hash-fake thesis-matchmaker index --source data/samples --rebuild
+themis-init-db
+EMBEDDING_MODEL=hash-fake themis-matcher index --source data/samples --rebuild
 ```
 
 **Example 1 needs no model and no API key** — with `LLM_BASE_URL` unset, both parsing and synthesis
@@ -49,7 +49,7 @@ Two caveats that shape everything on this page:
 **Query:** `retrieval-augmented generation and misinformation detection`
 
 ```
-$ EMBEDDING_MODEL=hash-fake thesis-matchmaker match \
+$ EMBEDDING_MODEL=hash-fake themis-matcher match \
     "retrieval-augmented generation and misinformation detection" --top-k 5
 
 query: retrieval-augmented generation and misinformation detection
@@ -115,7 +115,7 @@ Only the synthesis step changes. The retrieval detail block is byte-identical to
 omitted here.
 
 ```
-$ thesis-matchmaker match \
+$ themis-matcher match \
     "retrieval-augmented generation and misinformation detection" --top-k 5
 
 query: retrieval-augmented generation and misinformation detection
@@ -147,7 +147,7 @@ It also overstates two things. See [below](#what-these-runs-revealed).
 Same setup, a query the samples cannot serve.
 
 ```
-$ thesis-matchmaker match \
+$ themis-matcher match \
     "I want a master's thesis on multilingual embeddings and machine translation" --top-k 3
 
 query: I want a master's thesis on multilingual embeddings and machine translation
@@ -191,7 +191,7 @@ detail block but misleading inside the LLM's candidate list.
 **2. `has_open_position` gets read as "accepting students".** The flag means "this person has a
 thesis posting in our scraped data". The model rendered it as "currently open to new students"
 (Example 2, Example 3) and "not currently accepting new students" (Example 2), which the data does
-not support. Since the scraper is not built, that flag currently only ever comes from the synthetic
+not support. In this sample run that flag only ever comes from the synthetic
 sample postings. *Since fixed*: the field is now `posting_count`, an int, and the CLI, the
 template synthesiser and the LLM candidate list emit a posting clause only when it is
 non-zero, so absent data reaches the reader as absent rather than as a negative. The
