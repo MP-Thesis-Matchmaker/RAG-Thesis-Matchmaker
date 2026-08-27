@@ -165,10 +165,21 @@ no argument is the fast lint/format/test pass.
 import fails loudly), and `wheels` (proves `schema.sql` ships as package data — it is resolved by
 name at runtime, so a missing declaration would fail only inside a container). `mcp` and
 `embeddings` are still never installed in CI.
-Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
-with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
-are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in
-CI, and **never committing data back to the repo**.
+
+**Two CI systems, two remotes, no overlap (2026-08-27).** `origin` is GitHub and runs `ci.yml`,
+which never builds an image. `gitlab` (`git@gitlab.uzh.ch:askuzh/themis.git`) runs
+`.gitlab-ci.yml`, which builds all four images and never runs a test — green on one says nothing
+about the other. It reads the tag from `projects/<role>/pyproject.toml`, so bumping `version`
+there is the whole release procedure; every branch builds, only the default branch pushes
+`themis-<role>:<version>-test` and `:latest-test` to
+`registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor`. Needs the runner to support
+docker-in-docker; a buildah fallback sits commented in the file, and the root `.dockerignore`
+exists only for that path — under BuildKit the per-Dockerfile
+`projects/<role>/Dockerfile.dockerignore` wins and the root file is never read.
+
+Deployment target is a **UZH Kubernetes cluster** pulling from that registry, with a
+**Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Harvesting runs
+as a cluster job — never in CI, and **never committing data back to the repo**.
 
 Keep this table current as modules land; put the detail in the member README, not here.
 

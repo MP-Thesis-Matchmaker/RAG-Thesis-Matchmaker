@@ -1,0 +1,262 @@
+# Build the four deployable images and push them to the ZI Harbor registry.
+#
+# This runs on gitlab.uzh.ch, NOT on GitHub. The two remotes carry the same tree
+# but different automation: .github/workflows/ci.yml is the correctness gate
+# (lint, format, tests, boundaries, wheels) and never builds an image; this file
+# builds images and never runs a test. Neither is a substitute for the other, and
+# a green pipeline here says nothing about whether the code works -- run
+# scripts/check.sh --ci for that.
+#
+# The registry is reachable from gitlab.uzh.ch runners; see docs/deployment.md.
+# GHCR is not policy-compliant for this cluster and a workflow pointing there was
+# deleted once already -- do not reintroduce one.
+
+stages:
+  - prepare
+  - build
+
+variables:
+  HARBOR_REGISTRY: registry.cs.zi.uzh.ch
+  HARBOR_PROJECT: uzh-dsi-askuzh-masterthesis-supervisor
+  # The channel suffix, and the only thing separating these artefacts from a
+  # future production set. Everything published by this file is test-channel:
+  # <version>-test and latest-test. Production tagging is a separate decision and
+  # should arrive as a separate set of rules, not by editing this value.
+  IMAGE_CHANNEL: test
+
+# Standard branch/MR de-duplication: one pipeline per change, not two. A merge
+# request pipeline leaves CI_COMMIT_BRANCH unset, which is also what makes the
+# push guard below correctly refuse to publish from an MR.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+# ---------------------------------------------------------------------------
+# prepare
+# ---------------------------------------------------------------------------
+
+# The image tag is derived from pyproject.toml, never hardcoded here. Bumping
+# `version` in a member's manifest is therefore the whole release procedure --
+# there is no second place to remember. The repository name comes from the same
+# file (project.name, e.g. themis-zora), so the Harbor layout cannot drift from
+# the distribution names either.
+#
+# tomllib rather than sed: a regex over a TOML file is a guess that works until
+# someone adds a `version` key to another table. This is a real parse, it fails
+# loudly on a missing or empty version, and it prints all four in one place so
+# the pipeline log answers "what did this publish?" without opening Harbor.
+versions:
+  stage: prepare
+  image: python:3.12-slim
+  interruptible: true
+  script:
+    - |
+      python3 - <<'PY'
+      import pathlib, re, sys, tomllib
+
+      PROJECTS = ["zora", "scraper", "matcher", "gateway"]
+
+      # A Docker tag is [a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}. A PEP 440 version is
+      # not a subset of that: a local identifier such as 1.0.0+dirty is perfectly
+      # legal in pyproject.toml and illegal as a tag. Checked here, in the job
+      # that costs ten seconds, rather than discovered at `docker push` after a
+      # forty-minute scraper build. The channel suffix is appended later, so the
+      # budget is 128 minus its length.
+      TAG = re.compile(r"[a-zA-Z0-9_][a-zA-Z0-9._-]{0,110}$")
+
+      out = pathlib.Path("versions")
+      out.mkdir(exist_ok=True)
+
+      problems = []
+      for project in PROJECTS:
+          manifest = pathlib.Path("projects") / project / "pyproject.toml"
+          data = tomllib.loads(manifest.read_text(encoding="utf-8"))
+          name = data["project"]["name"]
+          version = str(data["project"].get("version", "")).strip()
+          if not version:
+              problems.append(f"{manifest}: no [project].version")
+              continue
+          if not TAG.fullmatch(version):
+              problems.append(f"{manifest}: version {version!r} is not a usable Docker tag")
+              continue
+          (out / f"{project}.version").write_text(version, encoding="utf-8")
+          (out / f"{project}.repository").write_text(name, encoding="utf-8")
+          print(f"{project:<9} {name:<16} {version}")
+
+      if problems:
+          sys.exit("\n".join(problems))
+      PY
+  artifacts:
+    paths:
+      - versions/
+    expire_in: 1 day
+
+# ---------------------------------------------------------------------------
+# build
+# ---------------------------------------------------------------------------
+
+# One job per deployable role, fanned out from a single definition. The four
+# differ only in which Dockerfile they point at -- everything else, including
+# which extras get installed, is already decided inside the Dockerfile.
+#
+# Runner requirement: this needs a runner that can run docker-in-docker, which
+# means a privileged runner. If the first run fails with "Cannot connect to the
+# Docker daemon at tcp://docker:2376", this instance does not have one -- see the
+# unprivileged fallback at the bottom of this file.
+build:
+  stage: build
+  # Pinned to the major only, matching the 29.x that developers run locally.
+  # Every other pin in this repository is exact (uv at 0.11.17, setup-uv by commit
+  # SHA) and this one should be too -- `docker version` runs in before_script, so
+  # the first green pipeline tells you the exact version to pin to. Tighten it
+  # then, and bump it deliberately rather than by drift.
+  image: docker:29
+  services:
+    - name: docker:29-dind
+      alias: docker
+  needs:
+    - versions
+  parallel:
+    matrix:
+      - PROJECT: [zora, scraper, matcher, gateway]
+  # The default hour is enough but not comfortable on a cold cache: the matcher
+  # pulls a CPU torch build and the scraper installs chromium plus its --with-deps
+  # OS libraries. Raise this before assuming a hang.
+  timeout: 1h
+  interruptible: true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "/certs/client"
+    # Explicit, though it is the default in Docker 23+. The four Dockerfiles rely
+    # on their sibling projects/<member>/Dockerfile.dockerignore files, and that
+    # convention is a BuildKit feature -- no BuildKit, and the root .dockerignore
+    # is what applies instead (which is why that file exists).
+    DOCKER_BUILDKIT: 1
+  before_script:
+    - docker version
+  script:
+    - |
+      set -eu
+
+      VERSION="$(cat "versions/${PROJECT}.version")"
+      REPOSITORY="$(cat "versions/${PROJECT}.repository")"
+      IMAGE="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${REPOSITORY}"
+      VERSION_TAG="${IMAGE}:${VERSION}-${IMAGE_CHANNEL}"
+      LATEST_TAG="${IMAGE}:latest-${IMAGE_CHANNEL}"
+
+      echo "building ${PROJECT} -> ${VERSION_TAG}"
+
+      # Harbor robot account: a plain username/password pair, nothing exotic.
+      # HARBOR_THEMIS_ROBOT_USER is the full robot$<project>+<account> string and
+      # is not secret; HARBOR_THEMIS_ROBOT_PASSWORD is the generated secret.
+      #
+      # NOTE for whoever maintains those variables: the username contains a `$`,
+      # and GitLab expands `$` references inside variable VALUES. The variable
+      # must have "Expand variable reference" unticked or it arrives here as
+      # "robot" followed by an empty expansion, and the login fails with a 401
+      # that looks like a wrong password.
+      #
+      # The guard is deliberate. If the password variable is marked Protected it
+      # is simply absent on an unprotected feature branch, and this degrades to a
+      # cache-less build rather than a red pipeline -- which costs nothing, since
+      # branches do not push anyway.
+      CACHE_ARGS=""
+      if [ -n "${HARBOR_THEMIS_ROBOT_PASSWORD:-}" ]; then
+          echo "${HARBOR_THEMIS_ROBOT_PASSWORD}" | docker login "${HARBOR_REGISTRY}" \
+              --username "${HARBOR_THEMIS_ROBOT_USER}" --password-stdin
+
+          # --cache-from reads a LOCAL image, so the previous build has to be
+          # pulled first. A miss is expected on the very first run and on any new
+          # repository; it is not an error.
+          if docker pull --quiet "${LATEST_TAG}"; then
+              CACHE_ARGS="--cache-from ${LATEST_TAG}"
+          else
+              echo "no ${LATEST_TAG} to warm the cache from -- building cold"
+          fi
+      else
+          echo "no registry credentials in this job -- building cold, will not push"
+      fi
+
+      # Build context is the repository ROOT for all four images, with the
+      # Dockerfile selected by -f. Every Dockerfile copies all five members'
+      # pyproject.toml so `uv sync --locked` can validate the whole workspace;
+      # a project-directory context makes them fail with "the lockfile needs to
+      # be updated".
+      #
+      # Provenance goes on as --label rather than as a build ARG so that a new
+      # commit SHA does not invalidate a single cached layer. The tags carry a
+      # version, not a SHA, so these labels are the only thing tying a running
+      # container back to an exact commit -- docs/deployment.md explains the
+      # departure from the SHA-tag scheme it originally specified.
+      docker build \
+          --file "projects/${PROJECT}/Dockerfile" \
+          --tag "${VERSION_TAG}" \
+          --tag "${LATEST_TAG}" \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          ${CACHE_ARGS} \
+          --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}" \
+          --label "org.opencontainers.image.version=${VERSION}" \
+          --label "org.opencontainers.image.source=${CI_PROJECT_URL}" \
+          --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          .
+
+      docker image inspect "${VERSION_TAG}" --format 'built {{.Id}} ({{.Size}} bytes)'
+
+      # Push only from the default branch. Feature branches and merge requests
+      # prove the Dockerfile still builds and stop there: the Harbor project has a
+      # 10 GB quota shared by every image and no automatic garbage collection, so
+      # a superseded latest-test digest keeps consuming quota until a retention
+      # policy removes it. CI_COMMIT_BRANCH is unset in a merge request pipeline,
+      # so an MR never publishes either.
+      if [ "${CI_COMMIT_BRANCH:-}" != "${CI_DEFAULT_BRANCH}" ]; then
+          echo "not on ${CI_DEFAULT_BRANCH} -- built and verified, nothing pushed"
+          exit 0
+      fi
+
+      # Both tags name the same digest; the second push uploads no layers.
+      docker push "${VERSION_TAG}"
+      docker push "${LATEST_TAG}"
+      echo "pushed ${VERSION_TAG} and ${LATEST_TAG}"
+
+# ---------------------------------------------------------------------------
+# Fallback: unprivileged runners
+# ---------------------------------------------------------------------------
+#
+# Keep this block. If the runners here cannot do docker-in-docker, replace the
+# image/services/variables/before_script of the `build` job above with the
+# following and change `docker` to `buildah` in the script. Do not delete the
+# losing variant afterwards -- record which one worked and why, so the next
+# person does not rediscover it.
+#
+#   image: quay.io/buildah/stable:v1.38
+#   variables:
+#     STORAGE_DRIVER: vfs
+#     BUILDAH_FORMAT: docker
+#     BUILDAH_ISOLATION: chroot
+#   before_script:
+#     - buildah version
+#
+# Three differences that matter, none of them cosmetic:
+#
+#   - buildah reads ONLY the root .dockerignore. The per-Dockerfile
+#     projects/<member>/Dockerfile.dockerignore files are a BuildKit convention
+#     and are ignored entirely. The root .dockerignore in this repository exists
+#     for exactly this case and is a superset that is safe for all four images.
+#   - `--build-arg BUILDKIT_INLINE_CACHE=1` is a no-op; use `--layers` with
+#     `--cache-from`/`--cache-to` against the registry instead.
+#   - the vfs storage driver is slow and disk-hungry. The scraper image
+#     (chromium plus --with-deps) is the one that will notice; expect the 1h
+#     timeout to become tight.
+#
+# kaniko is the other name that comes up for this. It is archived upstream and
+# should not be the choice for new work.
