@@ -15,19 +15,31 @@ authors = [
     { name = "Gregory Frommelt" },
     { name = "Ilya Kruchenetskiy" },
 ]
-dependencies = ["themis-shared"]
-
-[project.optional-dependencies]
-# The scraper's dependency set is almost disjoint from the rest of the workspace
-# -- the others speak httpx / psycopg / dspace-rest-client, this speaks requests /
-# bs4 / PyYAML / pypdf / openai -- which is why it was an extra before the split
-# and why it gets its own image. See the Images section of docs/deployment.md.
+# These five were an extra named `scraping` until 2026-08-27, and that was wrong
+# after the workspace split. The scraper's dependency set is almost disjoint from
+# the rest of the workspace -- the others speak httpx / psycopg /
+# dspace-rest-client, this speaks requests / bs4 / PyYAML / pypdf / openai -- and
+# before the split that disjointness was a reason to keep them out of a shared
+# install. It still explains why this member gets its own image (see the Images
+# section of docs/deployment.md); it is no longer a reason for the dependencies to
+# be optional, because there is no longer a shared install to keep them out of.
+#
+# What made it a bug rather than a wart: `requests`, `bs4` and `yaml` are imported
+# at module level (fetch.py, spec_engine.py, llm_extract.py, spec_generator.py,
+# main.py), so `uv sync --package themis-scraper` produced an installable
+# distribution whose only console script died on `--help` with
+# "No module named 'bs4'". Nothing caught it -- the scraper was the one member
+# missing from CI's boundaries matrix, and its own job always passed the extra.
+#
+# pypdf and openai are imported lazily and would survive as optional, but they
+# belong to the same feature and splitting the group would only invite the same
+# question again.
 #
 # requests rather than the httpx the rest of the repository uses: the fetch layer
 # entangles it with the politeness delay and the Playwright fallback, and the 131
 # tests that make this port trustworthy all replay through it. Converting it is a
 # follow-up, not a port step. requests and PyYAML were already in uv.lock as
-# transitive dependencies before this extra existed; naming them here makes them
+# transitive dependencies before they were named here; naming them makes them
 # direct, which is what lets a floor or a source override apply to them at all.
 #
 # The openai floor spans three majors, and that needed checking rather than
@@ -39,16 +51,21 @@ dependencies = ["themis-shared"]
 # model and messages. The Responses API arrived in 2.x alongside that surface, not
 # in place of it. Re-check on a major bump: nothing in the test suite would notice,
 # because every LLM call is stubbed.
-scraping = [
+dependencies = [
+    "themis-shared",
     "requests>=2.31",
     "beautifulsoup4>=4.12",
     "PyYAML>=6.0",
     "pypdf>=4.0",
     "openai>=1.30",
 ]
-# JS-rendered pages. Separate from `scraping` because installing it downloads a
-# browser: `python -m playwright install chromium`. fetch.py imports it lazily and
-# degrades to the static fetch when it is absent, so most runs never need it.
+
+[project.optional-dependencies]
+# JS-rendered pages, and a real extra rather than a historical one: installing it
+# downloads a browser (`python -m playwright install chromium`), and fetch.py
+# imports it lazily behind `except ImportError` in all three call sites, degrading
+# to the static fetch when it is absent. Most runs never need it; the image
+# installs it because three of the 103 sources are JS-only.
 render = ["playwright>=1.40"]
 
 [project.scripts]

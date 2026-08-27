@@ -159,12 +159,18 @@ one job installing the extra stayed green. `--ci` rehearses all five jobs in scr
 via `UV_PROJECT_ENVIRONMENT`, leaving `.venv` and its 2.27 GB of torch alone; the same script with
 no argument is the fast lint/format/test pass.
 
-**One workflow file, five jobs** — `ci.yml`: `offline` (all members, no network or database),
-`scraper` (`--package themis-scraper --extra scraping`), `pgvector` (a real pgvector service plus
-`themis-init-db`), `boundaries` (a 4-leg matrix installing each member alone, so a cross-member
-import fails loudly), and `wheels` (proves `schema.sql` ships as package data — it is resolved by
-name at runtime, so a missing declaration would fail only inside a container). `mcp` and
-`embeddings` are still never installed in CI.
+**One workflow file, four jobs** — `ci.yml`: `offline` (all members, no network or database),
+`pgvector` (a real pgvector service plus `themis-init-db`), `boundaries` (a **5-leg** matrix
+installing each member alone, so a cross-member import fails loudly), and `wheels` (proves
+`schema.sql` ships as package data — it is resolved by name at runtime, so a missing declaration
+would fail only inside a container). `mcp`, `embeddings` and `render` are never installed in CI.
+
+A standalone `scraper` job existed until 2026-08-27, when the scraper's `scraping` extra became
+ordinary dependencies and the boundaries matrix grew a fifth leg that subsumes it. **An extra is a
+configuration nobody tests**: `uv sync --package themis-scraper` produced a package whose only
+console script died on `--help`, and no job installed it that way. Each leg's import target is
+spelled out rather than derived, because `themis_scraper/__init__.py` imports nothing and the bare
+package import would have passed anyway.
 
 **Two CI systems, two remotes, no overlap (2026-08-27).** `origin` is GitHub and runs `ci.yml`,
 which never builds an image. `gitlab` (`git@gitlab.uzh.ch:askuzh/themis.git`) runs

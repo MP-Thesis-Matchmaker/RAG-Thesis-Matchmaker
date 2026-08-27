@@ -30,6 +30,12 @@ jobs:
   # FakeRetriever, RuleBasedExtractor, TemplateSynthesizer) are real, so the
   # pipeline runs end to end without a model download or a database. If this job
   # ever needs a service to pass, one of them has stopped carrying its weight.
+  #
+  # Since 2026-08-27 this includes the scraper's ~155 tests, which used to be
+  # skipped here by projects/scraper/tests/conftest.py because their imports lived
+  # behind an extra. They replay frozen page snapshots, so they need no network and
+  # the property above still holds -- but the job is doing more than its name once
+  # implied.
   offline:
     runs-on: ubuntu-latest
     steps:
@@ -43,9 +49,10 @@ jobs:
           enable-cache: true
       # --all-packages because the root is virtual: there is no project for a
       # bare `uv sync` to install. The dev group is a default group, so this is
-      # the whole dev environment. The mcp, embeddings and scraping extras are
-      # not requested and so are not installed -- that is the seam this job
-      # exists to keep honest.
+      # the whole dev environment. The mcp, embeddings and render extras are not
+      # requested and so are not installed -- that is the seam this job exists to
+      # keep honest. (`scraping` was a fourth until 2026-08-27, when it became
+      # ordinary dependencies of themis-scraper; see that member's pyproject.)
       - name: Install
         run: uv sync --locked --all-packages
       # --no-sync: the environment was just built from the lock; re-checking it
@@ -56,36 +63,6 @@ jobs:
         run: uv run --no-sync ruff format --check .
       - name: Test
         run: uv run --no-sync pytest
-
-  # The scraper's 153 tests, which need the `scraping` extra and nothing else --
-  # they replay 103 frozen page snapshots, so no network and no database.
-  #
-  # A separate job rather than adding the extra to `offline`, because that job's
-  # value is proving the base install runs the whole pipeline on its own. But they
-  # have to run *somewhere*: the last time an extra went untested, `mcp>=1.2`
-  # resolved to 2.0.0, removed FastMCP, and broke the MCP adapter entirely
-  # -- caught only when an image was built by hand, because CI never installed it.
-  # 153 tests behind an uninstalled extra is that same hole, five times the size.
-  scraper:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          version: "0.11.17"
-          python-version: "3.11"
-          enable-cache: true
-      # --package: only the scraper and its closure, which makes this job
-      # strictly stronger than before the workspace split. It used to install the
-      # whole monolith plus an extra; now a scraper module that reached into the
-      # matcher would fail here with ModuleNotFoundError.
-      #
-      # The render extra is deliberately absent: it downloads a browser, and
-      # fetch.py imports playwright lazily so nothing here needs it.
-      - name: Install
-        run: uv sync --locked --package themis-scraper --extra scraping
-      - name: Test
-        run: uv run --no-sync pytest projects/scraper/tests
 
   # The same store contract against real pgvector: real SQL, real HNSW, real
   # jsonb containment. Skipped locally when DATABASE_URL is unset.
@@ -138,28 +115,49 @@ jobs:
   # What this proves is therefore the dependency graph, not process isolation,
   # which is exactly the property the four seams are supposed to have.
   #
-  # No extras anywhere except the scraper's, which has its own job above: the
-  # offline implementations are real, so every member's tests run without a
-  # model download. The gateway's tests never import mcp either.
+  # No extras anywhere: the offline implementations are real, so every member's
+  # tests run without a model download, and the gateway's tests never import mcp.
+  #
+  # The scraper leg is why this matrix has five entries rather than four. Its
+  # dependencies were an extra named `scraping` until 2026-08-27, so no job ever
+  # installed the scraper the way `uv sync --package themis-scraper` does -- and
+  # that configuration was broken: bs4 is a module-level import, so the console
+  # script died on `--help`. This leg is the one that would have caught it, which
+  # is also why its import check names a real module rather than the package
+  # (themis_scraper/__init__.py imports nothing, so `import themis_scraper` proves
+  # nothing). The same hole once let `mcp>=1.2` resolve to 2.0.0, remove FastMCP
+  # and break the MCP adapter entirely -- found only when an image was built by
+  # hand. An uninstalled extra is a configuration nobody tests.
   boundaries:
     runs-on: ubuntu-latest
     strategy:
       # One red member should not hide the others.
       fail-fast: false
       matrix:
+        # `import` is spelled out per leg rather than derived from `member`: for
+        # the scraper the package __init__ is a docstring with no imports, so the
+        # bare package import would pass while the CLI was unusable.
         include:
           - member: shared
             package: themis-shared
+            import: themis_shared
             tests: libs/shared/tests
           - member: matcher
             package: themis-matcher
+            import: themis_matcher
             tests: projects/matcher/tests
           - member: gateway
             package: themis-gateway
+            import: themis_gateway
             tests: projects/gateway/tests
           - member: zora
             package: themis-zora
+            import: themis_zora
             tests: projects/zora/tests
+          - member: scraper
+            package: themis-scraper
+            import: themis_scraper.main
+            tests: projects/scraper/tests
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -172,8 +170,8 @@ jobs:
       # Separate from the tests: an import error here means the package cannot be
       # installed on its own at all, which is a different failure from a test
       # that needs something the package does not declare.
-      - name: Import themis_${{ matrix.member }}
-        run: uv run --no-sync python -c "import themis_${{ matrix.member }}"
+      - name: Import ${{ matrix.import }}
+        run: uv run --no-sync python -c "import ${{ matrix.import }}"
       - name: Test
         run: uv run --no-sync pytest ${{ matrix.tests }}
 

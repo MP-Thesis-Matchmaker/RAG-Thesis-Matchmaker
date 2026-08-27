@@ -64,15 +64,18 @@ done yet.
 | `projects/zora/` | ZORA harvester | `CronJob` | none | **yes** |
 | `projects/matcher/` | serve matching **and** build the index | `Deployment` (+ a `Job` for a cold build) | `[embeddings]` | **yes** |
 | `projects/gateway/` | MCP adapter | `Deployment` | `[mcp]` | **yes** |
-| `projects/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
+| `projects/scraper/` | posting scraper | `CronJob` | `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
 image from roughly 200 MB to a few GB; a harvester pod that imports neither would
 otherwise pull all of it on every scheduled run. The posting scraper is the sharper
-case, and now a measured one rather than a prediction: the `[scraping]` extra is
-`requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and it intersects the
+case, and now a measured one rather than a prediction: its dependencies are
+`requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and they intersect the
 core's `httpx` / `psycopg` / `dspace-rest-client` only at pydantic and dotenv. One
-image for both means each ships the other's dependency tree.
+image for both means each ships the other's dependency tree. (Those five were an
+extra named `[scraping]` until 2026-08-27. The disjointness is why this member gets
+its own image; it was never a reason for the dependencies to be optional, and as an
+extra it made `uv sync --package themis-scraper` produce a broken CLI.)
 
 The scraper image also carries chromium's headless shell (`[render]` +
 `playwright install --with-deps --only-shell`), which moves it from the ~250 MB

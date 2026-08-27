@@ -13,7 +13,7 @@ what looks like friction below is that difference.
 ## Before the first run
 
 ```bash
-uv sync --package themis-scraper --extra scraping --extra render  # render: 3 JS-only sources
+uv sync --package themis-scraper --extra render   # render: the 3 JS-only sources
 export SCRAPER_CONTACT='themis@example.uzh.ch'
 export DATABASE_URL='postgresql://matchmaker:matchmaker@localhost:5432/matchmaker'
 themis-init-db                # the posting/* tables have to exist

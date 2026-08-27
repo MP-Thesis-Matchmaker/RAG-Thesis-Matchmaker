@@ -4,7 +4,7 @@
 #
 # Why this exists. CI installs *less* than a development machine does: `offline`
 # and `pgvector` sync `--all-packages` with no extras at all, while the local
-# .venv has accumulated `scraping`, `embeddings` and `mcp`. So a green local
+# .venv has accumulated `embeddings`, `mcp` and `render`. So a green local
 # `pytest` is not evidence about those jobs -- it is evidence about a strictly
 # larger environment. That gap has shipped a red build at least twice: an `mcp`
 # resolution that removed FastMCP, and a conftest that killed the whole session
@@ -102,14 +102,6 @@ else
         FAILED+=("offline/install")
     fi
 
-    # scraper: the one job that has the scraping extra.
-    step "job: scraper (--package themis-scraper --extra scraping)"
-    if use_env scraper --package themis-scraper --extra scraping; then
-        run "scraper/tests" uv run --no-sync pytest projects/scraper/tests
-    else
-        FAILED+=("scraper/install")
-    fi
-
     # pgvector: needs a real Postgres. Skipped rather than failed when none is
     # configured, so this script stays runnable on a laptop with no server.
     #
@@ -136,15 +128,21 @@ else
 
     # boundaries: each member installed alone, so a cross-member import fails
     # with ModuleNotFoundError before any test runs.
-    for leg in "shared:themis-shared:libs/shared/tests" \
-               "matcher:themis-matcher:projects/matcher/tests" \
-               "gateway:themis-gateway:projects/gateway/tests" \
-               "zora:themis-zora:projects/zora/tests"; do
-        IFS=: read -r member package tests <<<"$leg"
+    #
+    # The import target is the third field rather than being derived as
+    # themis_$member, because the scraper's package __init__ imports nothing --
+    # the bare package import would pass while its console script was unusable,
+    # which is exactly the bug this leg was added to catch.
+    for leg in "shared:themis-shared:themis_shared:libs/shared/tests" \
+               "matcher:themis-matcher:themis_matcher:projects/matcher/tests" \
+               "gateway:themis-gateway:themis_gateway:projects/gateway/tests" \
+               "zora:themis-zora:themis_zora:projects/zora/tests" \
+               "scraper:themis-scraper:themis_scraper.main:projects/scraper/tests"; do
+        IFS=: read -r member package import_target tests <<<"$leg"
         step "job: boundaries / $member"
         if use_env "boundaries-$member" --package "$package"; then
             run "boundaries/$member/import" \
-                uv run --no-sync python -c "import themis_$member"
+                uv run --no-sync python -c "import $import_target"
             run "boundaries/$member/tests" uv run --no-sync pytest "$tests"
         else
             FAILED+=("boundaries/$member/install")
