@@ -296,7 +296,9 @@ without the indexer noticing. The DSpace field names are all isolated in
 ## Operations
 
 - **Docker** — `projects/zora/Dockerfile` builds a `python:3.12-slim` image with
-  entrypoint `python -m themis_zora.harvest`. `data/` is expected to be
+  entrypoint `themis-zora-harvest` and a default `CMD` of `--mode incremental`,
+  so a Kubernetes chart changing the schedule overrides `args` and nothing else.
+  `python -m themis_zora.harvest` remains equivalent. `data/` is expected to be
   bind-mounted; the container is run with `--user "$(id -u):$(id -g)"` so host
   file ownership stays sane.
 - **Scheduling** — harvesting is a cluster concern, not a CI concern. The image is

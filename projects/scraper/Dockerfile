@@ -92,5 +92,9 @@ RUN mkdir -p data/scraper/cache data/scraper/var data/scraper/output
 # half and is a separate invocation on purpose -- it is the one that talks to
 # uzh.ch, and it is polite (sequential, delayed, honestly identified), so it should
 # never be an accident of running the image with no arguments.
-ENTRYPOINT ["python", "-m", "themis_scraper.main"]
+# ENTRYPOINT is the console script, CMD its default arguments -- see the longer
+# note in projects/zora/Dockerfile for why this is not merely cosmetic: the chart
+# overrides `args` alone, and `themis_scraper.main` is an internal module path
+# that a rename would break. `python -m themis_scraper` still works.
+ENTRYPOINT ["themis-scraper"]
 CMD ["run", "--resume"]

@@ -321,7 +321,12 @@ def run(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    # prog is pinned rather than left to sys.argv[0]: the fallback is the script
+    # filename, so `python -m themis_zora.harvest --help` announces itself as
+    # "harvest.py" -- a name that appears nowhere a reader can act on. Both
+    # spellings now print the console script, which is the declared entry point
+    # and what the container runs.
+    parser = argparse.ArgumentParser(prog="themis-zora-harvest", description=__doc__)
     parser.add_argument("--mode", choices=["incremental", "full"], default="incremental")
     parser.add_argument(
         "--since",
