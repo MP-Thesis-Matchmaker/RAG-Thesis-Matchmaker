@@ -40,7 +40,7 @@ dependencies = [
 mcp = ["mcp>=2.0"]
 
 [project.scripts]
-themis-gateway-mcp = "themis_gateway.mcp_server:main"
+themis-gateway = "themis_gateway.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

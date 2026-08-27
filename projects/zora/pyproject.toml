@@ -29,7 +29,7 @@ dependencies = [
 # dependency at all.
 
 [project.scripts]
-themis-zora-harvest = "themis_zora.harvest:main"
+themis-zora = "themis_zora.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

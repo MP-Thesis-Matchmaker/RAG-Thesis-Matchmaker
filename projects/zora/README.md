@@ -130,12 +130,12 @@ tombstones, so the delta logic is ours:
 ### CLI
 
 ```
-python -m themis_zora.harvest --mode incremental
-python -m themis_zora.harvest --mode full --since 2024-07-01
-python -m themis_zora.harvest --mode full --limit 50     # smoke test
-python -m themis_zora.harvest --no-persons --no-org-units
-python -m themis_zora.harvest --no-publications         # mirrors only
-python -m themis_zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
+python -m themis_zora harvest --mode incremental
+python -m themis_zora harvest --mode full --since 2024-07-01
+python -m themis_zora harvest --mode full --limit 50     # smoke test
+python -m themis_zora harvest --no-persons --no-org-units
+python -m themis_zora harvest --no-publications         # mirrors only
+python -m themis_zora harvest --mode full --from-dump data/raw/<ts>_full.jsonl
 ```
 
 | Flag | Default | Behaviour |
@@ -187,8 +187,10 @@ publication dump cannot stand in for a re-harvest: it predates
 against the current contract.
 
 Reachable two ways, both installed by `themis-zora`: the console script
-`themis-zora-harvest`, or `python -m themis_zora.harvest`. The workspace split gave it a script
-of its own; before that it was `python -m` only, and this README said so.
+`themis-zora harvest`, or `python -m themis_zora harvest`. The workspace split gave it a script
+of its own; before that it was `python -m` only, and this README said so. The script was
+`themis-zora-harvest` until 2026-08-27 — spelling the subcommand in the script name left the
+member with no top-level command, and a second role would have meant a second script.
 
 ### The schema preflight
 
@@ -296,7 +298,11 @@ without the indexer noticing. The DSpace field names are all isolated in
 ## Operations
 
 - **Docker** — `projects/zora/Dockerfile` builds a `python:3.12-slim` image with
-  entrypoint `python -m themis_zora.harvest`. `data/` is expected to be
+  entrypoint `themis-zora` and a default `CMD` of `harvest --mode incremental`,
+  so a Kubernetes chart changing the schedule overrides `args` and nothing else —
+  but must repeat the subcommand: `args: ["harvest", "--mode", "full"]`. Dropping
+  it lands on the bare status summary, which exits 0 and harvests nothing.
+  `python -m themis_zora harvest` remains equivalent. `data/` is expected to be
   bind-mounted; the container is run with `--user "$(id -u):$(id -g)"` so host
   file ownership stays sane.
 - **Scheduling** — harvesting is a cluster concern, not a CI concern. The image is

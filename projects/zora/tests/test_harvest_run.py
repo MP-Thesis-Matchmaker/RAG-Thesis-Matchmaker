@@ -16,7 +16,7 @@ import pytest
 
 from fake_dso import FakeDSO
 from themis_shared import db, schema
-from themis_zora import config, entities, fields, harvest, store, zora_client
+from themis_zora import cli, config, entities, fields, harvest, store, zora_client
 
 
 def _dso(handle: str, *, accessioned: str = "2026-01-01T00:00:00Z") -> FakeDSO:
@@ -195,10 +195,10 @@ def test_an_entity_step_failure_surfaces_as_a_clean_exit(
 
     monkeypatch.setattr(entities, "harvest_org_units", boom)
     monkeypatch.setattr(db, "close_pools", lambda: None)
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full"])
+    monkeypatch.setattr("sys.argv", ["themis-zora", "harvest", "--mode", "full"])
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 1
     assert spy.write_calls == []
@@ -206,10 +206,12 @@ def test_an_entity_step_failure_surfaces_as_a_clean_exit(
 
 def test_main_maps_the_no_flags_onto_run(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(db, "close_pools", lambda: None)
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--no-persons", "--no-org-units"])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--mode", "full", "--no-persons", "--no-org-units"]
+    )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 0
     assert spy.steps == ["publications", "reconcile"]
@@ -223,7 +225,7 @@ def test_disabling_all_three_is_a_usage_error(spy: _Spy, monkeypatch: pytest.Mon
     )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     # argparse.error() exits 2, and nothing ran.
     assert exc.value.code == 2
@@ -362,10 +364,12 @@ def test_a_lone_publication_dump_runs_only_the_publication_step(
     exactly as it did before dumps became repeatable.
     """
     monkeypatch.setattr(db, "close_pools", lambda: None)
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--from-dump", dump])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--mode", "full", "--from-dump", dump]
+    )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 0
     assert spy.steps == ["publications", "reconcile"]
@@ -413,10 +417,12 @@ def test_a_dump_for_a_disabled_step_is_a_usage_error(
     spy: _Spy, persons_dump: str, monkeypatch
 ) -> None:
     monkeypatch.setattr(db, "close_pools", lambda: None)
-    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", persons_dump, "--no-persons"])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--from-dump", persons_dump, "--no-persons"]
+    )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 2
     assert spy.steps == []
@@ -427,10 +433,12 @@ def test_two_dumps_of_one_kind_is_a_usage_error(spy: _Spy, tmp_path, monkeypatch
     monkeypatch.setattr(db, "close_pools", lambda: None)
     first = _write_dump(tmp_path / "a_full.jsonl", [_record("123/1")])
     second = _write_dump(tmp_path / "b_full.jsonl", [_record("123/2")])
-    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", first, "--from-dump", second])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--from-dump", first, "--from-dump", second]
+    )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 2
 
@@ -442,15 +450,17 @@ def test_an_unroutable_name_is_rejected_and_dump_kind_fixes_it(
     monkeypatch.setattr(db, "close_pools", lambda: None)
     path = _write_dump(tmp_path / "copy.jsonl", [_record("123/1")])
 
-    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", path])
+    monkeypatch.setattr("sys.argv", ["themis-zora", "harvest", "--from-dump", path])
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
     assert exc.value.code == 2
     assert spy.steps == []
 
-    monkeypatch.setattr("sys.argv", ["harvest", "--from-dump", path, "--dump-kind", "full"])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--from-dump", path, "--dump-kind", "full"]
+    )
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
     assert exc.value.code == 0
     assert spy.steps == ["publications", "reconcile"]
 
@@ -466,7 +476,7 @@ def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> N
     )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 2
 
@@ -549,10 +559,12 @@ def test_main_wires_from_dump_through(
     spy: _Spy, dump: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(db, "close_pools", lambda: None)
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full", "--from-dump", dump])
+    monkeypatch.setattr(
+        "sys.argv", ["themis-zora", "harvest", "--mode", "full", "--from-dump", dump]
+    )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 0
     assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/2"]
@@ -564,11 +576,19 @@ def test_missing_dump_fails_cleanly_without_a_traceback(
     """A typo'd path is a config mistake, so it gets the RuntimeError treatment."""
     monkeypatch.setattr(db, "close_pools", lambda: None)
     monkeypatch.setattr(
-        "sys.argv", ["harvest", "--mode", "full", "--from-dump", str(tmp_path / "nope_full.jsonl")]
+        "sys.argv",
+        [
+            "themis-zora",
+            "harvest",
+            "--mode",
+            "full",
+            "--from-dump",
+            str(tmp_path / "nope_full.jsonl"),
+        ],
     )
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 1
     assert spy.write_calls == []
@@ -582,10 +602,10 @@ def test_main_closes_connection_pools(spy: _Spy, monkeypatch: pytest.MonkeyPatch
     """
     closed: list[bool] = []
     monkeypatch.setattr(db, "close_pools", lambda: closed.append(True))
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full"])
+    monkeypatch.setattr("sys.argv", ["themis-zora", "harvest", "--mode", "full"])
 
     with pytest.raises(SystemExit) as exc:
-        harvest.main()
+        cli.main()
 
     assert exc.value.code == 0
     assert closed == [True]
@@ -597,7 +617,7 @@ def test_main_closes_pools_even_when_run_crashes(
     """A crash mid-harvest is exactly when the pool is open and nobody closed it."""
     closed: list[bool] = []
     monkeypatch.setattr(db, "close_pools", lambda: closed.append(True))
-    monkeypatch.setattr("sys.argv", ["harvest", "--mode", "full"])
+    monkeypatch.setattr("sys.argv", ["themis-zora", "harvest", "--mode", "full"])
 
     def boom(*args, **kwargs):
         raise AttributeError("regression stand-in")
@@ -605,6 +625,6 @@ def test_main_closes_pools_even_when_run_crashes(
     monkeypatch.setattr(harvest, "run", boom)
 
     with pytest.raises(AttributeError):
-        harvest.main()
+        cli.main()
 
     assert closed == [True]

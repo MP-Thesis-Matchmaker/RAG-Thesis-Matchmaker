@@ -102,9 +102,25 @@ USER 10001
 # unauthenticated, so the namespace boundary is the only thing guarding it.
 EXPOSE 8100
 
-# The subcommand is in CMD, not ENTRYPOINT, so the serve role is a `command`
-# override rather than an entrypoint override: `themis-matcher serve`. The
-# default stays `index --source db` -- the harvested publication table, not the
-# 50 checked-in samples -- so nothing that ran this image before changes.
+# The subcommand is in CMD, not ENTRYPOINT, so either role is a `command`
+# override rather than an entrypoint override.
+#
+# The default is `serve`, and which way round this goes is a correctness
+# question rather than a convenience one. Serving is the only role anything else
+# in the system can talk to: the gateway holds no model and no database and
+# reaches this image over HTTP for every match, and the two ingestion jobs end
+# their runs by POSTing to /v1/index/publications and /v1/index/postings
+# (themis_zora/index_trigger.py, themis_scraper/index_trigger.py). A pod that
+# came up running the batch role instead would refuse all three, and the chart
+# has no shellCommand unless someone remembers to set one -- so the default is
+# what a missing override falls back to, and it had better be the role with
+# consumers.
+#
+# `index --source db` remains one word away (`command: ["index", "--source",
+# "db"]`) and is still the right way to do a cold full build: that is measured in
+# days under the namespace CPU quota, which is not something to start over HTTP
+# and hope the pod outlives it. Steady-state incremental indexing is what the
+# REST triggers are for, and they run inside this same process -- which is the
+# whole reason one process both serves and indexes despite invariant 1.
 ENTRYPOINT ["themis-matcher"]
-CMD ["index", "--source", "db"]
+CMD ["serve"]

@@ -4,7 +4,7 @@
 # A scheduled harvest in the cluster is one container invocation with a --mode
 # flag, so reproducing it here is the same invocation:
 #
-#   docker compose run --rm harvester --mode incremental
+#   docker compose run --rm harvester harvest --mode incremental
 #
 # For real timing locally the timer belongs to the host, not the app -- see
 # docs/deployment.md for the two crontab lines matching the CronJob schedules.
@@ -59,11 +59,18 @@ services:
         condition: service_healthy
     profiles: ["manual"]
 
-  # One-shot, like the harvester: it runs, writes, and exits. In the cluster this
-  # is a CronJob fired after each harvest. --source db is the image default, so a
-  # bare `docker compose run --rm indexer` indexes the harvested publication
-  # table; pass `--source data/samples` to index the 50 checked-in samples
-  # instead (the ./data mount below is what makes that path exist in-container).
+  # One-shot, like the harvester: it runs, writes, and exits. This is the COLD
+  # build -- the one you run when there is no index yet. In steady state the
+  # ingestion jobs refresh the index themselves by POSTing to the running API
+  # (/v1/index/publications, /v1/index/postings), so this service is the
+  # exception rather than the routine path; see MATCHER_BASE_URL on harvester and
+  # scraper above.
+  #
+  # `docker compose run --rm indexer` indexes the harvested publication table.
+  # Pass `--source data/samples` to index the 50 checked-in samples instead (the
+  # ./data mount below is what makes that path exist in-container) -- note that
+  # overriding `command` replaces the whole list, so spell out
+  # `index --source data/samples`.
   #
   # MATCHER_EMBEDDING_MODEL is deliberately NOT set here. The image exists to run
   # the real model, so it inherits themis_matcher/config.py's BAAI/bge-m3
@@ -73,6 +80,12 @@ services:
     build:
       context: .
       dockerfile: projects/matcher/Dockerfile
+    # Explicit since the image default became `serve`. This service is the cold
+    # full build -- the role you want when there is no index yet and starting one
+    # over HTTP would mean holding a request open for days. Once an index exists,
+    # prefer the REST triggers the ingestion jobs already use:
+    #   curl -XPOST http://localhost:8100/v1/index/publications
+    command: ["index", "--source", "db"]
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker
     volumes:
@@ -100,6 +113,9 @@ services:
     build:
       context: .
       dockerfile: projects/matcher/Dockerfile
+    # Redundant with the image default, and kept deliberately: this file is read
+    # as documentation of what each role runs, and an implicit serve here would
+    # make the indexer above look like the odd one out rather than the exception.
     command: ["serve"]
     environment:
       DATABASE_URL: postgresql://matchmaker:matchmaker@postgres:5432/matchmaker

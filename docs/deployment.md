@@ -22,11 +22,11 @@ a committed manifest is worse than an obvious blank.
 | Component | Runtime | Trigger | Manifest |
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
-| `themis_zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`) |
-| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, default `CMD` |
-| `themis-gateway-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
-| `themis_scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
+| `themis-zora harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
+| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`), default `CMD` |
+| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, `command` override |
+| `themis-gateway mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`), default `CMD` |
+| `themis-scraper run` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
 Every row but the first two lacks only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
@@ -64,15 +64,18 @@ done yet.
 | `projects/zora/` | ZORA harvester | `CronJob` | none | **yes** |
 | `projects/matcher/` | serve matching **and** build the index | `Deployment` (+ a `Job` for a cold build) | `[embeddings]` | **yes** |
 | `projects/gateway/` | MCP adapter | `Deployment` | `[mcp]` | **yes** |
-| `projects/scraper/` | posting scraper | `CronJob` | `[scraping]`, `[render]` | **yes** |
+| `projects/scraper/` | posting scraper | `CronJob` | `[render]` | **yes** |
 
 The split is not tidiness. `sentence-transformers` pulls in torch, which takes the
 image from roughly 200 MB to a few GB; a harvester pod that imports neither would
 otherwise pull all of it on every scheduled run. The posting scraper is the sharper
-case, and now a measured one rather than a prediction: the `[scraping]` extra is
-`requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and it intersects the
+case, and now a measured one rather than a prediction: its dependencies are
+`requests` / `beautifulsoup4` / `PyYAML` / `pypdf` / `openai`, and they intersect the
 core's `httpx` / `psycopg` / `dspace-rest-client` only at pydantic and dotenv. One
-image for both means each ships the other's dependency tree.
+image for both means each ships the other's dependency tree. (Those five were an
+extra named `[scraping]` until 2026-08-27. The disjointness is why this member gets
+its own image; it was never a reason for the dependencies to be optional, and as an
+extra it made `uv sync --package themis-scraper` produce a broken CLI.)
 
 The scraper image also carries chromium's headless shell (`[render]` +
 `playwright install --with-deps --only-shell`), which moves it from the ~250 MB
@@ -98,11 +101,22 @@ the weights, and the gateway is 296 MB of `httpx` and the MCP SDK. Verified on t
 built image: `torch`, `sentence_transformers` and `themis_matcher` are all absent.
 
 **The matcher image serves two roles, chosen by `CMD`.** `ENTRYPOINT` is
-`themis-matcher` and the default `CMD` is `index --source db`, so `command:
-["serve"]` in the chart's `shellCommand` switches it to the API. One image because
-both roles want the same model and the same closure. The batch role stays because a
-cold full index is measured in days under the CPU quota, and that is not something
-to start over HTTP and hope the pod outlives it.
+`themis-matcher` and the default `CMD` is **`serve`**; `command: ["index",
+"--source", "db"]` in the chart's `shellCommand` switches it to the batch build.
+One image because both roles want the same model and the same closure.
+
+The default is `serve` because it is the role with consumers. The gateway holds no
+model and no database and reaches this image over HTTP for every match, and both
+ingestion jobs end their runs by POSTing to `/v1/index/publications` and
+`/v1/index/postings`. A pod that came up in the batch role would refuse all three —
+and since a chart with no `shellCommand` gets the image default, that default is
+what a forgotten override falls back to.
+
+The batch role stays available because a cold full index is measured in days under
+the CPU quota, and that is not something to start over HTTP and hope the pod
+outlives it. Steady-state incremental indexing goes through the REST triggers, which
+run inside the serving process — the one qualifier on invariant 1, and the reason
+one process does both.
 
 **Both install a CPU-only torch, and that is a lock decision rather than a
 Dockerfile one.** PyPI's default linux `torch` wheel is the CUDA build — a wheel
@@ -239,15 +253,15 @@ init-db one-shot, and the harvester as a manually invoked job.
 ```bash
 docker compose up -d postgres
 docker compose run --rm init-db
-docker compose run --rm harvester --mode incremental   # = what the CronJob does
+docker compose run --rm harvester harvest --mode incremental   # = what the CronJob does
 ```
 
 For real timing locally, the timer belongs to the host, not the app — the same
 two schedules as the CronJobs:
 
 ```cron
-0 1 * * 1      cd <repo> && docker compose run --rm harvester --mode full
-0 1 * * 0,2-6  cd <repo> && docker compose run --rm harvester --mode incremental
+0 1 * * 1      cd <repo> && docker compose run --rm harvester harvest --mode full
+0 1 * * 0,2-6  cd <repo> && docker compose run --rm harvester harvest --mode incremental
 ```
 
 ## Configuration
@@ -312,10 +326,12 @@ Blocking for deployment, not for local development against a Postgres container.
 5. **TLS**: required `sslmode`, and any CA certificate we must mount.
 6. **How credentials reach the pod**: plain k8s `Secret`, or an external secret
    store / sealed-secrets setup.
-7. **Harbor project.** The hostname is known (`registry.cs.zi.uzh.ch`); what is
-   not is our project name, a robot account for pulls, and a quota above the 10 GB
-   default. Also whether pushes should come from a GitLab pipeline (the registry is
-   reachable from `gitlab.uzh.ch` runners) or by hand.
+7. **Harbor project.** *Mostly answered.* The project is
+   `uzh-dsi-askuzh-masterthesis-supervisor`, a robot account exists, and pushes
+   come from `.gitlab-ci.yml` on `gitlab.uzh.ch` rather than by hand. Two pieces
+   are still open: a quota above the 10 GB default, and a separate **pull** robot
+   for the cluster -- the CI robot has push rights and should not be the identity
+   a pod authenticates with.
 8. **Backup and retention** policy for the harvested publication data — this is
    personal data (researcher names and affiliations), so retention is a legal
    question as much as an operational one.
@@ -425,7 +441,7 @@ Not questions for Central Informatics — things we owe ourselves.
   dominant term".
 - **The `[mcp]` extra now requires SDK 2.x, and the adapter was ported to it.**
   `mcp>=1.2` had resolved to **2.0.0**, which removed `FastMCP`, so
-  `themis-gateway-mcp` could not start at all — CI never installs the extra, so
+  `themis-gateway mcp` could not start at all — CI never installs the extra, so
   nothing caught it until an image was built. The adapter uses `MCPServer` from
   `mcp.server.mcpserver`, and passes `host`/`port` to `run()` instead of poking
   `mcp.settings`. The wire format was checked before and after: tool names,
@@ -453,31 +469,93 @@ Two things about it are not negotiable and one is a real constraint:
 - **Projects are created only by admins.** Request one by mail to
   `container.services.support@zi.uzh.ch`. Nothing can be pushed before the project
   exists. Ask for a **project**, not a repository: Harbor holds one repository per
-  image and we have four roles.
+  image and we have four roles. Ours is
+  **`uzh-dsi-askuzh-masterthesis-supervisor`**. The four repositories inside it
+  need no request at all — Harbor creates a repository implicitly on the first
+  push to its name, so `REPOSITORY` in Harbor's push-command hint is a blank we
+  fill in, not something to wait for.
 - **A new project has a 10 GB quota by default.** At ~0.45 GB compressed per
   image, two roles leave room for roughly twenty tags between them — workable, but
   worth knowing before tagging every commit, and Harbor does not garbage-collect
-  old tags on its own. Raising the quota needs an admin.
+  old tags on its own. Raising the quota needs an admin. Two consequences, one
+  already acted on: the pipeline pushes only from the default branch, and
+  re-pushing `latest-test` orphans the digest it replaced, so a **Tag Retention**
+  policy (Harbor -> project -> Policy) keeping the most recent handful of
+  artefacts per repository is worth configuring once the first images land. No
+  pipeline can do that part for itself.
 
 `cr.gitlab.uzh.ch` is equally trusted, and is what CCS's own workshop example
 uses. It was not chosen because the policy makes GitLab Container Scanning
 *mandatory and ours to configure* there — unconfigured, we would be out of
 compliance rather than merely unscanned.
 
-Until the project exists, images are built and pushed by hand:
+### Building and pushing
+
+Images are built and pushed by [`.gitlab-ci.yml`](../.gitlab-ci.yml), which runs
+on `gitlab.uzh.ch` and nowhere else. Do not confuse it with
+`.github/workflows/ci.yml`: that one is the correctness gate (lint, format,
+tests, boundaries, wheels) and never builds an image; this one builds images and
+never runs a test. Neither substitutes for the other, and a green pipeline here
+says nothing about whether the code works.
+
+Every branch builds all four images; **only the default branch pushes**. Two tags
+are published per image:
+
+```
+registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-<role>:<version>-test
+registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-<role>:latest-test
+```
+
+Both name the same digest. `<version>` is parsed out of
+`projects/<role>/pyproject.toml` at build time and the repository name is
+`project.name` from that same manifest, so bumping `version` there is the entire
+release procedure -- the pipeline hardcodes neither, and the Harbor layout cannot
+drift from the distribution names.
+
+**This departs from the SHA tagging this document originally specified, and the
+departure is deliberate.** A `-test` channel is not what an Argo app file
+consumes, and a version is what a human reading a Harbor tag list actually wants.
+The exactness that motivated SHA tags is preserved as a label the pipeline stamps
+on every image:
+
+```bash
+docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+  registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-gateway:latest-test
+```
+
+When a production channel is defined, SHA tags are still the right answer for it.
+
+Two CI/CD variables are required on the GitLab project, and the first has a trap
+in it:
+
+| Variable | What | Notes |
+|---|---|---|
+| `HARBOR_THEMIS_ROBOT_USER` | the robot account's full name | `robot$uzh-dsi-askuzh-masterthesis-supervisor+<account>`. **Untick "Expand variable reference"** -- GitLab expands `$` inside variable *values*, and the name contains one; without that, login fails with a 401 that looks like a wrong password. Cannot be masked (masking rejects `$`) and does not need to be. |
+| `HARBOR_THEMIS_ROBOT_PASSWORD` | the robot's generated secret | Mask it. Harbor robots **expire by default** -- check the *Expires* column, because a pipeline that worked all semester and then stopped is usually this. |
+
+Harbor refuses to grant a robot `Push Repository` without `Pull Repository`. Pull
+is also what makes the pipeline's `--cache-from` work, so the combination is not
+merely a formality.
+
+Building by hand still works, and is what to do while the runners are unavailable:
 
 ```bash
 docker build -f projects/matcher/Dockerfile \
-  -t registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha> .
-docker push registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
+  -t registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-matcher:0.0.1-test .
+docker push registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-matcher:0.0.1-test
 ```
 
-Tag with the full commit SHA rather than a version: that is what CCS's examples
-do, and it is what makes an Argo app file name one exact artefact.
+Note the image name -- `themis-matcher`, matching the distribution. The
+`thesis-matchmaker-*` names elsewhere in this document are pre-split and get
+renamed as a set when the `k8s/` manifests are converted.
 
 **Build for `linux/amd64` explicitly** when building on an Apple Silicon machine.
 `docker build` defaults to the host architecture, and an arm64 image will not run
 on the cluster's nodes: `docker buildx build --platform linux/amd64 --load ...`.
+The pipeline needs no such flag: GitLab's runners are amd64 already. This applies
+to hand-built images only, which is also why the two heavy images (matcher, with
+torch; scraper, with chromium) are best left to CI on an Apple Silicon machine --
+under emulation they are punishing.
 
 ### Base images
 

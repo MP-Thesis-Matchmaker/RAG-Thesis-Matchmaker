@@ -46,7 +46,7 @@ described.
 | `MatcherUnavailableError` | `service.py` | The matcher is unreachable, unconfigured, or refused for a reason we do not recognise. |
 | `find_researchers` (MCP tool) | `mcp_server.py` | The tool askUZH calls. Same signature, minus the injectable client. |
 | `recommend_supervisors` (MCP tool) | `mcp_server.py` | Prose variant, same shape. |
-| `main()` | `mcp_server.py` | Server entry point; console script `themis-gateway-mcp`. |
+| `server` + tools | `mcp_server.py` | The MCP server and its two tools. Reached through `themis-gateway mcp`; the parser lives in `cli.py`, which imports this module lazily so `--help` works without the `mcp` extra. |
 
 The `pipeline` parameter on both service functions exists purely for injection in
 tests — production callers omit it.
@@ -83,8 +83,8 @@ matcher's — see [`projects/matcher/README.md`](../matcher/README.md).
 
 ```
 uv sync --package themis-gateway --extra mcp   # the root is virtual; --package is required
-uv run themis-gateway-mcp              # streamable HTTP on 127.0.0.1:8000/mcp
-uv run themis-gateway-mcp --stdio      # stdio, for the MCP inspector
+uv run themis-gateway mcp              # streamable HTTP on 127.0.0.1:8000/mcp
+uv run themis-gateway mcp --stdio      # stdio, for the MCP inspector
 ```
 
 The default is streamable HTTP because askUZH points its agent at a URL. `--stdio`

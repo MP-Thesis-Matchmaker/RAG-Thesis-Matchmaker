@@ -71,11 +71,15 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 `document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points — one console script per member: `themis-init-db` (shared), `themis-matcher`
-(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`, `serve --host --port`),
-`themis-gateway-mcp`
-(`--stdio`), `themis-zora-harvest`, and `themis-scraper`. The last two also answer to
-`python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
+Entry points — **one console script per member, named after the member, with the role as a
+subcommand** (2026-08-27): `themis-matcher` (`init-db`, `index --source --rebuild`,
+`match --top-k`, `repl`, `serve --host --port`), `themis-zora` (`harvest`),
+`themis-gateway` (`mcp --stdio`), `themis-scraper` (`fetch`, `onboard`, `run`, `status`,
+`check`), plus `themis-init-db` from shared. Each also answers to `python -m themis_<member>`.
+`themis-zora-harvest` and `themis-gateway-mcp` were the old spellings; they encoded the
+subcommand in the script name, so neither member had a top-level command and a second role
+would have meant a second script. Bare `themis-<member>` prints what that instance is pointed
+at rather than erroring — the fastest way to read a misconfigured pod. `themis-matcher init-db`
 delegates to `themis_shared.initdb`, so the two spellings cannot drift.
 
 **Gotcha:** `MATCHER_SOURCES_PATH` defaults to `data/samples`, so a bare `themis-matcher index`
@@ -159,16 +163,33 @@ one job installing the extra stayed green. `--ci` rehearses all five jobs in scr
 via `UV_PROJECT_ENVIRONMENT`, leaving `.venv` and its 2.27 GB of torch alone; the same script with
 no argument is the fast lint/format/test pass.
 
-**One workflow file, five jobs** — `ci.yml`: `offline` (all members, no network or database),
-`scraper` (`--package themis-scraper --extra scraping`), `pgvector` (a real pgvector service plus
-`themis-init-db`), `boundaries` (a 4-leg matrix installing each member alone, so a cross-member
-import fails loudly), and `wheels` (proves `schema.sql` ships as package data — it is resolved by
-name at runtime, so a missing declaration would fail only inside a container). `mcp` and
-`embeddings` are still never installed in CI.
-Deployment target is a **UZH Kubernetes cluster** pulling from a **private Harbor registry**,
-with a **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Images
-are built by hand until Harbor access exists, and harvesting runs as a cluster job — never in
-CI, and **never committing data back to the repo**.
+**One workflow file, four jobs** — `ci.yml`: `offline` (all members, no network or database),
+`pgvector` (a real pgvector service plus `themis-init-db`), `boundaries` (a **5-leg** matrix
+installing each member alone, so a cross-member import fails loudly), and `wheels` (proves
+`schema.sql` ships as package data — it is resolved by name at runtime, so a missing declaration
+would fail only inside a container). `mcp`, `embeddings` and `render` are never installed in CI.
+
+A standalone `scraper` job existed until 2026-08-27, when the scraper's `scraping` extra became
+ordinary dependencies and the boundaries matrix grew a fifth leg that subsumes it. **An extra is a
+configuration nobody tests**: `uv sync --package themis-scraper` produced a package whose only
+console script died on `--help`, and no job installed it that way. Each leg's import target is
+spelled out rather than derived, because `themis_scraper/__init__.py` imports nothing and the bare
+package import would have passed anyway.
+
+**Two CI systems, two remotes, no overlap (2026-08-27).** `origin` is GitHub and runs `ci.yml`,
+which never builds an image. `gitlab` (`git@gitlab.uzh.ch:askuzh/themis.git`) runs
+`.gitlab-ci.yml`, which builds all four images and never runs a test — green on one says nothing
+about the other. It reads the tag from `projects/<role>/pyproject.toml`, so bumping `version`
+there is the whole release procedure; every branch builds, only the default branch pushes
+`themis-<role>:<version>-test` and `:latest-test` to
+`registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor`. Needs the runner to support
+docker-in-docker; a buildah fallback sits commented in the file, and the root `.dockerignore`
+exists only for that path — under BuildKit the per-Dockerfile
+`projects/<role>/Dockerfile.dockerignore` wins and the root file is never read.
+
+Deployment target is a **UZH Kubernetes cluster** pulling from that registry, with a
+**Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Harvesting runs
+as a cluster job — never in CI, and **never committing data back to the repo**.
 
 Keep this table current as modules land; put the detail in the member README, not here.
 

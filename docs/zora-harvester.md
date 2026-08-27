@@ -22,13 +22,13 @@ export DATABASE_URL=postgresql://matchmaker:matchmaker@localhost:5432/matchmaker
 export ZORA_UZH_API_KEY=<your ZORA personal API token>
 
 # Smoke test — fetch 5 records
-themis-zora-harvest --mode full --limit 5
+themis-zora harvest --mode full --limit 5
 
 # Full harvest (all of UZH, ~238K records, ~2 hours)
-themis-zora-harvest --mode full
+themis-zora harvest --mode full
 
 # Incremental harvest (records accessioned since the watermark)
-themis-zora-harvest --mode incremental
+themis-zora harvest --mode incremental
 ```
 
 `--since <ISO date>` narrows a **full** harvest to items accessioned on or after that date. It is
@@ -42,7 +42,7 @@ where `<kind>` is the publication mode (`full`/`incremental`) or the entity kind
 hours of ZORA requests are already on disk, so replay the dump instead of repeating them.
 
 ```bash
-themis-zora-harvest --mode full \
+themis-zora harvest --mode full \
     --from-dump data/raw/20260101T120000Z_full.jsonl
 ```
 
@@ -50,7 +50,7 @@ themis-zora-harvest --mode full \
 one does, and `--from-dump` is repeatable — once per kind — for a run that died partway:
 
 ```bash
-themis-zora-harvest \
+themis-zora harvest \
     --from-dump data/raw/20260101T120000Z_persons.jsonl \
     --from-dump data/raw/20260101T120100Z_orgunits.jsonl
 ```
@@ -96,7 +96,7 @@ belongs to whatever runs the container, not to the application, so in the cluste
 `CronJob` and locally it is the same invocation:
 
 ```bash
-docker compose run --rm harvester --mode incremental
+docker compose run --rm harvester harvest --mode incremental
 ```
 
 The schedules, and the two crontab lines that mirror them on a dev machine, are in
@@ -134,7 +134,7 @@ In practice prefer `docker compose`, which already wires the network, the databa
 token mount:
 
 ```bash
-docker compose run --rm harvester --mode incremental
+docker compose run --rm harvester harvest --mode incremental
 ```
 
 ## Output

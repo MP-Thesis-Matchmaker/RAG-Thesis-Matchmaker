@@ -1822,9 +1822,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="python -m themis_scraper.main", description="UZH thesis-posting scraper"
-    )
+    p = argparse.ArgumentParser(prog="themis-scraper", description="UZH thesis-posting scraper")
     sub = p.add_subparsers(dest="command", required=True)
 
     f = sub.add_parser("fetch", help="stage 1: fetch sources into the cache")

@@ -41,7 +41,7 @@ actually exists.*
    publication and thesis-posting records, validated against the shared pydantic
    contracts in `libs/shared/src/themis_shared/contracts`. Harvesting is live and writes
    rows into the `publication` table —
-   [`themis-zora-harvest`](docs/zora-harvester.md) — 214,756
+   [`themis-zora harvest`](docs/zora-harvester.md) — 214,756
    publications as of 2026-08-25, of which 53,545 carry a UZH author. Scraping is live
    too — [`themis-scraper`](projects/scraper/README.md)
    reads 103 curated departmental pages and writes the `posting` table. The
@@ -86,8 +86,10 @@ for one member.
 Optional extras belong to the member that owns them:
 `--package themis-matcher --extra embeddings` adds the real embedding model (pulls in torch),
 `--package themis-gateway --extra mcp` adds the MCP server, and
-`--package themis-scraper --extra scraping` is what the scraper needs to run at all
-(`--extra render` adds the Playwright fallback for pages that need a browser).
+`--package themis-scraper --extra render` adds the Playwright fallback for the three sources
+that only render under a browser. Every member is otherwise usable from a bare
+`--package` sync; the scraper's own dependencies stopped being an extra on 2026-08-27,
+because an extra its only console script could not start without was not optional.
 `uv sync --all-packages --all-extras` is the everything option. Note there is one `.venv`, at
 the root: unlike `pip install`, `uv sync` makes it *match* what you named, so `--package X`
 replaces its contents rather than adding to them. All configuration is documented in
@@ -103,8 +105,8 @@ Real example output is in [docs/example-run.md](docs/example-run.md).
 Other entry points:
 
 ```
-themis-gateway-mcp                     # MCP server, HTTP on :8000/mcp
-themis-zora-harvest --mode full        # ZORA harvest
+themis-gateway mcp                     # MCP server, HTTP on :8000/mcp
+themis-zora harvest --mode full        # ZORA harvest
 themis-scraper fetch --resume          # scrape postings (needs the scraping extra)
 themis-matcher repl                    # interactive query loop
 
@@ -181,11 +183,12 @@ scripts/check.sh --ci     # rehearse all five CI jobs in throwaway envs, ~5-10 m
 
 The second one is not optional politeness, and the reason is specific: **CI installs less than
 your machine has.** `offline` and `pgvector` sync `--all-packages` with *no extras*, while a
-development `.venv` accumulates `scraping`, `embeddings` and `mcp`. A green local `pytest` is
+development `.venv` accumulates `embeddings`, `mcp` and `render`. A green local `pytest` is
 therefore evidence about a strictly larger environment than the one CI runs, and the difference
 has been red twice — an `mcp` release that removed FastMCP, and a `conftest.py` whose
-`pytest.importorskip("bs4")` aborted the entire session wherever the `scraping` extra was absent,
-while the one job that installs it stayed green.
+`pytest.importorskip("bs4")` aborted the entire session wherever the then-`scraping` extra was
+absent, while the one job that installs it stayed green. Both were the same failure: an extra
+that only one job installed. That is why the scraper's dependencies stopped being an extra.
 
 `--ci` never touches `.venv`. A uv workspace has a single environment, so `uv sync --package X`
 would *replace* it — uninstalling torch and costing a multi-GB re-download — which is why each
@@ -199,9 +202,8 @@ pinned versions and not whatever has been released since:
 | Job | What it proves |
 |---|---|
 | `offline` | the whole pipeline runs with no model download, no database, no network |
-| `scraper` | `--package themis-scraper --extra scraping` — the scraper works, and needs nothing from the matcher |
 | `pgvector` | a real pgvector service plus `themis-init-db`; the DB-gated tests actually run |
-| `boundaries` | each member installed **alone**, so a cross-member import fails loudly instead of passing because everything happened to be installed |
+| `boundaries` | each of the five members installed **alone**, so a cross-member import fails loudly instead of passing because everything happened to be installed — and so does a member whose declared dependencies do not actually cover its own imports |
 | `wheels` | `schema.sql` ships as package data — it is resolved by name at runtime, so a missing declaration would fail only inside a container |
 
 `mcp` and `embeddings` are still never installed in CI. Container images are built by hand from

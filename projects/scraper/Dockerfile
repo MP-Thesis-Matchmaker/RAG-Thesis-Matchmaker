@@ -3,8 +3,8 @@
 # A batch job -- it runs, writes, and exits -- so in the cluster it is a CronJob.
 #
 # Single-stage, like projects/zora/Dockerfile and unlike projects/matcher/. The
-# [scraping] closure is requests / beautifulsoup4 / PyYAML / pypdf / openai: pure
-# Python, no torch. The render extra IS installed here, browser included -- that
+# closure is requests / beautifulsoup4 / PyYAML / pypdf / openai: pure Python, no
+# torch. The render extra IS installed here, browser included -- that
 # was a deliberate revisit (2026-08-22): ibw--1 and ivw--4 serve their listings
 # JS-only and iff--3's profile follows render client-side, so without a browser
 # those sources are permanently FETCH_FAILED however healthy the run. That is
@@ -43,11 +43,14 @@ COPY projects/zora/pyproject.toml     ./projects/zora/
 # Source for what actually gets installed.
 COPY libs/shared/ ./libs/shared/
 COPY projects/scraper/ ./projects/scraper/
-# --extra scraping is the whole point of this image; --extra render is what lets it
-# read the three JS-only sources (see the header). --no-default-groups still drops
-# the dev group, so no pytest and no ruff.
+# requests / bs4 / PyYAML / pypdf / openai arrive as ordinary dependencies -- they
+# were an extra named `scraping` until 2026-08-27, which meant this image and CI
+# were the only places the scraper was ever installed correctly. --extra render is
+# what lets it read the three JS-only sources (see the header) and is a real extra,
+# because it downloads a browser. --no-default-groups still drops the dev group, so
+# no pytest and no ruff.
 RUN uv sync --locked --no-default-groups --no-editable \
-    --package themis-scraper --extra scraping --extra render
+    --package themis-scraper --extra render
 
 # The browser is baked into the image, not fetched at runtime -- a CronJob must not
 # download 100 MB from Microsoft's CDN on every scheduled run, and the cluster may
@@ -92,5 +95,9 @@ RUN mkdir -p data/scraper/cache data/scraper/var data/scraper/output
 # half and is a separate invocation on purpose -- it is the one that talks to
 # uzh.ch, and it is polite (sequential, delayed, honestly identified), so it should
 # never be an accident of running the image with no arguments.
-ENTRYPOINT ["python", "-m", "themis_scraper.main"]
+# ENTRYPOINT is the console script, CMD its default arguments -- see the longer
+# note in projects/zora/Dockerfile for why this is not merely cosmetic: the chart
+# overrides `args` alone, and `themis_scraper.main` is an internal module path
+# that a rename would break. `python -m themis_scraper` still works.
+ENTRYPOINT ["themis-scraper"]
 CMD ["run", "--resume"]

@@ -1,14 +1,9 @@
 """
-Main entrypoint for the ZORA harvester.
+The ZORA harvest itself. Invoked as `themis-zora harvest` -- the argument parsing
+and the flag validation live in cli.py; what a harvest *is* lives here.
 
-Usage:
-    python -m themis_zora.harvest --mode full
-    python -m themis_zora.harvest --mode full --since 2024-07-01
-    python -m themis_zora.harvest --mode full --limit 5
-    python -m themis_zora.harvest --mode incremental
-    python -m themis_zora.harvest --no-persons --no-org-units
-    python -m themis_zora.harvest --mode full --from-dump data/raw/<ts>_full.jsonl
-    python -m themis_zora.harvest --from-dump data/raw/<ts>_persons.jsonl
+This docstring is what `themis-zora harvest --help` prints, so it is written for
+someone about to run one.
 
 Outputs (all in the Postgres at DATABASE_URL):
     person           — one row per DSpace-CRIS Person entity (~2,000)
@@ -58,17 +53,14 @@ tree walk broke, finding out now beats finding out then.
 
 from __future__ import annotations
 
-import argparse
 import logging
-import sys
 from collections.abc import Iterator
 
-from themis_shared import db, schema
+from themis_shared import schema
 
 from . import (
     config,
     entities,
-    index_trigger,
     mapping,
     normalize,
     raw_dump,
@@ -82,7 +74,7 @@ logger = logging.getLogger(__name__)
 
 # Re-exported: the dump helpers live in raw_dump.py now (entities.py needs them
 # too, and this module imports entities.py), but this is where callers look.
-__all__ = ["main", "read_raw_dump", "run", "write_raw_dump"]
+__all__ = ["publication_dump", "read_raw_dump", "run", "write_raw_dump"]
 
 
 def _as_dump_map(from_dump: str | dict[str, str] | None) -> dict[str, str]:
@@ -111,7 +103,7 @@ def _because(replaying: bool) -> str:
     return " (replaying dumps, and none feeds it)" if replaying else ""
 
 
-def _publication_dump(dumps: dict[str, str]) -> str | None:
+def publication_dump(dumps: dict[str, str]) -> str | None:
     """The publication dump among `dumps`, if any.
 
     `full` and `incremental` are two names for one step: which of them wrote the
@@ -258,7 +250,7 @@ def run(
     if replaying:
         persons = persons and raw_dump.PERSONS in dumps
         org_units = org_units and raw_dump.ORG_UNITS in dumps
-        publications = publications and _publication_dump(dumps) is not None
+        publications = publications and publication_dump(dumps) is not None
         if not (persons or org_units or publications):
             logger.error(
                 "Replaying %s, but none of them feeds an enabled step. Nothing to do.",
@@ -304,7 +296,7 @@ def run(
 
     if publications:
         exit_code = _harvest_publications(
-            client_factory, mode, since_override, limit, _publication_dump(dumps)
+            client_factory, mode, since_override, limit, publication_dump(dumps)
         )
         if exit_code != 0:
             return exit_code
@@ -318,141 +310,3 @@ def run(
     # alone can change which authors qualify across the whole existing corpus.
     store.reconcile_uzh_authors()
     return 0
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=["incremental", "full"], default="incremental")
-    parser.add_argument(
-        "--since",
-        default=None,
-        help=(
-            "ISO date (e.g. 2024-07-01). Only items accessioned on or after "
-            "this date are fetched. Only applies to full mode — incremental "
-            "always uses the watermark from harvest_state."
-        ),
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Max number of items to fetch per step. Useful for smoke testing.",
-    )
-    parser.add_argument(
-        "--from-dump",
-        action="append",
-        default=None,
-        metavar="PATH",
-        help=(
-            "Replay a raw dump from data/raw/ instead of fetching from ZORA. Its "
-            "records were already normalized when they were written, so only the "
-            "validate/upsert half of the pipeline re-runs -- no API token needed, "
-            "and no second request for data already on disk. Use this after a run "
-            "that fetched successfully but failed to write. Repeatable, once per "
-            "kind; the step a dump feeds comes from its filename. Any dump at all "
-            "means no API request is made, so steps without one are skipped."
-        ),
-    )
-    parser.add_argument(
-        "--dump-kind",
-        choices=raw_dump.KINDS,
-        default=None,
-        help=(
-            "Which step the --from-dump file feeds, when its name does not say "
-            "(a renamed or hand-copied dump). Only valid with a single --from-dump."
-        ),
-    )
-    parser.add_argument(
-        "--no-persons",
-        action="store_true",
-        help="Skip refreshing the `person` mirror.",
-    )
-    parser.add_argument(
-        "--no-org-units",
-        action="store_true",
-        help="Skip refreshing the `org_unit` mirror.",
-    )
-    parser.add_argument(
-        "--no-publications",
-        action="store_true",
-        help="Skip the publication harvest, refreshing only the entity mirrors.",
-    )
-    args = parser.parse_args()
-
-    persons = not args.no_persons
-    org_units = not args.no_org_units
-    publications = not args.no_publications
-
-    if not (persons or org_units or publications):
-        parser.error("all three capabilities are disabled — nothing to harvest")
-
-    dumps: dict[str, str] = {}
-    paths = args.from_dump or []
-    if args.dump_kind and len(paths) != 1:
-        parser.error("--dump-kind names the kind of one dump; pass exactly one --from-dump")
-    for path in paths:
-        try:
-            kind = args.dump_kind or raw_dump.dump_kind(path)
-        except RuntimeError as exc:
-            parser.error(str(exc))
-        if kind in dumps:
-            parser.error(f"two {kind} dumps given ({dumps[kind]} and {path}); a step replays one")
-        dumps[kind] = path
-    # A dump for a step its own flag switched off is a contradiction, not a
-    # precedence question -- say so rather than quietly honouring one of the two.
-    for kind, disabled, flag in (
-        (raw_dump.PERSONS, args.no_persons, "--no-persons"),
-        (raw_dump.ORG_UNITS, args.no_org_units, "--no-org-units"),
-    ):
-        if kind in dumps and disabled:
-            parser.error(f"{dumps[kind]} is a {kind} dump but {flag} was given")
-    if _publication_dump(dumps) and args.no_publications:
-        parser.error("a publication dump was given but --no-publications was too")
-
-    # `run()` applies the --from-dump implication itself, so it holds for every
-    # caller rather than only for this one.
-    if args.since and args.mode == "incremental":
-        logger.warning("--since is ignored in incremental mode (uses the harvest_state watermark)")
-    if args.since and args.from_dump:
-        logger.warning("--since is ignored with --from-dump (the filter was applied at fetch time)")
-    if args.no_publications and args.since:
-        logger.warning("--since is ignored with --no-publications")
-
-    try:
-        exit_code = run(
-            args.mode,
-            since_override=args.since,
-            limit=args.limit,
-            from_dump=dumps,
-            persons=persons,
-            org_units=org_units,
-            publications=publications,
-        )
-        if exit_code == 0 and publications:
-            # Only on success, and only when publications were actually written:
-            # asking the matcher to re-read a table this run did not touch is
-            # work for nothing. This is what replaces the "index after each
-            # harvest" CronJob that was never written -- a schedule can only
-            # guess when a harvest finished, and this knows.
-            index_trigger.trigger_index(config.get_settings())
-    except (RuntimeError, *db.DB_ERRORS) as exc:
-        # Expected failure modes (auth, config, a broken tree walk, an unreachable
-        # or out-of-date database) get a clean one-line message in the Actions log
-        # instead of a full traceback. Anything else (a real bug) still surfaces
-        # its traceback normally. psycopg errors are in the list because they are
-        # operator conditions too: `raw_dump.py` already translates OSError for the
-        # same reason, but the store layer has no such translation of its own.
-        logger.error(str(exc))
-        exit_code = 1
-    finally:
-        # The pool runs background worker threads; without this the process
-        # hangs for the pool's stop timeout on the way out and complains. In
-        # `finally` rather than after the except, because a crash mid-harvest is
-        # exactly when the pool is open -- and that is the path that hung.
-        db.close_pools()
-
-    sys.exit(exit_code)
-
-
-if __name__ == "__main__":
-    main()

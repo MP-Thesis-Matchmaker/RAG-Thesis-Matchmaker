@@ -1,0 +1,44 @@
+# Root build context filter, and a fallback rather than the primary one.
+#
+# The four images each carry their own projects/<member>/Dockerfile.dockerignore,
+# and when BuildKit is the builder those take precedence over this file entirely
+# -- so under `docker build` (BuildKit is the default since Docker 23) nothing
+# here is ever consulted. This exists because the <dockerfile>.dockerignore
+# convention is a BuildKit feature and nothing else implements it: kaniko and
+# buildah read only the root .dockerignore. Without this file, an unprivileged
+# CI runner would upload .git, docs/ and data/raw/ -- and on a developer machine
+# a 2.27 GB .venv -- as build context on every build.
+#
+# Contents are the union of the four per-Dockerfile files, which is safe for all
+# of them: it deliberately does NOT exclude data/scraper/registry/ or
+# data/scraper/specs/, which projects/scraper/Dockerfile COPYs and spec_engine
+# reads at runtime. Keep it that way -- excluding them produces an image that
+# builds, starts, and then finds nothing to scrape.
+.git
+.github
+.gitignore
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.secret
+data/raw/
+data/publications.jsonl
+data/state.json
+# Test suites, at the root and in every member. Before the workspace split a
+# bare `tests/` covered everything; a dockerignore pattern is anchored at the
+# build context, so it no longer reaches projects/*/tests or libs/*/tests.
+tests/
+projects/*/tests/
+libs/*/tests/
+docs/
+notebooks/
+
+venv/
+.venv/
+
+# Scraper runtime output. registry/ and specs/ ARE copied in (see the Dockerfile);
+# these three are machine-written and would only bloat the build context.
+data/scraper/cache/
+data/scraper/var/
+data/scraper/output/

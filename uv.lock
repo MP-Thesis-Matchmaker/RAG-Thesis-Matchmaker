@@ -2687,19 +2687,17 @@ name = "themis-scraper"
 version = "0.0.1"
 source = { editable = "projects/scraper" }
 dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "openai" },
+    { name = "pypdf" },
+    { name = "pyyaml" },
+    { name = "requests" },
     { name = "themis-shared" },
 ]
 
 [package.optional-dependencies]
 render = [
     { name = "playwright" },
-]
-scraping = [
-    { name = "beautifulsoup4" },
-    { name = "openai" },
-    { name = "pypdf" },
-    { name = "pyyaml" },
-    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -2709,15 +2707,15 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", marker = "extra == 'scraping'", specifier = ">=4.12" },
-    { name = "openai", marker = "extra == 'scraping'", specifier = ">=1.30" },
+    { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "openai", specifier = ">=1.30" },
     { name = "playwright", marker = "extra == 'render'", specifier = ">=1.40" },
-    { name = "pypdf", marker = "extra == 'scraping'", specifier = ">=4.0" },
-    { name = "pyyaml", marker = "extra == 'scraping'", specifier = ">=6.0" },
-    { name = "requests", marker = "extra == 'scraping'", specifier = ">=2.31" },
+    { name = "pypdf", specifier = ">=4.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "requests", specifier = ">=2.31" },
     { name = "themis-shared", editable = "libs/shared" },
 ]
-provides-extras = ["scraping", "render"]
+provides-extras = ["render"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]

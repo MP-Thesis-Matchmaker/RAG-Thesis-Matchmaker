@@ -56,7 +56,7 @@ extras they need, so a manifest would have referenced an image whose entrypoint
 could not import its own dependencies:
 
 ```console
-$ docker run --rm --entrypoint themis-gateway-mcp <harvester-image> --stdio
+$ docker run --rm --entrypoint themis-gateway <harvester-image> mcp --stdio
     from mcp.server.fastmcp import FastMCP
 ModuleNotFoundError: No module named 'mcp'
 ```
@@ -85,12 +85,33 @@ manifest is worse than an obvious blank, so nothing here is guessed.
 
 | Placeholder | Needs | Blocked on |
 |---|---|---|
-| `image:` project / tag | `registry.cs.zi.uzh.ch/<project>/thesis-matchmaker:<git-sha>` | project name + robot account — the **host is now known** |
+| `image:` project / tag | see below — the host, **project and tags are all now known** | nothing; the conversion below is what these wait on |
 | `timeZone` support | Kubernetes >= 1.27 (where CronJob `timeZone` is GA) | cluster version |
 
-The host placeholders are deliberately left in the YAML rather than half-filled:
-these three files are being replaced wholesale by Argo `appComponents` (see the
-note at the top), so editing them now would be churn on files with no future.
+The placeholders are **still** deliberately left in the YAML, even though the
+values now exist. These three files are being replaced wholesale by Argo
+`appComponents` (see the note at the top), so editing them is churn on files with
+no future — and worse, a filled-in `image:` makes a manifest look applicable when
+it is still the wrong kind of object and still omits the mandatory `resources`.
+An obvious blank is the honest state.
+
+The values, for whoever does the conversion. The Harbor project is
+`uzh-dsi-askuzh-masterthesis-supervisor`; images are built and pushed by
+[`../.gitlab-ci.yml`](../.gitlab-ci.yml) and carry two tags each:
+
+```
+registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-zora:<version>-test
+registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-zora:latest-test
+```
+
+All three manifests here run from that one image. The note above says `init-db`
+"belongs to `themis-shared`" since the split, and that is true of the *code* —
+`themis-init-db` is a `themis-shared` console script — but `themis-shared` is a
+library, not a deployable role, so no image is built for it. `init-db` runs from
+the `themis-zora` image with its entrypoint overridden, which is exactly what
+`docker-compose.yml` already does and why that is not the misnomer it looks like.
+The other three roles have their own images (`themis-matcher`, `themis-gateway`,
+`themis-scraper`) and no manifests here at all.
 
 ## Secrets are not committed, not even as placeholders
 
