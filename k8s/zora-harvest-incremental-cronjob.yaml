@@ -56,9 +56,12 @@ spec:
             - name: harvest
               # TODO(ci): Harbor host / project / tag. See k8s/README.md.
               image: TODO(ci)/TODO(ci)/thesis-matchmaker:TODO(ci)
-              # The image's ENTRYPOINT is already the harvester; this replaces
-              # only its default CMD of ["--mode", "incremental"].
-              args: ["--mode", "incremental"]
+              # args replaces the image's CMD, not its ENTRYPOINT -- and since
+              # 2026-08-27 the harvester is the `harvest` subcommand of
+              # `themis-zora`, so the subcommand is part of what CMD carries and
+              # has to be repeated here. Dropping it lands on the bare status
+              # summary, which exits 0 and harvests nothing.
+              args: ["harvest", "--mode", "incremental"]
               env:
                 - name: DATABASE_URL
                   valueFrom:

@@ -71,11 +71,15 @@ embedding `BAAI/bge-m3` (`hash-fake` offline, 1024 dimensions — the width is b
 `document.embedding vector(1024)`, so changing it is a migration) and the LLM (any
 OpenAI-compatible endpoint; LibreChat prod, Ollama dev).
 
-Entry points — one console script per member: `themis-init-db` (shared), `themis-matcher`
-(`init-db`, `index --source --rebuild`, `match --top-k`, `repl`, `serve --host --port`),
-`themis-gateway-mcp`
-(`--stdio`), `themis-zora-harvest`, and `themis-scraper`. The last two also answer to
-`python -m themis_zora.harvest` and `python -m themis_scraper`. `themis-matcher init-db`
+Entry points — **one console script per member, named after the member, with the role as a
+subcommand** (2026-08-27): `themis-matcher` (`init-db`, `index --source --rebuild`,
+`match --top-k`, `repl`, `serve --host --port`), `themis-zora` (`harvest`),
+`themis-gateway` (`mcp --stdio`), `themis-scraper` (`fetch`, `onboard`, `run`, `status`,
+`check`), plus `themis-init-db` from shared. Each also answers to `python -m themis_<member>`.
+`themis-zora-harvest` and `themis-gateway-mcp` were the old spellings; they encoded the
+subcommand in the script name, so neither member had a top-level command and a second role
+would have meant a second script. Bare `themis-<member>` prints what that instance is pointed
+at rather than erroring — the fastest way to read a misconfigured pod. `themis-matcher init-db`
 delegates to `themis_shared.initdb`, so the two spellings cannot drift.
 
 **Gotcha:** `MATCHER_SOURCES_PATH` defaults to `data/samples`, so a bare `themis-matcher index`

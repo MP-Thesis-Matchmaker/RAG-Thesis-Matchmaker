@@ -4,7 +4,7 @@
 # A scheduled harvest in the cluster is one container invocation with a --mode
 # flag, so reproducing it here is the same invocation:
 #
-#   docker compose run --rm harvester --mode incremental
+#   docker compose run --rm harvester harvest --mode incremental
 #
 # For real timing locally the timer belongs to the host, not the app -- see
 # docs/deployment.md for the two crontab lines matching the CronJob schedules.

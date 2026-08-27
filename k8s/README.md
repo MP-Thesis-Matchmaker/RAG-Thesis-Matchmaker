@@ -56,7 +56,7 @@ extras they need, so a manifest would have referenced an image whose entrypoint
 could not import its own dependencies:
 
 ```console
-$ docker run --rm --entrypoint themis-gateway-mcp <harvester-image> --stdio
+$ docker run --rm --entrypoint themis-gateway <harvester-image> mcp --stdio
     from mcp.server.fastmcp import FastMCP
 ModuleNotFoundError: No module named 'mcp'
 ```

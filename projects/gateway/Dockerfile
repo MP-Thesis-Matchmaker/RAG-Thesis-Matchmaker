@@ -74,4 +74,10 @@ USER 10001
 # MCP inspector and is not how this is deployed.
 EXPOSE 8000
 
-ENTRYPOINT ["themis-gateway-mcp"]
+# ENTRYPOINT is the program, CMD its default arguments -- the same shape as the
+# other three images. This one had no CMD at all until the MCP server became a
+# subcommand rather than its own console script; now the default role is stated
+# rather than implied, and a REST front door would be `command: ["rest"]` without
+# a second image or a second script.
+ENTRYPOINT ["themis-gateway"]
+CMD ["mcp"]

@@ -11,18 +11,17 @@ Deployment: this runs as a standalone server that AI Buddy points its agent at,
 so the default transport is streamable HTTP and the tools are served at
 ``http://<GATEWAY_MCP_HOST>:<GATEWAY_MCP_PORT>/mcp``. Nothing is merged into AI Buddy itself.
 
-Run with ``themis-gateway-mcp``, or ``--stdio`` for local testing with an MCP
-inspector. Needs the ``mcp`` extra.
+Run with ``themis-gateway mcp``, or ``themis-gateway mcp --stdio`` for local
+testing with an MCP inspector. Needs the ``mcp`` extra -- which is why cli.py
+imports this module inside its handler rather than at module scope: without that,
+an environment lacking the extra could not even print ``--help``.
 """
 
 from __future__ import annotations
 
-import argparse
-
 from mcp.server.mcpserver import MCPServer
 
 from themis_gateway import __version__, service
-from themis_gateway.config import get_settings
 
 # MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from
 # mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than `mcp` on
@@ -56,35 +55,3 @@ def recommend_supervisors(interests: str, top_k: int = 5) -> str:
     answer is wanted instead of structured data.
     """
     return service.recommend_supervisors(interests, top_k=top_k)
-
-
-def main() -> None:
-    """Run the MCP server, over streamable HTTP by default."""
-    parser = argparse.ArgumentParser(
-        prog="themis-gateway-mcp",
-        description="Serve the thesis matchmaker as MCP tools.",
-    )
-    parser.add_argument(
-        "--stdio",
-        action="store_true",
-        help="run over stdio instead of HTTP (local testing with an MCP inspector)",
-    )
-    args = parser.parse_args()
-
-    if args.stdio:
-        server.run(transport="stdio")
-        return
-
-    # host and port are run() keyword arguments in 2.x. In 1.x they had to be
-    # poked into mcp.settings before calling run(), which meant the transport and
-    # the address it binds were configured in two different places.
-    settings = get_settings()
-    server.run(
-        transport="streamable-http",
-        host=settings.mcp_host,
-        port=settings.mcp_port,
-    )
-
-
-if __name__ == "__main__":
-    main()

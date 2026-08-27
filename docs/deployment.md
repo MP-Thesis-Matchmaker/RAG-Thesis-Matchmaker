@@ -22,11 +22,11 @@ a committed manifest is worse than an obvious blank.
 | Component | Runtime | Trigger | Manifest |
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
-| `themis_zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
+| `themis-zora harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
 | `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`), default `CMD` |
 | `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, `command` override |
-| `themis-gateway-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
-| `themis_scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
+| `themis-gateway mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`), default `CMD` |
+| `themis-scraper run` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
 Every row but the first two lacks only a manifest. What used to block them — no image
 installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
@@ -253,15 +253,15 @@ init-db one-shot, and the harvester as a manually invoked job.
 ```bash
 docker compose up -d postgres
 docker compose run --rm init-db
-docker compose run --rm harvester --mode incremental   # = what the CronJob does
+docker compose run --rm harvester harvest --mode incremental   # = what the CronJob does
 ```
 
 For real timing locally, the timer belongs to the host, not the app — the same
 two schedules as the CronJobs:
 
 ```cron
-0 1 * * 1      cd <repo> && docker compose run --rm harvester --mode full
-0 1 * * 0,2-6  cd <repo> && docker compose run --rm harvester --mode incremental
+0 1 * * 1      cd <repo> && docker compose run --rm harvester harvest --mode full
+0 1 * * 0,2-6  cd <repo> && docker compose run --rm harvester harvest --mode incremental
 ```
 
 ## Configuration
@@ -441,7 +441,7 @@ Not questions for Central Informatics — things we owe ourselves.
   dominant term".
 - **The `[mcp]` extra now requires SDK 2.x, and the adapter was ported to it.**
   `mcp>=1.2` had resolved to **2.0.0**, which removed `FastMCP`, so
-  `themis-gateway-mcp` could not start at all — CI never installs the extra, so
+  `themis-gateway mcp` could not start at all — CI never installs the extra, so
   nothing caught it until an image was built. The adapter uses `MCPServer` from
   `mcp.server.mcpserver`, and passes `host`/`port` to `run()` instead of poking
   `mcp.settings`. The wire format was checked before and after: tool names,

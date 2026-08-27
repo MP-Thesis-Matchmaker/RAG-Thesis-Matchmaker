@@ -41,7 +41,7 @@ actually exists.*
    publication and thesis-posting records, validated against the shared pydantic
    contracts in `libs/shared/src/themis_shared/contracts`. Harvesting is live and writes
    rows into the `publication` table —
-   [`themis-zora-harvest`](docs/zora-harvester.md) — 214,756
+   [`themis-zora harvest`](docs/zora-harvester.md) — 214,756
    publications as of 2026-08-25, of which 53,545 carry a UZH author. Scraping is live
    too — [`themis-scraper`](projects/scraper/README.md)
    reads 103 curated departmental pages and writes the `posting` table. The
@@ -105,8 +105,8 @@ Real example output is in [docs/example-run.md](docs/example-run.md).
 Other entry points:
 
 ```
-themis-gateway-mcp                     # MCP server, HTTP on :8000/mcp
-themis-zora-harvest --mode full        # ZORA harvest
+themis-gateway mcp                     # MCP server, HTTP on :8000/mcp
+themis-zora harvest --mode full        # ZORA harvest
 themis-scraper fetch --resume          # scrape postings (needs the scraping extra)
 themis-matcher repl                    # interactive query loop
 

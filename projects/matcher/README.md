@@ -44,7 +44,7 @@ uv run themis-matcher serve                       # the HTTP API, default :8100
 | `GET` | `/v1/index/status` | The manifest, or 409 `index_not_built` |
 | `POST` | `/v1/match` | Ranked `SupervisorMatch` list. What the gateway's `find_researchers` calls |
 | `POST` | `/v1/recommend` | Grounded prose. What `recommend_supervisors` calls |
-| `POST` | `/v1/index/publications` | 202 + a run id. Fired by `themis-zora-harvest` on success |
+| `POST` | `/v1/index/publications` | 202 + a run id. Fired by `themis-zora harvest` on success |
 | `POST` | `/v1/index/postings` | 202 + a run id. Fired by `themis-scraper` on success |
 | `GET` | `/v1/index/runs`, `/v1/index/runs/{id}` | Run history and one run's state |
 

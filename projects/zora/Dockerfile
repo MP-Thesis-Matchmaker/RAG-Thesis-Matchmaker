@@ -71,21 +71,23 @@ RUN mkdir -p data/raw
 # shape as the other three images. Two reasons beyond consistency:
 #
 #   Kubernetes maps `command:` onto ENTRYPOINT and `args:` onto CMD, so a chart
-#   changing the schedule sets `args: ["--mode", "full"]` and touches nothing
-#   else. With `python -m themis_zora.harvest` as the entrypoint, anyone who
-#   needed to set `command` would have to restate that incantation exactly, and
-#   a typo there is a crash-loop that reads like a Python fault rather than a
-#   configuration one.
+#   changing the schedule sets `args: ["harvest", "--mode", "full"]` and touches
+#   nothing else. With `python -m themis_zora.harvest` as the entrypoint -- which
+#   is what this was until 2026-08-27 -- anyone who needed to set `command` would
+#   have to restate that incantation exactly, and a typo there is a crash-loop
+#   that reads like a Python fault rather than a configuration one.
 #
-#   `themis-zora-harvest` is the declared interface ([project.scripts]);
-#   `themis_zora.harvest` is an internal module path. Pinning a deployment
-#   artefact to the latter means renaming the module breaks the image, which is
-#   exactly the coupling the boundaries CI job exists to prevent elsewhere.
+#   `themis-zora` is the declared interface ([project.scripts]); `themis_zora.harvest`
+#   is an internal module path. Pinning a deployment artefact to the latter means
+#   renaming the module breaks the image, which is exactly the coupling the
+#   boundaries CI job exists to prevent elsewhere.
 #
-# `python -m themis_zora.harvest` still works and the README still documents it;
-# it is simply not what the container runs.
+# `python -m themis_zora harvest` is the same program by its module name.
 #
 # Default: one-shot incremental harvest. A scheduled run is this same invocation
-# with a --mode flag, issued by a Kubernetes CronJob — see k8s/.
-ENTRYPOINT ["themis-zora-harvest"]
-CMD ["--mode", "incremental"]
+# with a different --mode, issued by a Kubernetes CronJob — see k8s/. Note that
+# `harvest` is part of CMD, not ENTRYPOINT: a chart overriding `args` has to
+# repeat it (`args: ["harvest", "--mode", "full"]`), which is the price of the
+# subcommand and is paid once per manifest.
+ENTRYPOINT ["themis-zora"]
+CMD ["harvest", "--mode", "incremental"]
