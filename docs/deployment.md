@@ -23,8 +23,8 @@ a committed manifest is worse than an obvious blank.
 |---|---|---|---|
 | `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
 | `themis_zora.harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`) |
-| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, default `CMD` |
+| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`), default `CMD` |
+| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, `command` override |
 | `themis-gateway-mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`) |
 | `themis_scraper.main` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
 
@@ -98,11 +98,22 @@ the weights, and the gateway is 296 MB of `httpx` and the MCP SDK. Verified on t
 built image: `torch`, `sentence_transformers` and `themis_matcher` are all absent.
 
 **The matcher image serves two roles, chosen by `CMD`.** `ENTRYPOINT` is
-`themis-matcher` and the default `CMD` is `index --source db`, so `command:
-["serve"]` in the chart's `shellCommand` switches it to the API. One image because
-both roles want the same model and the same closure. The batch role stays because a
-cold full index is measured in days under the CPU quota, and that is not something
-to start over HTTP and hope the pod outlives it.
+`themis-matcher` and the default `CMD` is **`serve`**; `command: ["index",
+"--source", "db"]` in the chart's `shellCommand` switches it to the batch build.
+One image because both roles want the same model and the same closure.
+
+The default is `serve` because it is the role with consumers. The gateway holds no
+model and no database and reaches this image over HTTP for every match, and both
+ingestion jobs end their runs by POSTing to `/v1/index/publications` and
+`/v1/index/postings`. A pod that came up in the batch role would refuse all three —
+and since a chart with no `shellCommand` gets the image default, that default is
+what a forgotten override falls back to.
+
+The batch role stays available because a cold full index is measured in days under
+the CPU quota, and that is not something to start over HTTP and hope the pod
+outlives it. Steady-state incremental indexing goes through the REST triggers, which
+run inside the serving process — the one qualifier on invariant 1, and the reason
+one process does both.
 
 **Both install a CPU-only torch, and that is a lock decision rather than a
 Dockerfile one.** PyPI's default linux `torch` wheel is the CUDA build — a wheel
