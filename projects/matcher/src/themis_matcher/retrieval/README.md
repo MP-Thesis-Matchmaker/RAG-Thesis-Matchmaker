@@ -171,6 +171,16 @@ observed values rather than assumed. Why it was left signed instead of rescaled 
 `[0, 1]`:
 [`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
 
+Measured 2026-08-28 — [`docs/score-calibration.md`](../../../../../docs/score-calibration.md).
+Two results land here rather than in synthesis. **Scores are not comparable across
+queries**: best-match scores ranged 0.605–0.734 by topic alone, tracking how densely the
+corpus covers the query's neighbourhood rather than match quality, so the `score`
+strategy's ordering is only meaningful *within* one query. And **postings score
+systematically below publications** (best posting 0.564–0.652 against 0.605–0.734),
+because 695 short advertisements are a thinner corpus than 214,756 abstracts — which
+means `_group_by_person`'s `max` is not comparing like with like when a person has both.
+Today the person key ensures nobody does; when that is fixed, this becomes live.
+
 ## Configuration
 
 The subset of `MatcherSettings` this sub-package reads; the whole list is in

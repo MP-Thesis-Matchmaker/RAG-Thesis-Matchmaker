@@ -73,8 +73,15 @@ cosine similarity in `[-1, 1]` — not a percentage, and it can be negative. Why
 range is signed rather than rescaled:
 [`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
 
-Pick a value from the distribution over the real index rather than from what
-the number looks like; it is not a percentage.
+**It has been measured, and the measurement says do not set it yet** —
+[`docs/score-calibration.md`](../../../../../docs/score-calibration.md). Nine queries
+over the full index found that publications and postings occupy incompatible ranges:
+the admissible band for a single threshold is `[0.542, 0.564]`, 0.022 wide, and every
+value in it trims postings while leaving publications untouched. Because the person key
+never joins the two sources, that removes exactly the supervisors with open positions.
+The report recommends two per-source thresholds (0.57 publications, 0.48 postings)
+instead. Reproduce or extend the measurement with
+[`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 
 ## Swappable seams
 
@@ -95,11 +102,15 @@ LLM.
   offline path, `TemplateSynthesizer` prints weak matches exactly like strong
   ones. Since the offline path is the default, the guard is inert in the
   configuration most people run.
-- **The default threshold is `0.0`**, and scores can be negative, so out-of-the-box
-  the weak-match guard only catches genuinely anti-correlated matches. It needs a
-  calibrated value to do real work, and deliberately does not have one yet: no score
-  distribution over the real index has been measured, and a guessed threshold in
-  graded work is worse than an inert one.
+- **The default threshold is `0.0`, and the guard is therefore inert** — scores never
+  went negative in measurement, so nothing is ever below it. It stays `0.0`
+  deliberately rather than for want of data: the calibration run
+  ([`docs/score-calibration.md`](../../../../../docs/score-calibration.md)) found the
+  admissible band for a single value is only 0.022 wide, shrinks monotonically as
+  queries are added, and contains no value that does not delete posting-backed
+  supervisors. An inert guard beats one that looks calibrated and silently removes the
+  most actionable half of the output. The fix is two per-source thresholds, which needs
+  `SupervisorMatch` to record which source produced its `score`.
 - **`llm.py` has no dedicated test file.** The prompt construction, the candidate
   formatting, and the `LLMError` fallback are only exercised indirectly.
 - The system prompt is a single hard-coded English string. Nothing evaluates

@@ -102,7 +102,7 @@ whole list.
 | `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to that endpoint. |
 | `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token for it. |
 | `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | `none` / `low` / `medium` / `high`, for reasoning models only. Leave unset otherwise: some servers reject fields they do not know. |
-| `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Below this, the answer says there is no strong match instead of overselling a weak one. **In cosine units, not a percentage** — the score is a cosine similarity over `[-1, 1]` and can be negative. Measure before setting it. Meaningless with `hash-fake`, whose scores are arbitrary. |
+| `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Below this, the answer says there is no strong match instead of overselling a weak one. **In cosine units, not a percentage** — the score is a cosine similarity over `[-1, 1]`. Measured and deliberately left inert: [`docs/score-calibration.md`](../../docs/score-calibration.md) found no single value that does not delete posting-backed supervisors. Meaningless with `hash-fake`, whose scores are arbitrary. |
 | `embedding_model` | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3` | `hash-fake` selects the deterministic offline embedder — no download, no network. |
 | `embedding_max_seq_length` | `MATCHER_EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap before embedding. **Changing it invalidates every vector in the index**, and `document.embedding` is `vector(1024)`. |
 | `embedding_batch_size` | `MATCHER_EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer with the cap above; cannot substitute for it. |

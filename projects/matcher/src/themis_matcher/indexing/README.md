@@ -220,9 +220,33 @@ match the code, rather than the reverse. `test_store_contract.py` pins both
 endpoints — a rescale or a clamp keeps every ordering and every other store test
 green, so nothing else would catch one.
 
-Any threshold set against it — notably `MATCHER_SYNTHESIS_MIN_SCORE` — is in
-cosine units and should be chosen from the distribution over the real index
-rather than assumed.
+#### What the first measurement found (2026-08-28)
+
+Nine queries — five on-topic probes, four out-of-domain controls — against the full
+215,451-document index. Full data, method and analysis:
+[`docs/score-calibration.md`](../../../../../docs/score-calibration.md). Reproduce with
+[`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
+The four results that bear on this section:
+
+- **The negative region is empty.** Not one row scored below zero against any query;
+  the lowest observed score was `0.115`. bge-m3's anisotropy, measured rather than
+  assumed. This does not reverse the decision above — a clamp would still be
+  irreversible for no gain — but the reversibility argument is now known to protect an
+  empty region. Re-check after any re-embed or model change.
+- **Retrieval does separate signal from noise.** Out-of-domain controls peak at 0.542
+  (publications) and 0.431 (postings); on-topic queries bottom out at 0.605 and 0.564.
+  No overlap, so a threshold is a coherent mechanism here.
+- **The two source types have incompatible ranges.** The publication noise floor sits
+  0.022 below the posting signal ceiling, so the admissible band for a *single*
+  threshold is `[0.542, 0.564]` — and it lies entirely inside the region that trims
+  postings while leaving publications untouched. Since the person key never joins the
+  two sources, that deletes supervisors with advertised open positions.
+- **Absolute cosine is a weak instrument here.** Best-match scores vary 0.605–0.734 by
+  topic alone, tracking corpus density rather than match quality. Query-relative
+  scoring belongs with `ranking`, not here.
+
+`MATCHER_SYNTHESIS_MIN_SCORE` therefore **stays `0.0`**; the report recommends two
+per-source thresholds instead, which needs a code change rather than a config value.
 
 ## Configuration
 
