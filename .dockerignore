@@ -1,13 +1,16 @@
-# Root build context filter, and a fallback rather than the primary one.
+# Root build context filter, and since 2026-08-28 the only one CI applies.
 #
-# The four images each carry their own projects/<member>/Dockerfile.dockerignore,
-# and when BuildKit is the builder those take precedence over this file entirely
-# -- so under `docker build` (BuildKit is the default since Docker 23) nothing
-# here is ever consulted. This exists because the <dockerfile>.dockerignore
-# convention is a BuildKit feature and nothing else implements it: kaniko and
-# buildah read only the root .dockerignore. Without this file, an unprivileged
-# CI runner would upload .git, docs/ and data/raw/ -- and on a developer machine
-# a 2.27 GB .venv -- as build context on every build.
+# The <dockerfile>.dockerignore convention is a BuildKit feature and nothing
+# else implements it. On a developer machine `docker build` is BuildKit (the
+# default since Docker 23), so the four projects/<member>/Dockerfile.dockerignore
+# files win there and this file is never consulted. GitLab CI builds with
+# kaniko, because the shared runners can run neither docker-in-docker nor
+# buildah (see .gitlab-ci.yml), and kaniko reads only the root .dockerignore.
+#
+# So the two build paths filter the context differently, and this is the file
+# that decides what a *published* image was built from. Without it CI would
+# upload .git, docs/ and data/raw/ as build context on every build -- and on a
+# developer machine falling back to a non-BuildKit builder, a 2.27 GB .venv.
 #
 # Contents are the union of the four per-Dockerfile files, which is safe for all
 # of them: it deliberately does NOT exclude data/scraper/registry/ or

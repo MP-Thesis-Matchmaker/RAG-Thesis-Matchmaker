@@ -498,6 +498,33 @@ tests, boundaries, wheels) and never builds an image; this one builds images and
 never runs a test. Neither substitutes for the other, and a green pipeline here
 says nothing about whether the code works.
 
+**The builder is kaniko, not docker** (since 2026-08-28), and that is debt the
+project is carrying knowingly: kaniko was archived upstream by Google in 2025 and
+receives no fixes. It is here because gitlab.uzh.ch's shared runners are
+unprivileged and both normal builders need a change to the runner's `config.toml`
+that no `.gitlab-ci.yml` can make:
+
+| Builder | Result | Needs |
+|---|---|---|
+| `docker:29-dind` | fails -- daemon never starts; job dies on a missing `/certs/client/ca.pem`, which reads as a TLS fault and is not one | `privileged = true` |
+| `buildah` | fails -- `unshare(CLONE_NEWUSER): Operation not permitted`; it tries to gain `CAP_SYS_ADMIN` via a user namespace, which the default seccomp profile blocks. `STORAGE_DRIVER=vfs` and `BUILDAH_ISOLATION=chroot` do not help; both apply later | `security_opt` or `cap_add` |
+| `kaniko` | works -- unpacks and snapshots layers itself, so no user namespace, no privileged mode, no seccomp exemption | nothing |
+
+All three were tested rather than reasoned about; `.gitlab-ci.yml` carries the
+reproductions. **The exit condition is a privileged runner**, not a newer kaniko:
+ask ZI for one, and this whole section collapses back to a plain `docker build`.
+
+The cost meanwhile is real and worth stating plainly: **every CI build is cold.**
+kaniko can cache only by pushing every intermediate layer into Harbor, against a
+10 GB quota with no garbage collection, so caching was declined rather than
+half-built. The matcher re-downloads torch on every run, which is why the job's
+1h timeout is now snug rather than generous.
+
+One constraint this puts on the Dockerfiles: **no BuildKit-only syntax.** kaniko
+supports no `RUN --mount=type=cache`, no heredocs and no `# syntax=` directive.
+None of the four use any today, and one that did would build fine locally and
+break CI.
+
 Every branch builds all four images; **only the default branch pushes**. Two tags
 are published per image:
 
@@ -533,9 +560,9 @@ in it:
 | `HARBOR_THEMIS_ROBOT_USER` | the robot account's full name | `robot$uzh-dsi-askuzh-masterthesis-supervisor+<account>`. **Untick "Expand variable reference"** -- GitLab expands `$` inside variable *values*, and the name contains one; without that, login fails with a 401 that looks like a wrong password. Cannot be masked (masking rejects `$`) and does not need to be. |
 | `HARBOR_THEMIS_ROBOT_PASSWORD` | the robot's generated secret | Mask it. Harbor robots **expire by default** -- check the *Expires* column, because a pipeline that worked all semester and then stopped is usually this. |
 
-Harbor refuses to grant a robot `Push Repository` without `Pull Repository`. Pull
-is also what makes the pipeline's `--cache-from` work, so the combination is not
-merely a formality.
+Harbor refuses to grant a robot `Push Repository` without `Pull Repository`, so
+grant both. The pipeline itself only pushes -- it has no layer cache to pull (see
+below) -- but the permission pair is Harbor's rule, not ours.
 
 Building by hand still works, and is what to do while the runners are unavailable:
 

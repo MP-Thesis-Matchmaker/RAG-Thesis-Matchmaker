@@ -182,10 +182,24 @@ which never builds an image. `gitlab` (`git@gitlab.uzh.ch:askuzh/themis.git`) ru
 about the other. It reads the tag from `projects/<role>/pyproject.toml`, so bumping `version`
 there is the whole release procedure; every branch builds, only the default branch pushes
 `themis-<role>:<version>-test` and `:latest-test` to
-`registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor`. Needs the runner to support
-docker-in-docker; a buildah fallback sits commented in the file, and the root `.dockerignore`
-exists only for that path — under BuildKit the per-Dockerfile
-`projects/<role>/Dockerfile.dockerignore` wins and the root file is never read.
+`registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor`. It builds with **kaniko** (since
+2026-08-28), and that is **carried debt, not a preference** — kaniko was archived upstream in 2025.
+gitlab.uzh.ch's shared runners are unprivileged, and both normal builders need a change to the
+runner's `config.toml` that no `.gitlab-ci.yml` can make: `docker:29-dind` needs `privileged = true`
+(without it the daemon never starts and the job dies on a missing `/certs/client/ca.pem`, which
+reads as a TLS fault and is not one), and **buildah fails too** — under Docker's default capability
+set it tries to gain `CAP_SYS_ADMIN` through a user namespace, and the default seccomp profile
+blocks `CLONE_NEWUSER`; neither `STORAGE_DRIVER=vfs` nor `BUILDAH_ISOLATION=chroot` avoids it. All
+three were tested; the reproductions are in the file. **The exit condition is a privileged runner**,
+not a newer kaniko.
+
+Two consequences. There is **no cross-job layer cache** — kaniko can only cache by pushing every
+intermediate layer into Harbor, against a 10 GB quota with no GC — so every build is cold and the
+matcher re-downloads torch each time. And the **root `.dockerignore` is the one CI applies**,
+because `projects/<role>/Dockerfile.dockerignore` is a BuildKit convention kaniko ignores; those
+four still govern a local `docker build`, so the two paths filter the context differently. For the
+same reason no Dockerfile here may use BuildKit-only syntax (`RUN --mount`, heredocs, `# syntax=`):
+it would build locally and break CI.
 
 Deployment target is a **UZH Kubernetes cluster** pulling from that registry, with a
 **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Harvesting runs
