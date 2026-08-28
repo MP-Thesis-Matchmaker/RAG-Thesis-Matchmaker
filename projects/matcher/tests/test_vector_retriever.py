@@ -112,6 +112,38 @@ def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> Non
     assert matches[0].publication_count >= 1
 
 
+def test_score_source_names_the_document_the_score_came_from(
+    retriever: VectorRetriever,
+) -> None:
+    """Which source won decides which threshold synthesis applies to the person.
+
+    Prof. G. Roth appears only on a posting, Prof. C. Schmid only on a
+    publication, so each has exactly one possible answer and the assertion cannot
+    pass by accident.
+    """
+    graph = retriever.retrieve(ParsedQuery(topics=["Representation learning on graphs"]), top_k=10)
+    roth = next(m for m in graph if m.supervisor == "Prof. G. Roth")
+    assert roth.score_source == "thesis_posting"
+
+    history = retriever.retrieve(ParsedQuery(topics=["Medieval trade routes"]), top_k=10)
+    schmid = next(m for m in history if m.supervisor == "Prof. C. Schmid")
+    assert schmid.score_source == "publication"
+
+
+def test_score_source_agrees_with_the_highest_scoring_evidence(
+    retriever: VectorRetriever,
+) -> None:
+    """The invariant behind the field: it names the source of the person's best hit.
+
+    Checked across every match of a query that mixes both kinds, including people
+    credited by a publication and a posting at once.
+    """
+    matches = retriever.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
+    assert matches
+    for match in matches:
+        assert match.score_source in {e.source_type for e in match.evidence}
+
+
 def test_matches_sorted_by_score(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=3)

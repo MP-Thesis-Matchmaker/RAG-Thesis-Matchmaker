@@ -15,6 +15,8 @@ side under different names to keep them apart.
 
 from __future__ import annotations
 
+import logging
+import os
 from typing import Literal
 
 from pydantic_settings import SettingsConfigDict
@@ -22,6 +24,11 @@ from pydantic_settings import SettingsConfigDict
 from themis_shared.config import Settings, warn_on_unprefixed_env
 
 __all__ = ["MatcherSettings", "get_settings"]
+
+logger = logging.getLogger(__name__)
+
+# Module-level, so a long-lived process warns once rather than per call.
+_warned_retired: set[str] = set()
 
 
 class MatcherSettings(Settings):
@@ -54,14 +61,27 @@ class MatcherSettings(Settings):
 
     # Minimum retrieval score a candidate needs before the LLM synthesiser
     # presents it as a match; below it the answer says there is no strong match
-    # instead of overselling a weak one. 0 disables the filter. Only meaningful
-    # with real embeddings (hash-fake scores are arbitrary).
+    # instead of overselling a weak one. 0 disables. Only meaningful with real
+    # embeddings (hash-fake scores are arbitrary).
     #
-    # In COSINE UNITS: the score is a cosine similarity over [-1, 1] and can be
-    # negative, so 0.5 is not "half a match" and 0 disables rather than halves.
-    # Left at 0 deliberately -- no distribution over the real index has been
-    # measured yet, and scripts/score_distribution.py is what produces one.
-    synthesis_min_score: float = 0.0
+    # In COSINE UNITS: the score is a cosine similarity over [-1, 1], so 0.5 is
+    # not "half a match". Both values are measured, not chosen -- see
+    # docs/score-calibration.md.
+    #
+    # There are two because the sources are not on a common scale. An arbitrary
+    # query lands closer to *something* among 214,756 publication abstracts than
+    # among 695 short postings, purely from sampling density, so out-of-domain
+    # queries peak at 0.542 against publications and 0.431 against postings while
+    # on-topic queries bottom out at 0.605 and 0.564. A single value would have to
+    # sit in [0.542, 0.564] -- 0.022 wide -- and every value in that band trims
+    # postings while leaving publications untouched, which deletes precisely the
+    # supervisors who have advertised an open position.
+    #
+    # Each of these sits mid-band with room either side: 0.57 in [0.542, 0.596],
+    # 0.48 in [0.431, 0.513]. Re-measure after a re-embed, a model change, or the
+    # person-key fix, which changes which source supplies a person's score.
+    synthesis_min_score_publication: float = 0.57
+    synthesis_min_score_posting: float = 0.48
 
     # Embedding model used for semantic search. Provisional default; the final
     # choice is shared with the retrieval and index work. The special value
@@ -181,7 +201,34 @@ class MatcherSettings(Settings):
     index_run_heartbeat_timeout_s: int = 900
 
 
+# Retired on 2026-08-28, split in two because publications and postings are not
+# on a common scale. `warn_on_unprefixed_env` cannot cover this: it derives its
+# list from live fields, and its `also` escape hatch renders "retired with no
+# replacement", which is the wrong thing to say when there are two. Same expiry
+# date as that helper -- delete both once everyone's .env has caught up.
+_RETIRED = {
+    "MATCHER_SYNTHESIS_MIN_SCORE": (
+        "MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION and MATCHER_SYNTHESIS_MIN_SCORE_POSTING"
+    )
+}
+
+
+def _warn_on_retired_env() -> None:
+    """Say something when a retired variable is set, because nothing else would.
+
+    `extra="ignore"` means a leftover name is not rejected, just unread. That
+    matters more here than for a rename: the old default was 0.0, so someone who
+    set this to disable the weak-match guard would find it silently enabled at
+    0.57/0.48 instead.
+    """
+    for old, new in _RETIRED.items():
+        if os.environ.get(old) and old not in _warned_retired:
+            _warned_retired.add(old)
+            logger.warning("%s is set but no longer read; use %s instead", old, new)
+
+
 def get_settings() -> MatcherSettings:
     """Return the matcher's settings, read fresh from the environment."""
     warn_on_unprefixed_env(MatcherSettings)
+    _warn_on_retired_env()
     return MatcherSettings()

@@ -191,11 +191,16 @@ class VectorRetriever:
             publications = [h for h in person_hits if h.metadata["source_type"] == "publication"]
             postings = [h for h in person_hits if h.metadata["source_type"] == "thesis_posting"]
             departments = [h.metadata.get("department") for h in person_hits]
+            # The hit itself, not just its score: which source won decides which
+            # threshold synthesis applies to this person, and the two are not on a
+            # common scale. Ties go to the earliest hit, which is deterministic.
+            best = max(person_hits, key=lambda hit: hit.score)
             matches.append(
                 SupervisorMatch(
                     supervisor=person,
                     department=next((str(d) for d in departments if d), None),
-                    score=max(h.score for h in person_hits),
+                    score=best.score,
+                    score_source=VectorRetriever._source_type(best),
                     has_uzh_affiliation=uzh_person[person],
                     matched_topics=query.topics,
                     publication_count=len(publications),

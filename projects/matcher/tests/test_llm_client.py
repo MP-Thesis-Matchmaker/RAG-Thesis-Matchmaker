@@ -163,6 +163,7 @@ def test_synthesis_fallback_is_logged(caplog, recorder):
         supervisor="Prof. X",
         department="Informatics",
         score=0.9,
+        score_source="publication",
         matched_topics=["nlp"],
         publication_count=1,
         posting_count=0,

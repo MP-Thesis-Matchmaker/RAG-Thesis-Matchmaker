@@ -245,8 +245,10 @@ The four results that bear on this section:
   topic alone, tracking corpus density rather than match quality. Query-relative
   scoring belongs with `ranking`, not here.
 
-`MATCHER_SYNTHESIS_MIN_SCORE` therefore **stays `0.0`**; the report recommends two
-per-source thresholds instead, which needs a code change rather than a config value.
+`MATCHER_SYNTHESIS_MIN_SCORE` was therefore **retired and split in two** —
+`MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` at 0.57 and `..._POSTING` at 0.48, each
+mid-band with room either side. `SupervisorMatch.score_source` records which one
+applies to a given person.
 
 ## Configuration
 

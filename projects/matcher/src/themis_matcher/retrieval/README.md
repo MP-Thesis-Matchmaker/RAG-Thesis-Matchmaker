@@ -22,7 +22,8 @@ ParsedQuery ──▶ VectorRetriever.retrieve
                      ▼  up to 2 × top_k ScoredHits
               _persons()  fan out each hit to the people it credits
                      ▼
-              _group_by_person()  score = max(hit score); sort desc; truncate
+              _group_by_person()  score = max(hit score) + its source_type;
+                                  sort desc; truncate
                      ▼
               list[SupervisorMatch]  ──▶ synthesis / adapters
 ```
@@ -180,6 +181,12 @@ systematically below publications** (best posting 0.564–0.652 against 0.605–
 because 695 short advertisements are a thinner corpus than 214,756 abstracts — which
 means `_group_by_person`'s `max` is not comparing like with like when a person has both.
 Today the person key ensures nobody does; when that is fixed, this becomes live.
+
+Because of that, `_group_by_person` emits **`score_source`** alongside `score`: the
+`source_type` of the hit the maximum came from. Synthesis thresholds on it, since a
+0.52 publication and a 0.52 posting are not equally good. It is the *winning* hit's
+source, not a summary of the person's evidence — someone credited by both gets
+whichever scored higher.
 
 ## Configuration
 

@@ -229,11 +229,11 @@ An absolute cosine threshold is therefore a weak instrument for this problem. It
 asked to straddle two corpora whose noise floors differ by 0.111, across queries whose
 magnitudes vary by 0.129.
 
-## Recommendation
+## Recommendation, and what was applied
 
-**Two thresholds, not one.** Not yet applied — recorded here for the decision.
+**Two thresholds, not one.** Applied 2026-08-28.
 
-| | admissible | trims above | proposed | margin |
+| | admissible | trims above | set to | margin |
 |---|---|---|---|---|
 | publications | 0.542 – 0.605 | 0.596 | **0.57** | ±0.027 |
 | thesis postings | 0.431 – 0.564 | 0.513 | **0.48** | ±0.041 |
@@ -242,14 +242,23 @@ Both block every control, pass every on-topic query, and trim nothing inside a g
 set. Neither balances on a knife edge, and both have room to absorb the band contraction
 F4 predicts.
 
-The cost is a code change rather than a config value. `SupervisorMatch` does not record
-which source produced its `score`. Given the join defect it is currently inferable from
-`publication_count > 0`, but that inference becomes silently wrong the moment the person
-key is fixed — so the field should be added rather than the inference relied on.
+`MATCHER_SYNTHESIS_MIN_SCORE` was retired and split into
+`MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` and `MATCHER_SYNTHESIS_MIN_SCORE_POSTING`.
+Retiring it is silent under `extra="ignore"`, and the old default was `0.0`, so someone
+who had set it to *disable* the guard would have found it enabled instead — the matcher's
+`get_settings()` therefore warns when the retired name is still set.
 
-**Interim state: `synthesis_min_score` stays `0.0`.** An inert guard is preferable to one
-whose value is inside a 0.022 band measured from nine queries, and preferable to one that
-deletes supervisors with open positions.
+`SupervisorMatch` gained a required `score_source` field naming the source of the hit its
+`score` came from, and `LLMSynthesizer` selects the threshold on it. Required rather than
+defaulted: a default would silently mis-threshold whichever source it guessed wrong, which
+is the failure the field exists to prevent. Inferring it from `publication_count > 0` was
+rejected for the same reason — it happens to work only while the join defect holds, and
+would break silently the moment the person key is fixed.
+
+**These are a first calibration, not a constant.** Nine queries support the *structure* of
+the conclusion — that the two sources need separate values — more strongly than either
+number. See *Threats to validity*, and re-measure after a re-embed, a model change, or the
+person-key fix.
 
 ## Threats to validity
 

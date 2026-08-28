@@ -63,6 +63,18 @@ class SupervisorMatch(BaseModel):
             "a probability and not a percentage: it can be negative."
         )
     )
+    score_source: Literal["publication", "thesis_posting"] = Field(
+        description=(
+            "Which kind of document produced `score`. The two sources are not on a "
+            "common scale -- 695 short postings against 214,756 abstracts, so an "
+            "arbitrary query lands closer to *something* among the publications "
+            "purely from sampling density -- which means a threshold has to be "
+            "chosen per source. Measured bands are in docs/score-calibration.md. "
+            "Required rather than defaulted on purpose: a default would silently "
+            "mis-threshold the source it guessed wrong, which is the exact failure "
+            "this field exists to prevent."
+        )
+    )
     has_uzh_affiliation: bool = Field(
         default=True,
         description=(
