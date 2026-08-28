@@ -102,48 +102,44 @@ versions:
 # differ only in which Dockerfile they point at -- everything else, including
 # which extras get installed, is already decided inside the Dockerfile.
 #
-# Runner requirement: this needs a runner that can run docker-in-docker, which
-# means a privileged runner. If the first run fails with "Cannot connect to the
-# Docker daemon at tcp://docker:2376", this instance does not have one -- see the
-# unprivileged fallback at the bottom of this file.
+# This builds with kaniko. That is forced by the runners rather than chosen on
+# the merits, and it is acknowledged technical debt: kaniko was archived upstream
+# by Google in 2025 and receives no fixes. Read "Why kaniko" at the bottom of this
+# file before changing it -- the two obvious replacements were both tried and both
+# fail here for the same reason.
 build:
   stage: build
-  # Pinned to the major only, matching the 29.x that developers run locally.
-  # Every other pin in this repository is exact (uv at 0.11.17, setup-uv by commit
-  # SHA) and this one should be too -- `docker version` runs in before_script, so
-  # the first green pipeline tells you the exact version to pin to. Tighten it
-  # then, and bump it deliberately rather than by drift.
-  image: docker:29
-  services:
-    - name: docker:29-dind
-      alias: docker
+  image:
+    # The `-debug` variant, and not by preference: the plain executor image ships
+    # no shell, and GitLab runs every `script:` through one. With the non-debug
+    # tag the job dies before kaniko is ever reached. `entrypoint: [""]` is the
+    # matching half -- the image's entrypoint IS the executor binary, so without
+    # this GitLab's generated shell script is passed to kaniko as arguments.
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
   needs:
     - versions
   parallel:
     matrix:
       - PROJECT: [zora, scraper, matcher, gateway]
-  # The default hour is enough but not comfortable on a cold cache: the matcher
-  # pulls a CPU torch build and the scraper installs chromium plus its --with-deps
-  # OS libraries. Raise this before assuming a hang.
+  # Every build here is cold (see the caching note below), so this is no longer
+  # comfortable: the matcher pulls a CPU torch build and the scraper installs
+  # chromium plus its --with-deps OS libraries. A job killed at exactly 1h hit
+  # this, not a hang. Raising it past the project's own "Maximum job timeout"
+  # (Settings -> CI/CD -> General pipelines) has no effect: the smaller wins.
   timeout: 1h
   interruptible: true
+  # Deliberately NOT retrying stuck_or_timeout_failure any more. It was there
+  # when builds were cached and a timeout meant something had genuinely hung;
+  # now that every build is cold, a timeout is the expected deterministic outcome
+  # of an image that got slower, and retrying it twice burns three hours of
+  # shared-runner time to fail anyway. If a job times out, look at the image.
   retry:
     max: 2
     when:
       - runner_system_failure
-      - stuck_or_timeout_failure
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "/certs/client"
-    # Explicit, though it is the default in Docker 23+. The four Dockerfiles rely
-    # on their sibling projects/<member>/Dockerfile.dockerignore files, and that
-    # convention is a BuildKit feature -- no BuildKit, and the root .dockerignore
-    # is what applies instead (which is why that file exists).
-    DOCKER_BUILDKIT: 1
   before_script:
-    - docker version
+    - /kaniko/executor version
   script:
     - |
       set -eu
@@ -156,107 +152,147 @@ build:
 
       echo "building ${PROJECT} -> ${VERSION_TAG}"
 
-      # Harbor robot account: a plain username/password pair, nothing exotic.
-      # HARBOR_THEMIS_ROBOT_USER is the full robot$<project>+<account> string and
-      # is not secret; HARBOR_THEMIS_ROBOT_PASSWORD is the generated secret.
+      # kaniko builds and pushes in one pass -- there is no separate push step to
+      # gate, so the default-branch rule has to be decided here, before the build.
       #
-      # NOTE for whoever maintains those variables: the username contains a `$`,
-      # and GitLab expands `$` references inside variable VALUES. The variable
-      # must have "Expand variable reference" unticked or it arrives here as
-      # "robot" followed by an empty expansion, and the login fails with a 401
-      # that looks like a wrong password.
-      #
-      # The guard is deliberate. If the password variable is marked Protected it
-      # is simply absent on an unprotected feature branch, and this degrades to a
-      # cache-less build rather than a red pipeline -- which costs nothing, since
-      # branches do not push anyway.
-      CACHE_ARGS=""
-      if [ -n "${HARBOR_THEMIS_ROBOT_PASSWORD:-}" ]; then
-          echo "${HARBOR_THEMIS_ROBOT_PASSWORD}" | docker login "${HARBOR_REGISTRY}" \
-              --username "${HARBOR_THEMIS_ROBOT_USER}" --password-stdin
-
-          # --cache-from reads a LOCAL image, so the previous build has to be
-          # pulled first. A miss is expected on the very first run and on any new
-          # repository; it is not an error.
-          if docker pull --quiet "${LATEST_TAG}"; then
-              CACHE_ARGS="--cache-from ${LATEST_TAG}"
-          else
-              echo "no ${LATEST_TAG} to warm the cache from -- building cold"
-          fi
+      # Feature branches and merge requests prove the Dockerfile still builds and
+      # stop there: the Harbor project has a 10 GB quota shared by every image and
+      # no automatic garbage collection, so a superseded latest-test digest keeps
+      # consuming quota until a retention policy removes it. CI_COMMIT_BRANCH is
+      # unset in a merge request pipeline, so an MR never publishes either.
+      if [ "${CI_COMMIT_BRANCH:-}" != "${CI_DEFAULT_BRANCH}" ]; then
+          echo "not on ${CI_DEFAULT_BRANCH} -- will build and verify, nothing pushed"
+          PUBLISH_ARGS="--no-push"
       else
-          echo "no registry credentials in this job -- building cold, will not push"
+          # On the default branch a missing credential is a misconfiguration, not
+          # a branch that happens to lack a Protected variable. Fail loudly rather
+          # than building for forty minutes and quietly publishing nothing.
+          if [ -z "${HARBOR_THEMIS_ROBOT_PASSWORD:-}" ]; then
+              echo "HARBOR_THEMIS_ROBOT_PASSWORD is unset on ${CI_DEFAULT_BRANCH}." >&2
+              echo "If it is marked Protected, ${CI_DEFAULT_BRANCH} must be a protected branch." >&2
+              exit 1
+          fi
+
+          # Harbor robot account: a plain username/password pair, nothing exotic.
+          # HARBOR_THEMIS_ROBOT_USER is the full robot$<project>+<account> string
+          # and is not secret; HARBOR_THEMIS_ROBOT_PASSWORD is the generated one.
+          #
+          # NOTE for whoever maintains those variables: the username contains a
+          # `$`, and GitLab expands `$` references inside variable VALUES. The
+          # variable must have "Expand variable reference" unticked or it arrives
+          # here as "robot" followed by an empty expansion, and the push fails
+          # with a 401 that looks like a wrong password.
+          #
+          # kaniko has no `login` verb; it reads a Docker config file. Written
+          # here rather than kept as a CI variable so the secret never exists
+          # outside this job's container, and piped so it is never an argv entry.
+          mkdir -p /kaniko/.docker
+          AUTH="$(printf '%s:%s' "${HARBOR_THEMIS_ROBOT_USER}" \
+                                 "${HARBOR_THEMIS_ROBOT_PASSWORD}" | base64 | tr -d '\n')"
+          printf '{"auths":{"%s":{"auth":"%s"}}}' "${HARBOR_REGISTRY}" "${AUTH}" \
+              > /kaniko/.docker/config.json
+          unset AUTH
+
+          # Both tags name the same digest; the second costs no upload.
+          PUBLISH_ARGS="--destination ${VERSION_TAG} --destination ${LATEST_TAG}"
       fi
 
+      # No cross-job layer cache, and that is a real cost rather than an
+      # oversight worth hiding: every run rebuilds from scratch, so the matcher
+      # re-downloads torch each time. kaniko can cache (--cache --cache-repo),
+      # but only by pushing every intermediate layer into Harbor, against a 10 GB
+      # quota with no garbage collection. Declined rather than half-built. A
+      # privileged runner would restore caching and drop kaniko in one move.
+      #
       # Build context is the repository ROOT for all four images, with the
-      # Dockerfile selected by -f. Every Dockerfile copies all five members'
+      # Dockerfile selected explicitly. Every Dockerfile copies all five members'
       # pyproject.toml so `uv sync --locked` can validate the whole workspace;
       # a project-directory context makes them fail with "the lockfile needs to
       # be updated".
       #
-      # Provenance goes on as --label rather than as a build ARG so that a new
-      # commit SHA does not invalidate a single cached layer. The tags carry a
-      # version, not a SHA, so these labels are the only thing tying a running
-      # container back to an exact commit -- docs/deployment.md explains the
-      # departure from the SHA-tag scheme it originally specified.
-      docker build \
-          --file "projects/${PROJECT}/Dockerfile" \
-          --tag "${VERSION_TAG}" \
-          --tag "${LATEST_TAG}" \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          ${CACHE_ARGS} \
+      # Provenance goes on as --label. The tags carry a version, not a SHA, so
+      # these labels are the only thing tying a running container back to an
+      # exact commit -- docs/deployment.md explains the departure from the
+      # SHA-tag scheme it originally specified.
+      /kaniko/executor \
+          --context "dir://${CI_PROJECT_DIR}" \
+          --dockerfile "${CI_PROJECT_DIR}/projects/${PROJECT}/Dockerfile" \
+          --digest-file /tmp/digest \
           --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}" \
           --label "org.opencontainers.image.version=${VERSION}" \
           --label "org.opencontainers.image.source=${CI_PROJECT_URL}" \
           --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          .
+          ${PUBLISH_ARGS}
 
-      docker image inspect "${VERSION_TAG}" --format 'built {{.Id}} ({{.Size}} bytes)'
-
-      # Push only from the default branch. Feature branches and merge requests
-      # prove the Dockerfile still builds and stop there: the Harbor project has a
-      # 10 GB quota shared by every image and no automatic garbage collection, so
-      # a superseded latest-test digest keeps consuming quota until a retention
-      # policy removes it. CI_COMMIT_BRANCH is unset in a merge request pipeline,
-      # so an MR never publishes either.
-      if [ "${CI_COMMIT_BRANCH:-}" != "${CI_DEFAULT_BRANCH}" ]; then
-          echo "not on ${CI_DEFAULT_BRANCH} -- built and verified, nothing pushed"
-          exit 0
+      if [ "${PUBLISH_ARGS}" = "--no-push" ]; then
+          echo "built and verified ${PROJECT}, nothing pushed"
+      else
+          echo "pushed ${VERSION_TAG} and ${LATEST_TAG} ($(cat /tmp/digest))"
       fi
 
-      # Both tags name the same digest; the second push uploads no layers.
-      docker push "${VERSION_TAG}"
-      docker push "${LATEST_TAG}"
-      echo "pushed ${VERSION_TAG} and ${LATEST_TAG}"
-
 # ---------------------------------------------------------------------------
-# Fallback: unprivileged runners
+# Why kaniko, and what it costs
 # ---------------------------------------------------------------------------
 #
-# Keep this block. If the runners here cannot do docker-in-docker, replace the
-# image/services/variables/before_script of the `build` job above with the
-# following and change `docker` to `buildah` in the script. Do not delete the
-# losing variant afterwards -- record which one worked and why, so the next
-# person does not rediscover it.
+# kaniko is archived upstream. Google stopped maintaining it in 2025, so it gets
+# no fixes and no new Dockerfile syntax. It is here because it is the only one of
+# the three candidates that runs on the runners this project actually has, and it
+# should be replaced the moment that stops being true. That is the exit condition:
+# a privileged (or seccomp-relaxed) runner, not a newer kaniko.
 #
-#   image: quay.io/buildah/stable:v1.38
-#   variables:
-#     STORAGE_DRIVER: vfs
-#     BUILDAH_FORMAT: docker
-#     BUILDAH_ISOLATION: chroot
-#   before_script:
-#     - buildah version
+# All three were tested rather than reasoned about. The findings, so nobody
+# repeats the afternoon:
 #
-# Three differences that matter, none of them cosmetic:
+#   docker-in-docker -- FAILS. Was the original design here; every job failed on
+#   2026-08-27 (MR !1). The job log leads with a misleading line:
 #
-#   - buildah reads ONLY the root .dockerignore. The per-Dockerfile
+#       Failed to initialize: unable to resolve docker endpoint:
+#       open /certs/client/ca.pem: no such file or directory
+#
+#   That is not a TLS misconfiguration. It is the downstream symptom of the dind
+#   service never starting, which the *service* container logs -- printed only
+#   because the health check timed out -- state plainly:
+#
+#       ip: can't find device 'nf_tables'
+#       mount: permission denied (are you root?)
+#       Could not mount /sys/kernel/security.
+#
+#   dockerd needs CAP_SYS_ADMIN to program iptables and set up its own mount
+#   namespace. gitlab-runner grants that only when `privileged = true` is set in
+#   the runner's config.toml.
+#
+#   buildah -- ALSO FAILS, and for a reason worth writing down, because it is the
+#   fallback this file used to recommend. It dies before it builds anything:
+#
+#       Error during unshare(CLONE_NEWUSER): Operation not permitted
+#
+#   Under Docker's default capability set even uid 0 lacks CAP_SYS_ADMIN, so
+#   buildah tries to acquire it by entering a user namespace -- and Docker's
+#   default seccomp profile blocks CLONE_NEWUSER for exactly those containers.
+#   Neither STORAGE_DRIVER=vfs nor BUILDAH_ISOLATION=chroot avoids it; both apply
+#   after that point. Reproduce in ten seconds on any machine with Docker:
+#
+#       docker run --rm quay.io/buildah/stable:v1.43.2 buildah info   # fails
+#       docker run --rm --security-opt seccomp=unconfined \
+#           quay.io/buildah/stable:v1.43.2 buildah info               # works
+#
+#   So buildah needs `security_opt` or `cap_add` in the runner's config.toml --
+#   the same class of change as dind's `privileged`, which is what makes it a
+#   non-fallback here rather than a lesser one.
+#
+#   kaniko -- WORKS. It never shells out to a container runtime: it unpacks each
+#   layer into its own filesystem and snapshots the result, so it needs no user
+#   namespace, no privileged mode and no seccomp exemption. Verified unprivileged
+#   under the default seccomp profile against projects/zora/Dockerfile, including
+#   a real `uv sync --locked` and the correct ENTRYPOINT/CMD on the result.
+#
+# Two consequences of kaniko that are easy to trip over later:
+#
+#   - It reads ONLY the root .dockerignore. The per-Dockerfile
 #     projects/<member>/Dockerfile.dockerignore files are a BuildKit convention
-#     and are ignored entirely. The root .dockerignore in this repository exists
-#     for exactly this case and is a superset that is safe for all four images.
-#   - `--build-arg BUILDKIT_INLINE_CACHE=1` is a no-op; use `--layers` with
-#     `--cache-from`/`--cache-to` against the registry instead.
-#   - the vfs storage driver is slow and disk-hungry. The scraper image
-#     (chromium plus --with-deps) is the one that will notice; expect the 1h
-#     timeout to become tight.
-#
-# kaniko is the other name that comes up for this. It is archived upstream and
-# should not be the choice for new work.
+#     and are ignored entirely here. The root .dockerignore exists for exactly
+#     this case and is a superset that is safe for all four images -- so CI and a
+#     local `docker build` filter the context differently.
+#   - It supports no BuildKit-only Dockerfile syntax: no `RUN --mount=type=cache`,
+#     no heredocs, no `# syntax=` directives. None of the four Dockerfiles use any
+#     today. Adding one would break CI while still building fine locally.
