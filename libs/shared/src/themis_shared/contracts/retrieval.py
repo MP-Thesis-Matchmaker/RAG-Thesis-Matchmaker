@@ -55,7 +55,14 @@ class SupervisorMatch(BaseModel):
 
     supervisor: str = Field(description="Name of the recommended supervisor.")
     department: str | None = None
-    score: float = Field(description="Final ranking score, higher is a better match.")
+    score: float = Field(
+        description=(
+            "Cosine similarity in [-1, 1], higher is a better match. Inherited "
+            "unchanged from ScoredHit.score -- it is the maximum over this person's "
+            "retrieved documents, and a maximum over [-1, 1] is a [-1, 1] value. Not "
+            "a probability and not a percentage: it can be negative."
+        )
+    )
     has_uzh_affiliation: bool = Field(
         default=True,
         description=(

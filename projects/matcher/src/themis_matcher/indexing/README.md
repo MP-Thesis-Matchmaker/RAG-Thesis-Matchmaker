@@ -193,6 +193,37 @@ incompatible generations of vector at once.
 
 Malformed JSONL lines are counted and skipped, not fatal.
 
+### What the score is, and why it is not `[0, 1]`
+
+`ScoredHit.score` is a **cosine similarity over `[-1, 1]`, and it can be negative.**
+pgvector's `<=>` returns cosine *distance* over `[0, 2]` (exactly as Chroma did), so
+`PgVectorStore`'s `1 - (embedding <=> v)` is the similarity, not a normalised one;
+`InMemoryVectorStore` returns the same quantity from `_cosine`. Vectors are
+unit-normalised (`normalize_embeddings=True`, redundant with bge-m3's own final
+module), so the whole range is genuinely reachable rather than an artefact.
+
+Until 2026-08-28 the `Field` description claimed `[0, 1]`, which is where the
+confusion came from — a percentage-shaped number invites a percentage-shaped
+threshold, and `MATCHER_SYNTHESIS_MIN_SCORE` is not one. **It is in cosine units.**
+
+Two transforms into `[0, 1]` were considered and rejected:
+
+| | effect | why not |
+|---|---|---|
+| affine, `(cos + 1) / 2` | lossless, reversible as `2s - 1`, order-preserving | compresses the band: an *orthogonal* — i.e. irrelevant — document reads `0.5`, so a displayed score never looks low even when it should |
+| clamp, `max(0, cos)` | keeps the number readable | irreversible, and at the storage layer. Collapses "unrelated" and "opposed" into one value that no downstream layer can ever separate again |
+
+Nothing in the system needs `[0, 1]` anyway: `VectorRetriever._rank`'s sorts, the
+`max()` in `_group_by_person` and the `>=` in `synthesis/llm.py` are all
+sign-agnostic. So the score stays signed and the documentation was corrected to
+match the code, rather than the reverse. `test_store_contract.py` pins both
+endpoints — a rescale or a clamp keeps every ordering and every other store test
+green, so nothing else would catch one.
+
+Any threshold set against it — notably `MATCHER_SYNTHESIS_MIN_SCORE` — is in
+cosine units and should be chosen from the distribution over the real index
+rather than assumed.
+
 ## Configuration
 
 The subset of `MatcherSettings` this sub-package reads; the whole list is in
@@ -240,12 +271,6 @@ at a Postgres with the extension, which CI always does via a
 
 ## Known gaps
 
-- **`ScoredHit.score` is documented as `[0, 1]` but is computed as
-  `1 - cosine_distance`.** pgvector's `<=>` returns cosine distance over `[0, 2]`,
-  exactly as Chroma did, so the score is a cosine similarity in `[-1, 1]` and
-  **can be negative**. Anything downstream that treats it as a probability —
-  including `MATCHER_SYNTHESIS_MIN_SCORE` — is working with a wrong mental model. The
-  migration did not change this; it only moved where it is computed.
 - **Filtered HNSW recall is not verified at corpus scale by the test suite.**
   pgvector applies `WHERE` after the index scan, which is why `schema.sql` creates
   one partial HNSW index per `source_type` and why `PgVectorStore._tune` sets

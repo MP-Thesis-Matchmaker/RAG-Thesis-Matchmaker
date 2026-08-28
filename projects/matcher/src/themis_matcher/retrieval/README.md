@@ -163,6 +163,14 @@ truncates to `top_k`. There is no aggregation across documents, no
 publication-count boost, no recency weighting, and no department-affiliation
 signal.
 
+**The score is a cosine similarity over `[-1, 1]` and can be negative** — a maximum
+over `[-1, 1]` values is a `[-1, 1]` value, so `SupervisorMatch.score` carries
+`ScoredHit`'s range unchanged. It is not a percentage, and any threshold against it
+(notably `MATCHER_SYNTHESIS_MIN_SCORE`) is in cosine units and should be chosen from
+observed values rather than assumed. Why it was left signed instead of rescaled into
+`[0, 1]`:
+[`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
+
 ## Configuration
 
 The subset of `MatcherSettings` this sub-package reads; the whole list is in
@@ -239,11 +247,6 @@ serves fake results.
   informative and is not.
 - **`publication_count` is populated but unused in scoring**, despite
   `contracts/retrieval.py` describing it as a ranking signal.
-- **Score range**: `ScoredHit.score` is `1.0 - cosine_distance`, so it lives in
-  `[-1, 1]` and can be negative — see
-  [`../indexing/README.md`](../indexing/README.md). Any threshold set against it
-  (notably `MATCHER_SYNTHESIS_MIN_SCORE`) should be chosen from observed values, not
-  assumed to be a percentage.
 - **`department` matching is exact-string.** `parsing/` never populates the field
   from free text today, so the filter is effectively dormant; it will need
   normalisation (aliases, abbreviations) before it is useful.

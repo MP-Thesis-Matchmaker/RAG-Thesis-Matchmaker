@@ -69,8 +69,12 @@ The subset of `MatcherSettings` this sub-package reads; the whole list is in
 | `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Threshold below which a match counts as weak. |
 
 `MATCHER_SYNTHESIS_MIN_SCORE` is compared against `SupervisorMatch.score`, which is a
-cosine similarity in `[-1, 1]` — not a percentage. Pick a value from observed
-scores on real queries; see [`../indexing/README.md`](../indexing/README.md).
+cosine similarity in `[-1, 1]` — not a percentage, and it can be negative. Why the
+range is signed rather than rescaled:
+[`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
+
+Pick a value from the distribution over the real index rather than from what
+the number looks like; it is not a percentage.
 
 ## Swappable seams
 
@@ -91,9 +95,11 @@ LLM.
   offline path, `TemplateSynthesizer` prints weak matches exactly like strong
   ones. Since the offline path is the default, the guard is inert in the
   configuration most people run.
-- **The default threshold is `0.0`**, and scores can be negative, so
-  out-of-the-box the weak-match guard only catches genuinely anti-correlated
-  matches. It needs a calibrated value to do real work.
+- **The default threshold is `0.0`**, and scores can be negative, so out-of-the-box
+  the weak-match guard only catches genuinely anti-correlated matches. It needs a
+  calibrated value to do real work, and deliberately does not have one yet: no score
+  distribution over the real index has been measured, and a guessed threshold in
+  graded work is worse than an inert one.
 - **`llm.py` has no dedicated test file.** The prompt construction, the candidate
   formatting, and the `LLMError` fallback are only exercised indirectly.
 - The system prompt is a single hard-coded English string. Nothing evaluates

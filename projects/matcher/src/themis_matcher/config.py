@@ -56,6 +56,11 @@ class MatcherSettings(Settings):
     # presents it as a match; below it the answer says there is no strong match
     # instead of overselling a weak one. 0 disables the filter. Only meaningful
     # with real embeddings (hash-fake scores are arbitrary).
+    #
+    # In COSINE UNITS: the score is a cosine similarity over [-1, 1] and can be
+    # negative, so 0.5 is not "half a match" and 0 disables rather than halves.
+    # Left at 0 deliberately -- no distribution over the real index has been
+    # measured yet, and a guessed threshold is worse than an inert one.
     synthesis_min_score: float = 0.0
 
     # Embedding model used for semantic search. Provisional default; the final
