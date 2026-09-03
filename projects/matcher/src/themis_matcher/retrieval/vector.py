@@ -18,6 +18,7 @@ from typing import Literal
 
 from themis_matcher.indexing.embedder import Embedder
 from themis_matcher.indexing.store import ScoredHit, VectorStore
+from themis_matcher.retrieval import identity
 from themis_shared.contracts import Evidence, ParsedQuery, SupervisorMatch
 
 # How much wider than top_k to search when `require_uzh_author` is on.
@@ -173,21 +174,58 @@ class VectorRetriever:
         return sorted(matches, key=lambda m: (m.has_uzh_affiliation, m.score), reverse=True)
 
     @staticmethod
+    def _anchors(hits: list[ScoredHit]) -> set[identity.PersonKey]:
+        """The identities the structured side of the corpus vouches for.
+
+        Only publications contribute. ZORA writes "Family, Given", so the comma
+        says where the name splits and no guessing is involved; a posting's
+        "Davide Scaramuzza" has to be resolved *against* these rather than the
+        other way round. Building the set from the hits in hand rather than from
+        the whole corpus keeps retrieval read-only and stateless -- the cost is
+        that a merge only happens when both sources surface in the same query.
+        """
+        anchors = set()
+        for hit in hits:
+            if hit.metadata["source_type"] == "publication":
+                for name in VectorRetriever._persons(hit):
+                    key = identity.key_of(name)
+                    if key:
+                        anchors.add(key)
+        return anchors
+
+    @staticmethod
     def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
-        by_person: dict[str, list[ScoredHit]] = defaultdict(list)
-        uzh_person: dict[str, bool] = defaultdict(bool)
+        anchors = VectorRetriever._anchors(hits)
+
+        by_person: dict[identity.PersonKey, list[ScoredHit]] = defaultdict(list)
+        spellings: dict[identity.PersonKey, list[str]] = defaultdict(list)
+        uzh_person: dict[identity.PersonKey, bool] = defaultdict(bool)
         for hit in hits:
             # A publication with several UZH co-authors credits each of them.
             uzh_credit = VectorRetriever._is_uzh_credit(hit)
-            for person in VectorRetriever._persons(hit):
-                by_person[person].append(hit)
+            posting = hit.metadata["source_type"] == "thesis_posting"
+            for name in VectorRetriever._persons(hit):
+                # A posting's free text gets one chance to match an anchor; failing
+                # that it is keyed on its own reading of itself, so the person still
+                # appears rather than vanishing. `resolve` returns None both when
+                # nothing matched and when several did -- an ambiguous name is left
+                # unmerged on purpose, because a coin-flip merge would credit
+                # someone with a stranger's papers and show it to a student as
+                # evidence.
+                key = (identity.resolve(name, anchors) if posting else None) or identity.key_of(
+                    name
+                )
+                if key is None:
+                    continue
+                by_person[key].append(hit)
+                spellings[key].append(name)
                 # Affiliation is a property of the person, not of one hit: being a
                 # UZH author on any single hit establishes it, even if their other
                 # hits are external collaborations.
-                uzh_person[person] |= uzh_credit
+                uzh_person[key] |= uzh_credit
 
         matches = []
-        for person, person_hits in by_person.items():
+        for key, person_hits in by_person.items():
             publications = [h for h in person_hits if h.metadata["source_type"] == "publication"]
             postings = [h for h in person_hits if h.metadata["source_type"] == "thesis_posting"]
             departments = [h.metadata.get("department") for h in person_hits]
@@ -197,11 +235,11 @@ class VectorRetriever:
             best = max(person_hits, key=lambda hit: hit.score)
             matches.append(
                 SupervisorMatch(
-                    supervisor=person,
+                    supervisor=identity.display_name(spellings[key]),
                     department=next((str(d) for d in departments if d), None),
                     score=best.score,
                     score_source=VectorRetriever._source_type(best),
-                    has_uzh_affiliation=uzh_person[person],
+                    has_uzh_affiliation=uzh_person[key],
                     matched_topics=query.topics,
                     publication_count=len(publications),
                     posting_count=len(postings),
