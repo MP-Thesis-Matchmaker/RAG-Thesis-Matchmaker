@@ -50,9 +50,17 @@ __all__ = [
 # alternation rather than a token set so that multi-part forms survive: "h. c."
 # carries an internal space, and "Dipl.-Ing." carries a hyphen, so neither
 # survives a naive split-on-whitespace.
+#
+# The trailing `\b\.?` is load-bearing and the period must stay OUTSIDE the
+# alternation for it to work. With the period optional and inside -- as this
+# read until 2026-09-03 -- "sc\.?" matches the first two letters of
+# "Scaramuzza" and the leading-title regex happily strips them, yielding
+# "aramuzza". "med" does the same to "Medina", "nat" to "Nathalie", "em" to
+# "Emma", "pol" to "Polanski". Requiring a word boundary after the title makes
+# each alternative match only a whole token.
 TITLE_PATTERN = (
-    r"(?:Prof\.?|Dres\.?|Dr\.?|PD\.?|em\.?|emer\.?|habil\.?|iur\.?|rer\.?|nat\.?"
-    r"|pol\.?|oec\.?|soc\.?|phil\.?|sc\.?|med\.?|h\.?\s?c\.?|Dipl\.?[\w-]*\.?)"
+    r"(?:Prof|Dres|Dr|PD|em|emer|habil|iur|rer|nat"
+    r"|pol|oec|soc|phil|sc|med|h\.?\s?c|Dipl\.?[\w-]*)\b\.?"
 )
 
 _TITLE_LEAD_RE = re.compile(rf"^(?:{TITLE_PATTERN}\s*)+", re.I)

@@ -46,6 +46,25 @@ def test_a_multi_part_title_survives_stripping() -> None:
     assert strip_titles("Dipl.-Ing. Anna Meier") == "Anna Meier"
 
 
+def test_a_name_that_merely_starts_like_a_title_survives() -> None:
+    """Regression: the title alternation must match whole tokens only.
+
+    Until 2026-09-03 the optional period lived inside the alternation, so
+    "sc\\.?" matched the "Sc" of "Scaramuzza" and the leading-title regex
+    stripped it, yielding "aramuzza". The scraper never noticed because its
+    inputs rarely began with those letters; the matcher feeds this every ZORA
+    author name, where it is common.
+    """
+    assert strip_titles("Scaramuzza, Davide") == "Scaramuzza, Davide"
+    assert strip_titles("Medina Anna") == "Medina Anna"
+    assert strip_titles("Nathalie Meier") == "Nathalie Meier"
+    assert strip_titles("Emma Roth") == "Emma Roth"
+    assert strip_titles("Polanski Jan") == "Polanski Jan"
+    assert strip_titles("Drake Anna") == "Drake Anna"
+    # And the real titles still go.
+    assert strip_titles("PD Dr. med. Anna Meier") == "Anna Meier"
+
+
 def test_initials_are_dropped_and_whitespace_runs_collapse() -> None:
     """Two adjacent initials leave three spaces behind, not two.
 
