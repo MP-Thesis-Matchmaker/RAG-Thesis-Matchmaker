@@ -634,5 +634,50 @@ class PublicViewTest(unittest.TestCase):
         self.assertIn("_profile_url", data["faculties"]["WWF"]["units"]["u--1"]["people"][0])
 
 
+# --- email/name pairing -------------------------------------------------------
+
+
+class SupervisorEmailPairingTest(unittest.TestCase):
+    """Covers the two helpers that fold a name to match an email local part.
+
+    These had no test until 2026-09-03, and the gap was not academic: the golden
+    replay exercises cached HTML only, so when `_name_for_email` started calling
+    a name-folding helper that a local variable shadowed, every source using this
+    path died with `AttributeError: 'list' object has no attribute ...` while all
+    50 golden contracts stayed green. Four sources extracted zero records before
+    anyone noticed.
+    """
+
+    def test_name_for_email_matches_on_a_folded_token(self):
+        names = ["Haiyan Tan", "Rico Sennrich"]
+        self.assertEqual(M._name_for_email("haiyan@ifi.uzh.ch", names), "Haiyan Tan")
+        self.assertEqual(M._name_for_email("sennrich@cl.uzh.ch", names), "Rico Sennrich")
+        self.assertIsNone(M._name_for_email("nobody@ifi.uzh.ch", names))
+
+    def test_name_for_email_folds_umlauts_the_german_way(self):
+        """The address spells it "mueller"; the page spells it "Müller"."""
+        self.assertEqual(
+            M._name_for_email("thomas.mueller@uzh.ch", ["Thomas Müller"]), "Thomas Müller"
+        )
+
+    def test_name_for_email_prefers_the_longest_matching_token(self):
+        names = ["Jan Tan", "Haiyan Tanner"]
+        self.assertEqual(M._name_for_email("tanner@uzh.ch", names), "Haiyan Tanner")
+
+    def test_pair_supervisor_emails_attaches_by_name_token(self):
+        records = [
+            {
+                "supervisors": [{"name": "Rico Sennrich"}, {"name": "Simon Clematide"}],
+                "_emails": ["clematide@cl.uzh.ch", "sennrich@cl.uzh.ch"],
+            }
+        ]
+        M._pair_supervisor_emails(records, {})
+        by_name = {s["name"]: s.get("email") for s in records[0]["supervisors"]}
+        self.assertEqual(by_name["Rico Sennrich"], "sennrich@cl.uzh.ch")
+        self.assertEqual(by_name["Simon Clematide"], "clematide@cl.uzh.ch")
+        # The helper field is consumed, not left on the record.
+        self.assertNotIn("_emails", records[0])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
