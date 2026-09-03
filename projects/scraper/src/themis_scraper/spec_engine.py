@@ -42,6 +42,8 @@ from urllib.parse import urljoin
 import yaml
 from bs4 import BeautifulSoup
 
+from themis_shared import names
+
 from . import cache, registry, title_check
 from .config import get_settings
 
@@ -120,20 +122,18 @@ def _t_lower(v: str) -> str:
     return v.lower() if isinstance(v, str) else v
 
 
-_TITLES = (
-    r"(?:Prof\.?|Dres\.?|Dr\.?|PD\.?|em\.?|emer\.?|habil\.?|iur\.?|rer\.?|nat\.?"
-    r"|pol\.?|oec\.?|soc\.?|phil\.?|sc\.?|med\.?|h\.?\s?c\.?|Dipl\.?[\w-]*\.?)"
-)
-_TITLE_LEAD_RE = re.compile(rf"^(?:{_TITLES}\s*)+", re.I)
-_TITLE_TRAIL_RE = re.compile(rf"[,\s]\s*(?:{_TITLES}\s*)+$", re.I)  # ", Prof. Dr." or " Prof. Dr."
-
-
+# The name primitives below live in themis_shared.names: the matcher needs the
+# same title vocabulary to resolve a posting's supervisor against a paper's
+# author, and one vocabulary in two places drifts. These stay as thin transforms
+# because a spec transform must survive being handed a non-string -- a YAML spec
+# points at whatever a page yielded -- while the shared functions take a str and
+# mean it.
 def _t_strip_titles(v: str) -> str:
     """Drop leading OR trailing academic titles: 'Prof. Dr. Hui Chen' and
     'Francisco Amaral, Prof. Dr.' both -> the plain name."""
     if not isinstance(v, str):
         return v
-    return _TITLE_LEAD_RE.sub("", _TITLE_TRAIL_RE.sub("", v)).strip()
+    return names.strip_titles(v)
 
 
 def _t_name_lastfirst(v: str) -> str:
@@ -141,11 +141,7 @@ def _t_name_lastfirst(v: str) -> str:
     titles, then swaps a leading 'Surname, Given' into 'Given Surname'."""
     if not isinstance(v, str):
         return v
-    v = _t_strip_titles(v)
-    parts = [p.strip() for p in v.split(",") if p.strip()]
-    if len(parts) >= 2:
-        return f"{' '.join(parts[1:])} {parts[0]}".strip()
-    return v
+    return names.flip_family_given(v)
 
 
 def _t_titlecase(v: str) -> str:
@@ -162,8 +158,7 @@ def _t_name_lastfirst_space(v: str) -> str:
     the last token (the given name) to the front."""
     if not isinstance(v, str):
         return v
-    toks = v.split()
-    return f"{toks[-1]} {' '.join(toks[:-1])}" if len(toks) >= 2 else v
+    return names.flip_trailing_given(v)
 
 
 def _t_pi_surname(v: str):
