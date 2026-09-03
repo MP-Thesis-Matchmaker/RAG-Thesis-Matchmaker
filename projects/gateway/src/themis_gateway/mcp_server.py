@@ -37,11 +37,14 @@ server = MCPServer("themis", version=__version__)
 def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     """Find UZH researchers whose work matches a topic or research interest.
 
-    Returns a ranked list of people, each with department, a relevance score,
+    Returns a ranked list of people, each with a relevance score, department,
     whether they have an open thesis position, and evidence (their publications
-    and postings). Works for general expertise questions like "who works on
-    humanoid robots at UZH" as well as thesis-supervisor matching. Returns
-    structured data so the caller can write the final answer.
+    and postings). The score is a cosine similarity in [-1, 1], not a percentage
+    or a confidence -- do not present it as one, and do not multiply it by 100.
+
+    Works for general expertise questions like "who works on humanoid robots at
+    UZH" as well as thesis-supervisor matching. Returns structured data so the
+    caller can write the final answer.
     """
     return service.find_researchers(query, top_k=top_k)
 

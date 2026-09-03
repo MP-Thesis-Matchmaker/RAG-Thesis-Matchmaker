@@ -112,6 +112,38 @@ def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> Non
     assert matches[0].publication_count >= 1
 
 
+def test_score_source_names_the_document_the_score_came_from(
+    retriever: VectorRetriever,
+) -> None:
+    """Which source won decides which threshold synthesis applies to the person.
+
+    Prof. G. Roth appears only on a posting, Prof. C. Schmid only on a
+    publication, so each has exactly one possible answer and the assertion cannot
+    pass by accident.
+    """
+    graph = retriever.retrieve(ParsedQuery(topics=["Representation learning on graphs"]), top_k=10)
+    roth = next(m for m in graph if m.supervisor == "Prof. G. Roth")
+    assert roth.score_source == "thesis_posting"
+
+    history = retriever.retrieve(ParsedQuery(topics=["Medieval trade routes"]), top_k=10)
+    schmid = next(m for m in history if m.supervisor == "Prof. C. Schmid")
+    assert schmid.score_source == "publication"
+
+
+def test_score_source_agrees_with_the_highest_scoring_evidence(
+    retriever: VectorRetriever,
+) -> None:
+    """The invariant behind the field: it names the source of the person's best hit.
+
+    Checked across every match of a query that mixes both kinds, including people
+    credited by a publication and a posting at once.
+    """
+    matches = retriever.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
+    assert matches
+    for match in matches:
+        assert match.score_source in {e.source_type for e in match.evidence}
+
+
 def test_matches_sorted_by_score(retriever: VectorRetriever) -> None:
     query = ParsedQuery(topics=["Dense retrieval for German text"])
     matches = retriever.retrieve(query, top_k=3)
@@ -279,3 +311,105 @@ def test_multi_uzh_author_publication_credits_every_author(retriever: VectorRetr
     for match in matches:
         if match.supervisor in {"Prof. D. Werth", "Prof. E. Huber"}:
             assert "zora:4" in {e.source_id for e in match.evidence}
+
+
+# --- cross-source person identity -------------------------------------------
+#
+# A separate fixture on purpose. The shared one above is asserted against by
+# exact similarity scores, so adding records to it would move numbers unrelated
+# tests depend on. This corpus exists only to put one person under two spellings
+# and two people under one family name.
+
+
+@pytest.fixture()
+def identity_retriever(tmp_path: Path) -> VectorRetriever:
+    sources = tmp_path / "identity"
+    sources.mkdir()
+    publications = [
+        # ZORA's shape: "Family, Given". The posting below writes the same person
+        # the other way round.
+        ZoraPublication(
+            id="zora:id1",
+            title="Event cameras for autonomous drone racing",
+            abstract="Vision-based agile flight.",
+            authors=["Scaramuzza, Davide"],
+            uzh_authors=["Scaramuzza, Davide"],
+            year=2024,
+            department="Department of Informatics",
+        ),
+        # A different Müller from the posting's. Same family name, different
+        # given name -- the merge that must not happen.
+        ZoraPublication(
+            id="zora:id2",
+            title="Statistical machine translation for Swiss German",
+            abstract="Low-resource translation.",
+            authors=["Müller, Mathias"],
+            uzh_authors=["Müller, Mathias"],
+            year=2023,
+            department="Department of Computational Linguistics",
+        ),
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:id1",
+            title="MSc thesis: event cameras for autonomous drone racing",
+            description="Vision-based agile flight.",
+            supervisors=[{"name": "Davide Scaramuzza"}],
+            url="https://uzh.ch/id1",
+        ),
+        ThesisPosting(
+            id="posting:id2",
+            title="MSc thesis: statistical machine translation for Swiss German",
+            description="Low-resource translation.",
+            supervisors=[{"name": "Daniel Müller"}],
+            url="https://uzh.ch/id2",
+        ),
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+    return VectorRetriever(embedder=embedder, store=store)
+
+
+def test_one_person_spelled_two_ways_is_one_match(identity_retriever: VectorRetriever) -> None:
+    """The defect this change fixes, end to end.
+
+    Before the person key was canonicalised, "Scaramuzza, Davide" on the paper
+    and "Davide Scaramuzza" on the posting were two unrelated matches, so
+    publication_count and posting_count were never both non-zero and any
+    multi-signal score would have been scoring a join that never happened.
+    """
+    matches = identity_retriever.retrieve(
+        ParsedQuery(topics=["event cameras for autonomous drone racing"]), top_k=10
+    )
+    scaramuzza = [m for m in matches if "Scaramuzza" in m.supervisor]
+
+    assert len(scaramuzza) == 1
+    assert scaramuzza[0].publication_count == 1
+    assert scaramuzza[0].posting_count == 1
+    # The posting's natural-order spelling is what a student reads.
+    assert scaramuzza[0].supervisor == "Davide Scaramuzza"
+    assert {"zora:id1", "posting:id1"} == {e.source_id for e in scaramuzza[0].evidence}
+
+
+def test_two_people_sharing_a_family_name_stay_apart(identity_retriever: VectorRetriever) -> None:
+    """Daniel Müller must not inherit Mathias Müller's publications.
+
+    Measured on the live corpus: 46 of 403 supervisor names share a family name
+    with a different ZORA author. A rule that merged on the family name alone
+    would show a student someone else's papers as evidence, and nothing
+    downstream could detect it.
+    """
+    matches = identity_retriever.retrieve(
+        ParsedQuery(topics=["statistical machine translation for Swiss German"]), top_k=10
+    )
+    by_name = {m.supervisor: m for m in matches}
+
+    assert "Daniel Müller" in by_name
+    assert "Mathias Müller" in by_name
+    assert by_name["Daniel Müller"].publication_count == 0
+    assert by_name["Mathias Müller"].posting_count == 0

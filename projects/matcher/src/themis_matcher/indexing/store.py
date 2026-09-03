@@ -44,7 +44,13 @@ class ScoredHit(BaseModel):
     """One nearest-neighbour result from the store."""
 
     id: str
-    score: float = Field(description="Similarity in [0, 1], higher is closer.")
+    score: float = Field(
+        description=(
+            "Cosine similarity in [-1, 1], higher is closer. Not a probability and "
+            "not a percentage: it can be negative. Any threshold set against it -- "
+            "MATCHER_SYNTHESIS_MIN_SCORE -- is in cosine units."
+        )
+    )
     text: str
     metadata: dict[str, MetadataValue] = Field(default_factory=dict)
 
@@ -136,6 +142,14 @@ ON CONFLICT (id) DO UPDATE SET
 # filter becomes `@> '{}'`, which matches every row -- no branching needed there.
 # source_type is the exception: it is matched against the column so the query
 # predicate is identical to the partial indexes' predicate.
+#
+# The two appearances of `<=>` are not the same quantity and must not be merged.
+# The SELECT complements the cosine *distance* (pgvector's `<=>`, over [0, 2]) into
+# a cosine *similarity* over [-1, 1] -- the score, deliberately signed. The ORDER BY
+# sorts on the distance itself, ascending. Rescaling the score into [0, 1] would
+# leave every ordering and every other store test intact while silently changing
+# what MATCHER_SYNTHESIS_MIN_SCORE means; test_store_contract.py pins both endpoints
+# against exactly that.
 _QUERY_TEMPLATE = """
 SELECT id, text, metadata, 1 - (embedding <=> %(vector)s::vector) AS score
 FROM document

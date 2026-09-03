@@ -22,7 +22,8 @@ ParsedQuery ──▶ VectorRetriever.retrieve
                      ▼  up to 2 × top_k ScoredHits
               _persons()  fan out each hit to the people it credits
                      ▼
-              _group_by_person()  score = max(hit score); sort desc; truncate
+              _group_by_person()  score = max(hit score) + its source_type;
+                                  sort desc; truncate
                      ▼
               list[SupervisorMatch]  ──▶ synthesis / adapters
 ```
@@ -163,6 +164,34 @@ truncates to `top_k`. There is no aggregation across documents, no
 publication-count boost, no recency weighting, and no department-affiliation
 signal.
 
+**The score is a cosine similarity over `[-1, 1]` and can be negative** — a maximum
+over `[-1, 1]` values is a `[-1, 1]` value, so `SupervisorMatch.score` carries
+`ScoredHit`'s range unchanged. It is not a percentage, and any threshold against it
+(notably `MATCHER_SYNTHESIS_MIN_SCORE`) is in cosine units and should be chosen from
+observed values rather than assumed. Why it was left signed instead of rescaled into
+`[0, 1]`:
+[`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
+
+Measured 2026-08-28 — [`docs/score-calibration.md`](../../../../../docs/score-calibration.md).
+Two results land here rather than in synthesis. **Scores are not comparable across
+queries**: best-match scores ranged 0.605–0.734 by topic alone, tracking how densely the
+corpus covers the query's neighbourhood rather than match quality, so the `score`
+strategy's ordering is only meaningful *within* one query. And **postings score
+systematically below publications** (best posting 0.564–0.652 against 0.605–0.734),
+because 695 short advertisements are a thinner corpus than 214,756 abstracts — which
+means `_group_by_person`'s `max` is not comparing like with like when a person has both.
+Since the person key was fixed (2026-09-03) somebody finally can — 103 of 403 supervisors
+resolve across sources — so this is live rather than hypothetical, though still rare: 0 of
+25 returned matches at the default `top_k=5`. The thresholds in
+[`docs/score-calibration.md`](../../../../../docs/score-calibration.md) were measured while
+the two populations were disjoint and need re-measuring as that stops being true.
+
+Because of that, `_group_by_person` emits **`score_source`** alongside `score`: the
+`source_type` of the hit the maximum came from. Synthesis thresholds on it, since a
+0.52 publication and a 0.52 posting are not equally good. It is the *winning* hit's
+source, not a summary of the person's evidence — someone credited by both gets
+whichever scored higher.
+
 ## Configuration
 
 The subset of `MatcherSettings` this sub-package reads; the whole list is in
@@ -209,41 +238,41 @@ serves fake results.
   frequency, open positions, department affiliation), and
   `pipeline/orchestrator.py`'s docstring already claims a rank step. Neither
   exists yet. Grouping and sorting inside `_group_by_person` is all there is.
-- **The person key is an exact name string, so publications and postings almost
-  never join. This is the biggest single thing the `ranking` package has to fix.**
-  `_group_by_person` keys `by_person` on whatever `_persons` returns, and the two
-  sources spell people differently: `"Davide Scaramuzza"` on a posting against
-  `"Scaramuzza, D"` or `"Scaramuzza, Davide"` on a paper. Measured over the whole
-  corpus on 2026-08-26 — **403 distinct supervisor names, 0 of them matching any of
-  the 2,942 `uzh_authors`**. Three match a plain `authors` entry, and only via the
-  unaffiliated fallback below, so a merge happens precisely where the UZH signal is
-  absent: 3 of 403, 0.7%.
+- **The person key joins the two sources now, but the join is rare in practice.**
+  `_group_by_person` used to key on the raw name string, and the two sources spell
+  people differently: `"Davide Scaramuzza"` on a posting against
+  `"Scaramuzza, Davide"` on a paper. Measured 2026-08-26 — **403 distinct
+  supervisor names, 0 matching any of the 2,942 `uzh_authors`**.
 
-  The consequences run through everything above it. `publication_count` and
-  `posting_count` are effectively never both non-zero, so a supervisor with an open
-  position is never evidenced by their own papers and vice versa — which is most of
-  what a student actually wants to know. Any multi-signal score combining "has
-  publications here" with "has an open position" is therefore scoring a join that
-  does not happen, and would look correct in review while ranking on one signal at
-  a time. No choice of corpus or sample data hides this; it is a property of the
-  key, not of the data volume.
+  Since 2026-09-03 [`identity.py`](identity.py) canonicalises to a
+  first-given-token + family key. Publications supply the anchors, because ZORA's
+  comma says where a name splits; a posting's free text is resolved against them.
+  **103 of 403 supervisor names (25.6%) now resolve**, with no conflation
+  detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
+  reached by no supervisor at all.
 
-  The fix is name normalisation, or an identity join through the `person` table —
-  which exists, carries CRIS UUIDs, and is already the authority `uzh_authors` is
-  derived from. `author_authority_map` gives publications a typed identifier;
-  postings have none, so the posting side needs the harder half of the work.
-  Belongs with `ranking` rather than here: it changes what a candidate *is*, not
-  how one is scored.
+  **What remains a gap is the yield, not the key.** `retrieve` fetches `top_k`
+  postings *and* `top_k` publications, so a merge needs one person in both slices
+  at once. Measured over five probes: **0 of 25 returned matches at the default
+  `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. So `publication_count` and
+  `posting_count` are now *capable* of both being non-zero and still rarely are,
+  and a multi-signal score built on them would have almost nothing to combine at
+  the default width. Over-fetching for grouping and truncating afterwards is the
+  obvious lever; it is not pulled, because it inflates `posting_count` and costs
+  latency, and nobody has decided the trade.
+
+  **And 62% of supervisors are unreachable by any string rule** — 251 of 403 have
+  no ZORA record at all, being PhD students, postdocs, or externals. Raising
+  coverage past a quarter needs a different source of identity (the 569 unread
+  `researcher_profile` rows are the obvious candidate), not a better key. Full
+  measurement, including why the `person` table is the *wrong* join target and why
+  email was rejected as a disambiguator:
+  [`docs/person-key-resolution.md`](../../../../../docs/person-key-resolution.md).
 - **`matched_topics` is not computed.** Every match receives a copy of
   `query.topics` rather than the topics that actually matched. The field looks
   informative and is not.
 - **`publication_count` is populated but unused in scoring**, despite
   `contracts/retrieval.py` describing it as a ranking signal.
-- **Score range**: `ScoredHit.score` is `1.0 - cosine_distance`, so it lives in
-  `[-1, 1]` and can be negative — see
-  [`../indexing/README.md`](../indexing/README.md). Any threshold set against it
-  (notably `MATCHER_SYNTHESIS_MIN_SCORE`) should be chosen from observed values, not
-  assumed to be a percentage.
 - **`department` matching is exact-string.** `parsing/` never populates the field
   from free text today, so the filter is effectively dormant; it will need
   normalisation (aliases, abbreviations) before it is useful.

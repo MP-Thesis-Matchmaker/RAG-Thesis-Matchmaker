@@ -25,7 +25,11 @@ def build_synthesizer(settings: MatcherSettings | None = None) -> Synthesizer:
             settings.llm_api_key,
             reasoning_effort=settings.llm_reasoning_effort,
         )
-        return LLMSynthesizer(client, min_score=settings.synthesis_min_score)
+        return LLMSynthesizer(
+            client,
+            min_score_publication=settings.synthesis_min_score_publication,
+            min_score_posting=settings.synthesis_min_score_posting,
+        )
     return TemplateSynthesizer()
 
 

@@ -154,7 +154,9 @@ def test_supervisor_match_json_roundtrip():
     m = SupervisorMatch(
         supervisor="Prof. X",
         score=0.9,
+        score_source="publication",
         evidence=[Evidence(source_type="publication", source_id="zora:1", title="T")],
     )
     again = SupervisorMatch.model_validate(m.model_dump())
     assert again.evidence[0].source_id == "zora:1"
+    assert again.score_source == "publication"

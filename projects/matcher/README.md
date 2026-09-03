@@ -91,7 +91,7 @@ configure is a hosted API.
 ## Configuration
 
 `MatcherSettings` in [`config.py`](src/themis_matcher/config.py), a `MATCHER_`-prefixed
-subclass of the shared `Settings`. Seventeen variables, every one read by this
+subclass of the shared `Settings`. Eighteen variables, every one read by this
 package and no other — which is why they live here rather than in `themis-shared`.
 The sub-package READMEs below repeat the handful each of them uses; this is the
 whole list.
@@ -102,7 +102,8 @@ whole list.
 | `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to that endpoint. |
 | `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token for it. |
 | `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | `none` / `low` / `medium` / `high`, for reasoning models only. Leave unset otherwise: some servers reject fields they do not know. |
-| `synthesis_min_score` | `MATCHER_SYNTHESIS_MIN_SCORE` | `0.0` | Below this, the answer says there is no strong match instead of overselling a weak one. Meaningless with `hash-fake`, whose scores are arbitrary. |
+| `synthesis_min_score_publication` | `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` | `0.57` | Below this, a publication-scored candidate is not presented as a match. **In cosine units, not a percentage.** Measured, not chosen: [`docs/score-calibration.md`](../../docs/score-calibration.md). |
+| `synthesis_min_score_posting` | `MATCHER_SYNTHESIS_MIN_SCORE_POSTING` | `0.48` | The same for a posting-scored candidate. Lower because the two sources are not on a common scale — 695 postings against 214,756 abstracts — and one shared value would delete posting-backed supervisors. Both are meaningless with `hash-fake`. |
 | `embedding_model` | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3` | `hash-fake` selects the deterministic offline embedder — no download, no network. |
 | `embedding_max_seq_length` | `MATCHER_EMBEDDING_MAX_SEQ_LENGTH` | `1024` | Token cap before embedding. **Changing it invalidates every vector in the index**, and `document.embedding` is `vector(1024)`. |
 | `embedding_batch_size` | `MATCHER_EMBEDDING_BATCH_SIZE` | `16` | Documents per forward pass. Bounds the attention buffer with the cap above; cannot substitute for it. |
@@ -145,12 +146,17 @@ Ranking is one line inside `retrieval/vector.py` — `score = max(hit.score)` in
 package the architecture calls for does not exist yet. The slot is between
 retrieve and synthesise.
 
-**What it has to fix first is the person key, not the score.** `_group_by_person`
-groups on an exact name string, and the two sources spell people differently:
-`"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
-2026-08-26 — 403 distinct supervisor names, **0** matching any of the 2,942
-`uzh_authors`. So `publication_count` and `posting_count` are effectively never
-both non-zero, and a multi-signal score combining "publishes here" with "has an
-open position" would be scoring a join that never happens. Full detail and the
-proposed fix in
-[`retrieval/README.md`](src/themis_matcher/retrieval/README.md#known-gaps).
+**The person key it had to fix first is fixed** (2026-09-03).
+`_group_by_person` used to group on an exact name string, and the two sources
+spell people differently: `"Davide Scaramuzza"` on a posting against
+`"Scaramuzza, Davide"` on a paper — **0** of 403 supervisor names matched any of
+the 2,942 `uzh_authors`. [`retrieval/identity.py`](src/themis_matcher/retrieval/identity.py)
+now resolves free text against the comma-structured ZORA side: **103 of 403
+(25.6%)**, no detectable conflation.
+
+Two caveats before anyone builds on it. **103 is a ceiling, not a yield** —
+`retrieve` fetches `top_k` of each source separately, so a merge needs one person
+in both slices, and that is **0 of 25 returned matches at the default
+`top_k=5`**. And **62% of supervisors cannot be reached by any key**: they have
+no ZORA record at all. Measurement:
+[`docs/person-key-resolution.md`](../../docs/person-key-resolution.md).

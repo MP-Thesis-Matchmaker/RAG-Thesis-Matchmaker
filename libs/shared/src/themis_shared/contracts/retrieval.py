@@ -55,7 +55,26 @@ class SupervisorMatch(BaseModel):
 
     supervisor: str = Field(description="Name of the recommended supervisor.")
     department: str | None = None
-    score: float = Field(description="Final ranking score, higher is a better match.")
+    score: float = Field(
+        description=(
+            "Cosine similarity in [-1, 1], higher is a better match. Inherited "
+            "unchanged from ScoredHit.score -- it is the maximum over this person's "
+            "retrieved documents, and a maximum over [-1, 1] is a [-1, 1] value. Not "
+            "a probability and not a percentage: it can be negative."
+        )
+    )
+    score_source: Literal["publication", "thesis_posting"] = Field(
+        description=(
+            "Which kind of document produced `score`. The two sources are not on a "
+            "common scale -- 695 short postings against 214,756 abstracts, so an "
+            "arbitrary query lands closer to *something* among the publications "
+            "purely from sampling density -- which means a threshold has to be "
+            "chosen per source. Measured bands are in docs/score-calibration.md. "
+            "Required rather than defaulted on purpose: a default would silently "
+            "mis-threshold the source it guessed wrong, which is the exact failure "
+            "this field exists to prevent."
+        )
+    )
     has_uzh_affiliation: bool = Field(
         default=True,
         description=(

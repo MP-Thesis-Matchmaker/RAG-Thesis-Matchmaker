@@ -5,7 +5,10 @@ matches: the prompt lists the candidates and asks the model to cite them and
 invent nothing, and to say plainly when a candidate is only a partial fit.
 Candidates below a configurable score threshold are not presented as matches at
 all; instead the answer states there is no strong match and names the closest
-candidate as a long shot. Falls back to the template synthesiser on any error.
+candidate as a long shot. The threshold is per source type -- publications and
+postings are not on a common scale, so one value cannot serve both without
+deleting posting-backed supervisors; see docs/score-calibration.md. Falls back to
+the template synthesiser on any error.
 """
 
 from __future__ import annotations
@@ -69,16 +72,24 @@ class LLMSynthesizer:
         self,
         client: LLMClient,
         fallback: Synthesizer | None = None,
-        min_score: float = 0.0,
+        min_score_publication: float = 0.0,
+        min_score_posting: float = 0.0,
     ) -> None:
         self._client = client
         self._fallback = fallback or TemplateSynthesizer()
-        self._min_score = min_score
+        # Keyed by SupervisorMatch.score_source, so a third kind of source is a
+        # data change rather than another branch. Both default to 0.0: an
+        # explicitly constructed synthesiser filters nothing unless told to, and
+        # the measured values arrive from settings via build_synthesizer.
+        self._min_scores = {
+            "publication": min_score_publication,
+            "thesis_posting": min_score_posting,
+        }
 
     def synthesize(self, query: str, matches: list[SupervisorMatch]) -> str:
         if not matches:
             return self._fallback.synthesize(query, matches)
-        strong = [m for m in matches if m.score >= self._min_score]
+        strong = [m for m in matches if m.score >= self._min_scores[m.score_source]]
         if not strong:
             return _no_strong_match(query, matches)
         user = f'Student query: "{query}"\n\nCandidates:\n{_format_candidates(strong)}'

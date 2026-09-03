@@ -50,7 +50,7 @@ LLM at all.
 | `Source`, registry/state loaders | `registry.py` | The immutable source list, and the mutable `var/state.json` lifecycle. |
 | `FetchResult` and the fetch stage | `fetch.py` | `requests` first, Playwright chromium only if installed and needed, PDFs as bytes. |
 | cache read/write, content hashes | `cache.py` | `cache/<id>/{page.html,meta.json,history/}`; change detection. |
-| spec-driven extraction, `SpecError` | `spec_engine.py` | LLM-free: container, fields, transforms, follow. |
+| spec-driven extraction, `SpecError` | `spec_engine.py` | LLM-free: container, fields, transforms, follow. Name transforms (`strip_titles`, `name_lastfirst`, `name_lastfirst_space`) delegate to [`themis_shared.names`](../../libs/shared/README.md) — the matcher needs the same title vocabulary, and one vocabulary in two places drifts. The `_TRANSFORMS` keys are unchanged, because the frozen specs reference them by name. |
 | spec drafting, `DraftError` | `spec_generator.py` | LLM drafts a spec at onboarding. Never trusted blind — a human approves it. |
 | `complete()`, `is_available()` | `llm.py` | The package's only LLM boundary. |
 | process extraction | `llm_extract.py` | Process page → one record. Only `process_description` is LLM-written. |

@@ -66,6 +66,32 @@ def test_query_respects_metadata_filters(store: VectorStore) -> None:
     assert [h.id for h in hits] == ["posting:1"]
 
 
+def test_score_is_a_cosine_similarity_and_can_be_negative(store: VectorStore) -> None:
+    """The score is a cosine similarity over [-1, 1], not a [0, 1] probability.
+
+    Pinned deliberately, and at both endpoints. An affine rescale into [0, 1] or a
+    clamp at zero would keep every ordering and leave every other test in this file
+    green, while silently changing what MATCHER_SYNTHESIS_MIN_SCORE is measured in.
+    Nothing else here would notice.
+
+    Querying with the negated document vector is what reaches the negative end
+    without hardcoding a width: `document.embedding` is vector(1024), so a
+    hand-written vector would have to know that and the in-memory store would not
+    care. HashEmbedder normalises, so both endpoints are exact rather than
+    approximate in principle.
+    """
+    embedder = HashEmbedder()
+    doc = _doc("zora:1", "dense retrieval for german text", source_type="publication")
+    vector = embedder.embed_documents([doc.text])[0]
+    store.upsert([doc], [vector])
+
+    identical = store.query(vector, top_k=1)
+    assert identical[0].score == pytest.approx(1.0, abs=1e-6)
+
+    opposed = store.query([-v for v in vector], top_k=1)
+    assert opposed[0].score == pytest.approx(-1.0, abs=1e-6)
+
+
 def test_existing_hashes_roundtrip(store: VectorStore) -> None:
     _seed(store)
     hashes = store.existing_hashes()
