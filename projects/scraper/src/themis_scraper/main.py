@@ -18,7 +18,12 @@ import time
 
 import yaml
 
-from themis_shared import db, names
+from themis_shared import db
+
+# Imported as bare functions, not as the `names` module: this file has a local
+# `names` list and a `names` parameter, and a module reference would be shadowed
+# by both -- silently, until the one code path that uses it runs.
+from themis_shared.names import fold_german, strip_initials
 
 from . import (
     cache,
@@ -727,7 +732,7 @@ def _resolve_supervisors_via_directory(src, records, cfg, fetch_fn) -> None:
 
     def first_last(n):
         """First + last token key, so 'Juri Opitz' matches 'Juri Alexander Opitz'."""
-        toks = names.strip_initials(n or "").split()
+        toks = strip_initials(n or "").split()
         return f"{toks[0]} {toks[-1]}" if len(toks) >= 2 else None
 
     pat = re.compile(dir_cfg.get("profile_pattern", r"/[^/]+\.html$"))
@@ -744,13 +749,13 @@ def _resolve_supervisors_via_directory(src, records, cfg, fetch_fn) -> None:
         text = spec_engine._t_strip_titles(text)
         if text and len(text) > 3 and not text.lower().startswith("http"):
             url = urljoin(dir_cfg["url"], href)
-            dmap.setdefault(names.strip_initials(text), url)
+            dmap.setdefault(strip_initials(text), url)
             fl = first_last(text)
             if fl:
                 flmap.setdefault(fl, url)
 
     def lookup(name):
-        return dmap.get(names.strip_initials(name or "")) or flmap.get(first_last(name) or "")
+        return dmap.get(strip_initials(name or "")) or flmap.get(first_last(name) or "")
 
     email_by_url: dict[str, str | None] = {}
     for rec in records:
@@ -799,11 +804,11 @@ def _resolve_supervisors_via_directory(src, records, cfg, fetch_fn) -> None:
                 addrs.append(addr)
         for sup in pending:
             toks = re.sub(r"[^a-zäöüß\s]", " ", (sup.get("name") or "").lower()).split()
-            surname = names.fold_german(toks[-1]) if toks else ""
+            surname = fold_german(toks[-1]) if toks else ""
             if len(surname) < 3:
                 continue
             for addr in addrs:
-                if surname in names.fold_german(addr.split("@")[0]):
+                if surname in fold_german(addr.split("@")[0]):
                     sup["email"] = addr
                     break
 
@@ -838,22 +843,20 @@ def _resolve_person_emails(src, records, cfg, fetch_fn) -> None:
         soup = BeautifulSoup(html, "html.parser")
         main = soup.select_one("main") or soup
         name_parts = re.split(r"\s+", rec.get("name") or "")
-        toks = [t for t in (names.fold_german(x) for x in name_parts) if len(t) >= 3]
+        toks = [t for t in (fold_german(x) for x in name_parts) if len(t) >= 3]
         best, best_score = None, 0
         for a in main.select('a[href^="mailto"]'):
             addr = a.get("href", "")[7:].split("?")[0].strip()
             if "@" not in addr:
                 continue
-            local = names.fold_german(addr.split("@")[0])
+            local = fold_german(addr.split("@")[0])
             if not local or local.startswith(exclude):
                 continue
             score = sum(1 for t in toks if t in local)
             if score == 0:
                 continue
             if score > best_score or (
-                score == best_score
-                and best
-                and len(local) < len(names.fold_german(best.split("@")[0]))
+                score == best_score and best and len(local) < len(fold_german(best.split("@")[0]))
             ):
                 best, best_score = addr, score
         rec["email"] = best  # personal-only; null when none matches the name
@@ -895,13 +898,13 @@ def _apply_roster_filter(src, records, cfg, fetch_fn):
             else:  # skip "(bitte wählen)" / non-name options
                 found = []
             for nm in found:
-                roster.setdefault(names.strip_initials(nm), set())
+                roster.setdefault(strip_initials(nm), set())
                 if s.get("supervises"):
-                    roster[names.strip_initials(nm)].add(s["supervises"])
+                    roster[strip_initials(nm)].add(s["supervises"])
     field = cfg.get("match", "name")
     kept = []
     for r in records:
-        tags = roster.get(names.strip_initials(r.get(field) or ""))
+        tags = roster.get(strip_initials(r.get(field) or ""))
         if tags is None:
             continue
         if tags:
@@ -944,10 +947,10 @@ def _resolve_via_directory(src, records, cfg, fetch_fn) -> None:
         if strip:
             text = re.sub(strip, "", text).strip()
         if text and len(text) > 3 and not text.lower().startswith("http"):
-            dmap.setdefault(names.strip_initials(text), urljoin(cfg["url"], href))
+            dmap.setdefault(strip_initials(text), urljoin(cfg["url"], href))
     for rec in records:
         if not rec.get(url_field):
-            hit = dmap.get(names.strip_initials(rec.get("name", "")))
+            hit = dmap.get(strip_initials(rec.get("name", "")))
             if hit:
                 rec[url_field] = hit
 
@@ -1102,11 +1105,11 @@ def _pdf_supervisor_names(text: str) -> list[str]:
 def _name_for_email(email: str, names: list[str]) -> str | None:
     """Match an email to a supervision name by the local part (a name token,
     e.g. surname or first name, appears in it: xtan→Tan, haiyan→Haiyan)."""
-    lp = names.fold_german(email.split("@")[0])
+    lp = fold_german(email.split("@")[0])
     best = None
     for c in names:
         for tok in c.split():
-            ft = names.fold_german(tok)
+            ft = fold_german(tok)
             if len(ft) >= 3 and ft in lp and (best is None or len(ft) > best[1]):
                 best = (c, len(ft))
     return best[0] if best else None
@@ -1127,12 +1130,12 @@ def _pair_supervisor_emails(records, cfg) -> None:
         for sup in sups:
             if sup.get("email"):
                 continue
-            toks = [names.fold_german(t) for t in re.split(r"\s+", sup.get("name") or "")]
+            toks = [fold_german(t) for t in re.split(r"\s+", sup.get("name") or "")]
             toks = [t for t in toks if len(t) >= 3]
             for e in emails:
                 if e in used:
                     continue
-                lp = names.fold_german(e.split("@")[0])
+                lp = fold_german(e.split("@")[0])
                 if any(t in lp for t in toks):
                     sup["email"] = e
                     used.add(e)
