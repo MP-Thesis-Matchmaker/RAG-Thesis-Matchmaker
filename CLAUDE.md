@@ -40,17 +40,31 @@ so both ends stay typed without either importing the other.
 Not built: a **`ranking` package.** Ranking is one line inside
 `themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
 
-**The first thing that package has to fix is the person key, not the score.**
-`_group_by_person` groups on an exact name string, and the two sources spell people
-differently — `"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
-2026-08-26: **403 distinct supervisor names, 0 matching any of the 2,942 `uzh_authors`**; 3 match a
-plain `authors` entry, and only through the unaffiliated fallback, so a merge happens exactly where
-the UZH signal is absent. So `publication_count` and `posting_count` are effectively never both
-non-zero, a supervisor with an open position is never evidenced by their own papers, and any
-multi-signal score combining the two would be scoring a join that does not happen — while looking
-correct in review. The fix is name normalisation or an identity join through the `person` table
-(which already carries the CRIS UUIDs `uzh_authors` derives from); postings carry no identifier at
-all, so that side is the harder half. Detail:
+**The person key was the first thing that package had to fix, and it is now fixed —
+partially, and the partiality is the point (2026-09-03).** `_group_by_person` used to group on
+an exact name string, and the two sources spell people differently — `"Davide Scaramuzza"` on a
+posting against `"Scaramuzza, Davide"` on a paper — so **0 of 403 supervisor names matched any
+of the 2,942 `uzh_authors`**. `themis_matcher.retrieval.identity` now canonicalises to a
+first-given-token + family key, resolving free text against the comma-structured ZORA side:
+**103 of 403 (25.6%)**, 0 conflations detectable.
+
+Three things about it that are not obvious:
+
+- **The `person` table is the wrong join target**, which is the opposite of the intuition.
+  62% of supervisors have no `person` row with even a matching family name — they are PhD
+  students, postdocs and externals with no ZORA record — and `person` resolves *fewer*
+  supervisors than `uzh_authors` does (81 vs 94), because only 1,706 of 2,942 author strings
+  are exactly a `display_name`. `person` carries identity (CRIS UUID, ORCID), not coverage.
+- **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and `top_k`
+  publications separately, so a merge needs one person in both slices. Measured: **0 of 25
+  returned matches at the default `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. Do not report
+  the corpus figure as a coverage figure.
+- **The rule is deliberately strict** because a wrong merge is fabricated evidence shown to a
+  student. Family-name-only and initial matches are refused; 46 supervisor names share a family
+  name with a *different* ZORA author (`Daniel Müller` against `Müller, Mathias`).
+
+Full measurement: [`docs/person-key-resolution.md`](docs/person-key-resolution.md). Also
+detail:
 [`retrieval/README.md`](projects/matcher/src/themis_matcher/retrieval/README.md).
 
 Two of the scraper's three record kinds are stored and unread: `researcher_profile` (569 rows) and

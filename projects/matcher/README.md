@@ -146,12 +146,17 @@ Ranking is one line inside `retrieval/vector.py` — `score = max(hit.score)` in
 package the architecture calls for does not exist yet. The slot is between
 retrieve and synthesise.
 
-**What it has to fix first is the person key, not the score.** `_group_by_person`
-groups on an exact name string, and the two sources spell people differently:
-`"Davide Scaramuzza"` on a posting against `"Scaramuzza, D"` on a paper. Measured
-2026-08-26 — 403 distinct supervisor names, **0** matching any of the 2,942
-`uzh_authors`. So `publication_count` and `posting_count` are effectively never
-both non-zero, and a multi-signal score combining "publishes here" with "has an
-open position" would be scoring a join that never happens. Full detail and the
-proposed fix in
-[`retrieval/README.md`](src/themis_matcher/retrieval/README.md#known-gaps).
+**The person key it had to fix first is fixed** (2026-09-03).
+`_group_by_person` used to group on an exact name string, and the two sources
+spell people differently: `"Davide Scaramuzza"` on a posting against
+`"Scaramuzza, Davide"` on a paper — **0** of 403 supervisor names matched any of
+the 2,942 `uzh_authors`. [`retrieval/identity.py`](src/themis_matcher/retrieval/identity.py)
+now resolves free text against the comma-structured ZORA side: **103 of 403
+(25.6%)**, no detectable conflation.
+
+Two caveats before anyone builds on it. **103 is a ceiling, not a yield** —
+`retrieve` fetches `top_k` of each source separately, so a merge needs one person
+in both slices, and that is **0 of 25 returned matches at the default
+`top_k=5`**. And **62% of supervisors cannot be reached by any key**: they have
+no ZORA record at all. Measurement:
+[`docs/person-key-resolution.md`](../../docs/person-key-resolution.md).

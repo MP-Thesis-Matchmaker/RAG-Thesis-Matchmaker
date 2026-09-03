@@ -201,6 +201,18 @@ that person has. A single threshold in the admissible band therefore **removes
 supervisors with advertised open positions and keeps every publication-backed name** —
 deleting the most actionable half of the output.
 
+> **Update 2026-09-03 — the disjointness premise has partly lapsed.** The person key was
+> fixed: 103 of 403 supervisor names now resolve across sources
+> ([`person-key-resolution.md`](person-key-resolution.md)), so the two populations are no
+> longer strictly disjoint and a merged person's `score_source` is whichever source scored
+> higher. The measurement above is left as recorded — it is dated evidence, not a changelog
+> — but two things follow. First, F5's argument for *two* thresholds is unaffected: it rests
+> on the sources occupying different score ranges, which the merge does not change. Second,
+> **0.57 and 0.48 need re-measuring**, because the population they were tuned on is no
+> longer quite the population they apply to. That said, the overlap is currently tiny — 0 of
+> 25 returned matches at the default `top_k=5` — so the drift is small today and will grow
+> if retrieval starts over-fetching for grouping.
+
 ### F6 — Scores are not comparable across queries
 
 Best-match scores ranged 0.605 to 0.734 across on-topic publications, a 0.129 spread
