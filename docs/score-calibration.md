@@ -129,7 +129,9 @@ Bold marks the strongest false best-match — the noise floor.
 ### F1 — The negative half of the range is empty
 
 Zero of 214,756 publications and zero of 695 postings scored below `0.0` against any of
-the nine queries. The lowest observed score anywhere was **0.115**.
+the **five on-topic** queries. The lowest score they produced anywhere was **0.115**. The
+four controls got no corpus scan (see *Threats to validity*), only their top-100 head, so
+this finding says nothing about their lower tail.
 
 This is bge-m3's anisotropy, measured rather than assumed: dense retrievers of this
 family place all embeddings in a narrow cone, so "unrelated" bottoms out around 0.12–0.20
@@ -266,6 +268,13 @@ defaulted: a default would silently mis-threshold whichever source it guessed wr
 is the failure the field exists to prevent. Inferring it from `publication_count > 0` was
 rejected for the same reason — it happens to work only while the join defect holds, and
 would break silently the moment the person key is fixed.
+
+> **Update 2026-09-27 — `score_source` replaced by `source_scores`.** Naming only the
+> winning source let the loser's score vanish: a merged person at publication 0.56 (bar
+> 0.57) and posting 0.50 (bar 0.48) was dropped, though the posting alone passes.
+> `SupervisorMatch` now carries the best score per source, a validator keeps `score`
+> equal to their maximum, and `LLMSynthesizer` passes a person if **either** source
+> clears its own threshold. The thresholds themselves are unchanged.
 
 **These are a first calibration, not a constant.** Nine queries support the *structure* of
 the conclusion — that the two sources need separate values — more strongly than either

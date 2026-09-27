@@ -7,8 +7,9 @@ Candidates below a configurable score threshold are not presented as matches at
 all; instead the answer states there is no strong match and names the closest
 candidate as a long shot. The threshold is per source type -- publications and
 postings are not on a common scale, so one value cannot serve both without
-deleting posting-backed supervisors; see docs/score-calibration.md. Falls back to
-the template synthesiser on any error.
+deleting posting-backed supervisors; see docs/score-calibration.md. A candidate
+retrieved through both sources passes if **either** source's best score clears
+that source's threshold. Falls back to the template synthesiser on any error.
 """
 
 from __future__ import annotations
@@ -77,7 +78,7 @@ class LLMSynthesizer:
     ) -> None:
         self._client = client
         self._fallback = fallback or TemplateSynthesizer()
-        # Keyed by SupervisorMatch.score_source, so a third kind of source is a
+        # Keyed like SupervisorMatch.source_scores, so a third kind of source is a
         # data change rather than another branch. Both default to 0.0: an
         # explicitly constructed synthesiser filters nothing unless told to, and
         # the measured values arrive from settings via build_synthesizer.
@@ -86,10 +87,21 @@ class LLMSynthesizer:
             "thesis_posting": min_score_posting,
         }
 
+    def _clears_threshold(self, match: SupervisorMatch) -> bool:
+        """Whether any one source vouches for this person on its own scale.
+
+        Either, not the winner: thresholding only the higher-scoring source let a
+        0.56 publication (bar 0.57) drop someone whose 0.50 posting (bar 0.48)
+        would have passed alone -- being found twice made a person look worse.
+        """
+        return any(
+            score >= self._min_scores[source] for source, score in match.source_scores.items()
+        )
+
     def synthesize(self, query: str, matches: list[SupervisorMatch]) -> str:
         if not matches:
             return self._fallback.synthesize(query, matches)
-        strong = [m for m in matches if m.score >= self._min_scores[m.score_source]]
+        strong = [m for m in matches if self._clears_threshold(m)]
         if not strong:
             return _no_strong_match(query, matches)
         user = f'Student query: "{query}"\n\nCandidates:\n{_format_candidates(strong)}'

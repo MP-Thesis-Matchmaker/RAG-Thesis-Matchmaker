@@ -33,9 +33,12 @@ those are ``maria``/``maría``, the same person twice. Only ``Meier, Pascal
 Felix`` against ``Meier, Pascal Flurin`` is a genuine conflation, and **no
 supervisor name reaches any of the four**.
 
-The 300 that do not resolve mostly *cannot*: 251 have no ZORA record at all,
-being PhD students, postdocs, or externals (``vogelwarte.ch``, ``eawag.ch``,
-``agroscope.admin.ch``). That is a limit of the data, not of the rule.
+The 300 that do not resolve mostly *cannot*: 251 have no registered-author
+record -- no CRIS `person` row with even a matching family name, and only 6 of
+them among the `uzh_authors` anchors -- being PhD students, postdocs, or
+externals (``vogelwarte.ch``, ``eawag.ch``, ``agroscope.admin.ch``). Many still
+name-match *some* ZORA author string; that is not a record this rule can trust.
+That is a limit of the data, not of the rule.
 
 **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and
 `top_k` publications separately, so a merge needs one person in both slices at

@@ -158,5 +158,6 @@ Two caveats before anyone builds on it. **103 is a ceiling, not a yield** —
 `retrieve` fetches `top_k` of each source separately, so a merge needs one person
 in both slices, and that is **0 of 25 returned matches at the default
 `top_k=5`**. And **62% of supervisors cannot be reached by any key**: they have
-no ZORA record at all. Measurement:
+no registered-author record — no CRIS `person` row, and only 6 of them among the
+`uzh_authors`. Measurement:
 [`docs/person-key-resolution.md`](../../docs/person-key-resolution.md).

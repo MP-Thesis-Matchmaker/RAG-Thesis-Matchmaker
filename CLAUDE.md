@@ -52,7 +52,9 @@ Three things about it that are not obvious:
 
 - **The `person` table is the wrong join target**, which is the opposite of the intuition.
   62% of supervisors have no `person` row with even a matching family name — they are PhD
-  students, postdocs and externals with no ZORA record — and `person` resolves *fewer*
+  students, postdocs and externals with no registered-author record (only 6 of those 251 are
+  among the `uzh_authors`; many still name-match *some* ZORA author string, which is not
+  identity) — and `person` resolves *fewer*
   supervisors than `uzh_authors` does (81 vs 94), because only 1,706 of 2,942 author strings
   are exactly a `display_name`. `person` carries identity (CRIS UUID, ORCID), not coverage.
 - **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and `top_k`

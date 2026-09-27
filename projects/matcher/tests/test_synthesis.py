@@ -6,13 +6,18 @@ from themis_shared.contracts import Evidence, SupervisorMatch
 
 
 def _match(
-    name: str, title: str, score: float = 0.9, score_source: str = "publication"
+    name: str,
+    title: str,
+    score: float = 0.9,
+    source: str = "publication",
+    source_scores: dict[str, float] | None = None,
 ) -> SupervisorMatch:
+    scores = source_scores or {source: score}
     return SupervisorMatch(
         supervisor=name,
         department="Dept of X",
-        score=score,
-        score_source=score_source,
+        score=max(scores.values()),
+        source_scores=scores,
         matched_topics=["nlp"],
         publication_count=3,
         posting_count=1,
@@ -82,8 +87,8 @@ def test_thresholds_are_per_source_at_the_same_score():
         min_score_publication=0.57,
         min_score_posting=0.48,
     )
-    weak_paper = _match("Prof. Paper", "A Paper", score=0.52, score_source="publication")
-    strong_posting = _match("Dr. Posting", "A Topic", score=0.52, score_source="thesis_posting")
+    weak_paper = _match("Prof. Paper", "A Paper", score=0.52, source="publication")
+    strong_posting = _match("Dr. Posting", "A Topic", score=0.52, source="thesis_posting")
 
     # The posting clears its threshold, so an answer is attempted rather than
     # degraded -- and the endpoint does not exist, so it falls back to the
@@ -95,6 +100,32 @@ def test_thresholds_are_per_source_at_the_same_score():
     # The publication alone is below its own threshold: no candidate survives.
     only_paper = synth.synthesize("nlp thesis", [weak_paper])
     assert "no supervisor" in only_paper.lower()
+
+
+def test_a_person_found_in_both_sources_passes_if_either_does():
+    """The winning source must not veto the other one.
+
+    0.56 is under the publication bar and 0.50 over the posting bar. Thresholding
+    only the higher score -- the publication -- dropped this person, although the
+    posting alone would have passed: being found twice made them look worse.
+    """
+    from themis_matcher.llm import LLMClient
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    synth = LLMSynthesizer(
+        LLMClient("http://localhost:1", "none"),
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+    )
+    both = _match(
+        "Dr. Both", "A Topic", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    )
+    text = synth.synthesize("nlp thesis", [both])
+    assert "Dr. Both" in text
+    assert "no supervisor" not in text.lower()
+
+    paper_only = _match("Dr. Paper", "A Paper", score=0.56, source="publication")
+    assert "no supervisor" in synth.synthesize("nlp thesis", [paper_only]).lower()
 
 
 def test_llm_synthesizer_flags_weak_matches_without_calling_llm():

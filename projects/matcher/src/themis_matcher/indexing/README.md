@@ -247,8 +247,8 @@ The four results that bear on this section:
 
 `MATCHER_SYNTHESIS_MIN_SCORE` was therefore **retired and split in two** —
 `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` at 0.57 and `..._POSTING` at 0.48, each
-mid-band with room either side. `SupervisorMatch.score_source` records which one
-applies to a given person.
+mid-band with room either side. `SupervisorMatch.source_scores` carries a person's
+best score per source, and a person passes if either clears its own threshold.
 
 ## Configuration
 

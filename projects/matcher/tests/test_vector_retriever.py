@@ -112,10 +112,10 @@ def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> Non
     assert matches[0].publication_count >= 1
 
 
-def test_score_source_names_the_document_the_score_came_from(
+def test_source_scores_name_only_the_sources_that_found_the_person(
     retriever: VectorRetriever,
 ) -> None:
-    """Which source won decides which threshold synthesis applies to the person.
+    """Each source gets its own threshold, so each needs its own score.
 
     Prof. G. Roth appears only on a posting, Prof. C. Schmid only on a
     publication, so each has exactly one possible answer and the assertion cannot
@@ -123,25 +123,28 @@ def test_score_source_names_the_document_the_score_came_from(
     """
     graph = retriever.retrieve(ParsedQuery(topics=["Representation learning on graphs"]), top_k=10)
     roth = next(m for m in graph if m.supervisor == "Prof. G. Roth")
-    assert roth.score_source == "thesis_posting"
+    assert set(roth.source_scores) == {"thesis_posting"}
 
     history = retriever.retrieve(ParsedQuery(topics=["Medieval trade routes"]), top_k=10)
     schmid = next(m for m in history if m.supervisor == "Prof. C. Schmid")
-    assert schmid.score_source == "publication"
+    assert set(schmid.source_scores) == {"publication"}
 
 
-def test_score_source_agrees_with_the_highest_scoring_evidence(
+def test_a_person_found_in_both_sources_carries_both_scores(
     retriever: VectorRetriever,
 ) -> None:
-    """The invariant behind the field: it names the source of the person's best hit.
+    """The losing source's score must survive grouping, or synthesis cannot use it.
 
-    Checked across every match of a query that mixes both kinds, including people
-    credited by a publication and a posting at once.
+    Prof. A. Müller is credited by a publication and a posting at once. Every
+    match must name exactly the sources of its evidence, and `score` must be the
+    best of them.
     """
     matches = retriever.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
-    assert matches
+    mueller = next(m for m in matches if m.supervisor == "Prof. A. Müller")
+    assert set(mueller.source_scores) == {"publication", "thesis_posting"}
     for match in matches:
-        assert match.score_source in {e.source_type for e in match.evidence}
+        assert set(match.source_scores) == {e.source_type for e in match.evidence}
+        assert match.score == max(match.source_scores.values())
 
 
 def test_matches_sorted_by_score(retriever: VectorRetriever) -> None:
@@ -467,3 +470,20 @@ def test_an_ambiguous_posting_name_joins_neither_reading(tmp_path: Path) -> None
     assert len(posting_people) == 1
     assert posting_people[0].publication_count == 0
     assert all(m.posting_count == 0 for m in matches if m.publication_count)
+
+
+def test_a_named_department_cannot_empty_the_result(identity_retriever: VectorRetriever) -> None:
+    """A department is a nudge, not a filter.
+
+    The LLM parser writes free text ("informatics"); the index stores official
+    unit names, which differ between postings and ZORA. As an exact metadata
+    filter this matched nothing on either side and returned no one at all.
+    """
+    query = ParsedQuery(topics=["event cameras for autonomous drone racing"])
+    plain = identity_retriever.retrieve(query, top_k=10)
+    nudged = identity_retriever.retrieve(
+        query.model_copy(update={"department": "informatics"}), top_k=10
+    )
+
+    assert nudged
+    assert {m.supervisor for m in nudged} == {m.supervisor for m in plain}

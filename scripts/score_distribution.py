@@ -29,7 +29,8 @@ and below the weakest on-topic head -- the run prints both ends and the gap.
 `docs/score-calibration.md`.** Read that before interpreting new output; three of
 its findings change how the table below should be read:
 
-* No document scored below zero against any of nine queries (lowest: 0.115). The
+* No document scored below zero against any of the five on-topic queries (lowest:
+  0.115); the four controls got no corpus scan, only their top-100 head. The
   signed range is real but unoccupied on this corpus.
 * Postings score systematically below publications at the top (best posting
   0.56-0.65, best publication 0.61-0.73) while separating from noise nearly three

@@ -154,9 +154,22 @@ def test_supervisor_match_json_roundtrip():
     m = SupervisorMatch(
         supervisor="Prof. X",
         score=0.9,
-        score_source="publication",
+        source_scores={"publication": 0.9, "thesis_posting": 0.5},
         evidence=[Evidence(source_type="publication", source_id="zora:1", title="T")],
     )
     again = SupervisorMatch.model_validate(m.model_dump())
     assert again.evidence[0].source_id == "zora:1"
-    assert again.score_source == "publication"
+    assert again.source_scores == {"publication": 0.9, "thesis_posting": 0.5}
+
+
+@pytest.mark.parametrize(
+    "source_scores",
+    [{}, {"publication": 0.8}, {"publication": 0.8, "thesis_posting": 0.95}],
+    ids=["empty", "score-above-best", "score-below-best"],
+)
+def test_supervisor_match_refuses_a_score_that_is_not_the_best_source_score(
+    source_scores: dict[str, float],
+) -> None:
+    """`score` and `source_scores` are two fields that could disagree, so they may not."""
+    with pytest.raises(ValidationError):
+        SupervisorMatch(supervisor="Prof. X", score=0.9, source_scores=source_scores)

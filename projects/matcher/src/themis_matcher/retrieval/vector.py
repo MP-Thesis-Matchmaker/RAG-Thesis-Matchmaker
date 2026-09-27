@@ -35,10 +35,21 @@ _FILTERED_OVERFETCH = 4
 
 
 def _query_text(query: ParsedQuery) -> str:
-    """Compose the string that gets embedded for the search."""
+    """Compose the string that gets embedded for the search.
+
+    `department` joins the embedded text rather than the metadata filter. As a
+    filter it was an exact jsonb equality on whatever the LLM parser wrote, over
+    two vocabularies that do not even agree with each other -- a posting's
+    "Institut für Informatik (IFI) / Department of Informatics" against ZORA's
+    English unit names -- so "informatics" matched nothing and emptied the result.
+    Here it can only nudge similarity. Documents do not embed their department, so
+    the nudge works as a topical word and no more; its effect is unmeasured.
+    """
     parts = query.topics + query.keywords
     if not parts and query.raw_query:
         parts = [query.raw_query]
+    if query.department:
+        parts = [*parts, query.department]
     return "; ".join(parts)
 
 
@@ -65,11 +76,9 @@ class VectorRetriever:
 
         # Postings and publications are filtered differently: degree_level only
         # exists on postings, so one combined query would wrongly drop every
-        # publication whenever the student names a level.
-        shared: dict[str, str] = {}
-        if query.department:
-            shared["department"] = query.department
-        posting_filters: dict[str, str | bool] = {"source_type": "thesis_posting", **shared}
+        # publication whenever the student names a level. `department` is not a
+        # filter on either side; see _query_text.
+        posting_filters: dict[str, str | bool] = {"source_type": "thesis_posting"}
         if query.degree_level:
             # One boolean per level, not an equality test on the level itself. A
             # posting can be open to several -- 121 of 247 scraped topics read
@@ -90,7 +99,7 @@ class VectorRetriever:
             # posting_count per person for a recall problem two orders of magnitude
             # smaller.
             posting_filters["is_available"] = True
-        publication_filters: dict[str, str | bool] = {"source_type": "publication", **shared}
+        publication_filters: dict[str, str | bool] = {"source_type": "publication"}
         if self.require_uzh_author:
             # Eligibility as a hard cut: an unaffiliated researcher cannot supervise
             # a UZH thesis, so they should not occupy a slot at all.
@@ -228,16 +237,20 @@ class VectorRetriever:
             publications = [h for h in person_hits if h.metadata["source_type"] == "publication"]
             postings = [h for h in person_hits if h.metadata["source_type"] == "thesis_posting"]
             departments = [h.metadata.get("department") for h in person_hits]
-            # The hit itself, not just its score: which source won decides which
-            # threshold synthesis applies to this person, and the two are not on a
-            # common scale. Ties go to the earliest hit, which is deterministic.
-            best = max(person_hits, key=lambda hit: hit.score)
+            # Best score per source, not only the overall winner: synthesis
+            # thresholds each source on its own scale and a person passes if either
+            # does, so a publication just under its bar must not hide a posting
+            # comfortably over its.
+            source_scores: dict[Literal["publication", "thesis_posting"], float] = {}
+            for hit in person_hits:
+                source = VectorRetriever._source_type(hit)
+                source_scores[source] = max(hit.score, source_scores.get(source, hit.score))
             matches.append(
                 SupervisorMatch(
                     supervisor=identity.display_name(spellings[key]),
                     department=next((str(d) for d in departments if d), None),
-                    score=best.score,
-                    score_source=VectorRetriever._source_type(best),
+                    score=max(source_scores.values()),
+                    source_scores=source_scores,
                     has_uzh_affiliation=uzh_person[key],
                     matched_topics=query.topics,
                     publication_count=len(publications),

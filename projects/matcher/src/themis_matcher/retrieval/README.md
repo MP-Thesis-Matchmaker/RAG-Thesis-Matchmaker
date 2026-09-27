@@ -14,10 +14,11 @@ the only ranking logic in the system — see the note below.
 ```
 ParsedQuery ──▶ VectorRetriever.retrieve
                      │
-                     ├─ embed the query with the SAME model that built the index
+                     ├─ embed the query (topics + keywords [+ department]) with the
+                     │  SAME model that built the index
                      │
-                     ├─ query 1: source_type=publication + has_uzh_author=True [+ department]
-                     └─ query 2: source_type=thesis_posting [+ department] [+ degree_level]
+                     ├─ query 1: source_type=publication + has_uzh_author=True
+                     └─ query 2: source_type=thesis_posting [+ degree_level]
                      │
                      ▼  up to 2 × top_k ScoredHits
               _persons()  fan out each hit to the people it credits
@@ -55,7 +56,7 @@ Filters applied:
 | | publications | thesis postings |
 |---|---|---|
 | `source_type` | `publication` | `thesis_posting` |
-| `department` | if the query names one | if the query names one |
+| `department` | — *(embedded, not filtered -- see below)* | — *(embedded, not filtered)* |
 | `degree_level` | — | *(not filtered directly -- see below)* |
 | `has_uzh_author` | **`True`** *only when `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`* | — |
 | `is_available` | — | **`True`** *unless `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING=false`* |
@@ -186,11 +187,13 @@ resolve across sources — so this is live rather than hypothetical, though stil
 [`docs/score-calibration.md`](../../../../../docs/score-calibration.md) were measured while
 the two populations were disjoint and need re-measuring as that stops being true.
 
-Because of that, `_group_by_person` emits **`score_source`** alongside `score`: the
-`source_type` of the hit the maximum came from. Synthesis thresholds on it, since a
-0.52 publication and a 0.52 posting are not equally good. It is the *winning* hit's
-source, not a summary of the person's evidence — someone credited by both gets
-whichever scored higher.
+Because of that, `_group_by_person` emits **`source_scores`** alongside `score`: the
+person's best score *per* `source_type`, one entry for each source that retrieved them,
+with `score` the maximum of those. Synthesis thresholds each entry against its own
+source's value, since a 0.52 publication and a 0.52 posting are not equally good, and
+a person passes if **either** clears. Keeping only the winning hit's source — the
+earlier `score_source` — let a 0.56 publication, just under 0.57, drop someone whose
+0.50 posting would have passed 0.48 on its own.
 
 ## Configuration
 
@@ -262,7 +265,8 @@ serves fake results.
   latency, and nobody has decided the trade.
 
   **And 62% of supervisors are unreachable by any string rule** — 251 of 403 have
-  no ZORA record at all, being PhD students, postdocs, or externals. Raising
+  no registered-author record (no CRIS `person` row; only 6 among the
+  `uzh_authors`), being PhD students, postdocs, or externals. Raising
   coverage past a quarter needs a different source of identity (the 569 unread
   `researcher_profile` rows are the obvious candidate), not a better key. Full
   measurement, including why the `person` table is the *wrong* join target and why
@@ -273,9 +277,14 @@ serves fake results.
   informative and is not.
 - **`publication_count` is populated but unused in scoring**, despite
   `contracts/retrieval.py` describing it as a ranking signal.
-- **`department` matching is exact-string.** `parsing/` never populates the field
-  from free text today, so the filter is effectively dormant; it will need
-  normalisation (aliases, abbreviations) before it is useful.
+- **`department` is a soft signal, not a filter.** It used to be an exact jsonb
+  equality on the LLM parser's free text, over two vocabularies that do not agree
+  with each other (a posting's "Institut für Informatik (IFI) / Department of
+  Informatics" against ZORA's English unit names), so "informatics" emptied the
+  result. It is now appended to the embedded query text instead. Documents do not
+  embed their own department, so it nudges only as a topical word; the effect is
+  unmeasured. A real department constraint needs the extracted value mapped onto
+  known `org_unit`s first.
 - **`posting_count` is a fact about this query, not about the person.** It counts
   thesis postings retrieved for someone in this result set. The posting query is
   unthresholded -- it returns the nearest `top_k` postings whatever their distance

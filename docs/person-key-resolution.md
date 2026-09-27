@@ -183,8 +183,17 @@ coverage claim follows from the corpus figure.
 
 ### F5 — 62% cannot be fixed by any key
 
-251 of 403 supervisors have no ZORA record at all. No normalisation reaches
-them. Raising coverage past roughly a quarter requires a *different source of
+251 of 403 supervisors have no registered-author record: no CRIS `person` row
+with even a matching family name, and only 6 of them among the `uzh_authors`.
+No normalisation reaches them.
+
+That is not the same as having no ZORA record at all, and must not be reported
+as such. The join table above has 267 of 403 supervisors resolving against
+`publication.authors`, and only 152 supervisors lie outside the 251 — so **at
+least 115 of the 251 name-match some author string in ZORA**. Those are name
+matches, not identities: against 331,301 distinct author keys a namesake is
+entirely possible, which is exactly why the shipped rule does not resolve
+against that column. Raising coverage past roughly a quarter requires a *different source of
 identity* — a UZH directory, or the scraped `researcher_profile` records that
 are already stored and unread (569 rows) — not a better string rule.
 
@@ -238,9 +247,11 @@ those rows. Until then those supervisors cannot resolve, so F1's 103 is a slight
 - **The 569 unread `researcher_profile` rows** are the obvious candidate for
   reaching part of F5's 62%. They have a table and no consumer.
 - **Re-measure `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` / `_POSTING`**
-  (0.57 / 0.48, [`score-calibration.md`](score-calibration.md)). Merging changes
-  which source supplies a merged person's `score`, so `score_source` flips for
-  exactly the population this change creates — currently a very small one.
+  (0.57 / 0.48, [`score-calibration.md`](score-calibration.md)). They were
+  measured while the two populations were disjoint. A merged person now carries
+  both sources' best scores in `source_scores` and passes if either clears its
+  own threshold, so the population this change creates is thresholded twice —
+  currently a very small one.
 - **Reversed-order names** (`SHIMIZU Kentaro` against `Kentaro Shimizu`) are not
   caught. `flip_trailing_given` exists in `themis_shared.names` and could be
   offered as a third candidate; it was left out because it doubles the guess

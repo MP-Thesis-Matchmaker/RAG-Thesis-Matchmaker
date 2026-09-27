@@ -85,8 +85,10 @@ there trims postings while leaving publications untouched — which, because the
 key never joins the two sources, removes exactly the supervisors with open positions.
 Two values sit mid-band instead, with room either side.
 
-`LLMSynthesizer` picks between them on `SupervisorMatch.score_source`, which the
-retriever sets to the source of the person's highest-scoring hit. Reproduce or extend
+`LLMSynthesizer` applies them to `SupervisorMatch.source_scores`, which the retriever
+fills with the person's best score per source: a person passes if **either** source
+clears its own threshold, so a publication just under its bar cannot veto a posting
+comfortably over its. Reproduce or extend
 the measurement with
 [`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 
@@ -99,10 +101,11 @@ roles at once — the offline implementation *and* the fallback injected into
 
 ## Status
 
-**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (10 tests), including an
+**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (11 tests), including an
 assertion that a below-threshold match produces an answer **without** calling the
-LLM, and one that gives two matches the same score under different source types and
-checks they get opposite verdicts — which no single-threshold implementation can pass.
+LLM, one that gives two matches the same score under different source types and
+checks they get opposite verdicts — which no single-threshold implementation can pass —
+and one that a person found in both sources passes when either source clears.
 
 ## Known gaps
 
@@ -117,9 +120,11 @@ checks they get opposite verdicts — which no single-threshold implementation c
   are added — the floor is a max over controls, the ceiling a min over probes — so treat
   0.57 and 0.48 as a first calibration, not a settled constant. Threats to validity are
   listed in [`docs/score-calibration.md`](../../../../../docs/score-calibration.md).
-- **They will need re-measuring once the person key is fixed.** A person's `score_source`
-  is whichever source their best hit came from, and today no one is credited by both, so
-  the two populations are disjoint. Merging them changes which threshold applies to whom.
+- **They will need re-measuring now that the person key is fixed.** They were measured
+  while no one was credited by both sources. A merged person is now thresholded on both
+  of their `source_scores` and passes on either, which is a more permissive rule for
+  exactly that population — small today (0 of 25 matches at `top_k=5`), unmeasured as
+  it grows.
 - **`llm.py` has no dedicated test file.** The prompt construction, the candidate
   formatting, and the `LLMError` fallback are only exercised indirectly.
 - The system prompt is a single hard-coded English string. Nothing evaluates

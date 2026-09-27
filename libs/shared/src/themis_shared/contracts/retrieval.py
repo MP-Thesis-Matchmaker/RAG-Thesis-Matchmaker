@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from themis_shared.contracts.sources import DegreeLevel
 
@@ -63,16 +63,18 @@ class SupervisorMatch(BaseModel):
             "a probability and not a percentage: it can be negative."
         )
     )
-    score_source: Literal["publication", "thesis_posting"] = Field(
+    source_scores: dict[Literal["publication", "thesis_posting"], float] = Field(
         description=(
-            "Which kind of document produced `score`. The two sources are not on a "
-            "common scale -- 695 short postings against 214,756 abstracts, so an "
-            "arbitrary query lands closer to *something* among the publications "
-            "purely from sampling density -- which means a threshold has to be "
-            "chosen per source. Measured bands are in docs/score-calibration.md. "
-            "Required rather than defaulted on purpose: a default would silently "
-            "mis-threshold the source it guessed wrong, which is the exact failure "
-            "this field exists to prevent."
+            "This person's best score per kind of document, one entry for each kind "
+            "that retrieved them. The two sources are not on a common scale -- 695 "
+            "short postings against 214,756 abstracts, so an arbitrary query lands "
+            "closer to *something* among the publications purely from sampling "
+            "density -- which means a threshold has to be chosen per source, and a "
+            "person clears it if **either** source does. Keeping only the winning "
+            "source's score would let a 0.56 publication, just under its own bar, hide "
+            "a 0.50 posting comfortably over its. Measured bands are in "
+            "docs/score-calibration.md. Required rather than defaulted on purpose: a "
+            "default would silently mis-threshold the source it guessed wrong."
         )
     )
     has_uzh_affiliation: bool = Field(
@@ -104,3 +106,14 @@ class SupervisorMatch(BaseModel):
     evidence: list[Evidence] = Field(
         default_factory=list, description="Publications and postings behind the match."
     )
+
+    @model_validator(mode="after")
+    def _score_is_the_best_source_score(self) -> SupervisorMatch:
+        # `score` is kept, not derived, because every consumer orders on it. The
+        # price is two fields that could disagree, so disagreement is refused here
+        # rather than discovered as a mis-thresholded candidate downstream.
+        if not self.source_scores:
+            raise ValueError("source_scores must name at least one source")
+        if self.score != max(self.source_scores.values()):
+            raise ValueError("score must equal the best of source_scores")
+        return self
