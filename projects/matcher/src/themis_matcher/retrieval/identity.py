@@ -25,6 +25,11 @@ more than it accepts:
 - only `uzh_authors` supply anchors; a plain author of an unaffiliated paper
   never vouches for a posting name, because against 331,301 distinct author keys
   a namesake is likely
+- nor does that plain author join a UZH author of the same name: `author_key`
+  keeps them apart, so a stranger's paper cannot become a UZH researcher's
+  evidence. The cost is visible and accepted: a UZH researcher whose papers are
+  partly ORCID-only (empty `uzh_authors`) can appear twice under one name, once
+  affiliated and once demoted below every UZH match
 - a name whose split is ambiguous against the anchors is not merged at all
 - any posting name no single anchor vouches for -- ambiguous or unmatched --
   gets an `unresolved` key that no publication person can equal, so it cannot
@@ -83,6 +88,10 @@ class PersonKey:
     # It takes part in equality, so such a key can never equal a publication
     # person's -- those come from `key_of`, which never sets it.
     unresolved: bool = False
+    # Set only by `author_key`, for an author credited through the `authors`
+    # fallback of a paper with no `uzh_authors`. Also part of equality, so a
+    # namesake on an unaffiliated paper never joins a UZH author or a posting.
+    unaffiliated: bool = False
 
 
 def _tokens(text: str) -> list[str]:
@@ -128,17 +137,31 @@ def candidates(name: str) -> list[PersonKey]:
     return [PersonKey(tokens[0], " ".join(tokens[-take:])) for take in (1, 2) if len(tokens) > take]
 
 
+def author_key(name: str) -> PersonKey | None:
+    """The key for an author credited only through a paper's `authors` fallback.
+
+    `key_of`'s reading, marked `unaffiliated`. Two unaffiliated papers by the same
+    author string still group together; neither joins the UZH author or the
+    posting person who happens to share the name.
+    """
+    key = key_of(name)
+    return None if key is None else replace(key, unaffiliated=True)
+
+
 def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
-    """The one anchor this free-text name matches, or None.
+    """The anchor this posting name merges into, or None.
 
     None covers both "no anchor recognised it" and "more than one did". The
     second is a refusal rather than a failure. Merging on a coin flip is the
-    outcome this returns None to avoid. The retriever does not call this -- it
-    needs a key either way, which is `posting_key`; this answers only whether a
-    name resolves, which is what the coverage measurement counts.
+    outcome this returns None to avoid.
+
+    Defined through `posting_key` rather than beside it, so the coverage
+    measurement counts exactly the rule the retriever ships. It used to re-derive
+    the answer from `candidates`, which ignores commas, and so disagreed with the
+    retriever on every comma-form posting name.
     """
-    matched = [key for key in candidates(name) if key in anchors]
-    return matched[0] if len(matched) == 1 else None
+    key = posting_key(name, anchors)
+    return None if key is None or key.unresolved else key
 
 
 def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
@@ -161,7 +184,12 @@ def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     """
     if "," in strip_titles(name):
         key = key_of(name)
-        return key if key is None or key in anchors else replace(key, unresolved=True)
+        if key is not None:
+            return key if key in anchors else replace(key, unresolved=True)
+        # A comma with nothing on one side ("Sofia Forss,", a real scraped name)
+        # is punctuation, not structure. Returning None here dropped the person
+        # from every result; read the name as free text instead.
+        name = strip_titles(name).replace(",", " ")
     matched = [key for key in candidates(name) if key in anchors]
     if len(matched) == 1:
         return matched[0]

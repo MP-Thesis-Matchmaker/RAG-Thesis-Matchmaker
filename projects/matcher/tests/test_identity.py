@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from themis_matcher.retrieval.identity import (
     PersonKey,
+    author_key,
     candidates,
     display_name,
     key_of,
@@ -155,6 +156,57 @@ def test_a_comma_posting_name_is_never_read_in_natural_order() -> None:
     key = posting_key("Thomas, Martin", anchors)
     assert key == PersonKey("martin", "thomas", unresolved=True)
     assert key not in anchors
+
+
+def test_a_stray_comma_does_not_drop_a_posting_name() -> None:
+    """ "Sofia Forss," is on a real posting; the comma has no given half after it.
+
+    Read as "Family, Given" it yields no key at all, and a posting name with no
+    key credits nobody -- the supervisor vanished from every result. It is read
+    as free text instead, so it resolves like the comma-less spelling would.
+    """
+    anchor = PersonKey("sofia", "forss")
+    assert posting_key("Sofia Forss,", {anchor}) == anchor
+    assert resolve("Sofia Forss,", {anchor}) == anchor
+    assert posting_key("Sofia Forss,", set()) == PersonKey("sofia", "forss", unresolved=True)
+
+
+def test_an_unaffiliated_author_key_joins_no_anchor_and_no_posting() -> None:
+    """A plain author of a paper with no `uzh_authors` is keyed apart.
+
+    Same name, three key spaces: the UZH author's anchor, the posting person who
+    resolved to it, and the unaffiliated namesake. Only the first two may meet.
+    """
+    anchor = key_of("Müller, Daniel")
+    assert anchor is not None
+    assert posting_key("Daniel Müller", {anchor}) == anchor
+
+    stranger = author_key("Müller, Daniel")
+    assert stranger == PersonKey("daniel", "muller", unaffiliated=True)
+    assert stranger != anchor
+    assert stranger != posting_key("Daniel Müller", set())
+    # Two unaffiliated papers by the same author string still group together.
+    assert stranger == author_key("Müller, Daniel")
+    assert author_key("Madonna") is None
+
+
+def test_resolve_counts_exactly_what_posting_key_merges() -> None:
+    """The coverage figure has to measure the shipped rule.
+
+    `resolve` used to re-derive its answer from `candidates`, which ignores
+    commas, so it disagreed with the retriever in both directions on comma-form
+    posting names: missed a merge the retriever makes, and counted one it refuses.
+    """
+    assert resolve("Scaramuzza, Davide", {PersonKey("davide", "scaramuzza")}) == PersonKey(
+        "davide", "scaramuzza"
+    )
+    assert resolve("Thomas, Martin", {PersonKey("thomas", "martin")}) is None
+
+    anchors = {PersonKey("davide", "scaramuzza"), PersonKey("thomas", "martin")}
+    for name in ["Scaramuzza, Davide", "Thomas, Martin", "Davide Scaramuzza", "Daniel Müller"]:
+        key = posting_key(name, anchors)
+        merged = key if key is not None and not key.unresolved else None
+        assert resolve(name, anchors) == merged
 
 
 def test_a_single_token_name_yields_no_key() -> None:

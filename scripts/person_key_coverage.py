@@ -37,9 +37,8 @@ import sys
 from collections import defaultdict
 
 from themis_matcher.config import get_settings
-from themis_matcher.indexing import build_embedder, build_store, read_manifest
-from themis_matcher.retrieval import identity
-from themis_matcher.retrieval.vector import VectorRetriever
+from themis_matcher.indexing import read_manifest
+from themis_matcher.retrieval import build_retriever, identity
 from themis_shared import db
 from themis_shared.contracts import ParsedQuery
 
@@ -111,15 +110,10 @@ def main() -> None:
     settings = get_settings()
     _check_index(settings)
 
-    embedder = build_embedder(settings)
-    store = build_store(settings)
-    retriever = VectorRetriever(
-        embedder=embedder,
-        store=store,
-        require_uzh_author=settings.retrieval_require_uzh_author,
-        require_available_posting=settings.retrieval_require_available_posting,
-        ranking_strategy=settings.retrieval_ranking_strategy,
-    )
+    # The factory, not a hand-built VectorRetriever: the ranking reads the
+    # per-source thresholds from settings, and a hand-built one silently ranked on
+    # raw score at the constructor's 0.0 defaults.
+    retriever = build_retriever(settings)
     queries = args.queries or _PROBES
 
     try:
