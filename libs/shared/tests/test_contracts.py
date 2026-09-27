@@ -155,7 +155,10 @@ def test_supervisor_match_json_roundtrip():
         supervisor="Prof. X",
         score=0.9,
         source_scores={"publication": 0.9, "thesis_posting": 0.5},
-        evidence=[Evidence(source_type="publication", source_id="zora:1", title="T")],
+        evidence=[
+            Evidence(source_type="publication", source_id="zora:1", title="T"),
+            Evidence(source_type="thesis_posting", source_id="posting:1", title="P"),
+        ],
     )
     again = SupervisorMatch.model_validate(m.model_dump())
     assert again.evidence[0].source_id == "zora:1"
@@ -173,3 +176,22 @@ def test_supervisor_match_refuses_a_score_that_is_not_the_best_source_score(
     """`score` and `source_scores` are two fields that could disagree, so they may not."""
     with pytest.raises(ValidationError):
         SupervisorMatch(supervisor="Prof. X", score=0.9, source_scores=source_scores)
+
+
+def test_supervisor_match_refuses_scores_that_disagree_with_its_evidence() -> None:
+    """A posting in the evidence with no posting score is thresholded on the wrong scale."""
+    with pytest.raises(ValidationError):
+        SupervisorMatch(
+            supervisor="Prof. X",
+            score=0.9,
+            source_scores={"publication": 0.9},
+            evidence=[
+                Evidence(source_type="publication", source_id="zora:1", title="T"),
+                Evidence(source_type="thesis_posting", source_id="posting:1", title="P"),
+            ],
+        )
+
+
+def test_supervisor_match_without_evidence_is_not_checked_against_it() -> None:
+    m = SupervisorMatch(supervisor="Prof. X", score=0.9, source_scores={"thesis_posting": 0.9})
+    assert m.evidence == []

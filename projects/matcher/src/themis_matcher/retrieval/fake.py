@@ -13,7 +13,7 @@ _CANNED: list[SupervisorMatch] = [
         supervisor="Prof. A. Müller",
         department="Department of Computational Linguistics",
         score=0.91,
-        source_scores={"publication": 0.91},
+        source_scores={"publication": 0.91, "thesis_posting": 0.62},
         matched_topics=["retrieval-augmented generation", "nlp"],
         publication_count=12,
         posting_count=1,
@@ -58,7 +58,7 @@ _CANNED: list[SupervisorMatch] = [
         source_scores={"publication": 0.64},
         matched_topics=["misinformation detection"],
         publication_count=5,
-        posting_count=1,
+        posting_count=0,
         evidence=[
             Evidence(
                 source_type="publication",

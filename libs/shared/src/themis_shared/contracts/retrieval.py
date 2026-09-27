@@ -116,4 +116,11 @@ class SupervisorMatch(BaseModel):
             raise ValueError("source_scores must name at least one source")
         if self.score != max(self.source_scores.values()):
             raise ValueError("score must equal the best of source_scores")
+        # Evidence is optional, but when present it is the hits the scores came
+        # from, so the two must name the same sources. A posting-backed person with
+        # only a publication score would be thresholded on the wrong scale -- or,
+        # as the canned FakeRetriever data did, never on the posting one at all.
+        evidenced = {item.source_type for item in self.evidence}
+        if evidenced and evidenced != set(self.source_scores):
+            raise ValueError("source_scores must name exactly the sources in evidence")
         return self

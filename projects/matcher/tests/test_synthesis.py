@@ -21,7 +21,10 @@ def _match(
         matched_topics=["nlp"],
         publication_count=3,
         posting_count=1,
-        evidence=[Evidence(source_type="publication", source_id="z:1", title=title)],
+        # One item per scored source, as the retriever builds them from the same hits.
+        evidence=[
+            Evidence(source_type=kind, source_id=f"{kind}:1", title=title) for kind in scores
+        ],
     )
 
 
