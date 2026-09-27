@@ -186,17 +186,24 @@ class VectorRetriever:
     def _anchors(hits: list[ScoredHit]) -> set[identity.PersonKey]:
         """The identities the structured side of the corpus vouches for.
 
-        Only publications contribute. ZORA writes "Family, Given", so the comma
-        says where the name splits and no guessing is involved; a posting's
-        "Davide Scaramuzza" has to be resolved *against* these rather than the
-        other way round. Building the set from the hits in hand rather than from
-        the whole corpus keeps retrieval read-only and stateless -- the cost is
-        that a merge only happens when both sources surface in the same query.
+        Only publications contribute, and only through `uzh_authors`. ZORA writes
+        "Family, Given", so the comma says where the name splits and no guessing
+        is involved; a posting's "Davide Scaramuzza" has to be resolved *against*
+        these rather than the other way round. The `authors` fallback in
+        `_persons` still *credits* the people on an unaffiliated paper, but it
+        does not vouch for a posting name: across 331,301 distinct author keys a
+        namesake is likely, and a merge onto one shows a stranger's papers to a
+        student as evidence. It is also the set the 103-of-403 ceiling in
+        docs/person-key-resolution.md was measured against.
+
+        Building the set from the hits in hand rather than from the whole corpus
+        keeps retrieval read-only and stateless -- the cost is that a merge only
+        happens when both sources surface in the same query.
         """
         anchors = set()
         for hit in hits:
             if hit.metadata["source_type"] == "publication":
-                for name in VectorRetriever._persons(hit):
+                for name in VectorRetriever._names(hit, "uzh_authors"):
                     key = identity.key_of(name)
                     if key:
                         anchors.add(key)
@@ -214,14 +221,13 @@ class VectorRetriever:
             uzh_credit = VectorRetriever._is_uzh_credit(hit)
             posting = hit.metadata["source_type"] == "thesis_posting"
             for name in VectorRetriever._persons(hit):
-                # A posting's free text gets one chance to match an anchor; failing
-                # that it is keyed on its own reading of itself, so the person still
-                # appears rather than vanishing. An ambiguous name is left unmerged
-                # on purpose, because a coin-flip merge would credit someone with a
-                # stranger's papers and show it to a student as evidence -- and
-                # `posting_key` rather than `resolve(...) or key_of(...)`, because
-                # key_of's reading of an ambiguous name is one of the anchors it
-                # was ambiguous between, so that fallback merged anyway.
+                # A posting's name gets one chance to match an anchor; failing that
+                # it is keyed as `unresolved`, so the person still appears rather
+                # than vanishing but never joins a publication person. The plain
+                # `key_of` reading is no safe fallback: for an ambiguous name it is
+                # one of the anchors it was ambiguous between, and for an unmatched
+                # one it can equal an unaffiliated author's key, which groups here
+                # on equality alone.
                 key = identity.posting_key(name, anchors) if posting else identity.key_of(name)
                 if key is None:
                     continue

@@ -22,9 +22,15 @@ more than it accepts:
 
 - the full first given token must agree; an initial is never enough
 - a family-name match alone is never enough
-- a name whose split is ambiguous against the anchors is not merged at all --
-  `posting_key` gives it a quarantined key no anchor can equal, rather than
-  falling back to a reading that is itself one of the ambiguous anchors
+- only `uzh_authors` supply anchors; a plain author of an unaffiliated paper
+  never vouches for a posting name, because against 331,301 distinct author keys
+  a namesake is likely
+- a name whose split is ambiguous against the anchors is not merged at all
+- any posting name no single anchor vouches for -- ambiguous or unmatched --
+  gets an `unresolved` key that no publication person can equal, so it cannot
+  merge by coincidence of key either
+- a posting name that already writes ``"Family, Given"`` is read by its comma,
+  never split by guessing
 
 Measured over the live corpus with this implementation on 2026-09-03: 403
 distinct supervisor names, **103 resolved** (25.6%), 0 refused as ambiguous. Of
@@ -43,7 +49,8 @@ That is a limit of the data, not of the rule.
 **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and
 `top_k` publications separately, so a merge needs one person in both slices at
 once. Measured over five probes: **0 of 25 returned matches at `top_k=5`**, 1 of
-100 at 20, 7 of 250 at 50. At the default width this join effectively never
+100 at 20, 7 of 250 at 50 -- upper bounds since 2026-09-27, when anchors
+narrowed to `uzh_authors`. At the default width this join effectively never
 fires, and no coverage claim may be made from the corpus figure alone. See
 `docs/person-key-resolution.md`.
 
@@ -55,7 +62,7 @@ deliberate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from themis_shared.names import flip_family_given, fold_ascii, strip_titles
 
@@ -72,10 +79,10 @@ class PersonKey:
 
     given: str
     family: str
-    # Set only by `posting_key` for a name whose split matched more than one
-    # anchor. It takes part in equality, so a quarantined key can never equal an
-    # anchor -- anchors come from `key_of`, which never sets it.
-    ambiguous: bool = False
+    # Set only by `posting_key`, for a posting name no single anchor vouches for.
+    # It takes part in equality, so such a key can never equal a publication
+    # person's -- those come from `key_of`, which never sets it.
+    unresolved: bool = False
 
 
 def _tokens(text: str) -> list[str]:
@@ -125,9 +132,10 @@ def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     """The one anchor this free-text name matches, or None.
 
     None covers both "no anchor recognised it" and "more than one did". The
-    second is a refusal rather than a failure, and the caller treats them the
-    same way -- the person is grouped under their own spelling instead. Merging
-    on a coin flip is the outcome this returns None to avoid.
+    second is a refusal rather than a failure. Merging on a coin flip is the
+    outcome this returns None to avoid. The retriever does not call this -- it
+    needs a key either way, which is `posting_key`; this answers only whether a
+    name resolves, which is what the coverage measurement counts.
     """
     matched = [key for key in candidates(name) if key in anchors]
     return matched[0] if len(matched) == 1 else None
@@ -136,27 +144,29 @@ def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
 def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     """The grouping key for a free-text name, as the retriever uses it.
 
-    `resolve` alone cannot be the caller's whole decision, because its None
-    conflates two outcomes that need different keys. When nothing matched,
-    `key_of` is safe: a natural-order name reads as ``(first, last)``, which is
-    exactly ``candidates(name)[0]`` and so provably not an anchor, and a posting
-    that happens to write ``"Family, Given"`` gets its structured reading, which
-    may match an anchor on the same evidence ZORA's own comma provides. When
-    several matched, ``key_of`` is **not** safe -- that same ``(first, last)``
-    reading is one of the anchors that made the name ambiguous, and falling back
-    to it would perform the merge the refusal exists to prevent. That case gets a
-    quarantined key instead: the full-tail reading marked `ambiguous`, which no
-    anchor can equal. Two postings spelling the name identically still group
-    together; neither ever joins a publication person.
+    A posting that writes ``"Family, Given"`` is checked **first**, by its comma
+    alone: `candidates` ignores commas, so it would read ``"Thomas, Martin"`` in
+    natural order and could match the anchor for ``"Martin, Thomas"``, a
+    different person. The comma is the same evidence ZORA's own names carry, so
+    the structured reading either is an anchor or is nothing.
+
+    A free-text name merges only when exactly one candidate split is an anchor.
+    Every other outcome -- no split matched, or several did -- gets `key_of`'s
+    reading marked `unresolved`. The plain reading is not safe in either case:
+    when several matched, ``(first, last)`` is one of the anchors that made the
+    name ambiguous; when none did, it can still equal an unaffiliated paper's
+    author key, which is a publication person but not an anchor, and the
+    retriever groups on key equality alone. Two postings spelling a name the same
+    way still group together; neither joins a publication person.
     """
-    options = candidates(name)
-    matched = [key for key in options if key in anchors]
+    if "," in strip_titles(name):
+        key = key_of(name)
+        return key if key is None or key in anchors else replace(key, unresolved=True)
+    matched = [key for key in candidates(name) if key in anchors]
     if len(matched) == 1:
         return matched[0]
-    if not matched:
-        return key_of(name)
-    widest = options[-1]
-    return PersonKey(widest.given, widest.family, ambiguous=True)
+    key = key_of(name)
+    return None if key is None else replace(key, unresolved=True)
 
 
 def display_name(spellings: list[str]) -> str:

@@ -57,8 +57,9 @@ Three caveats that shape everything on this page:
   so **zero** of 403 supervisor names matched any of the 2,942 `uzh_authors`. Since 2026-09-03
   the key is canonicalised and 103 of 403 resolve. But `retrieve` fetches `top_k` of each source
   separately, so a merge needs one person in both slices: measured over five probes, **0 of 25
-  returned matches at `top_k=5`**, rising to 7 of 250 at `top_k=50`. Most candidates below are
-  therefore still either publication-backed or posting-backed. See
+  returned matches at `top_k=5`**, rising to 7 of 250 at `top_k=50` (upper bounds since the
+  2026-09-27 anchor correction). Most candidates below are therefore still either
+  publication-backed or posting-backed. See
   [`docs/person-key-resolution.md`](person-key-resolution.md).
 
 ## Example 1 — offline, no model, no key

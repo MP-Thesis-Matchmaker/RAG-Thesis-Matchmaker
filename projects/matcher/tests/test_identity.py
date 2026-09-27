@@ -106,7 +106,7 @@ def test_an_ambiguous_posting_key_is_none_of_the_anchors() -> None:
 
     `key_of("Alessandro De Luca")` is (alessandro, luca) -- one of the very
     anchors that made the name ambiguous -- so falling back to it merged the
-    refused name after all. The quarantined key equals no anchor, and the same
+    refused name after all. The unresolved key equals no anchor, and the same
     spelling seen twice still groups with itself.
     """
     both = {PersonKey("alessandro", "luca"), PersonKey("alessandro", "de luca")}
@@ -123,10 +123,38 @@ def test_a_posting_key_takes_the_one_anchor_that_matches() -> None:
     assert posting_key("Alessandro De Luca", anchors) == PersonKey("alessandro", "de luca")
 
 
-def test_an_unmatched_posting_key_is_the_name_read_on_its_own() -> None:
+def test_an_unmatched_posting_key_is_its_own_reading_marked_unresolved() -> None:
+    """Unmatched is not the same as safe to key plainly.
+
+    Anchors come from `uzh_authors` only, so an unaffiliated paper's "Müller,
+    Daniel" is a publication person but no anchor. A plain (daniel, muller) would
+    equal that person's key and merge with them on equality alone.
+    """
     anchors = {PersonKey("mathias", "muller")}
-    assert posting_key("Daniel Müller", anchors) == key_of("Daniel Müller")
-    assert posting_key("Daniel Müller", anchors) not in anchors
+    key = posting_key("Daniel Müller", anchors)
+    assert key == PersonKey("daniel", "muller", unresolved=True)
+    assert key != key_of("Müller, Daniel")
+    assert key not in anchors
+
+
+def test_a_comma_posting_name_matches_its_structured_anchor() -> None:
+    anchors = {PersonKey("davide", "scaramuzza")}
+    assert posting_key("Scaramuzza, Davide", anchors) == PersonKey("davide", "scaramuzza")
+
+
+def test_a_comma_posting_name_is_never_read_in_natural_order() -> None:
+    """ "Thomas, Martin" is Martin Thomas, not Thomas Martin.
+
+    `candidates` ignores commas, so consulting it first read this name as given
+    Thomas / family Martin -- exactly the anchor for "Martin, Thomas", a
+    different person -- and merged them.
+    """
+    anchors = {key_of("Martin, Thomas")}
+    assert anchors == {PersonKey("thomas", "martin")}
+
+    key = posting_key("Thomas, Martin", anchors)
+    assert key == PersonKey("martin", "thomas", unresolved=True)
+    assert key not in anchors
 
 
 def test_a_single_token_name_yields_no_key() -> None:

@@ -157,7 +157,7 @@ now resolves free text against the comma-structured ZORA side: **103 of 403
 Two caveats before anyone builds on it. **103 is a ceiling, not a yield** —
 `retrieve` fetches `top_k` of each source separately, so a merge needs one person
 in both slices, and that is **0 of 25 returned matches at the default
-`top_k=5`**. And **62% of supervisors cannot be reached by any key**: they have
-no registered-author record — no CRIS `person` row, and only 6 of them among the
-`uzh_authors`. Measurement:
+`top_k=5`**. And **62% of supervisors have no registered-author record** — no
+CRIS `person` row, and only 6 of them among the `uzh_authors` — so at least 245
+of 403 are out of the rule's reach. Measurement:
 [`docs/person-key-resolution.md`](../../docs/person-key-resolution.md).

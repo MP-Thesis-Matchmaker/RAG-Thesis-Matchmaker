@@ -248,8 +248,11 @@ serves fake results.
   supervisor names, 0 matching any of the 2,942 `uzh_authors`**.
 
   Since 2026-09-03 [`identity.py`](identity.py) canonicalises to a
-  first-given-token + family key. Publications supply the anchors, because ZORA's
-  comma says where a name splits; a posting's free text is resolved against them.
+  first-given-token + family key. Publications supply the anchors — through
+  `uzh_authors` only, never the `authors` fallback — because ZORA's comma says where
+  a name splits; a posting's free text is resolved against them, and a posting
+  name no single anchor vouches for is keyed `unresolved` so it joins no
+  publication person.
   **103 of 403 supervisor names (25.6%) now resolve**, with no conflation
   detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
   reached by no supervisor at all.
@@ -257,16 +260,17 @@ serves fake results.
   **What remains a gap is the yield, not the key.** `retrieve` fetches `top_k`
   postings *and* `top_k` publications, so a merge needs one person in both slices
   at once. Measured over five probes: **0 of 25 returned matches at the default
-  `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. So `publication_count` and
+  `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50 (measured before anchors were narrowed
+  to `uzh_authors` on 2026-09-27, so upper bounds now). So `publication_count` and
   `posting_count` are now *capable* of both being non-zero and still rarely are,
   and a multi-signal score built on them would have almost nothing to combine at
   the default width. Over-fetching for grouping and truncating afterwards is the
   obvious lever; it is not pulled, because it inflates `posting_count` and costs
   latency, and nobody has decided the trade.
 
-  **And 62% of supervisors are unreachable by any string rule** — 251 of 403 have
-  no registered-author record (no CRIS `person` row; only 6 among the
-  `uzh_authors`), being PhD students, postdocs, or externals. Raising
+  **And 62% of supervisors have no registered-author record** — 251 of 403 (no
+  CRIS `person` row; only 6 among the `uzh_authors`, so at least 245 are out of
+  the rule's reach), being PhD students, postdocs, or externals. Raising
   coverage past a quarter needs a different source of identity (the 569 unread
   `researcher_profile` rows are the obvious candidate), not a better key. Full
   measurement, including why the `person` table is the *wrong* join target and why

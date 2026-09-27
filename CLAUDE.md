@@ -59,7 +59,8 @@ Three things about it that are not obvious:
   are exactly a `display_name`. `person` carries identity (CRIS UUID, ORCID), not coverage.
 - **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and `top_k`
   publications separately, so a merge needs one person in both slices. Measured: **0 of 25
-  returned matches at the default `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. Do not report
+  returned matches at the default `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50 — measured
+  before the 2026-09-27 anchor correction, so now upper bounds. Do not report
   the corpus figure as a coverage figure.
 - **The rule is deliberately strict** because a wrong merge is fabricated evidence shown to a
   student. Family-name-only and initial matches are refused; 46 supervisor names share a family

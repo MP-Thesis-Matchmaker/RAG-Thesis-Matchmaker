@@ -111,11 +111,34 @@ fabricated evidence.
   `Alexandra Freund` are one person
 - the **full** first given token must agree; an initial is never enough
 - a family-name match alone is never enough
-- publications supply the anchors (ZORA's comma says where the name splits);
-  a posting's free text is resolved *against* them, never the reverse
+- publications supply the anchors (ZORA's comma says where the name splits),
+  and only through `uzh_authors`; a posting's free text is resolved *against*
+  them, never the reverse
+- a posting name that already writes `Family, Given` is read by its comma and
+  never split by guessing
 - where free text could split two ways (`Alessandro De Luca`), both readings are
   offered and the structured side decides — so there is no particle list
 - a name matching more than one anchor is **not merged at all**
+- a posting name no single anchor vouches for gets a key marked `unresolved`,
+  which no publication person can equal
+
+> **Correction 2026-09-27 — the retriever had drifted from this rule.**
+> `VectorRetriever._anchors` built anchors from `_persons()`, which falls back
+> from `uzh_authors` to plain `authors` on a paper with no UZH author, and
+> `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` is off by default. So at runtime a
+> posting name could merge onto an unaffiliated namesake — the 331,301-key
+> column the table above warns against. Anchors now come from `uzh_authors`
+> alone, and an unmatched posting name is keyed `unresolved` so it cannot join
+> an unaffiliated author by key equality either. Separately, a comma-form
+> posting name (`Thomas, Martin`) used to be tried in natural order first and
+> could match the anchor of the reversed person (`Martin, Thomas`); it is now
+> read by its comma only.
+>
+> F1–F3 are unaffected: the script computes the ceiling against `uzh_authors`
+> directly. **F4 is affected**: it was measured through `VectorRetriever` with
+> the wider anchor set, so its figures are now upper bounds on what the shipped
+> rule merges, not measurements of it. They are left as recorded until the
+> script is re-run.
 
 ## Results
 
@@ -172,6 +195,9 @@ needs the same person in both slices at once:
 | 20 | 1 | 1 of 100 (1.0%) |
 | 50 | 7 | 7 of 250 (2.8%) |
 
+*Measured before the 2026-09-27 anchor correction (see "The rule that shipped");
+under the shipped rule each figure is an upper bound.*
+
 Who merges, at `top_k=50`: Rico Sennrich, Simon Clematide, Volker Dellwo
 (computational linguistics), Gerald Schwank, Klaus Oberauer, Liudmila
 Zavolokina.
@@ -181,19 +207,22 @@ default the answer is zero. The change remains a precondition for the `ranking`
 package and still collapses duplicate spellings within a single source, but no
 coverage claim follows from the corpus figure.
 
-### F5 — 62% cannot be fixed by any key
+### F5 — 62% have no registered-author record
 
 251 of 403 supervisors have no registered-author record: no CRIS `person` row
-with even a matching family name, and only 6 of them among the `uzh_authors`.
-No normalisation reaches them.
+with even a matching family name. Only 6 of them appear among the `uzh_authors`
+strings, so **at least 245 of the 251 are out of reach of the shipped rule**,
+which resolves against `uzh_authors` and nothing else. The 6 are within its
+reach; whether each resolves was not separately counted, and F1's 103 is the
+figure that includes them if they do.
 
 That is not the same as having no ZORA record at all, and must not be reported
 as such. The join table above has 267 of 403 supervisors resolving against
 `publication.authors`, and only 152 supervisors lie outside the 251 — so **at
 least 115 of the 251 name-match some author string in ZORA**. Those are name
 matches, not identities: against 331,301 distinct author keys a namesake is
-entirely possible, which is exactly why the shipped rule does not resolve
-against that column. Raising coverage past roughly a quarter requires a *different source of
+entirely possible, which is exactly why the shipped rule resolves posting names
+against `uzh_authors` only. Raising coverage past roughly a quarter requires a *different source of
 identity* — a UZH directory, or the scraped `researcher_profile` records that
 are already stored and unread (569 rows) — not a better string rule.
 

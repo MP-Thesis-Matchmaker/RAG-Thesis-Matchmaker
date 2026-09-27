@@ -472,6 +472,51 @@ def test_an_ambiguous_posting_name_joins_neither_reading(tmp_path: Path) -> None
     assert all(m.posting_count == 0 for m in matches if m.publication_count)
 
 
+def test_an_unaffiliated_namesake_does_not_vouch_for_a_posting_name(tmp_path: Path) -> None:
+    """Only `uzh_authors` are anchors; a plain author never is.
+
+    The paper below has no UZH author, so `_persons` credits its plain authors
+    and "Müller, Daniel" becomes a publication person. Were that person an
+    anchor -- as it was while anchors reused `_persons` -- the posting's "Daniel
+    Müller" would merge with a stranger's paper: against 331,301 distinct author
+    keys, a namesake is the likely reading, not the unlikely one.
+    """
+    sources = tmp_path / "namesake"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:namesake",
+            title="Soil microbiology of alpine meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=[],
+        )
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:namesake",
+            title="MSc thesis: soil microbiology of alpine meadows",
+            description="Microbial communities.",
+            supervisors=[{"name": "Daniel Müller"}],
+            url="https://uzh.ch/namesake",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["soil microbiology"]), top_k=10
+    )
+
+    assert len(matches) == 2
+    assert all(not (m.publication_count and m.posting_count) for m in matches)
+
+
 def test_a_named_department_cannot_empty_the_result(identity_retriever: VectorRetriever) -> None:
     """A department is a nudge, not a filter.
 
