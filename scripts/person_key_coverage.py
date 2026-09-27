@@ -2,7 +2,7 @@
 """Measure how often the person key actually joins the two sources.
 
 `retrieval/identity.py` resolves a posting's supervisor to a paper's author, and
-over the whole corpus it resolves 99 of 403 supervisor names. That number is an
+over the whole corpus it resolves 105 of 403 supervisor names (2026-09-27). That number is an
 **upper bound on who could ever merge**, not a prediction of what a query
 returns: `VectorRetriever.retrieve` fetches `top_k` postings and `top_k`
 publications, so a merge needs the same person to surface in both slices at once.

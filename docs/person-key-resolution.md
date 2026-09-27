@@ -1,7 +1,8 @@
 # Person-key resolution: what joins the two sources, and what does not
 
 Measured 2026-09-03 against the live index (214,756 publications, 695 postings,
-215,451 embedded documents). Reproduce with
+215,451 embedded documents); **F1 and F4 re-measured 2026-09-27** under the
+shipped rule, every other figure is from 2026-09-03. Reproduce with
 [`scripts/person_key_coverage.py`](../scripts/person_key_coverage.py).
 
 > **This is not an evaluation.** The five probe queries carry no relevance
@@ -134,23 +135,43 @@ fabricated evidence.
 > could match the anchor of the reversed person (`Martin, Thomas`); it is now
 > read by its comma only.
 >
-> F1–F3 are unaffected: the script computes the ceiling against `uzh_authors`
-> directly. **F4 is affected**: it was measured through `VectorRetriever` with
-> the wider anchor set, so its figures are now upper bounds on what the shipped
-> rule merges, not measurements of it. They are left as recorded until the
-> script is re-run.
+> F1–F3 are unaffected by this correction: the script computes the ceiling against `uzh_authors`
+> directly. **F4 was affected**: it was measured through `VectorRetriever` with
+> the wider anchor set. Re-measured 2026-09-27 under the shipped rule, `top_k=5`
+> and `20` are unchanged (0 and 1) and `top_k=50` fell from 7 merges to 5.
+>
+> **Gerald Schwank no longer merges**, and his was very likely a *true* merge.
+> 50 publications name "Schwank, Gerald"; on none is he among `uzh_authors` (38
+> have none at all, and on 12 he co-authors a UZH paper without being linked),
+> and he has no `person` row. 34 of those records carry an ORCID authority —
+> the same ORCID on all 34 — and 16 carry none. He is the ORCID-only population
+> `uzh_authors` stopped admitting on 2026-08-25, and the strict rule gives him
+> up by design: nothing in `uzh_authors` distinguishes him from a namesake.
+> Admitting ORCID-backed authors as anchors would recover him; that is a
+> decision about the trade, not a fix, and is not taken here. The 2026-09-03
+> list names six people for seven merges, so one merged in two queries; which
+> one was not recorded, so whether Schwank accounts for the whole drop is
+> unknown.
 
 ## Results
 
-### F1 — The corpus ceiling is 103 of 403 supervisors (25.6%)
+### F1 — The corpus ceiling is 105 of 403 supervisors (26.1%)
 
 | | |
 |---|---:|
 | Distinct supervisor names | 403 |
 | Anchor keys from `uzh_authors` | 2,411 |
-| **Resolved** | **103 (25.6%)** |
+| **Resolved** | **105 (26.1%)** |
 | Refused as ambiguous | 0 |
-| Unresolved | 300 |
+| Unresolved | 298 |
+
+Re-measured 2026-09-27; it was 103 (25.6%) on 2026-09-03. The +2 is data, not
+code — `resolve` and the anchor query did not change. The 2026-09-03 figure was
+taken on posting rows still mangled by the title bug in F6; the re-scrape that
+followed repaired them, and exactly two repaired names now resolve: "Phillip
+Ströbel" and "Phillip B. Ströbel", one person spelled two ways. (Checked by
+applying the pre-fix `strip_titles` to today's names: no other resolvable name
+changes.)
 
 ### F2 — Conflation is measurably zero on this corpus
 
@@ -177,8 +198,8 @@ it is insurance, not a working part.
 > correctly, but `_group_by_person` then fell back to `key_of`, and for a
 > natural-order name `key_of` is `candidates()[0]` — one of the very anchors the
 > name was ambiguous between. A refused name therefore merged anyway, into its
-> one-token-family reading. `identity.posting_key` now gives an ambiguous name a
-> quarantined key no anchor can equal, and an end-to-end retriever test pins it.
+> one-token-family reading. `identity.posting_key` now gives an ambiguous name an
+> `unresolved` key no anchor can equal, and an end-to-end retriever test pins it.
 > No figure above changes: with 0 ambiguous names the defect never fired on this
 > corpus.
 
@@ -193,16 +214,16 @@ needs the same person in both slices at once:
 |---:|---:|---:|
 | **5 (default)** | **0** | 0 of 25 (0.0%) |
 | 20 | 1 | 1 of 100 (1.0%) |
-| 50 | 7 | 7 of 250 (2.8%) |
+| 50 | 5 | 5 of 250 (2.0%) |
 
-*Measured before the 2026-09-27 anchor correction (see "The rule that shipped");
-under the shipped rule each figure is an upper bound.*
+*Re-measured 2026-09-27 under the shipped rule. The 2026-09-03 run, with the
+wider anchor set, had 7 at `top_k=50`; see the correction under "The rule that
+shipped".*
 
 Who merges, at `top_k=50`: Rico Sennrich, Simon Clematide, Volker Dellwo
-(computational linguistics), Gerald Schwank, Klaus Oberauer, Liudmila
-Zavolokina.
+(computational linguistics), Klaus Oberauer, Liudmila Zavolokina.
 
-**103 is a ceiling on who could ever merge; it is not a yield.** At the shipped
+**105 is a ceiling on who could ever merge; it is not a yield.** At the shipped
 default the answer is zero. The change remains a precondition for the `ranking`
 package and still collapses duplicate spellings within a single source, but no
 coverage claim follows from the corpus figure.
@@ -213,7 +234,7 @@ coverage claim follows from the corpus figure.
 with even a matching family name. Only 6 of them appear among the `uzh_authors`
 strings, so **at least 245 of the 251 are out of reach of the shipped rule**,
 which resolves against `uzh_authors` and nothing else. The 6 are within its
-reach; whether each resolves was not separately counted, and F1's 103 is the
+reach; whether each resolves was not separately counted, and F1's 105 is the
 figure that includes them if they do.
 
 That is not the same as having no ZORA record at all, and must not be reported
@@ -246,12 +267,12 @@ ippe Jetzer        -> Philippe Jetzer
 ala, Gavino        -> Scala, Gavino
 ```
 
-Fixed by requiring a word boundary after each title. **The stored data is not
-repaired:** the live `posting` table holds 10 mangled supervisor names —
-`anuele Giacomuzzo`, `halie von Rooy`, `ippe Jetzer`, `lip Ströbel`,
-`lip B. Ströbel`, `utr. Brigitte Tag` among them — and only a re-scrape fixes
-those rows. Until then those supervisors cannot resolve, so F1's 103 is a slight
-*under*-count.
+Fixed by requiring a word boundary after each title. The stored data was not
+repaired by the fix itself: the live `posting` table then held 10 mangled
+supervisor names — `anuele Giacomuzzo`, `halie von Rooy`, `ippe Jetzer`,
+`lip Ströbel`, `lip B. Ströbel`, `utr. Brigitte Tag` among them — so the
+original 103 was a slight *under*-count. The re-scrape the same day repaired
+those rows, and F1's re-measured +2 is exactly two of them.
 
 ## Threats to validity
 

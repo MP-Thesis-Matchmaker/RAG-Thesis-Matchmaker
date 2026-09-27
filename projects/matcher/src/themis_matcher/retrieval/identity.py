@@ -32,25 +32,25 @@ more than it accepts:
 - a posting name that already writes ``"Family, Given"`` is read by its comma,
   never split by guessing
 
-Measured over the live corpus with this implementation on 2026-09-03: 403
-distinct supervisor names, **103 resolved** (25.6%), 0 refused as ambiguous. Of
+Measured over the live corpus on 2026-09-03, the ceiling re-measured on
+2026-09-27: 403 distinct supervisor names, **105 resolved** (26.1%), 0 refused as
+ambiguous. Of
 2,411 anchor keys, 4 collapse authors whose given names differ -- and two of
 those are ``maria``/``maría``, the same person twice. Only ``Meier, Pascal
 Felix`` against ``Meier, Pascal Flurin`` is a genuine conflation, and **no
 supervisor name reaches any of the four**.
 
-The 300 that do not resolve mostly *cannot*: 251 have no registered-author
+The 298 that do not resolve mostly *cannot*: 251 have no registered-author
 record -- no CRIS `person` row with even a matching family name, and only 6 of
 them among the `uzh_authors` anchors -- being PhD students, postdocs, or
 externals (``vogelwarte.ch``, ``eawag.ch``, ``agroscope.admin.ch``). Many still
 name-match *some* ZORA author string; that is not a record this rule can trust.
 That is a limit of the data, not of the rule.
 
-**103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and
+**105 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and
 `top_k` publications separately, so a merge needs one person in both slices at
 once. Measured over five probes: **0 of 25 returned matches at `top_k=5`**, 1 of
-100 at 20, 7 of 250 at 50 -- upper bounds since 2026-09-27, when anchors
-narrowed to `uzh_authors`. At the default width this join effectively never
+100 at 20, 5 of 250 at 50 (2026-09-27). At the default width this join effectively never
 fires, and no coverage claim may be made from the corpus figure alone. See
 `docs/person-key-resolution.md`.
 

@@ -193,7 +193,7 @@ class VectorRetriever:
         `_persons` still *credits* the people on an unaffiliated paper, but it
         does not vouch for a posting name: across 331,301 distinct author keys a
         namesake is likely, and a merge onto one shows a stranger's papers to a
-        student as evidence. It is also the set the 103-of-403 ceiling in
+        student as evidence. It is also the set the 105-of-403 ceiling in
         docs/person-key-resolution.md was measured against.
 
         Building the set from the hits in hand rather than from the whole corpus

@@ -55,11 +55,10 @@ Three caveats that shape everything on this page:
   never. Retrieval used to group people by exact name, and the two sources spell them
   differently — `"Davide Scaramuzza"` on a posting against `"Scaramuzza, Davide"` on a paper —
   so **zero** of 403 supervisor names matched any of the 2,942 `uzh_authors`. Since 2026-09-03
-  the key is canonicalised and 103 of 403 resolve. But `retrieve` fetches `top_k` of each source
+  the key is canonicalised and 105 of 403 resolve. But `retrieve` fetches `top_k` of each source
   separately, so a merge needs one person in both slices: measured over five probes, **0 of 25
-  returned matches at `top_k=5`**, rising to 7 of 250 at `top_k=50` (upper bounds since the
-  2026-09-27 anchor correction). Most candidates below are therefore still either
-  publication-backed or posting-backed. See
+  returned matches at `top_k=5`**, rising to 5 of 250 at `top_k=50` (re-measured 2026-09-27).
+  Most candidates below are therefore still either publication-backed or posting-backed. See
   [`docs/person-key-resolution.md`](person-key-resolution.md).
 
 ## Example 1 — offline, no model, no key

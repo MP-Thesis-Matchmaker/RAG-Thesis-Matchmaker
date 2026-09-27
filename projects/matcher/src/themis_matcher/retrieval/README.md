@@ -181,7 +181,7 @@ strategy's ordering is only meaningful *within* one query. And **postings score
 systematically below publications** (best posting 0.564–0.652 against 0.605–0.734),
 because 695 short advertisements are a thinner corpus than 214,756 abstracts — which
 means `_group_by_person`'s `max` is not comparing like with like when a person has both.
-Since the person key was fixed (2026-09-03) somebody finally can — 103 of 403 supervisors
+Since the person key was fixed (2026-09-03) somebody finally can — 105 of 403 supervisors
 resolve across sources — so this is live rather than hypothetical, though still rare: 0 of
 25 returned matches at the default `top_k=5`. The thresholds in
 [`docs/score-calibration.md`](../../../../../docs/score-calibration.md) were measured while
@@ -253,15 +253,15 @@ serves fake results.
   a name splits; a posting's free text is resolved against them, and a posting
   name no single anchor vouches for is keyed `unresolved` so it joins no
   publication person.
-  **103 of 403 supervisor names (25.6%) now resolve**, with no conflation
+  **105 of 403 supervisor names (26.1%) now resolve**, with no conflation
   detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
   reached by no supervisor at all.
 
   **What remains a gap is the yield, not the key.** `retrieve` fetches `top_k`
   postings *and* `top_k` publications, so a merge needs one person in both slices
   at once. Measured over five probes: **0 of 25 returned matches at the default
-  `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50 (measured before anchors were narrowed
-  to `uzh_authors` on 2026-09-27, so upper bounds now). So `publication_count` and
+  `top_k=5`**, 1 of 100 at 20, 5 of 250 at 50 (re-measured 2026-09-27 under the
+  `uzh_authors`-only anchors). So `publication_count` and
   `posting_count` are now *capable* of both being non-zero and still rarely are,
   and a multi-signal score built on them would have almost nothing to combine at
   the default width. Over-fetching for grouping and truncating afterwards is the
