@@ -77,8 +77,8 @@ the fake retriever.
 
 - **There is no rank step.** `orchestrator.py`'s module docstring describes
   "parse → retrieve → rank → synthesise", but no ranking happens here and there is
-  no `ranking` package. What ranking exists is `score = max(hit.score)` inside
-  `VectorRetriever._group_by_person` — see
+  no `ranking` package. What ranking exists is `VectorRetriever._rank` — affiliation, then margin over
+  each source's threshold — see
   [`../retrieval/README.md`](../retrieval/README.md). When multi-signal ranking is
   built, this is where it slots in, between retrieve and synthesise.
 

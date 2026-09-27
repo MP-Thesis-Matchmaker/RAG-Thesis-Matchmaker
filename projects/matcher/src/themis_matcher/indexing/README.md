@@ -228,8 +228,9 @@ Nine queries — five on-topic probes, four out-of-domain controls — against t
 [`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 The four results that bear on this section:
 
-- **The negative region is empty.** Not one row scored below zero against any query;
-  the lowest observed score was `0.115`. bge-m3's anisotropy, measured rather than
+- **The negative region is empty, for the five on-topic probes.** Their corpus scan
+  found no row below zero; the lowest score was `0.115`. The four controls' lower tail
+  was not scanned, so this is not established for them. bge-m3's anisotropy, measured rather than
   assumed. This does not reverse the decision above — a clamp would still be
   irreversible for no gain — but the reversibility argument is now known to protect an
   empty region. Re-check after any re-embed or model change.

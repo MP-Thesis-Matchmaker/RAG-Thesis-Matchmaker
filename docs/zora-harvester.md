@@ -175,7 +175,9 @@ Only `harvested_at` is outside it, set by the `INSERT` rather than by the harves
 
 **Key fields for the RAG system:**
 - **`title` + `abstract`** — embedded for semantic search
-- **`department`** — enables filtering by department
+- **`department`** — stored and carried as match metadata. Retrieval does *not* filter on it: a
+  student's named department joins the embedded query text as a soft signal whose effect is
+  unmeasured (`_query_text` in `retrieval/vector.py`)
 - **`uzh_authors`** — UZH-affiliated researchers (potential supervisors)
 - **`author_authority_map`** — maps each author to their CRIS Person UUID (or `null` for external co-authors)
 

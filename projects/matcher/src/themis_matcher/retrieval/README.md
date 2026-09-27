@@ -23,8 +23,10 @@ ParsedQuery ──▶ VectorRetriever.retrieve
                      ▼  up to 2 × top_k ScoredHits
               _persons()  fan out each hit to the people it credits
                      ▼
-              _group_by_person()  score = max(hit score) + its source_type;
-                                  sort desc; truncate
+              _group_by_person()  best score per source_type
+                     ▼
+              _rank()  affiliation, then margin over each source's bar;
+                       truncate to top_k
                      ▼
               list[SupervisorMatch]  ──▶ synthesis / adapters
 ```
@@ -74,7 +76,7 @@ different claims.
 | setting | default | effect |
 |---|---|---|
 | `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | adds `has_uzh_author: True` to the publication query |
-| `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, score)`; `score` on similarity alone |
+| `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, margin)`; `score` on margin alone. Margin = best source score minus that source's `MATCHER_SYNTHESIS_MIN_SCORE_*` bar |
 | `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | adds `is_available: True` to the posting query |
 
 The default is **permissive but demoted**: an external researcher is reachable and
@@ -94,6 +96,13 @@ Two consequences worth knowing:
 - **`SupervisorMatch` is no longer sorted by score.** Under `uzh_first` a
   lower-scored UZH supervisor precedes a higher-scored external one. `has_uzh_affiliation`
   says which is which; callers should not re-sort on `score` and expect the order back.
+- **Within a tier the key is the margin, not `score`** (since 2026-09-27). Postings
+  score systematically lower than publications, so sorting on raw score cut a
+  posting-only person well over the 0.48 posting bar in favour of publication people
+  barely over 0.57, before synthesis could threshold anyone. `_rank` now orders on
+  best-source-score minus that source's bar — the same margin `LLMSynthesizer`
+  thresholds on, from the same two settings — so the `top_k` cut and the threshold
+  agree. At the constructor's 0.0 defaults the margin is the raw score.
 
 Indexing deliberately takes no position now — see the comment at the top of
 `indexing/sources.py`. A `WHERE` clause there would make `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`
@@ -235,8 +244,9 @@ serves fake results.
 
 ## Known gaps
 
-- **This package contains the entire ranking implementation, and it is one line:
-  `score = max(hit.score)`.** `CLAUDE.md`'s target layout lists a separate
+- **This package contains the entire ranking implementation, and it is small:
+  best score per source, then `_rank`'s sort on affiliation and margin over each
+  source's bar.** `CLAUDE.md`'s target layout lists a separate
   `ranking` package for multi-signal scoring (semantic similarity, publication
   frequency, open positions, department affiliation), and
   `pipeline/orchestrator.py`'s docstring already claims a rank step. Neither
@@ -252,7 +262,10 @@ serves fake results.
   `uzh_authors` only, never the `authors` fallback — because ZORA's comma says where
   a name splits; a posting's free text is resolved against them, and a posting
   name no single anchor vouches for is keyed `unresolved` so it joins no
-  publication person.
+  publication person. An author credited through the `authors` fallback is keyed
+  `unaffiliated` and joins no UZH author either, so a namesake's paper cannot become
+  a UZH researcher's evidence; the cost is that a UZH researcher with ORCID-only
+  papers can appear twice, once demoted.
   **105 of 403 supervisor names (26.1%) now resolve**, with no conflation
   detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
   reached by no supervisor at all.

@@ -122,6 +122,9 @@ fabricated evidence.
 - a name matching more than one anchor is **not merged at all**
 - a posting name no single anchor vouches for gets a key marked `unresolved`,
   which no publication person can equal
+- an author credited through the `authors` fallback (a paper with no
+  `uzh_authors`) gets a key marked `unaffiliated`, which no UZH author and no
+  posting person can equal
 
 > **Correction 2026-09-27 — the retriever had drifted from this rule.**
 > `VectorRetriever._anchors` built anchors from `_persons()`, which falls back
@@ -134,6 +137,26 @@ fabricated evidence.
 > posting name (`Thomas, Martin`) used to be tried in natural order first and
 > could match the anchor of the reversed person (`Martin, Thomas`); it is now
 > read by its comma only.
+
+> **Re-run 2026-09-27, later the same day — figures unchanged.** Three further
+> changes: (1) an author credited through the `authors` fallback is keyed
+> `unaffiliated` and no longer groups with a UZH author of the same name;
+> (2) `identity.resolve`, which the ceiling counts with, is now defined through
+> `posting_key`, so the ceiling measures the rule the retriever ships. The old
+> `resolve` ignored commas; and (3) `_rank` orders on each person's margin over
+> their best source's threshold instead of raw score. Re-measured with
+> `scripts/person_key_coverage.py`, which now builds its retriever through
+> `build_retriever` so it picks up those thresholds: **105 of 403**, **0 of 25 ·
+> 1 of 100 · 5 of 250**, the same five people at `top_k=50`.
+>
+> The first pass after (2) read **104**, and the missing name exposed a bug
+> rather than a rule change: `Sofia Forss,` carries a stray trailing comma, the
+> comma-first reading found no given half, and `posting_key` returned None, so
+> the retriever dropped her from every result. The old `resolve` counted her
+> anyway, so the published 105 had included a person the retriever could not
+> return. A comma with an empty side is now read as free text. Of the 6
+> supervisor names containing a comma, none now resolve differently under the
+> two definitions.
 >
 > F1–F3 are unaffected by this correction: the script computes the ceiling against `uzh_authors`
 > directly. **F4 was affected**: it was measured through `VectorRetriever` with

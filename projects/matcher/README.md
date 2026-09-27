@@ -141,8 +141,8 @@ the comments in `pyproject.toml`.
 
 ## Not here
 
-Ranking is one line inside `retrieval/vector.py` — `score = max(hit.score)` in
-`_group_by_person`, plus a two-level sort for `uzh_first`. The separate `ranking`
+Ranking is `VectorRetriever._rank` in `retrieval/vector.py`: affiliation first under
+`uzh_first`, then the margin of a person's best source over that source's threshold. The separate `ranking`
 package the architecture calls for does not exist yet. The slot is between
 retrieve and synthesise.
 
