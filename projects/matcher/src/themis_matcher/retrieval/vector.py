@@ -64,12 +64,22 @@ class VectorRetriever:
         require_uzh_author: bool = False,
         require_available_posting: bool = True,
         ranking_strategy: str = "uzh_first",
+        min_score_publication: float = 0.0,
+        min_score_posting: float = 0.0,
     ) -> None:
         self.embedder = embedder
         self.store = store
         self.require_uzh_author = require_uzh_author
         self.require_available_posting = require_available_posting
         self.ranking_strategy = ranking_strategy
+        # The bars synthesis thresholds on, keyed like SupervisorMatch.source_scores.
+        # Retrieval orders by distance to them (see _margin), so the top_k cut and
+        # the threshold agree about who is strongest. Both default to 0.0, where the
+        # margin is the raw score and ordering is plain similarity.
+        self._min_scores: dict[str, float] = {
+            "publication": min_score_publication,
+            "thesis_posting": min_score_posting,
+        }
 
     def retrieve(self, query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]:
         vector = self.embedder.embed_query(_query_text(query))
@@ -167,20 +177,35 @@ class VectorRetriever:
             return True
         return bool(hit.metadata.get("has_uzh_author"))
 
+    def _margin(self, match: SupervisorMatch) -> float:
+        """How far this person's best source sits above its own bar.
+
+        The same quantity `LLMSynthesizer._margin` thresholds on. Raw `score` is the
+        wrong key here: postings score systematically lower than publications
+        (on-topic best 0.564-0.652 against 0.605-0.734, docs/score-calibration.md),
+        so sorting on it
+        cut a posting-only person comfortably over their bar in favour of
+        publication people barely over theirs, before synthesis ever saw them.
+        """
+        return max(
+            score - self._min_scores[source] for source, score in match.source_scores.items()
+        )
+
     def _rank(self, matches: list[SupervisorMatch]) -> list[SupervisorMatch]:
         """Order grouped matches by the configured strategy.
 
-        `uzh_first` is two-level: affiliation, then similarity within each level. It
-        is not a score adjustment -- no weight or boost can guarantee an ordering,
-        and a UZH supervisor whose work matches slightly less well is still the
-        better answer to "who can supervise my thesis here".
+        `uzh_first` is two-level: affiliation, then margin over the per-source bar
+        within each level. It is not a score adjustment -- no weight or boost can
+        guarantee an ordering, and a UZH supervisor whose work matches slightly less
+        well is still the better answer to "who can supervise my thesis here".
+        `score` drops the affiliation level and keeps the margin.
 
         Inert under `require_uzh_author`, where every surviving match is affiliated
         and the first sort key is constant.
         """
         if self.ranking_strategy == "score":
-            return sorted(matches, key=lambda m: m.score, reverse=True)
-        return sorted(matches, key=lambda m: (m.has_uzh_affiliation, m.score), reverse=True)
+            return sorted(matches, key=self._margin, reverse=True)
+        return sorted(matches, key=lambda m: (m.has_uzh_affiliation, self._margin(m)), reverse=True)
 
     @staticmethod
     def _anchors(hits: list[ScoredHit]) -> set[identity.PersonKey]:
@@ -221,14 +246,22 @@ class VectorRetriever:
             uzh_credit = VectorRetriever._is_uzh_credit(hit)
             posting = hit.metadata["source_type"] == "thesis_posting"
             for name in VectorRetriever._persons(hit):
-                # A posting's name gets one chance to match an anchor; failing that
-                # it is keyed as `unresolved`, so the person still appears rather
-                # than vanishing but never joins a publication person. The plain
-                # `key_of` reading is no safe fallback: for an ambiguous name it is
-                # one of the anchors it was ambiguous between, and for an unmatched
-                # one it can equal an unaffiliated author's key, which groups here
-                # on equality alone.
-                key = identity.posting_key(name, anchors) if posting else identity.key_of(name)
+                # Three key spaces, because grouping is on key equality alone:
+                #   - a posting's name gets one chance to match an anchor; failing
+                #     that it is keyed `unresolved`, so the person still appears but
+                #     never joins a publication person. The plain `key_of` reading is
+                #     no safe fallback: for an ambiguous name it is one of the anchors
+                #     it was ambiguous between.
+                #   - a UZH author is keyed as the anchor it is.
+                #   - an author credited through the `authors` fallback is keyed
+                #     `unaffiliated`. Otherwise a stranger sharing a UZH author's name
+                #     lands in that person's group, papers and all.
+                if posting:
+                    key = identity.posting_key(name, anchors)
+                elif uzh_credit:
+                    key = identity.key_of(name)
+                else:
+                    key = identity.author_key(name)
                 if key is None:
                     continue
                 by_person[key].append(hit)

@@ -49,8 +49,11 @@ class SupervisorMatch(BaseModel):
     This is what the orchestration and LLM steps consume. A returned list is
     already ranked, best first -- but **not necessarily by score**: under the
     default `uzh_first` strategy, `has_uzh_affiliation` outranks similarity, so a
-    lower-scored UZH supervisor precedes a higher-scored external researcher. Do
-    not re-sort on `score` and assume the order is preserved.
+    lower-scored UZH supervisor precedes a higher-scored external researcher.
+    Within each tier the key is the *margin* -- the best of `source_scores`
+    minus that source's own threshold -- not `score`, because the two sources
+    are on different scales. Do not re-sort on `score` and assume the order is
+    preserved.
     """
 
     supervisor: str = Field(description="Name of the recommended supervisor.")

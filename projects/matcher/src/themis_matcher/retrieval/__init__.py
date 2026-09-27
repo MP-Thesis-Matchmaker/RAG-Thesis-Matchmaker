@@ -22,6 +22,11 @@ def build_retriever(settings: MatcherSettings) -> Retriever:
         require_uzh_author=settings.retrieval_require_uzh_author,
         require_available_posting=settings.retrieval_require_available_posting,
         ranking_strategy=settings.retrieval_ranking_strategy,
+        # Retrieval orders on the same per-source bars synthesis thresholds on, so
+        # the settings keep their `synthesis_` names: renaming would orphan every
+        # environment that already sets them, silently (extra="ignore").
+        min_score_publication=settings.synthesis_min_score_publication,
+        min_score_posting=settings.synthesis_min_score_posting,
     )
 
 

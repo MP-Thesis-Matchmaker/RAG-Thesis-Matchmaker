@@ -11,7 +11,7 @@ from themis_matcher.indexing.indexer import Indexer
 from themis_matcher.indexing.sources import JsonlSourceReader
 from themis_matcher.indexing.store import InMemoryVectorStore
 from themis_matcher.retrieval.vector import VectorRetriever
-from themis_shared.contracts import ParsedQuery, ThesisPosting, ZoraPublication
+from themis_shared.contracts import ParsedQuery, SupervisorMatch, ThesisPosting, ZoraPublication
 
 
 @pytest.fixture()
@@ -532,3 +532,111 @@ def test_a_named_department_cannot_empty_the_result(identity_retriever: VectorRe
 
     assert nudged
     assert {m.supervisor for m in nudged} == {m.supervisor for m in plain}
+
+
+def test_an_unaffiliated_namesake_does_not_join_a_uzh_author(tmp_path: Path) -> None:
+    """A stranger's paper must not become a UZH researcher's evidence.
+
+    zora:uzh credits the UZH "Müller, Daniel", and the posting resolves to that
+    anchor. zora:stranger has no UZH author, so `_persons` credits its plain
+    "Müller, Daniel" -- a namesake, as far as anything here can tell. Keyed with
+    plain `key_of` it equalled the anchor, and all three hits became one match.
+    """
+    sources = tmp_path / "uzh-namesake"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:uzh",
+            title="Soil microbiology of alpine meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=["Müller, Daniel"],
+        ),
+        ZoraPublication(
+            id="zora:stranger",
+            title="Soil microbiology of lowland meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=[],
+        ),
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:uzh",
+            title="MSc thesis: soil microbiology of alpine meadows",
+            description="Microbial communities.",
+            supervisors=[{"name": "Daniel Müller"}],
+            url="https://uzh.ch/uzh-namesake",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["soil microbiology"]), top_k=10
+    )
+
+    assert len(matches) == 2
+    uzh, stranger = matches
+    assert uzh.has_uzh_affiliation
+    assert {e.source_id for e in uzh.evidence} == {"zora:uzh", "posting:uzh"}
+    # Kept, not dropped: the permissive default still reaches them, demoted.
+    assert not stranger.has_uzh_affiliation
+    assert {e.source_id for e in stranger.evidence} == {"zora:stranger"}
+
+
+# --- ranking by margin over each source's own bar ----------------------------
+#
+# Built from SupervisorMatch directly: HashEmbedder scores are arbitrary, so a
+# fixture cannot be steered to the specific cross-scale gap this is about.
+
+
+def _scored(name: str, **source_scores: float) -> SupervisorMatch:
+    return SupervisorMatch(
+        supervisor=name, score=max(source_scores.values()), source_scores=source_scores
+    )
+
+
+def _bars(retriever: VectorRetriever, **kwargs: object) -> VectorRetriever:
+    return VectorRetriever(
+        embedder=retriever.embedder,
+        store=retriever.store,
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+        **kwargs,
+    )
+
+
+def test_ranking_compares_margins_not_raw_scores(retriever: VectorRetriever) -> None:
+    """A posting 0.07 over its bar beats a publication 0.01 over its.
+
+    On raw score the publication person wins (0.58 > 0.55), and `retrieve` cuts
+    at top_k after ranking, so at top_k=1 the posting person used to be dropped
+    before synthesis could apply the per-source threshold.
+    """
+    posting_person = _scored("Posting Person", thesis_posting=0.55)
+    publication_person = _scored("Publication Person", publication=0.58)
+
+    for strategy in ("uzh_first", "score"):
+        ranked = _bars(retriever, ranking_strategy=strategy)._rank(
+            [publication_person, posting_person]
+        )
+        assert [m.supervisor for m in ranked] == ["Posting Person", "Publication Person"]
+
+
+def test_a_failing_source_does_not_lift_a_merged_person(retriever: VectorRetriever) -> None:
+    """Margin is the best source's, so a 0.56 paper under its bar adds nothing.
+
+    The merged person's best margin is their 0.49 posting (+0.01); the posting-only
+    person at 0.55 (+0.07) ranks above them, though 0.56 > 0.55 on raw score.
+    """
+    merged = _scored("Merged Person", publication=0.56, thesis_posting=0.49)
+    posting_only = _scored("Posting Only", thesis_posting=0.55)
+
+    ranked = _bars(retriever)._rank([merged, posting_only])
+    assert [m.supervisor for m in ranked] == ["Posting Only", "Merged Person"]
