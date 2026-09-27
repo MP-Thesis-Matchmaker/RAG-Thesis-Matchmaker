@@ -207,7 +207,9 @@ deleting the most actionable half of the output.
 > fixed: 103 of 403 supervisor names now resolve across sources
 > ([`person-key-resolution.md`](person-key-resolution.md)), so the two populations are no
 > longer strictly disjoint and a merged person's `score_source` is whichever source scored
-> higher. The measurement above is left as recorded — it is dated evidence, not a changelog
+> higher. (Superseded 2026-09-27: `score_source` is gone; `source_scores` keeps both, and a
+> person passes if either clears — see the update under "Recommendation, and what was
+> applied".) The measurement above is left as recorded — it is dated evidence, not a changelog
 > — but two things follow. First, F5's argument for *two* thresholds is unaffected: it rests
 > on the sources occupying different score ranges, which the merge does not change. Second,
 > **0.57 and 0.48 need re-measuring**, because the population they were tuned on is no

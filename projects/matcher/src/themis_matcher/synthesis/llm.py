@@ -5,16 +5,20 @@ matches: the prompt lists the candidates and asks the model to cite them and
 invent nothing, and to say plainly when a candidate is only a partial fit.
 Candidates below a configurable score threshold are not presented as matches at
 all; instead the answer states there is no strong match and names the closest
-candidate as a long shot. The threshold is per source type -- publications and
+candidate as a long shot -- closest by margin to its own source's threshold, not
+by raw score. The threshold is per source type -- publications and
 postings are not on a common scale, so one value cannot serve both without
 deleting posting-backed supervisors; see docs/score-calibration.md. A candidate
 retrieved through both sources passes if **either** source's best score clears
-that source's threshold. Falls back to the template synthesiser on any error.
+that source's threshold; the titles from a source that did not clear still reach
+the prompt, but labelled as weaker-matching work rather than as the reason for the
+fit. Falls back to the template synthesiser on any error.
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from themis_matcher.llm import LLMClient, LLMError
 from themis_matcher.synthesis.base import Synthesizer
@@ -31,17 +35,30 @@ _SYSTEM = (
     "facts that are not in the candidates. If a candidate only partially fits "
     "the student's interests, say so plainly instead of overstating the fit. "
     "If no candidate fits well, open by saying there is no strong match and "
-    "present the closest option as a long shot. Never state or imply whether a "
+    "present the closest option as a long shot. Work listed as weaker-matching "
+    "matched the query less well: mention it only as secondary, never as the "
+    "main reason a candidate fits. Never state or imply whether a "
     "supervisor is accepting students, has supervision capacity, or is available: "
     "that information is not in the data."
 )
 
 
-def _format_candidates(matches: list[SupervisorMatch]) -> str:
+def _format_candidates(
+    matches: list[SupervisorMatch], min_scores: dict[str, float] | None = None
+) -> str:
     blocks = []
     for match in matches:
         where = f" ({match.department})" if match.department else ""
-        titles = "; ".join(item.title for item in match.evidence) or "no listed work"
+        # A person who passed on one source is not vouched for by the other. Its
+        # titles stay -- they are real -- but are kept apart, so a posting-backed
+        # supervisor's below-bar papers are not presented as the reason they fit.
+        cleared = {
+            source
+            for source, score in match.source_scores.items()
+            if min_scores is None or score >= min_scores[source]
+        }
+        titles = "; ".join(e.title for e in match.evidence if e.source_type in cleared)
+        weaker = "; ".join(e.title for e in match.evidence if e.source_type not in cleared)
         topics = ", ".join(match.matched_topics) or "n/a"
         # Absent data has to reach the prompt as absent. Given "no open position"
         # the model wrote "not currently accepting new students" about a named
@@ -49,14 +66,23 @@ def _format_candidates(matches: list[SupervisorMatch]) -> str:
         details = [f"topics {topics}", f"{match.publication_count} publications"]
         if match.posting_count:
             details.append(f"{match.posting_count} open thesis posting(s)")
-        details.append(f"work: {titles}")
+        details.append(f"work: {titles or 'no listed work'}")
+        if weaker:
+            details.append(f"weaker-matching work: {weaker}")
         blocks.append(f"- {match.supervisor}{where}: {'; '.join(details)}")
     return "\n".join(blocks)
 
 
-def _no_strong_match(query: str, matches: list[SupervisorMatch]) -> str:
-    """Deterministic answer for when nothing clears the score threshold."""
-    closest = max(matches, key=lambda m: m.score)
+def _no_strong_match(
+    query: str, matches: list[SupervisorMatch], margin: Callable[[SupervisorMatch], float]
+) -> str:
+    """Deterministic answer for when nothing clears the score threshold.
+
+    "Closest" is by `margin`, the distance to the candidate's own threshold. Raw
+    `score` would compare across scales: a publication 0.02 under 0.57 would beat a
+    posting 0.01 under 0.48 only because publications score higher everywhere.
+    """
+    closest = max(matches, key=margin)
     where = f" ({closest.department})" if closest.department else ""
     titles = "; ".join(item.title for item in closest.evidence) or "no listed work"
     return (
@@ -87,24 +113,30 @@ class LLMSynthesizer:
             "thesis_posting": min_score_posting,
         }
 
-    def _clears_threshold(self, match: SupervisorMatch) -> bool:
-        """Whether any one source vouches for this person on its own scale.
+    def _margin(self, match: SupervisorMatch) -> float:
+        """How far this person's best source sits above its own threshold.
 
-        Either, not the winner: thresholding only the higher-scoring source let a
-        0.56 publication (bar 0.57) drop someone whose 0.50 posting (bar 0.48)
-        would have passed alone -- being found twice made a person look worse.
+        Taken over sources, not from the winner: thresholding only the
+        higher-scoring source let a 0.56 publication (bar 0.57) drop someone whose
+        0.50 posting (bar 0.48) would have passed alone -- being found twice made a
+        person look worse. Negative means no source clears.
         """
-        return any(
-            score >= self._min_scores[source] for source, score in match.source_scores.items()
+        return max(
+            score - self._min_scores[source] for source, score in match.source_scores.items()
         )
+
+    def _clears_threshold(self, match: SupervisorMatch) -> bool:
+        """Whether any one source vouches for this person on its own scale."""
+        return self._margin(match) >= 0
 
     def synthesize(self, query: str, matches: list[SupervisorMatch]) -> str:
         if not matches:
             return self._fallback.synthesize(query, matches)
         strong = [m for m in matches if self._clears_threshold(m)]
         if not strong:
-            return _no_strong_match(query, matches)
-        user = f'Student query: "{query}"\n\nCandidates:\n{_format_candidates(strong)}'
+            return _no_strong_match(query, matches, self._margin)
+        candidates = _format_candidates(strong, self._min_scores)
+        user = f'Student query: "{query}"\n\nCandidates:\n{candidates}'
         try:
             return self._client.chat(_SYSTEM, user).strip()
         except LLMError as exc:

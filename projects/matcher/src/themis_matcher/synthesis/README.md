@@ -67,11 +67,11 @@ The subset of `MatcherSettings` this sub-package reads; the whole list is in
 | `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
 | `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
 | `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
-| `synthesis_min_score_publication` | `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` | `0.57` | Below this, a publication-scored match counts as weak. |
-| `synthesis_min_score_posting` | `MATCHER_SYNTHESIS_MIN_SCORE_POSTING` | `0.48` | The same for a posting-scored match. |
+| `synthesis_min_score_publication` | `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` | `0.57` | A person's best publication score must reach this for the publications to vouch for them. |
+| `synthesis_min_score_posting` | `MATCHER_SYNTHESIS_MIN_SCORE_POSTING` | `0.48` | The same for their best posting score. A person is presented if **either** source clears. |
 
-Both are compared against `SupervisorMatch.score`, a cosine similarity in `[-1, 1]` —
-not a percentage. Why the range is signed rather than rescaled:
+Both are compared against the values in `SupervisorMatch.source_scores`, each a cosine
+similarity in `[-1, 1]` — not a percentage. Why the range is signed rather than rescaled:
 [`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
 
 **Why two.** The threshold used to be one value at `0.0`, which is inert. Measuring it
@@ -88,7 +88,10 @@ Two values sit mid-band instead, with room either side.
 `LLMSynthesizer` applies them to `SupervisorMatch.source_scores`, which the retriever
 fills with the person's best score per source: a person passes if **either** source
 clears its own threshold, so a publication just under its bar cannot veto a posting
-comfortably over its. Reproduce or extend
+comfortably over its. Titles from a source that did not clear still reach the prompt, but
+labelled as weaker-matching work. When nobody clears, the long shot named is the candidate
+closest to *its own* source's threshold, not the highest raw score, which would compare
+across the two scales. Reproduce or extend
 the measurement with
 [`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 
@@ -101,11 +104,12 @@ roles at once — the offline implementation *and* the fallback injected into
 
 ## Status
 
-**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (11 tests), including an
+**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (13 tests), including an
 assertion that a below-threshold match produces an answer **without** calling the
 LLM, one that gives two matches the same score under different source types and
 checks they get opposite verdicts — which no single-threshold implementation can pass —
-and one that a person found in both sources passes when either source clears.
+one that a person found in both sources passes when either source clears, and two for the
+long-shot margin and the weaker-work label.
 
 ## Known gaps
 

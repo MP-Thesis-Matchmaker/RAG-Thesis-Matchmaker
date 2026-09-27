@@ -173,3 +173,52 @@ def test_llm_candidate_block_omits_missing_postings():
     block = _format_candidates([zero, _match("Dr. B", "Paper Two")])
     assert "no open position" not in block
     assert block.count("open thesis posting") == 1  # only Dr. B has one
+
+
+def test_the_long_shot_is_closest_to_its_own_threshold():
+    """Raw score compares across scales; margin to each source's bar does not.
+
+    The publication is 0.02 under 0.57, the posting 0.01 under 0.48. By raw score
+    the publication wins only because publications score higher everywhere.
+    """
+    from themis_matcher.llm import LLMClient
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    synth = LLMSynthesizer(
+        LLMClient("http://localhost:1", "none"),
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+    )
+    paper = _match("Prof. Paper", "A Paper", score=0.55, source="publication")
+    posting = _match("Dr. Posting", "A Topic", score=0.47, source="thesis_posting")
+
+    text = synth.synthesize("nlp thesis", [paper, posting])
+    assert "long shot" in text
+    assert "The closest is Dr. Posting" in text
+
+
+def test_work_from_a_source_below_its_bar_is_labelled_weaker():
+    """A person who passes on their posting is not vouched for by their papers."""
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    class _Recorder:
+        def chat(self, system: str, user: str) -> str:
+            self.user = user
+            return "ok"
+
+    client = _Recorder()
+    synth = LLMSynthesizer(client, min_score_publication=0.57, min_score_posting=0.48)
+    both = _match(
+        "Dr. Both", "Title", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    ).model_copy(
+        update={
+            "evidence": [
+                Evidence(source_type="publication", source_id="z:1", title="Below-Bar Paper"),
+                Evidence(source_type="thesis_posting", source_id="p:1", title="Open Topic"),
+            ]
+        }
+    )
+
+    assert synth.synthesize("nlp thesis", [both]) == "ok"
+    assert "work: Open Topic" in client.user
+    assert "weaker-matching work: Below-Bar Paper" in client.user
