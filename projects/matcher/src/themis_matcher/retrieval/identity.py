@@ -22,7 +22,9 @@ more than it accepts:
 
 - the full first given token must agree; an initial is never enough
 - a family-name match alone is never enough
-- a name whose split is ambiguous against the anchors is not merged at all
+- a name whose split is ambiguous against the anchors is not merged at all --
+  `posting_key` gives it a quarantined key no anchor can equal, rather than
+  falling back to a reading that is itself one of the ambiguous anchors
 
 Measured over the live corpus with this implementation on 2026-09-03: 403
 distinct supervisor names, **103 resolved** (25.6%), 0 refused as ambiguous. Of
@@ -67,6 +69,10 @@ class PersonKey:
 
     given: str
     family: str
+    # Set only by `posting_key` for a name whose split matched more than one
+    # anchor. It takes part in equality, so a quarantined key can never equal an
+    # anchor -- anchors come from `key_of`, which never sets it.
+    ambiguous: bool = False
 
 
 def _tokens(text: str) -> list[str]:
@@ -122,6 +128,32 @@ def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     """
     matched = [key for key in candidates(name) if key in anchors]
     return matched[0] if len(matched) == 1 else None
+
+
+def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
+    """The grouping key for a free-text name, as the retriever uses it.
+
+    `resolve` alone cannot be the caller's whole decision, because its None
+    conflates two outcomes that need different keys. When nothing matched,
+    `key_of` is safe: a natural-order name reads as ``(first, last)``, which is
+    exactly ``candidates(name)[0]`` and so provably not an anchor, and a posting
+    that happens to write ``"Family, Given"`` gets its structured reading, which
+    may match an anchor on the same evidence ZORA's own comma provides. When
+    several matched, ``key_of`` is **not** safe -- that same ``(first, last)``
+    reading is one of the anchors that made the name ambiguous, and falling back
+    to it would perform the merge the refusal exists to prevent. That case gets a
+    quarantined key instead: the full-tail reading marked `ambiguous`, which no
+    anchor can equal. Two postings spelling the name identically still group
+    together; neither ever joins a publication person.
+    """
+    options = candidates(name)
+    matched = [key for key in options if key in anchors]
+    if len(matched) == 1:
+        return matched[0]
+    if not matched:
+        return key_of(name)
+    widest = options[-1]
+    return PersonKey(widest.given, widest.family, ambiguous=True)
 
 
 def display_name(spellings: list[str]) -> str:

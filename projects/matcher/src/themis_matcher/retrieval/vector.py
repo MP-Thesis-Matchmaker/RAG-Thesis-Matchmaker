@@ -207,14 +207,13 @@ class VectorRetriever:
             for name in VectorRetriever._persons(hit):
                 # A posting's free text gets one chance to match an anchor; failing
                 # that it is keyed on its own reading of itself, so the person still
-                # appears rather than vanishing. `resolve` returns None both when
-                # nothing matched and when several did -- an ambiguous name is left
-                # unmerged on purpose, because a coin-flip merge would credit
-                # someone with a stranger's papers and show it to a student as
-                # evidence.
-                key = (identity.resolve(name, anchors) if posting else None) or identity.key_of(
-                    name
-                )
+                # appears rather than vanishing. An ambiguous name is left unmerged
+                # on purpose, because a coin-flip merge would credit someone with a
+                # stranger's papers and show it to a student as evidence -- and
+                # `posting_key` rather than `resolve(...) or key_of(...)`, because
+                # key_of's reading of an ambiguous name is one of the anchors it
+                # was ambiguous between, so that fallback merged anyway.
+                key = identity.posting_key(name, anchors) if posting else identity.key_of(name)
                 if key is None:
                     continue
                 by_person[key].append(hit)

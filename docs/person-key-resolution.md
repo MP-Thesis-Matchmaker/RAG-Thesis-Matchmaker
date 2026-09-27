@@ -147,8 +147,17 @@ nothing currently touches.
 ### F3 — 0 refusals, which means the ambiguity guard is untested by real data
 
 `resolve` returns None when several candidate splits match. Across 403 names
-that never happened. The guard is exercised by a unit test and by nothing else;
+that never happened. The guard is exercised by unit tests and by nothing else;
 it is insurance, not a working part.
+
+> **Correction 2026-09-27 — the insurance did not pay out.** `resolve` refused
+> correctly, but `_group_by_person` then fell back to `key_of`, and for a
+> natural-order name `key_of` is `candidates()[0]` — one of the very anchors the
+> name was ambiguous between. A refused name therefore merged anyway, into its
+> one-token-family reading. `identity.posting_key` now gives an ambiguous name a
+> quarantined key no anchor can equal, and an end-to-end retriever test pins it.
+> No figure above changes: with 0 ambiguous names the defect never fired on this
+> corpus.
 
 ### F4 — The join effectively never fires at the default width
 

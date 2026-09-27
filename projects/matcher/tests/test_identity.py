@@ -13,6 +13,7 @@ from themis_matcher.retrieval.identity import (
     candidates,
     display_name,
     key_of,
+    posting_key,
     resolve,
 )
 
@@ -93,12 +94,39 @@ def test_a_particle_family_name_is_settled_by_the_anchor_not_by_a_particle_list(
 def test_an_ambiguous_split_is_refused_rather_than_guessed() -> None:
     """Both readings match a real person, so neither is chosen.
 
-    `resolve` returns None for "nothing matched" and "several matched" alike:
-    the caller keys the person on their own spelling either way, and a
-    coin-flip merge never happens.
+    `resolve` returns None for "nothing matched" and "several matched" alike;
+    `posting_key` is what tells the two apart for the caller.
     """
     both = {PersonKey("alessandro", "luca"), PersonKey("alessandro", "de luca")}
     assert resolve("Alessandro De Luca", both) is None
+
+
+def test_an_ambiguous_posting_key_is_none_of_the_anchors() -> None:
+    """The refusal has to survive the fallback.
+
+    `key_of("Alessandro De Luca")` is (alessandro, luca) -- one of the very
+    anchors that made the name ambiguous -- so falling back to it merged the
+    refused name after all. The quarantined key equals no anchor, and the same
+    spelling seen twice still groups with itself.
+    """
+    both = {PersonKey("alessandro", "luca"), PersonKey("alessandro", "de luca")}
+    assert key_of("Alessandro De Luca") in both
+
+    key = posting_key("Alessandro De Luca", both)
+    assert key is not None
+    assert key not in both
+    assert key == posting_key("Alessandro De Luca", both)
+
+
+def test_a_posting_key_takes_the_one_anchor_that_matches() -> None:
+    anchors = {PersonKey("alessandro", "de luca")}
+    assert posting_key("Alessandro De Luca", anchors) == PersonKey("alessandro", "de luca")
+
+
+def test_an_unmatched_posting_key_is_the_name_read_on_its_own() -> None:
+    anchors = {PersonKey("mathias", "muller")}
+    assert posting_key("Daniel Müller", anchors) == key_of("Daniel Müller")
+    assert posting_key("Daniel Müller", anchors) not in anchors
 
 
 def test_a_single_token_name_yields_no_key() -> None:

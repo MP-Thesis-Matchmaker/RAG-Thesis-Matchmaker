@@ -413,3 +413,57 @@ def test_two_people_sharing_a_family_name_stay_apart(identity_retriever: VectorR
     assert "Mathias Müller" in by_name
     assert by_name["Daniel Müller"].publication_count == 0
     assert by_name["Mathias Müller"].posting_count == 0
+
+
+def test_an_ambiguous_posting_name_joins_neither_reading(tmp_path: Path) -> None:
+    """A refused merge must actually be refused.
+
+    "Alessandro De Luca" reads as Luca, Alessandro or as De Luca, Alessandro, and
+    both are real ZORA authors here. The earlier fallback, `resolve(...) or
+    key_of(...)`, keyed the refused name on (alessandro, luca) -- one of the two
+    anchors it had just refused -- and so merged it anyway.
+    """
+    sources = tmp_path / "ambiguous"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:luca",
+            title="Glacier retreat in the Engadin",
+            abstract="Alpine glaciology.",
+            authors=["Luca, Alessandro"],
+            uzh_authors=["Luca, Alessandro"],
+        ),
+        ZoraPublication(
+            id="zora:deluca",
+            title="Glacier retreat in the Valais",
+            abstract="Alpine glaciology.",
+            authors=["De Luca, Alessandro"],
+            uzh_authors=["De Luca, Alessandro"],
+        ),
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:ambiguous",
+            title="MSc thesis: glacier retreat in the Alps",
+            description="Alpine glaciology.",
+            supervisors=[{"name": "Alessandro De Luca"}],
+            url="https://uzh.ch/ambiguous",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["glacier retreat"]), top_k=10
+    )
+
+    assert len(matches) == 3
+    posting_people = [m for m in matches if m.posting_count]
+    assert len(posting_people) == 1
+    assert posting_people[0].publication_count == 0
+    assert all(m.posting_count == 0 for m in matches if m.publication_count)
