@@ -81,10 +81,21 @@ _TITLE_TRAIL_RE = re.compile(rf"[,\s]\s*(?:{TITLE_PATTERN}\s*)+$", re.I)
 # boundary cannot follow the trailing period of "M.Sc.".
 DEGREE_PATTERN = (
     r"(?:MSc|M\.\s?Sc\.?|BSc|B\.\s?Sc\.?|PhD|Ph\.\s?D\.?|MAS|MBA|MA|M\.\s?A\.?"
-    r"|BA|B\.\s?A\.?|LL\.\s?M\.?)(?!\w)"
+    r"|BA|B\.\s?A\.?|M\.\s?Ed\.?|MEd|LL\.\s?M\.?)(?!\w)"
 )
 
 _DEGREE_TRAIL_RE = re.compile(rf"(?:\s*,\s*{DEGREE_PATTERN})+\s*$")
+
+# Degrees written before a name: "M. Sc. Anna Beispiel". A narrower set than
+# DEGREE_PATTERN, because in front of a name "M. A." and "B. A." are far more
+# often a person's initials than a degree, and "MA" or "MAS" can be a family
+# name written first. Only forms no initial pair can spell come off here.
+_LEAD_DEGREE_PATTERN = (
+    r"(?:MSc|M\.\s?Sc\.?|BSc|B\.\s?Sc\.?|PhD|Ph\.\s?D\.?|MBA|M\.\s?Ed\.?|MEd"
+    r"|LL\.\s?M\.?)(?!\w)"
+)
+
+_DEGREE_LEAD_RE = re.compile(rf"^(?:{_LEAD_DEGREE_PATTERN}\s*)+")
 
 
 def _strip_degrees(value: str) -> str:
@@ -96,6 +107,18 @@ def _strip_degrees(value: str) -> str:
     comma ("Caviezel, Giuanna") or at least two tokens ("Lidia Borkovic").
     """
     remainder = _DEGREE_TRAIL_RE.sub("", value)
+    if remainder != value and ("," in remainder or len(remainder.split()) >= 2):
+        return remainder
+    return value
+
+
+def _strip_lead_degrees(value: str) -> str:
+    """Drop leading degrees under the same guard: a whole name must remain.
+
+    Left in place, "M. Sc. Anna Beispiel" keys as a person whose given name is
+    "M" -- the period splits "M." off as an initial.
+    """
+    remainder = _DEGREE_LEAD_RE.sub("", value)
     if remainder != value and ("," in remainder or len(remainder.split()) >= 2):
         return remainder
     return value
@@ -116,11 +139,13 @@ def strip_titles(value: str) -> str:
 
     Trailing degrees go too ("Lidia Borkovic, MSc"), between two trailing-title
     passes, so either order of the two suffixes comes off: "X, Prof. Dr., PhD"
-    and "X, PhD, Prof. Dr." both reduce to "X".
+    and "X, PhD, Prof. Dr." both reduce to "X". Leading degrees are sandwiched
+    the same way ("Dr. M.Sc. X" and "M.Sc. Dr. X").
     """
     value = _TITLE_TRAIL_RE.sub("", value)
     value = _TITLE_TRAIL_RE.sub("", _strip_degrees(value))
-    return _TITLE_LEAD_RE.sub("", value).strip()
+    value = _TITLE_LEAD_RE.sub("", value.strip())
+    return _TITLE_LEAD_RE.sub("", _strip_lead_degrees(value)).strip()
 
 
 def flip_family_given(value: str) -> str:

@@ -97,6 +97,30 @@ def test_a_name_that_looks_like_a_degree_survives() -> None:
     assert strip_titles("Smith, B.A.") == "Smith, B.A."
 
 
+def test_a_leading_degree_and_m_ed_are_stripped() -> None:
+    """Eight scraped supervisor names start "M. Sc." or "M.Sc.", one ends ", M.Ed.".
+
+    Left in place, the leading one keyed as given name "m", and the trailing one
+    read its comma as "Family, Given" and keyed a person called "M.Ed.".
+    """
+    assert strip_titles("M. Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("M.Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("MSc Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("Dr. M.Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("M.Sc. Dr. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("Anna Beispiel, M.Ed.") == "Anna Beispiel"
+
+
+def test_a_leading_initial_pair_is_not_read_as_a_degree() -> None:
+    """In front of a name "M. A." is initials, and "Sc" may begin a family name."""
+    assert strip_titles("M. A. Beispiel") == "M. A. Beispiel"
+    assert strip_titles("B. A. Beispiel") == "B. A. Beispiel"
+    assert strip_titles("MA Lin") == "MA Lin"
+    assert strip_titles("M. Scaramuzza") == "M. Scaramuzza"
+    # Stripping would leave a lone token, which is no name.
+    assert strip_titles("M.Sc. Beispiel") == "M.Sc. Beispiel"
+
+
 def test_initials_are_dropped_and_whitespace_runs_collapse() -> None:
     """Two adjacent initials leave three spaces behind, not two.
 
