@@ -37,6 +37,7 @@ import re
 import unicodedata
 
 __all__ = [
+    "DEGREE_PATTERN",
     "TITLE_PATTERN",
     "fold_ascii",
     "fold_german",
@@ -68,6 +69,38 @@ _TITLE_LEAD_RE = re.compile(rf"^(?:{TITLE_PATTERN}\s*)+", re.I)
 # as not, and the comma has to go with them or it looks like a "Family, Given".
 _TITLE_TRAIL_RE = re.compile(rf"[,\s]\s*(?:{TITLE_PATTERN}\s*)+$", re.I)
 
+# Degrees written after a name: "Lidia Borkovic, MSc", "Caviezel, Giuanna, M.A.".
+# Left in place, the comma reads as a "Family, Given" separator and the degree
+# becomes somebody's given name.
+#
+# Stricter than TITLE_PATTERN on purpose, in two ways. Case-SENSITIVE, because
+# "MA" and "BA" are also names: case-folded, "Lin, Ma" would lose its given name
+# and "Ba, Amadou" would be left with nothing to key on. And only after a COMMA,
+# because pages that capitalise family names write "Lin MA", where a whitespace-
+# anchored match would strip the family name. `(?!\w)` rather than `\b`, since a
+# boundary cannot follow the trailing period of "M.Sc.".
+DEGREE_PATTERN = (
+    r"(?:MSc|M\.\s?Sc\.?|BSc|B\.\s?Sc\.?|PhD|Ph\.\s?D\.?|MAS|MBA|MA|M\.\s?A\.?"
+    r"|BA|B\.\s?A\.?|LL\.\s?M\.?)(?!\w)"
+)
+
+_DEGREE_TRAIL_RE = re.compile(rf"(?:\s*,\s*{DEGREE_PATTERN})+\s*$")
+
+
+def _strip_degrees(value: str) -> str:
+    """Drop trailing degrees, but only when a whole name is left behind.
+
+    ZORA writes given initials after the comma -- "Müller, M. A." -- which is
+    exactly the spelling of the degree "M.A.". Stripping it would leave a bare
+    family name, so a degree comes off only when what remains still carries a
+    comma ("Caviezel, Giuanna") or at least two tokens ("Lidia Borkovic").
+    """
+    remainder = _DEGREE_TRAIL_RE.sub("", value)
+    if remainder != value and ("," in remainder or len(remainder.split()) >= 2):
+        return remainder
+    return value
+
+
 _UMLAUTS = (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"))
 
 # A single-letter token followed by a period: the "J." in "Anna J. Meier".
@@ -80,8 +113,14 @@ def strip_titles(value: str) -> str:
     Both ends matter: pages write "Prof. Dr. Hui Chen" and
     "Francisco Amaral, Prof. Dr.", and only stripping the front leaves the
     second one with a comma that later reads as a "Family, Given" separator.
+
+    Trailing degrees go too ("Lidia Borkovic, MSc"), between two trailing-title
+    passes, so either order of the two suffixes comes off: "X, Prof. Dr., PhD"
+    and "X, PhD, Prof. Dr." both reduce to "X".
     """
-    return _TITLE_LEAD_RE.sub("", _TITLE_TRAIL_RE.sub("", value)).strip()
+    value = _TITLE_TRAIL_RE.sub("", value)
+    value = _TITLE_TRAIL_RE.sub("", _strip_degrees(value))
+    return _TITLE_LEAD_RE.sub("", value).strip()
 
 
 def flip_family_given(value: str) -> str:

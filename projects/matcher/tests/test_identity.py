@@ -171,6 +171,18 @@ def test_a_stray_comma_does_not_drop_a_posting_name() -> None:
     assert posting_key("Sofia Forss,", set()) == PersonKey("sofia", "forss", unresolved=True)
 
 
+def test_a_trailing_degree_is_not_read_as_a_given_name() -> None:
+    """ "Lidia Borkovic, MSc" is in data/samples/theses.jsonl.
+
+    The comma-first reading used to key her as given "msc", family "lidia
+    borkovic" -- unresolvable even with her anchor present -- and display her as
+    "MSc Lidia Borkovic".
+    """
+    anchor = PersonKey("lidia", "borkovic")
+    assert posting_key("Lidia Borkovic, MSc", {anchor}) == anchor
+    assert display_name(["Lidia Borkovic, MSc"]) == "Lidia Borkovic"
+
+
 def test_an_unaffiliated_author_key_joins_no_anchor_and_no_posting() -> None:
     """A plain author of a paper with no `uzh_authors` is keyed apart.
 
