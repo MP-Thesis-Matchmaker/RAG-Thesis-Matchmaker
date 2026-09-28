@@ -61,7 +61,8 @@ def _format_candidates(
         if match.matched_topics:
             details.insert(0, f"topics {', '.join(match.matched_topics)}")
         if match.posting_count:
-            details.append(f"{match.posting_count} open thesis posting(s)")
+            # Not "open", for the reason in template.py.
+            details.append(f"{match.posting_count} thesis posting(s)")
         details.append(f"work: {titles or 'no listed work'}")
         if weaker:
             details.append(f"weaker-matching work: {weaker}")

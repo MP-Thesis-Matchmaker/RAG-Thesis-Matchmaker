@@ -159,8 +159,10 @@ def test_template_says_nothing_about_availability_when_no_posting():
 
 
 def test_template_reports_a_posting_when_there_is_one():
+    """Counted, not called open: "available" admits pending and status-less postings."""
     text = TemplateSynthesizer().synthesize("nlp thesis", [_match("Prof. A", "Paper One")])
-    assert "1 open thesis posting" in text
+    assert "1 thesis posting" in text
+    assert "open" not in text.lower()
 
 
 def test_llm_candidate_block_omits_missing_postings():
@@ -172,7 +174,8 @@ def test_llm_candidate_block_omits_missing_postings():
     zero = _match("Prof. A", "Paper One").model_copy(update={"posting_count": 0})
     block = _format_candidates([zero, _match("Dr. B", "Paper Two")])
     assert "no open position" not in block
-    assert block.count("open thesis posting") == 1  # only Dr. B has one
+    assert block.count("thesis posting") == 1  # only Dr. B has one
+    assert "open" not in block
 
 
 def test_no_topics_means_no_topic_claim():

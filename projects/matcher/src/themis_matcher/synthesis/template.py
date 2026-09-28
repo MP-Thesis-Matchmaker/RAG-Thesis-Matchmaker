@@ -62,9 +62,11 @@ class TemplateSynthesizer:
             # top-k -- the posting query is unthresholded, so it says nothing about
             # whether they have one. Printing "no open position" asserted a fact
             # about a named academic that the data cannot support.
+            # Not "open": available means only "not marked assigned or private",
+            # which includes postings that are pending or carry no status at all.
             details = [f"{match.publication_count} related publications"]
             if match.posting_count:
-                details.append(f"{match.posting_count} open thesis posting(s)")
+                details.append(f"{match.posting_count} thesis posting(s)")
             lines.append(f"{rank}. {match.supervisor}{where}")
             lines.append(f"   {works_on}{'; '.join(details)}.")
             cleared, weaker = split_evidence(match, self._min_scores)

@@ -136,12 +136,12 @@ Two differences from the UZH knob, both deliberate:
   Widening `top_k` on the posting query to chase that would inflate `posting_count`
   per person for a recall problem two orders of magnitude smaller.
 
-**Known gap.** `synthesis/` renders `"{posting_count} open thesis posting(s)"`, and
-that word "open" is only guaranteed while this setting is on. With it off, a taken
-topic is described as open. The wording is load-bearing against a hallucination seen
-in `docs/example-run.md`, so it was left alone rather than weakened for a
-non-default path — but flipping the setting without fixing the phrasing is a
-correctness regression, not just a recall change.
+**Fixed 2026-09-28: the wording no longer says "open".** `synthesis/` used to render
+`"{posting_count} open thesis posting(s)"`, which overclaimed even with this setting
+on — available means only "not marked assigned or private", so pending and
+status-less postings counted as open — and with it off described taken topics as
+open too. It now renders `"{posting_count} thesis posting(s)"`, so flipping the
+setting is a recall change only.
 
 #### Known gap: `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR=true` under-returns
 

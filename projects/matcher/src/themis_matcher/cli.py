@@ -43,7 +43,7 @@ def _print_matches(matches: list[SupervisorMatch]) -> None:
         if m.matched_topics:
             details.insert(0, f"topics: {', '.join(m.matched_topics)}")
         if m.posting_count:
-            details.append(f"{m.posting_count} open postings")
+            details.append(f"{m.posting_count} postings")
         print("   " + "  |  ".join(details))
         for e in m.evidence:
             print(f"     - {e.title}")
