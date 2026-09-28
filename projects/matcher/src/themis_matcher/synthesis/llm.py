@@ -18,11 +18,15 @@ fit. Falls back to the template synthesiser on any error.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 
 from themis_matcher.llm import LLMClient, LLMError
 from themis_matcher.synthesis.base import Synthesizer
-from themis_matcher.synthesis.template import TemplateSynthesizer, split_evidence
+from themis_matcher.synthesis.template import (
+    TemplateSynthesizer,
+    margin,
+    no_strong_match,
+    split_evidence,
+)
 from themis_shared.contracts import SupervisorMatch
 
 logger = logging.getLogger(__name__)
@@ -70,25 +74,6 @@ def _format_candidates(
     return "\n".join(blocks)
 
 
-def _no_strong_match(
-    query: str, matches: list[SupervisorMatch], margin: Callable[[SupervisorMatch], float]
-) -> str:
-    """Deterministic answer for when nothing clears the score threshold.
-
-    "Closest" is by `margin`, the distance to the candidate's own threshold. Raw
-    `score` would compare across scales: a publication 0.02 under 0.57 would beat a
-    posting 0.01 under 0.48 only because publications score higher everywhere.
-    """
-    closest = max(matches, key=margin)
-    where = f" ({closest.department})" if closest.department else ""
-    titles = "; ".join(item.title for item in closest.evidence) or "no listed work"
-    return (
-        f'No supervisor in our data looks like a strong match for "{query}". '
-        f"The closest is {closest.supervisor}{where}. Their listed work: {titles}. "
-        "It may still be worth contacting them, but treat it as a long shot."
-    )
-
-
 class LLMSynthesizer:
     """Writes the recommendation with an LLM, grounded in the matches."""
 
@@ -113,16 +98,8 @@ class LLMSynthesizer:
         self._fallback = fallback or TemplateSynthesizer(min_scores=self._min_scores)
 
     def _margin(self, match: SupervisorMatch) -> float:
-        """How far this person's best source sits above its own threshold.
-
-        Taken over sources, not from the winner: thresholding only the
-        higher-scoring source let a 0.56 publication (bar 0.57) drop someone whose
-        0.50 posting (bar 0.48) would have passed alone -- being found twice made a
-        person look worse. Negative means no source clears.
-        """
-        return max(
-            score - self._min_scores[source] for source, score in match.source_scores.items()
-        )
+        """`template.margin` against this synthesiser's bars."""
+        return margin(match, self._min_scores)
 
     def _clears_threshold(self, match: SupervisorMatch) -> bool:
         """Whether any one source vouches for this person on its own scale."""
@@ -133,7 +110,7 @@ class LLMSynthesizer:
             return self._fallback.synthesize(query, matches)
         strong = [m for m in matches if self._clears_threshold(m)]
         if not strong:
-            return _no_strong_match(query, matches, self._margin)
+            return no_strong_match(query, matches, self._min_scores)
         candidates = _format_candidates(strong, self._min_scores)
         user = f'Student query: "{query}"\n\nCandidates:\n{candidates}'
         try:

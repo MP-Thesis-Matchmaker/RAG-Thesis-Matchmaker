@@ -73,6 +73,40 @@ def test_build_synthesizer_passes_both_min_scores():
     assert synth._min_scores == {"publication": 0.7, "thesis_posting": 0.5}
 
 
+def test_the_default_template_gets_the_configured_bars():
+    """Built bare, the no-LLM default presented every retrieved candidate as a match."""
+    settings = MatcherSettings(_env_file=None, llm_base_url=None)
+    synth = build_synthesizer(settings)
+    assert synth._min_scores == {
+        "publication": settings.synthesis_min_score_publication,
+        "thesis_posting": settings.synthesis_min_score_posting,
+    }
+
+
+_BARS = {"publication": 0.57, "thesis_posting": 0.48}
+
+
+def test_the_template_with_bars_drops_a_candidate_no_source_vouches_for():
+    strong = _match("Prof. A", "Strong Paper", score=0.70)
+    weak = _match("Dr. B", "Weak Paper", score=0.40)
+    text = TemplateSynthesizer(min_scores=_BARS).synthesize("nlp thesis", [strong, weak])
+    assert "Prof. A" in text
+    assert "Dr. B" not in text
+    assert "Weak Paper" not in text
+
+
+def test_the_template_with_bars_says_when_nothing_is_a_strong_match():
+    """Same answer as the LLM path, and "closest" is by margin, not raw score.
+
+    The 0.55 paper is 0.02 under its bar; the 0.47 posting only 0.01 under its.
+    """
+    paper = _match("Prof. A", "Near Paper", score=0.55)
+    posting = _match("Dr. B", "Near Topic", score=0.47, source="thesis_posting")
+    text = TemplateSynthesizer(min_scores=_BARS).synthesize("nlp thesis", [paper, posting])
+    assert text.startswith("No supervisor in our data looks like a strong match")
+    assert "The closest is Dr. B" in text
+
+
 def test_thresholds_are_per_source_at_the_same_score():
     """Two matches, identical scores, different sources, different verdicts.
 
@@ -284,7 +318,7 @@ def test_the_template_fallback_still_labels_weaker_work():
 
 
 def test_the_template_without_bars_lists_all_work_alike():
-    """The offline default thresholds nothing, so it labels nothing either."""
+    """A template built without bars thresholds nothing, so it labels nothing either."""
     text = TemplateSynthesizer().synthesize("nlp thesis", [_both_sources_person()])
 
     assert "Weaker-matching" not in text

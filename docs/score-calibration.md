@@ -16,7 +16,8 @@ is that script's output, not an estimate.
 ## Why this exists
 
 `MATCHER_SYNTHESIS_MIN_SCORE` gates whether `LLMSynthesizer` presents a candidate as a
-match or degrades to `_no_strong_match` (`synthesis/llm.py:81`). Its default was `0.0`,
+match or degrades to `no_strong_match` (`synthesis/template.py` since 2026-09-28, which the
+template path now applies too). Its default was `0.0`,
 which is inert, and there was no basis for any other value: `ScoredHit.score` is a
 cosine similarity in `[-1, 1]` (see
 [`indexing/README.md`](../projects/matcher/src/themis_matcher/indexing/README.md#what-the-score-is-and-why-it-is-not-0-1)),
@@ -52,7 +53,7 @@ The **admissible band** is then
 max over controls of (best score)  ≤  threshold  ≤  min over on-topic of (best score)
 ```
 
-because `_no_strong_match` fires only when *nothing* clears the threshold. A second,
+because `no_strong_match` fires only when *nothing* clears the threshold. A second,
 tighter ceiling — `min over on-topic of #5` — marks where the threshold stops merely
 detecting hopeless queries and starts trimming candidates inside result sets that are
 fine.

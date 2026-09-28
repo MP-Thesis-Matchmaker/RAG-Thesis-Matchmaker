@@ -14,10 +14,12 @@ list[SupervisorMatch] ──▶ Synthesizer.synthesize(query, matches) ──▶
                                 │
                                 ├── LLMSynthesizer   (when MATCHER_LLM_BASE_URL is set)
                                 │     ├─ no matches           → template fallback
-                                │     ├─ none ≥ its threshold → _no_strong_match, NO LLM CALL
+                                │     ├─ none ≥ its threshold → no_strong_match, NO LLM CALL
                                 │     ├─ LLMError             → template fallback
                                 │     └─ otherwise            → grounded LLM answer
                                 └── TemplateSynthesizer  (deterministic, offline)
+                                      ├─ none ≥ its threshold → no_strong_match
+                                      └─ otherwise            → the strong candidates only
 ```
 
 ## Public API
@@ -25,9 +27,10 @@ list[SupervisorMatch] ──▶ Synthesizer.synthesize(query, matches) ──▶
 | Symbol | File | Purpose |
 |---|---|---|
 | `Synthesizer` | `base.py` | Protocol: `synthesize(query: ParsedQuery, matches: list[SupervisorMatch]) -> str`. |
-| `TemplateSynthesizer` | `template.py` | Deterministic string assembly. Grounded by construction — it can only restate the fields it was given. |
+| `TemplateSynthesizer` | `template.py` | Deterministic string assembly. Grounded by construction — it can only restate the fields it was given. Applies the same per-source bars as `LLMSynthesizer` when given them. |
+| `split_evidence`, `margin`, `no_strong_match` | `template.py` | The threshold logic both synthesisers share, so their answers cannot disagree about who counts as a match. |
 | `LLMSynthesizer` | `llm.py` | Wraps an `LLMClient`, a fallback `Synthesizer`, and one weak-match threshold per source type. |
-| `build_synthesizer(settings)` | `__init__.py` | Factory: `LLMSynthesizer` if `llm_base_url` is set (with `TemplateSynthesizer` as its fallback), otherwise `TemplateSynthesizer`. |
+| `build_synthesizer(settings)` | `__init__.py` | Factory: `LLMSynthesizer` if `llm_base_url` is set (with `TemplateSynthesizer` as its fallback), otherwise `TemplateSynthesizer`. Both get the configured bars. |
 
 ## Data flow
 
@@ -42,16 +45,21 @@ biologists and you still get the five least-dissimilar people back. Handing thos
 to an LLM and asking it to recommend supervisors reliably produces confident,
 useless prose.
 
-So `LLMSynthesizer.synthesize` filters first:
+So both synthesisers filter first. The template did not until 2026-09-28: the
+factory built it without bars, so the no-LLM default listed every retrieved
+candidate as a match. `LLMSynthesizer.synthesize`:
 
 1. **No matches at all** → delegate to the template fallback.
 2. **No match reaches the threshold for its own source type** → return
-   `_no_strong_match`, a deterministic
+   `no_strong_match` (`template.py`), a deterministic
    sentence that says plainly there is no strong match, names the closest
    candidate, and frames it as a long shot. **No LLM call is made.** The model is
    never given the chance to talk up a bad match.
 3. **Otherwise** → format the strong candidates and call the LLM with an
    anti-hallucination system prompt. An `LLMError` falls back to the template.
+
+`TemplateSynthesizer` takes steps 2 and 3 the same way, rendering the strong
+candidates itself. Constructed without bars it filters nothing.
 
 For graded academic work, the property that matters is that every failure path
 lands on deterministic, grounded output rather than on generated text.
