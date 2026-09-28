@@ -399,6 +399,21 @@ def test_one_person_spelled_two_ways_is_one_match(identity_retriever: VectorRetr
     assert {"zora:id1", "posting:id1"} == {e.source_id for e in scaramuzza[0].evidence}
 
 
+def test_matched_topics_are_not_echoed_from_the_query(
+    identity_retriever: VectorRetriever,
+) -> None:
+    """Nothing computes them, so nothing may claim them.
+
+    The query's own topics used to be copied into every match, which the
+    synthesis then presented as what each candidate works on.
+    """
+    matches = identity_retriever.retrieve(
+        ParsedQuery(topics=["event cameras for autonomous drone racing"]), top_k=10
+    )
+    assert matches
+    assert all(m.matched_topics == [] for m in matches)
+
+
 def test_two_people_sharing_a_family_name_stay_apart(identity_retriever: VectorRetriever) -> None:
     """Daniel Müller must not inherit Mathias Müller's publications.
 

@@ -38,9 +38,10 @@ def _print_matches(matches: list[SupervisorMatch]) -> None:
         print(f"{rank}. {m.supervisor}  (score {m.score:.2f})")
         if m.department:
             print(f"   {m.department}")
-        topics = ", ".join(m.matched_topics) or "n/a"
-        # Silent on zero, for the reason spelled out in synthesis/template.py.
-        details = [f"topics: {topics}", f"{m.publication_count} papers"]
+        # Silent on zero and on no topics, for the reasons in synthesis/template.py.
+        details = [f"{m.publication_count} papers"]
+        if m.matched_topics:
+            details.insert(0, f"topics: {', '.join(m.matched_topics)}")
         if m.posting_count:
             details.append(f"{m.posting_count} open postings")
         print("   " + "  |  ".join(details))

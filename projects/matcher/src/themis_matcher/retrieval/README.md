@@ -292,9 +292,11 @@ serves fake results.
   measurement, including why the `person` table is the *wrong* join target and why
   email was rejected as a disambiguator:
   [`docs/person-key-resolution.md`](../../../../../docs/person-key-resolution.md).
-- **`matched_topics` is not computed.** Every match receives a copy of
-  `query.topics` rather than the topics that actually matched. The field looks
-  informative and is not.
+- **`matched_topics` is not computed.** Until 2026-09-28 every match received a
+  copy of `query.topics`, so the template, the LLM prompt and the CLI all said each
+  candidate works on exactly what the student typed. It is now left empty, and
+  every consumer prints topics only when there are some. The field stays in the
+  wire contract for when it is actually computed.
 - **`publication_count` is populated but unused in scoring**, despite
   `contracts/retrieval.py` describing it as a ranking signal.
 - **`department` is a soft signal, not a filter.** It used to be an exact jsonb

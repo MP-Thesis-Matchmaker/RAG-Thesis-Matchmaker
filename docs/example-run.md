@@ -195,6 +195,9 @@ publication-backed one in a single result.
 
 Recorded as observed. None of these are hypothetical.
 
+> **Fixed 2026-09-28.** The retriever now leaves `matched_topics` empty, and the template, the
+> LLM prompt and the CLI omit the topics line when it is. The output below predates that.
+
 **1. `matched_topics` is circular, and the LLM still reads it as evidence.** Every candidate shows
 the same `topics:` line, because those are the *query's* topics echoed back, not anything the
 supervisor declared. Example 3's answer opens: "All three candidates list multilingual embeddings

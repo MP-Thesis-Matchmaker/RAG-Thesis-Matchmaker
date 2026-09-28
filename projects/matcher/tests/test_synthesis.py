@@ -175,6 +175,25 @@ def test_llm_candidate_block_omits_missing_postings():
     assert block.count("open thesis posting") == 1  # only Dr. B has one
 
 
+def test_no_topics_means_no_topic_claim():
+    """The retriever leaves `matched_topics` empty, and no consumer fills the gap.
+
+    It used to copy the query in, and the template's fallback said "Works on your
+    topics" -- both telling the student every candidate works on exactly what
+    they typed. Nothing in the retrieval checked that.
+    """
+    from themis_matcher.synthesis.llm import _format_candidates
+
+    bare = _match("Prof. A", "Paper One").model_copy(update={"matched_topics": []})
+    text = TemplateSynthesizer().synthesize("nlp thesis", [bare])
+    assert "Works on" not in text
+    assert "your topics" not in text
+    assert "3 related publications" in text
+    assert "topics" not in _format_candidates([bare])
+    # Real topics, where some consumer does supply them, still show.
+    assert "Works on nlp" in TemplateSynthesizer().synthesize("x", [_match("Dr. B", "Paper")])
+
+
 def test_the_long_shot_is_closest_to_its_own_threshold():
     """Raw score compares across scales; margin to each source's bar does not.
 

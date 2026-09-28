@@ -93,7 +93,11 @@ class SupervisorMatch(BaseModel):
         ),
     )
     matched_topics: list[str] = Field(
-        default_factory=list, description="Query topics this person matched on."
+        default_factory=list,
+        description=(
+            "Topics this person matched on. Not computed yet: the retriever leaves it "
+            "empty (2026-09-28) rather than copying the query."
+        ),
     )
     publication_count: int = Field(
         default=0, description="Supporting publications, one of the ranking signals."

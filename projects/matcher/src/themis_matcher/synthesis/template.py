@@ -52,7 +52,11 @@ class TemplateSynthesizer:
         lines = [f'Based on your interest in "{query}", here are the top matches:', ""]
         for rank, match in enumerate(matches, start=1):
             where = f" ({match.department})" if match.department else ""
-            topics = ", ".join(match.matched_topics) or "your topics"
+            # No topics, no claim: "Works on your topics" said the same circular
+            # thing as copying the query into `matched_topics` did.
+            works_on = (
+                f"Works on {', '.join(match.matched_topics)}; " if match.matched_topics else ""
+            )
             # Postings appear only when there are some, and there is deliberately no
             # else branch. A zero count means no posting of this person's reached the
             # top-k -- the posting query is unthresholded, so it says nothing about
@@ -62,7 +66,7 @@ class TemplateSynthesizer:
             if match.posting_count:
                 details.append(f"{match.posting_count} open thesis posting(s)")
             lines.append(f"{rank}. {match.supervisor}{where}")
-            lines.append(f"   Works on {topics}; {'; '.join(details)}.")
+            lines.append(f"   {works_on}{'; '.join(details)}.")
             cleared, weaker = split_evidence(match, self._min_scores)
             for item in cleared:
                 reference = f" ({item.url})" if item.url else ""

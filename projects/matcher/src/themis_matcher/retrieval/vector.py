@@ -122,7 +122,7 @@ class VectorRetriever:
             filters=publication_filters,
         )
 
-        return self._rank(self._group_by_person(hits, query))[:top_k]
+        return self._rank(self._group_by_person(hits))[:top_k]
 
     @staticmethod
     def _source_type(hit: ScoredHit) -> Literal["publication", "thesis_posting"]:
@@ -236,7 +236,7 @@ class VectorRetriever:
         )
 
     @staticmethod
-    def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
+    def _group_by_person(hits: list[ScoredHit]) -> list[SupervisorMatch]:
         anchors = VectorRetriever._anchors(hits)
         author_keys = identity.author_keys(anchors)
 
@@ -295,7 +295,12 @@ class VectorRetriever:
                     score=max(source_scores.values()),
                     source_scores=source_scores,
                     has_uzh_affiliation=uzh_person[key],
-                    matched_topics=query.topics,
+                    # Not computed yet, so left empty. This used to copy
+                    # `query.topics`, which told every consumer that each candidate
+                    # works on exactly what the student typed -- a claim about a
+                    # named academic the retrieval never checked. The field stays
+                    # in the wire contract so consumers keep their shape.
+                    matched_topics=[],
                     publication_count=len(publications),
                     posting_count=len(postings),
                     evidence=[

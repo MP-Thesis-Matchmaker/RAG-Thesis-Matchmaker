@@ -108,10 +108,10 @@ from being spelled differently in different packages.
 - **`publication_count` is documented as a ranking signal but is not used as one.**
   `VectorRetriever` populates the field, but its score is `max(hit.score)` and
   nothing else. The docstring overstates the current behaviour.
-- **`SupervisorMatch.matched_topics` is not actually computed.** The retriever
-  copies `query.topics` wholesale into every match rather than intersecting the
-  query's topics with what the matched documents are about. The field is currently
-  decorative.
+- **`SupervisorMatch.matched_topics` is not actually computed.** The retriever used
+  to copy `query.topics` wholesale into every match rather than intersecting the
+  query's topics with what the matched documents are about. Since 2026-09-28 it
+  leaves the field empty instead; the shape is unchanged.
 - **`uzh_authors` is wider than its name.** It holds authors carrying *any* DSpace
   authority, which includes ORCID-only co-authors of unknown affiliation — 38,157
   publications' worth. The field description says so now, and

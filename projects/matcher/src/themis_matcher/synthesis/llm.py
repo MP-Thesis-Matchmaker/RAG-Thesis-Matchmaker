@@ -52,11 +52,14 @@ def _format_candidates(
         cleared, below = split_evidence(match, min_scores)
         titles = "; ".join(e.title for e in cleared)
         weaker = "; ".join(e.title for e in below)
-        topics = ", ".join(match.matched_topics) or "n/a"
         # Absent data has to reach the prompt as absent. Given "no open position"
         # the model wrote "not currently accepting new students" about a named
-        # academic; a line it never sees is a line it cannot paraphrase.
-        details = [f"topics {topics}", f"{match.publication_count} publications"]
+        # academic; a line it never sees is a line it cannot paraphrase. Topics
+        # likewise: the retriever does not compute them, and "topics n/a" invites
+        # the model to fill the gap from the query.
+        details = [f"{match.publication_count} publications"]
+        if match.matched_topics:
+            details.insert(0, f"topics {', '.join(match.matched_topics)}")
         if match.posting_count:
             details.append(f"{match.posting_count} open thesis posting(s)")
         details.append(f"work: {titles or 'no listed work'}")
