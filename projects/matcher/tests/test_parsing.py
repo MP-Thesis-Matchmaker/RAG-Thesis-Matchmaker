@@ -25,6 +25,27 @@ def test_rule_based_no_degree_is_none():
     assert q.topics
 
 
+@pytest.mark.parametrize(
+    ("query", "level"),
+    [
+        # Each of these was misread by the old substring test.
+        ("undergraduate thesis on NLP", DegreeLevel.bachelor),
+        ("obscure topics in AI", None),
+        ("postdoctoral-level project on memory", None),
+        # Several levels named: no filter, so both kinds of student see it.
+        ("bachelor or master thesis on RAG", None),
+        # "graduate" means master or above, which one level cannot say.
+        ("graduate student, thesis on RAG", None),
+        ("graduate student looking for a master's thesis on RAG", DegreeLevel.master),
+        ("MSc thesis in ML", DegreeLevel.master),
+        ("masters thesis on ranking", DegreeLevel.master),
+    ],
+)
+def test_degree_words_count_only_as_whole_words(query, level):
+    """The level becomes a hard posting filter, so a wrong one hides postings."""
+    assert RuleBasedExtractor().extract(query).degree_level is level
+
+
 def test_build_extractor_falls_back_without_endpoint():
     extractor = build_extractor(MatcherSettings(_env_file=None, llm_base_url=None))
     assert isinstance(extractor, RuleBasedExtractor)

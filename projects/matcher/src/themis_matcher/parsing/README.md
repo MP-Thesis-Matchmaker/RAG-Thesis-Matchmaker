@@ -32,7 +32,7 @@ Read-only. No I/O except the optional LLM call.
 | Symbol | File | Purpose |
 |---|---|---|
 | `QueryExtractor` | `base.py` | Protocol: `extract(raw_query: str) -> ParsedQuery`. |
-| `RuleBasedExtractor` | `rule_based.py` | Offline extractor. Lowercases, strips ~20 filler phrases, splits on `and` / `,` / `;` / `/`, keeps fragments longer than two characters, detects degree level from a keyword table. |
+| `RuleBasedExtractor` | `rule_based.py` | Offline extractor. Strips ~20 filler phrases, splits on `and` / `,` / `;` (not `/`, which joins compounds), keeps fragments longer than one character, detects degree level from whole-word keywords — and only when exactly one level is named, since the level is a hard posting filter. |
 | `OpenAICompatExtractor` | `openai_compat.py` | Calls an OpenAI-compatible chat endpoint in JSON mode, validates the response, and falls back to the rule-based extractor on failure. |
 | `build_extractor(settings)` | `__init__.py` | Factory: LLM extractor if `llm_base_url` is set, rule-based otherwise. |
 
