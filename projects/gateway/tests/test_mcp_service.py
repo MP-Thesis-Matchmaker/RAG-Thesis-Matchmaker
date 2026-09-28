@@ -16,6 +16,7 @@ import httpx
 import pytest
 
 from themis_gateway import service
+from themis_shared.contracts.api import MatchResponse
 
 BASE_URL = "http://matcher.test:8100"
 
@@ -25,6 +26,7 @@ _MATCH_BODY = {
             "supervisor": "Prof. A. Müller",
             "department": "Informatics",
             "score": 0.82,
+            "source_scores": {"publication": 0.82},
             "has_uzh_affiliation": True,
             "matched_topics": ["rag"],
             "publication_count": 3,
@@ -60,6 +62,18 @@ def _responder(status_code: int, body: dict, seen: list[httpx.Request] | None = 
         return httpx.Response(status_code, json=body)
 
     return handler
+
+
+def test_the_canned_match_body_is_a_valid_wire_response() -> None:
+    """Pins the fixture to the wire model the matcher actually serves.
+
+    The gateway forwards the matcher's JSON without validating it, so nothing
+    else here would notice the fixture going stale: it lacked `source_scores`
+    for as long as that field has been required, and every test still passed.
+    `themis_shared` is the one member the gateway may import, so this stays
+    legal under CI's boundaries job.
+    """
+    MatchResponse.model_validate(_MATCH_BODY)
 
 
 def test_find_researchers_returns_the_matches_the_matcher_sent() -> None:
