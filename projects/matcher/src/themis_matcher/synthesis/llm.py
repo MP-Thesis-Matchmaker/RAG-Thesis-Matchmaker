@@ -22,7 +22,7 @@ from collections.abc import Callable
 
 from themis_matcher.llm import LLMClient, LLMError
 from themis_matcher.synthesis.base import Synthesizer
-from themis_matcher.synthesis.template import TemplateSynthesizer
+from themis_matcher.synthesis.template import TemplateSynthesizer, split_evidence
 from themis_shared.contracts import SupervisorMatch
 
 logger = logging.getLogger(__name__)
@@ -49,16 +49,9 @@ def _format_candidates(
     blocks = []
     for match in matches:
         where = f" ({match.department})" if match.department else ""
-        # A person who passed on one source is not vouched for by the other. Its
-        # titles stay -- they are real -- but are kept apart, so a posting-backed
-        # supervisor's below-bar papers are not presented as the reason they fit.
-        cleared = {
-            source
-            for source, score in match.source_scores.items()
-            if min_scores is None or score >= min_scores[source]
-        }
-        titles = "; ".join(e.title for e in match.evidence if e.source_type in cleared)
-        weaker = "; ".join(e.title for e in match.evidence if e.source_type not in cleared)
+        cleared, below = split_evidence(match, min_scores)
+        titles = "; ".join(e.title for e in cleared)
+        weaker = "; ".join(e.title for e in below)
         topics = ", ".join(match.matched_topics) or "n/a"
         # Absent data has to reach the prompt as absent. Given "no open position"
         # the model wrote "not currently accepting new students" about a named
@@ -103,7 +96,6 @@ class LLMSynthesizer:
         min_score_posting: float = 0.0,
     ) -> None:
         self._client = client
-        self._fallback = fallback or TemplateSynthesizer()
         # Keyed like SupervisorMatch.source_scores, so a third kind of source is a
         # data change rather than another branch. Both default to 0.0: an
         # explicitly constructed synthesiser filters nothing unless told to, and
@@ -112,6 +104,9 @@ class LLMSynthesizer:
             "publication": min_score_publication,
             "thesis_posting": min_score_posting,
         }
+        # The fallback gets the same bars, so an LLM outage still labels below-bar
+        # work as weaker instead of listing it as the reason a person fits.
+        self._fallback = fallback or TemplateSynthesizer(min_scores=self._min_scores)
 
     def _margin(self, match: SupervisorMatch) -> float:
         """How far this person's best source sits above its own threshold.

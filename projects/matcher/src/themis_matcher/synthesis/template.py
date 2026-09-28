@@ -8,11 +8,43 @@ when no LLM is configured.
 
 from __future__ import annotations
 
-from themis_shared.contracts import SupervisorMatch
+from themis_shared.contracts import Evidence, SupervisorMatch
+
+
+def split_evidence(
+    match: SupervisorMatch, min_scores: dict[str, float] | None
+) -> tuple[list[Evidence], list[Evidence]]:
+    """(cleared, weaker): evidence from sources over their bar, and the rest.
+
+    A person who passed on one source is not vouched for by the other. Those
+    titles stay -- they are real -- but are kept apart, so a posting-backed
+    supervisor's below-bar papers are not presented as the reason they fit. With
+    no bars everything clears. Shared by both synthesisers so the LLM prompt and
+    the template fallback cannot disagree about which work is weaker.
+    """
+    cleared = {
+        source
+        for source, score in match.source_scores.items()
+        if min_scores is None or score >= min_scores[source]
+    }
+    return (
+        [e for e in match.evidence if e.source_type in cleared],
+        [e for e in match.evidence if e.source_type not in cleared],
+    )
 
 
 class TemplateSynthesizer:
-    """Renders matches into a recommendation without an LLM."""
+    """Renders matches into a recommendation without an LLM.
+
+    `min_scores`, keyed like `SupervisorMatch.source_scores`, labels work from a
+    source under its bar as weaker-matching. `LLMSynthesizer` passes its own bars
+    to the fallback it builds, so an LLM outage does not quietly drop that
+    distinction. Without bars -- the offline default, which thresholds nothing --
+    every item is listed alike.
+    """
+
+    def __init__(self, min_scores: dict[str, float] | None = None) -> None:
+        self._min_scores = min_scores
 
     def synthesize(self, query: str, matches: list[SupervisorMatch]) -> str:
         if not matches:
@@ -31,8 +63,14 @@ class TemplateSynthesizer:
                 details.append(f"{match.posting_count} open thesis posting(s)")
             lines.append(f"{rank}. {match.supervisor}{where}")
             lines.append(f"   Works on {topics}; {'; '.join(details)}.")
-            for item in match.evidence:
+            cleared, weaker = split_evidence(match, self._min_scores)
+            for item in cleared:
                 reference = f" ({item.url})" if item.url else ""
                 lines.append(f"   - {item.title}{reference}")
+            if weaker:
+                lines.append("   Weaker-matching work:")
+                for item in weaker:
+                    reference = f" ({item.url})" if item.url else ""
+                    lines.append(f"   - {item.title}{reference}")
             lines.append("")
         return "\n".join(lines).rstrip()

@@ -222,3 +222,49 @@ def test_work_from_a_source_below_its_bar_is_labelled_weaker():
     assert synth.synthesize("nlp thesis", [both]) == "ok"
     assert "work: Open Topic" in client.user
     assert "weaker-matching work: Below-Bar Paper" in client.user
+
+
+def _both_sources_person() -> SupervisorMatch:
+    """Passes on the posting (0.50 over 0.48), not on the paper (0.56 under 0.57)."""
+    return _match(
+        "Dr. Both", "Title", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    ).model_copy(
+        update={
+            "evidence": [
+                Evidence(source_type="publication", source_id="z:1", title="Below-Bar Paper"),
+                Evidence(source_type="thesis_posting", source_id="p:1", title="Open Topic"),
+            ]
+        }
+    )
+
+
+def test_the_template_fallback_still_labels_weaker_work():
+    """An LLM outage must not turn a below-bar paper into the reason someone fits.
+
+    The fallback used to be a bare TemplateSynthesizer, which printed every
+    evidence item alike -- so the separation the LLM prompt makes held only while
+    the endpoint was up, which in a demo is exactly when it matters least.
+    """
+    from themis_matcher.llm import LLMError
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    class _Down:
+        def chat(self, system: str, user: str) -> str:
+            raise LLMError("endpoint unreachable")
+
+    synth = LLMSynthesizer(_Down(), min_score_publication=0.57, min_score_posting=0.48)
+    text = synth.synthesize("nlp thesis", [_both_sources_person()])
+
+    before, _, after = text.partition("Weaker-matching work:")
+    assert "Open Topic" in before
+    assert "Below-Bar Paper" not in before
+    assert "Below-Bar Paper" in after
+
+
+def test_the_template_without_bars_lists_all_work_alike():
+    """The offline default thresholds nothing, so it labels nothing either."""
+    text = TemplateSynthesizer().synthesize("nlp thesis", [_both_sources_person()])
+
+    assert "Weaker-matching" not in text
+    assert "Below-Bar Paper" in text
+    assert "Open Topic" in text
