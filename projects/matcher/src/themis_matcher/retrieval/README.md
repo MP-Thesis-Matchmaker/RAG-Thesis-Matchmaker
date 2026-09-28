@@ -268,7 +268,10 @@ serves fake results.
   papers can appear twice, once demoted.
   **105 of 403 supervisor names (26.1%) now resolve**, with no conflation
   detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
-  reached by no supervisor at all.
+  reached by no supervisor at all. Since 2026-09-28 the first given name must agree
+  exactly (an initial matches only an initial) and a contradicting later given name
+  refuses, which splits the one genuine conflation of those four; the 105 are
+  unchanged.
 
   **What remains a gap is the yield, not the key.** `retrieve` fetches `top_k`
   postings *and* `top_k` publications, so a merge needs one person in both slices

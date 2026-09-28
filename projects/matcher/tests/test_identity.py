@@ -10,8 +10,11 @@ from __future__ import annotations
 
 from themis_matcher.retrieval.identity import (
     PersonKey,
+    anchors_of,
     author_key,
+    author_keys,
     candidates,
+    compatible,
     display_name,
     key_of,
     posting_key,
@@ -22,7 +25,7 @@ from themis_matcher.retrieval.identity import (
 def test_the_two_spellings_of_one_person_produce_the_same_key() -> None:
     """The defect this module exists to fix, in one assertion."""
     assert key_of("Scaramuzza, Davide") == PersonKey("davide", "scaramuzza")
-    assert resolve("Davide Scaramuzza", {PersonKey("davide", "scaramuzza")}) == PersonKey(
+    assert resolve("Davide Scaramuzza", anchors_of(["Scaramuzza, Davide"])) == PersonKey(
         "davide", "scaramuzza"
     )
 
@@ -36,19 +39,21 @@ def test_a_shared_family_name_is_never_enough_to_merge() -> None:
     credit a supervisor with a stranger's papers, and nothing downstream could
     tell.
     """
-    anchors = {
-        PersonKey("mathias", "muller"),
-        PersonKey("sabrina", "muller"),
-        PersonKey("thomas", "muller"),
-    }
+    anchors = anchors_of(["Müller, Mathias", "Müller, Sabrina", "Müller, Thomas"])
     assert resolve("Daniel Müller", anchors) is None
-    assert resolve("Qianyu Liu", {PersonKey("tingting", "liu")}) is None
-    assert resolve("Gian Ege", {PersonKey("moritz", "ege")}) is None
+    assert resolve("Qianyu Liu", anchors_of(["Liu, Tingting"])) is None
+    assert resolve("Gian Ege", anchors_of(["Ege, Moritz"])) is None
 
 
-def test_an_initial_is_never_enough_to_merge() -> None:
-    """ "D. Scaramuzza" could be Davide or Dominik; the rule declines to guess."""
-    assert resolve("D. Scaramuzza", {PersonKey("davide", "scaramuzza")}) is None
+def test_an_initial_matches_only_an_initial() -> None:
+    """ "D. Scaramuzza" could be Davide or Dominik; the rule declines to guess.
+
+    Two initials are different: both sources say the same thing, and nothing is
+    inferred. The audit found none of these among the live corpus's merges.
+    """
+    assert resolve("D. Scaramuzza", anchors_of(["Scaramuzza, Davide"])) is None
+    assert resolve("Davide Scaramuzza", anchors_of(["Scaramuzza, D."])) is None
+    assert resolve("A. Beispiel", anchors_of(["Beispiel, A."])) == PersonKey("a", "beispiel")
 
 
 def test_a_middle_name_does_not_split_one_person_in_two() -> None:
@@ -84,10 +89,10 @@ def test_a_particle_family_name_is_settled_by_the_anchor_not_by_a_particle_list(
         PersonKey("alessandro", "de luca"),
     ]
 
-    assert resolve("Alessandro De Luca", {PersonKey("alessandro", "de luca")}) == PersonKey(
+    assert resolve("Alessandro De Luca", anchors_of(["De Luca, Alessandro"])) == PersonKey(
         "alessandro", "de luca"
     )
-    assert resolve("Onicio Leal Neto", {PersonKey("onicio", "leal neto")}) == PersonKey(
+    assert resolve("Onicio Leal Neto", anchors_of(["Leal Neto, Onicio"])) == PersonKey(
         "onicio", "leal neto"
     )
 
@@ -98,7 +103,7 @@ def test_an_ambiguous_split_is_refused_rather_than_guessed() -> None:
     `resolve` returns None for "nothing matched" and "several matched" alike;
     `posting_key` is what tells the two apart for the caller.
     """
-    both = {PersonKey("alessandro", "luca"), PersonKey("alessandro", "de luca")}
+    both = anchors_of(["Luca, Alessandro", "De Luca, Alessandro"])
     assert resolve("Alessandro De Luca", both) is None
 
 
@@ -110,7 +115,7 @@ def test_an_ambiguous_posting_key_is_none_of_the_anchors() -> None:
     refused name after all. The unresolved key equals no anchor, and the same
     spelling seen twice still groups with itself.
     """
-    both = {PersonKey("alessandro", "luca"), PersonKey("alessandro", "de luca")}
+    both = anchors_of(["Luca, Alessandro", "De Luca, Alessandro"])
     assert key_of("Alessandro De Luca") in both
 
     key = posting_key("Alessandro De Luca", both)
@@ -120,7 +125,7 @@ def test_an_ambiguous_posting_key_is_none_of_the_anchors() -> None:
 
 
 def test_a_posting_key_takes_the_one_anchor_that_matches() -> None:
-    anchors = {PersonKey("alessandro", "de luca")}
+    anchors = anchors_of(["De Luca, Alessandro"])
     assert posting_key("Alessandro De Luca", anchors) == PersonKey("alessandro", "de luca")
 
 
@@ -131,7 +136,7 @@ def test_an_unmatched_posting_key_is_its_own_reading_marked_unresolved() -> None
     Daniel" is a publication person but no anchor. A plain (daniel, muller) would
     equal that person's key and merge with them on equality alone.
     """
-    anchors = {PersonKey("mathias", "muller")}
+    anchors = anchors_of(["Müller, Mathias"])
     key = posting_key("Daniel Müller", anchors)
     assert key == PersonKey("daniel", "muller", unresolved=True)
     assert key != key_of("Müller, Daniel")
@@ -139,7 +144,7 @@ def test_an_unmatched_posting_key_is_its_own_reading_marked_unresolved() -> None
 
 
 def test_a_comma_posting_name_matches_its_structured_anchor() -> None:
-    anchors = {PersonKey("davide", "scaramuzza")}
+    anchors = anchors_of(["Scaramuzza, Davide"])
     assert posting_key("Scaramuzza, Davide", anchors) == PersonKey("davide", "scaramuzza")
 
 
@@ -150,8 +155,8 @@ def test_a_comma_posting_name_is_never_read_in_natural_order() -> None:
     Thomas / family Martin -- exactly the anchor for "Martin, Thomas", a
     different person -- and merged them.
     """
-    anchors = {key_of("Martin, Thomas")}
-    assert anchors == {PersonKey("thomas", "martin")}
+    anchors = anchors_of(["Martin, Thomas"])
+    assert set(anchors) == {PersonKey("thomas", "martin")}
 
     key = posting_key("Thomas, Martin", anchors)
     assert key == PersonKey("martin", "thomas", unresolved=True)
@@ -166,9 +171,9 @@ def test_a_stray_comma_does_not_drop_a_posting_name() -> None:
     as free text instead, so it resolves like the comma-less spelling would.
     """
     anchor = PersonKey("sofia", "forss")
-    assert posting_key("Sofia Forss,", {anchor}) == anchor
-    assert resolve("Sofia Forss,", {anchor}) == anchor
-    assert posting_key("Sofia Forss,", set()) == PersonKey("sofia", "forss", unresolved=True)
+    assert posting_key("Sofia Forss,", anchors_of(["Forss, Sofia"])) == anchor
+    assert resolve("Sofia Forss,", anchors_of(["Forss, Sofia"])) == anchor
+    assert posting_key("Sofia Forss,", {}) == PersonKey("sofia", "forss", unresolved=True)
 
 
 def test_a_trailing_degree_is_not_read_as_a_given_name() -> None:
@@ -179,7 +184,7 @@ def test_a_trailing_degree_is_not_read_as_a_given_name() -> None:
     "MSc Lidia Borkovic".
     """
     anchor = PersonKey("lidia", "borkovic")
-    assert posting_key("Lidia Borkovic, MSc", {anchor}) == anchor
+    assert posting_key("Lidia Borkovic, MSc", anchors_of(["Borkovic, Lidia"])) == anchor
     assert display_name(["Lidia Borkovic, MSc"]) == "Lidia Borkovic"
 
 
@@ -191,12 +196,12 @@ def test_an_unaffiliated_author_key_joins_no_anchor_and_no_posting() -> None:
     """
     anchor = key_of("Müller, Daniel")
     assert anchor is not None
-    assert posting_key("Daniel Müller", {anchor}) == anchor
+    assert posting_key("Daniel Müller", anchors_of(["Müller, Daniel"])) == anchor
 
     stranger = author_key("Müller, Daniel")
     assert stranger == PersonKey("daniel", "muller", unaffiliated=True)
     assert stranger != anchor
-    assert stranger != posting_key("Daniel Müller", set())
+    assert stranger != posting_key("Daniel Müller", {})
     # Two unaffiliated papers by the same author string still group together.
     assert stranger == author_key("Müller, Daniel")
     assert author_key("Madonna") is None
@@ -209,12 +214,12 @@ def test_resolve_counts_exactly_what_posting_key_merges() -> None:
     commas, so it disagreed with the retriever in both directions on comma-form
     posting names: missed a merge the retriever makes, and counted one it refuses.
     """
-    assert resolve("Scaramuzza, Davide", {PersonKey("davide", "scaramuzza")}) == PersonKey(
+    assert resolve("Scaramuzza, Davide", anchors_of(["Scaramuzza, Davide"])) == PersonKey(
         "davide", "scaramuzza"
     )
-    assert resolve("Thomas, Martin", {PersonKey("thomas", "martin")}) is None
+    assert resolve("Thomas, Martin", anchors_of(["Martin, Thomas"])) is None
 
-    anchors = {PersonKey("davide", "scaramuzza"), PersonKey("thomas", "martin")}
+    anchors = anchors_of(["Scaramuzza, Davide", "Martin, Thomas"])
     for name in ["Scaramuzza, Davide", "Thomas, Martin", "Davide Scaramuzza", "Daniel Müller"]:
         key = posting_key(name, anchors)
         merged = key if key is not None and not key.unresolved else None
@@ -238,3 +243,61 @@ def test_display_prefers_a_natural_spelling_verbatim() -> None:
     assert display_name(["Sennrich, Rico"]) == "Rico Sennrich"
     # Longest wins as a proxy for most complete.
     assert display_name(["Scaramuzza, D", "Scaramuzza, Davide"]) == "Davide Scaramuzza"
+
+
+def test_later_given_names_may_be_omitted_or_abbreviated() -> None:
+    """ZORA spells one person several ways; 312 anchor keys differ only like this.
+
+    Refusing these would split well-published researchers who are plainly one
+    person, so a later given name only has to *fit*, not to be identical.
+    """
+    assert compatible(["m"], ["max"])
+    assert compatible([], ["andreas"])
+    # A dropped middle name shifts positions; order is what counts, not index.
+    assert compatible(["guerreiro"], ["s", "guerreiro"])
+    # A particle: "C" is the Carvalho, "de" just goes unmatched.
+    assert compatible(["c"], ["de", "carvalho"])
+    spellings = ["Beispiel, Markus", "Beispiel, Markus A", "Beispiel, Markus Andreas"]
+    assert set(author_keys(anchors_of(spellings)).values()) == {PersonKey("markus", "beispiel")}
+
+
+def test_a_contradicting_later_given_name_is_never_the_same_person() -> None:
+    """ "M. A." and "M. B." cannot resolve to one name; nor can Felix and Flurin."""
+    assert not compatible(["a"], ["b"])
+    assert not compatible(["felix"], ["flurin"])
+    # One dropped interior letter is a typo; a substitution or an ending is a name.
+    assert compatible(["christian"], ["cristian"])
+    assert not compatible(["maria"], ["mario"])
+    assert not compatible(["daniel"], ["daniela"])
+
+
+def test_an_anchor_whose_spellings_contradict_is_split() -> None:
+    """Grouping is on key equality, so the split has to happen in the key.
+
+    "Beispiel, Pascal" fits both, and so is given to neither: the split is per
+    spelling, not a guess about which person the short form means.
+    """
+    anchors = anchors_of(["Beispiel, M. A.", "Beispiel, M. B."])
+    assert len(set(author_keys(anchors).values())) == 2
+
+    spellings = ["Beispiel, Pascal Felix", "Beispiel, Pascal Flurin", "Beispiel, Pascal"]
+    keys = author_keys(anchors_of(spellings))
+    assert len(set(keys.values())) == 3
+    assert keys["Beispiel, Pascal Felix"] == PersonKey("pascal", "beispiel", variant=("felix",))
+
+
+def test_a_posting_name_joins_a_split_anchor_only_where_exactly_one_part_fits() -> None:
+    anchors = anchors_of(["Beispiel, Pascal Felix", "Beispiel, Pascal Flurin"])
+    felix = PersonKey("pascal", "beispiel", variant=("felix",))
+    assert posting_key("Pascal Felix Beispiel", anchors) == felix
+    assert posting_key("Pascal F. Beispiel", anchors).unresolved
+    assert posting_key("Pascal Beispiel", anchors).unresolved
+    assert resolve("Pascal Beispiel", anchors) is None
+
+
+def test_a_posting_name_that_contradicts_its_anchor_is_refused() -> None:
+    anchors = anchors_of(["Beispiel, Pascal F."])
+    assert resolve("Pascal Anton Beispiel", anchors) is None
+    assert resolve("Pascal Felix Beispiel", anchors) == PersonKey("pascal", "beispiel")
+    assert resolve("Pascal Beispiel", anchors) == PersonKey("pascal", "beispiel")
+    assert resolve("Beispiel, Pascal A.", anchors) is None

@@ -20,7 +20,16 @@ those to a student as evidence for a recommendation. A wrong merge is therefore
 fabricated evidence that looks entirely plausible, so this module refuses far
 more than it accepts:
 
-- the full first given token must agree; an initial is never enough
+- the first given name must agree exactly; an initial matches only an
+  initial. ``"A. Smith"`` merges with ``"Smith, A."`` -- both sources say the
+  same thing -- but ``"D. Scaramuzza"`` never with ``"Scaramuzza, Davide"``:
+  nothing says the D. is Davide rather than Dominik
+- later given names may be omitted or abbreviated but must not contradict:
+  ``"Markus A"`` and ``"Markus Andreas"`` agree, ``"M. A."`` and ``"M. B."``
+  do not. One dropped interior letter (``Christian``/``Cristian``) is read as
+  a typo; ``Maria``/``Mario`` is not. A key whose own spellings contradict is
+  split, one key per spelling, and a posting name joins one part only if it
+  fits exactly one of them
 - a family-name match alone is never enough
 - only `uzh_authors` supply anchors; a plain author of an unaffiliated paper
   never vouches for a posting name, because against 331,301 distinct author keys
@@ -43,7 +52,12 @@ ambiguous. Of
 2,411 anchor keys, 4 collapse authors whose given names differ -- and two of
 those are ``maria``/``maría``, the same person twice. Only ``Meier, Pascal
 Felix`` against ``Meier, Pascal Flurin`` is a genuine conflation, and **no
-supervisor name reaches any of the four**.
+supervisor name reaches any of the four**. Since 2026-09-28 that one key is
+split by the contradiction rule; the accent pairs fold equal and
+``christian``/``cristian`` is a tolerated typo, so the other three stay whole.
+Contradictions are seen only among the spellings in hand -- per query in the
+retriever, as anchors are -- so a query surfacing only one of the Meiers keeps
+that one whole, which is correct.
 
 The 298 that do not resolve mostly *cannot*: 251 have no registered-author
 record -- no CRIS `person` row with even a matching family name, and only 6 of
@@ -67,7 +81,10 @@ deliberate.
 
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, replace
+from itertools import combinations
 
 from themis_shared.names import flip_family_given, fold_ascii, strip_titles
 
@@ -92,10 +109,115 @@ class PersonKey:
     # fallback of a paper with no `uzh_authors`. Also part of equality, so a
     # namesake on an unaffiliated paper never joins a UZH author or a posting.
     unaffiliated: bool = False
+    # Set only by `author_keys`, for a key whose own spellings contradict in a
+    # later given name ("Meier, Pascal Felix" beside "Meier, Pascal Flurin"):
+    # that spelling's later given tokens, so the two stop being one person.
+    variant: tuple[str, ...] = ()
+
+
+# The anchors a posting name is resolved against: each key with the spellings
+# that produced it. The spellings are needed because the key keeps only the
+# first given token, and a later one can still contradict.
+Anchors = Mapping[PersonKey, Collection[str]]
 
 
 def _tokens(text: str) -> list[str]:
     return fold_ascii(text).split()
+
+
+def given_tokens(name: str, family_len: int = 1) -> list[str]:
+    """Every folded given token of a name, where `key_of` keeps only the first.
+
+    Read the way `key_of` reads the name, so position 0 is always a key's
+    `given`: a usable comma splits family from given; anything else is natural
+    order with the last `family_len` tokens as the family.
+    """
+    cleaned = strip_titles(name)
+    family, comma, given = cleaned.partition(",")
+    if comma and _tokens(family) and _tokens(given):
+        return _tokens(given)
+    return _tokens(cleaned.replace(",", " "))[:-family_len]
+
+
+def _same_given(x: str, y: str) -> bool:
+    """Whether two given-name tokens can name the same person.
+
+    An initial stands for any name with its letter. Two full names must be
+    equal up to one dropped *interior* letter -- "Christian"/"Cristian" -- which
+    keeps a substitution ("Maria"/"Mario") and an ending ("Daniel"/"Daniela")
+    apart, since those are usually different names.
+    """
+    if x == y:
+        return True
+    if len(x) == 1 or len(y) == 1:
+        return x[0] == y[0]
+    short, long = sorted((x, y), key=len)
+    if len(long) - len(short) != 1:
+        return False
+    return any(long[:i] + long[i + 1 :] == short for i in range(1, len(long) - 1))
+
+
+def compatible(a: list[str], b: list[str]) -> bool:
+    """Whether two lists of *later* given tokens can describe one person.
+
+    The shorter list must match into the longer one in order, gaps allowed, so
+    an omitted middle name ("Ana Guerreiro" / "Ana S Guerreiro") and a particle
+    ("Paula C" / "Paula de Carvalho") both fit. Taking the earliest possible
+    match for each token, as the shared iterator does, is exact for this.
+    """
+    short, long = sorted((a, b), key=len)
+    remaining = iter(long)
+    return all(any(_same_given(s, t) for t in remaining) for s in short)
+
+
+def anchors_of(spellings: Iterable[str]) -> dict[PersonKey, set[str]]:
+    """Group `uzh_authors` spellings under the key each one produces."""
+    anchors: dict[PersonKey, set[str]] = defaultdict(set)
+    for spelling in spellings:
+        key = key_of(spelling)
+        if key is not None:
+            anchors[key].add(spelling)
+    return dict(anchors)
+
+
+def _split(key: PersonKey, spellings: Collection[str]) -> dict[str, PersonKey] | None:
+    """One variant key per spelling if the spellings contradict, else None."""
+    later = {s: tuple(given_tokens(s)[1:]) for s in spellings}
+    if all(compatible(list(a), list(b)) for a, b in combinations(set(later.values()), 2)):
+        return None
+    return {s: replace(key, variant=tokens) for s, tokens in later.items()}
+
+
+def author_keys(anchors: Anchors) -> dict[str, PersonKey]:
+    """The grouping key for every UZH author spelling.
+
+    The plain key, unless the spellings sharing it contradict each other; then
+    each spelling gets its own variant. Splitting per spelling is conservative
+    on purpose -- "Meier, Pascal" fits both Meiers, so it cannot be given to
+    either.
+    """
+    keys: dict[str, PersonKey] = {}
+    for key, spellings in anchors.items():
+        split = _split(key, spellings)
+        for spelling in spellings:
+            keys[spelling] = split[spelling] if split else key
+    return keys
+
+
+def _fit(name: str, key: PersonKey, spellings: Collection[str]) -> PersonKey:
+    """The anchor a posting name joins once its first given name has matched.
+
+    Its later given names still have to fit: every spelling of a consistent
+    key, or exactly one variant of a split one. Anything else is refused.
+    """
+    later = given_tokens(name, len(key.family.split()))[1:]
+    split = _split(key, spellings)
+    if split is None:
+        if all(compatible(later, given_tokens(s)[1:]) for s in spellings):
+            return key
+        return replace(key, unresolved=True)
+    fits = {variant for variant in split.values() if compatible(later, list(variant.variant))}
+    return fits.pop() if len(fits) == 1 else replace(key, unresolved=True)
 
 
 def key_of(name: str) -> PersonKey | None:
@@ -148,7 +270,7 @@ def author_key(name: str) -> PersonKey | None:
     return None if key is None else replace(key, unaffiliated=True)
 
 
-def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
+def resolve(name: str, anchors: Anchors) -> PersonKey | None:
     """The anchor this posting name merges into, or None.
 
     None covers both "no anchor recognised it" and "more than one did". The
@@ -164,7 +286,7 @@ def resolve(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     return None if key is None or key.unresolved else key
 
 
-def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
+def posting_key(name: str, anchors: Anchors) -> PersonKey | None:
     """The grouping key for a free-text name, as the retriever uses it.
 
     A posting that writes ``"Family, Given"`` is checked **first**, by its comma
@@ -181,18 +303,24 @@ def posting_key(name: str, anchors: set[PersonKey]) -> PersonKey | None:
     author key, which is a publication person but not an anchor, and the
     retriever groups on key equality alone. Two postings spelling a name the same
     way still group together; neither joins a publication person.
+
+    A matched key is then checked by `_fit`: the name's later given names must
+    not contradict the anchor's, and a split anchor is joined only when exactly
+    one of its parts fits.
     """
     if "," in strip_titles(name):
         key = key_of(name)
         if key is not None:
-            return key if key in anchors else replace(key, unresolved=True)
+            return (
+                _fit(name, key, anchors[key]) if key in anchors else replace(key, unresolved=True)
+            )
         # A comma with nothing on one side ("Sofia Forss,", a real scraped name)
         # is punctuation, not structure. Returning None here dropped the person
         # from every result; read the name as free text instead.
         name = strip_titles(name).replace(",", " ")
     matched = [key for key in candidates(name) if key in anchors]
     if len(matched) == 1:
-        return matched[0]
+        return _fit(name, matched[0], anchors[matched[0]])
     key = key_of(name)
     return None if key is None else replace(key, unresolved=True)
 

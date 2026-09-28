@@ -208,7 +208,7 @@ class VectorRetriever:
         return sorted(matches, key=lambda m: (m.has_uzh_affiliation, self._margin(m)), reverse=True)
 
     @staticmethod
-    def _anchors(hits: list[ScoredHit]) -> set[identity.PersonKey]:
+    def _anchors(hits: list[ScoredHit]) -> dict[identity.PersonKey, set[str]]:
         """The identities the structured side of the corpus vouches for.
 
         Only publications contribute, and only through `uzh_authors`. ZORA writes
@@ -224,19 +224,21 @@ class VectorRetriever:
         Building the set from the hits in hand rather than from the whole corpus
         keeps retrieval read-only and stateless -- the cost is that a merge only
         happens when both sources surface in the same query.
+
+        Each key keeps its spellings, because the key holds only the first given
+        name and a later one can still contradict (see `identity.author_keys`).
         """
-        anchors = set()
-        for hit in hits:
-            if hit.metadata["source_type"] == "publication":
-                for name in VectorRetriever._names(hit, "uzh_authors"):
-                    key = identity.key_of(name)
-                    if key:
-                        anchors.add(key)
-        return anchors
+        return identity.anchors_of(
+            name
+            for hit in hits
+            if hit.metadata["source_type"] == "publication"
+            for name in VectorRetriever._names(hit, "uzh_authors")
+        )
 
     @staticmethod
     def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
         anchors = VectorRetriever._anchors(hits)
+        author_keys = identity.author_keys(anchors)
 
         by_person: dict[identity.PersonKey, list[ScoredHit]] = defaultdict(list)
         spellings: dict[identity.PersonKey, list[str]] = defaultdict(list)
@@ -252,14 +254,16 @@ class VectorRetriever:
                 #     never joins a publication person. The plain `key_of` reading is
                 #     no safe fallback: for an ambiguous name it is one of the anchors
                 #     it was ambiguous between.
-                #   - a UZH author is keyed as the anchor it is.
+                #   - a UZH author is keyed as the anchor it is -- or as its own
+                #     `variant` of it, when the anchor's spellings contradict in a
+                #     later given name ("Pascal Felix" beside "Pascal Flurin").
                 #   - an author credited through the `authors` fallback is keyed
                 #     `unaffiliated`. Otherwise a stranger sharing a UZH author's name
                 #     lands in that person's group, papers and all.
                 if posting:
                     key = identity.posting_key(name, anchors)
                 elif uzh_credit:
-                    key = identity.key_of(name)
+                    key = author_keys.get(name) or identity.key_of(name)
                 else:
                     key = identity.author_key(name)
                 if key is None:

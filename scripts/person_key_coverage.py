@@ -46,14 +46,16 @@ import argparse
 import re
 import sys
 from collections import Counter, defaultdict
+from dataclasses import replace
 from itertools import combinations, zip_longest
 
 from themis_matcher.config import get_settings
 from themis_matcher.indexing import read_manifest
 from themis_matcher.retrieval import build_retriever, identity
+from themis_matcher.retrieval.identity import given_tokens
 from themis_shared import db
 from themis_shared.contracts import ParsedQuery
-from themis_shared.names import fold_ascii, strip_titles
+from themis_shared.names import strip_titles
 
 _PROBES = [
     "retrieval-augmented generation and misinformation detection",
@@ -108,31 +110,12 @@ def _check_index(settings) -> None:
 
 def _corpus_ceiling(dsn: str) -> tuple[int, int, int]:
     """(supervisors, resolvable, anchor keys) over the whole corpus."""
-    anchors: dict[identity.PersonKey, set[str]] = defaultdict(set)
     with db.get_pool(dsn).connection() as conn:
-        for (author,) in conn.execute(_AUTHORS_SQL):
-            key = identity.key_of(author)
-            if key:
-                anchors[key].add(author)
+        anchors = identity.anchors_of(author for (author,) in conn.execute(_AUTHORS_SQL))
         names = [row[0] for row in conn.execute(_SUPERVISORS_SQL)]
 
-    anchor_set = set(anchors)
-    resolvable = sum(1 for name in names if identity.resolve(name, anchor_set))
-    return len(names), resolvable, len(anchor_set)
-
-
-def given_tokens(name: str, family_len: int = 1) -> list[str]:
-    """Every folded given token, where `key_of` keeps only the first.
-
-    Read the way `key_of` reads the name, so position 0 is always the key's
-    `given`: a usable comma splits family from given, anything else is natural
-    order with the last `family_len` tokens as the family.
-    """
-    cleaned = strip_titles(name)
-    family, comma, given = cleaned.partition(",")
-    if comma and fold_ascii(family).split() and fold_ascii(given).split():
-        return fold_ascii(given).split()
-    return fold_ascii(cleaned.replace(",", " ")).split()[:-family_len]
+    resolvable = sum(1 for name in names if identity.resolve(name, anchors))
+    return len(names), resolvable, len(anchors)
 
 
 def compare(a: list[str], b: list[str]) -> str:
@@ -186,7 +169,11 @@ def _given_name_audit(dsn: str) -> None:
         names = [row[0] for row in conn.execute(_SUPERVISORS_SQL)]
 
     anchor_set = set(anchors)
-    merged = {name: key for name in names if (key := identity.resolve(name, anchor_set))}
+    # The shipped rule's merges, keyed by the base anchor: a merge into one part
+    # of a split anchor is still a merge into that anchor's spellings.
+    merged = {
+        name: replace(key, variant=()) for name in names if (key := identity.resolve(name, anchors))
+    }
     spelling_tokens = {s: given_tokens(s) for spellings in anchors.values() for s in spellings}
 
     # Worst relation among the spellings one anchor key already groups together.
@@ -340,7 +327,17 @@ def _given_name_audit(dsn: str) -> None:
     initial_merges = sum(1 for k in merged.values() if len(k.given) == 1)
     print(f"  initial-to-initial merges among the {len(merged)}   {initial_merges}")
     refused = sum(1 for c in internal.values() if c in _CONFLICTS)
-    print(f"  anchor keys the rule would refuse        {refused} / {len(anchor_set)}")
+    print(f"  anchor keys flagged by position          {refused} / {len(anchor_set)}")
+    # The shipped rule matches in order with gaps and tolerates one dropped
+    # interior letter, so it splits fewer keys than the positional view flags.
+    author_keys = identity.author_keys(anchors)
+    split = sorted(
+        {k for k in anchor_set if any(author_keys[s].variant for s in anchors[k])},
+        key=lambda k: (k.family, k.given),
+    )
+    print(f"  anchor keys the shipped rule splits      {len(split)} / {len(anchor_set)}")
+    for k in split[:_EXAMPLES]:
+        print(f"    {', '.join(sorted(anchors[k]))[:110]}")
 
 
 def main() -> None:

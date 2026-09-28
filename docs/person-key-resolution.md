@@ -2,7 +2,8 @@
 
 Measured 2026-09-03 against the live index (214,756 publications, 695 postings,
 215,451 embedded documents); **F1 and F4 re-measured 2026-09-27** under the
-shipped rule, every other figure is from 2026-09-03. Reproduce with
+shipped rule, every other figure is from 2026-09-03; **F1 and F2 re-checked
+2026-09-28** after the given-name rule below. Reproduce with
 [`scripts/person_key_coverage.py`](../scripts/person_key_coverage.py).
 
 > **This is not an evaluation.** The five probe queries carry no relevance
@@ -110,7 +111,13 @@ fabricated evidence.
 - names fold through NFKD with combining marks dropped, titles stripped
 - the key is **first given token + family**, so `Alexandra M. Freund` and
   `Alexandra Freund` are one person
-- the **full** first given token must agree; an initial is never enough
+- the first given name must agree exactly; an initial matches only an initial
+  (`A. Smith` merges with `Smith, A.`, `D. Scaramuzza` never with
+  `Scaramuzza, Davide`)
+- later given names may be omitted or abbreviated but must not contradict
+  (`Markus A` fits `Markus Andreas`; `M. A.` does not fit `M. B.`); one dropped
+  interior letter is read as a typo. An anchor key whose own spellings
+  contradict is split, one key per spelling
 - a family-name match alone is never enough
 - publications supply the anchors (ZORA's comma says where the name splits),
   and only through `uzh_authors`; a posting's free text is resolved *against*
@@ -148,6 +155,23 @@ fabricated evidence.
 > `scripts/person_key_coverage.py`, which now builds its retriever through
 > `build_retriever` so it picks up those thresholds: **105 of 403**, **0 of 25 ·
 > 1 of 100 · 5 of 250**, the same five people at `top_k=50`.
+
+> **Correction 2026-09-28 — the initial rule was stated wrongly, and later given
+> names were ignored.** A fact-check found that this list said "an initial is
+> never enough" while the code merged an initial with the same initial: the key
+> compares the first given token as a string, so `a` equals `a` and only `d`
+> against `davide` was ever refused. That behaviour is kept — two initials say
+> the same thing and nothing is inferred — and the wording above now describes
+> it. `--given-names` (a query-free audit in the same script) found **0
+> initial-to-initial merges among the 105**, and 1 posting name that genuinely
+> starts with an initial, matching no anchor. The audit also found that later
+> given tokens were never compared. Of the 403 anchor keys with two or more
+> spellings, 97 differ by a middle initial against its full form and 215 only
+> omit a middle name — overwhelmingly one person each, so those still merge. A
+> contradiction now refuses: the rule splits **1 of 2,411** anchor keys (the
+> Meier pair in F2), and none of the 105 merges changes. Separately, leading
+> degrees (`M. Sc.`, `M.Sc.`) and a trailing `, M.Ed.` are now stripped; they
+> had given 8 posting names the given name `m`. **105 of 403 unchanged.**
 >
 > The first pass after (2) read **104**, and the missing name exposed a bug
 > rather than a rule change: `Sofia Forss,` carries a stray trailing comma, the
@@ -210,6 +234,14 @@ jose|mateos       ['maria', 'maría']         <- one person, accent
 **No supervisor name reaches any of the four.** So the strict rule produced no
 false merge that could be detected, and one genuinely risky key exists that
 nothing currently touches.
+
+> **Re-checked 2026-09-28.** `--given-names` reproduces these four. Under the
+> contradiction rule the Meier key is split; `christian`/`cristian` is one
+> dropped interior letter and stays whole, and the two accent pairs fold equal.
+> Two further keys flagged by a position-by-position comparison — a dropped
+> middle name, and a particle (`C` against `de Carvalho`) — are artefacts of
+> that comparison; the shipped rule matches in order with gaps and keeps them
+> whole.
 
 ### F3 — 0 refusals, which means the ambiguity guard is untested by real data
 
@@ -341,3 +373,11 @@ uv run --package themis-matcher --extra embeddings \
 Read-only: `SELECT` only, no writes. Needs `DATABASE_URL` on a built index and
 the real `BAAI/bge-m3` model; the script refuses to run against `hash-fake` or a
 model that disagrees with the index manifest.
+
+The given-name audit needs only `DATABASE_URL` — no model, no index. It prints
+raw author spellings as examples; they are personal data and stay out of this
+file:
+
+```bash
+uv run --package themis-matcher python scripts/person_key_coverage.py --given-names
+```

@@ -65,8 +65,10 @@ Three things about it that are not obvious:
   under the `uzh_authors`-only anchors; 7 at 50 before). Do not report
   the corpus figure as a coverage figure.
 - **The rule is deliberately strict** because a wrong merge is fabricated evidence shown to a
-  student. Family-name-only and initial matches are refused; 46 supervisor names share a family
-  name with a *different* ZORA author (`Daniel Müller` against `Müller, Mathias`).
+  student. Family-name-only matches are refused; the first given name must agree exactly, an
+  initial matching only an initial; contradicting later given names refuse (2026-09-28). 46
+  supervisor names share a family name with a *different* ZORA author (`Daniel Müller` against
+  `Müller, Mathias`).
 
 Full measurement: [`docs/person-key-resolution.md`](docs/person-key-resolution.md). Also
 detail:

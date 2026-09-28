@@ -590,6 +590,43 @@ def test_an_unaffiliated_namesake_does_not_join_a_uzh_author(tmp_path: Path) -> 
     assert {e.source_id for e in stranger.evidence} == {"zora:stranger"}
 
 
+def test_two_uzh_authors_whose_middle_names_contradict_stay_apart(tmp_path: Path) -> None:
+    """ "Pascal Felix" and "Pascal Flurin" share a first-token key, not a person.
+
+    Both are UZH authors, so both are anchors and both keyed (pascal, beispiel);
+    grouping on that key alone made them one match, each credited with the
+    other's paper.
+    """
+    sources = tmp_path / "middle-names"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id=f"zora:{given}",
+            title="Glacier retreat in the eastern Alps",
+            abstract="Mass balance.",
+            authors=[f"Beispiel, Pascal {given}"],
+            uzh_authors=[f"Beispiel, Pascal {given}"],
+        )
+        for given in ("Felix", "Flurin")
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("")
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["glacier retreat"]), top_k=10
+    )
+
+    assert sorted([e.source_id for e in m.evidence] for m in matches) == [
+        ["zora:Felix"],
+        ["zora:Flurin"],
+    ]
+
+
 # --- ranking by margin over each source's own bar ----------------------------
 #
 # Built from SupervisorMatch directly: HashEmbedder scores are arbitrary, so a
