@@ -67,8 +67,14 @@ def clean_publications(dsn: str) -> str:
 
 
 def _write(dsn: str, rows: list[dict], *, mode: str, previous_total: int = 0):
-    return zora_store.write_harvest(
-        rows, mode=mode, previous_total=previous_total, min_retention_ratio=_RATIO, dsn=dsn
+    upserted = zora_store.upsert_publications(rows, dsn=dsn)
+    return zora_store.finish_harvest(
+        [row["id"] for row in rows],
+        mode=mode,
+        upserted=upserted,
+        previous_total=previous_total,
+        min_retention_ratio=_RATIO,
+        dsn=dsn,
     )
 
 

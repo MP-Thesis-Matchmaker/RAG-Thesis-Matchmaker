@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 
-from . import mapping, normalize, store, zora_client
+from . import mapping, normalize, raw_dump, store, zora_client
 from .raw_dump import ORG_UNITS, PERSONS, read_raw_dump, write_raw_dump
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,9 @@ def _collect(source, kind: str, limit: int | None, from_dump: str | None) -> lis
     """Normalized records for one mirror, from the API or from a dump.
 
     Both halves of every step reduce to this: a stream of normalized records,
-    capped by `limit`, cached to `data/raw/` unless it came from there. Written
+    capped by `limit`, cached to `data/raw/` when `ZORA_WRITE_RAW_DUMP` is on and
+    they did not come from there. Kept as a list rather than batched like the
+    publications: a few thousand rows, and the snapshot replace is atomic. Written
     once so the fetch and the replay cannot drift into behaving differently --
     `--limit` in particular applies to both, which is what makes a replay usable
     as a smoke test.
@@ -47,8 +49,9 @@ def _collect(source, kind: str, limit: int | None, from_dump: str | None) -> lis
     label = "person" if kind == PERSONS else "org unit"
     logger.info("%s %d %s records", "Replayed" if from_dump else "Fetched", len(records), label)
     if from_dump:
-        logger.info("Not writing a raw dump: this run replayed an existing one")
-    else:
+        if raw_dump.enabled():
+            logger.info("Not writing a raw dump: this run replayed an existing one")
+    elif raw_dump.enabled():
         write_raw_dump(records, kind)
     return records
 
