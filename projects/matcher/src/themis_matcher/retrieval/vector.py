@@ -35,10 +35,21 @@ _FILTERED_OVERFETCH = 4
 
 
 def _query_text(query: ParsedQuery) -> str:
-    """Compose the string that gets embedded for the search."""
+    """Compose the string that gets embedded for the search.
+
+    `department` joins the embedded text rather than the metadata filter. As a
+    filter it was an exact jsonb equality on whatever the LLM parser wrote, over
+    two vocabularies that do not even agree with each other -- a posting's
+    "Institut für Informatik (IFI) / Department of Informatics" against ZORA's
+    English unit names -- so "informatics" matched nothing and emptied the result.
+    Here it can only nudge similarity. Documents do not embed their department, so
+    the nudge works as a topical word and no more; its effect is unmeasured.
+    """
     parts = query.topics + query.keywords
     if not parts and query.raw_query:
         parts = [query.raw_query]
+    if query.department:
+        parts = [*parts, query.department]
     return "; ".join(parts)
 
 
@@ -53,23 +64,31 @@ class VectorRetriever:
         require_uzh_author: bool = False,
         require_available_posting: bool = True,
         ranking_strategy: str = "uzh_first",
+        min_score_publication: float = 0.0,
+        min_score_posting: float = 0.0,
     ) -> None:
         self.embedder = embedder
         self.store = store
         self.require_uzh_author = require_uzh_author
         self.require_available_posting = require_available_posting
         self.ranking_strategy = ranking_strategy
+        # The bars synthesis thresholds on, keyed like SupervisorMatch.source_scores.
+        # Retrieval orders by distance to them (see _margin), so the top_k cut and
+        # the threshold agree about who is strongest. Both default to 0.0, where the
+        # margin is the raw score and ordering is plain similarity.
+        self._min_scores: dict[str, float] = {
+            "publication": min_score_publication,
+            "thesis_posting": min_score_posting,
+        }
 
     def retrieve(self, query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]:
         vector = self.embedder.embed_query(_query_text(query))
 
         # Postings and publications are filtered differently: degree_level only
         # exists on postings, so one combined query would wrongly drop every
-        # publication whenever the student names a level.
-        shared: dict[str, str] = {}
-        if query.department:
-            shared["department"] = query.department
-        posting_filters: dict[str, str | bool] = {"source_type": "thesis_posting", **shared}
+        # publication whenever the student names a level. `department` is not a
+        # filter on either side; see _query_text.
+        posting_filters: dict[str, str | bool] = {"source_type": "thesis_posting"}
         if query.degree_level:
             # One boolean per level, not an equality test on the level itself. A
             # posting can be open to several -- 121 of 247 scraped topics read
@@ -90,7 +109,7 @@ class VectorRetriever:
             # posting_count per person for a recall problem two orders of magnitude
             # smaller.
             posting_filters["is_available"] = True
-        publication_filters: dict[str, str | bool] = {"source_type": "publication", **shared}
+        publication_filters: dict[str, str | bool] = {"source_type": "publication"}
         if self.require_uzh_author:
             # Eligibility as a hard cut: an unaffiliated researcher cannot supervise
             # a UZH thesis, so they should not occupy a slot at all.
@@ -103,7 +122,7 @@ class VectorRetriever:
             filters=publication_filters,
         )
 
-        return self._rank(self._group_by_person(hits, query))[:top_k]
+        return self._rank(self._group_by_person(hits))[:top_k]
 
     @staticmethod
     def _source_type(hit: ScoredHit) -> Literal["publication", "thesis_posting"]:
@@ -158,44 +177,68 @@ class VectorRetriever:
             return True
         return bool(hit.metadata.get("has_uzh_author"))
 
+    def _margin(self, match: SupervisorMatch) -> float:
+        """How far this person's best source sits above its own bar.
+
+        The same quantity `LLMSynthesizer._margin` thresholds on. Raw `score` is the
+        wrong key here: postings score systematically lower than publications
+        (on-topic best 0.564-0.652 against 0.605-0.734, docs/score-calibration.md),
+        so sorting on it
+        cut a posting-only person comfortably over their bar in favour of
+        publication people barely over theirs, before synthesis ever saw them.
+        """
+        return max(
+            score - self._min_scores[source] for source, score in match.source_scores.items()
+        )
+
     def _rank(self, matches: list[SupervisorMatch]) -> list[SupervisorMatch]:
         """Order grouped matches by the configured strategy.
 
-        `uzh_first` is two-level: affiliation, then similarity within each level. It
-        is not a score adjustment -- no weight or boost can guarantee an ordering,
-        and a UZH supervisor whose work matches slightly less well is still the
-        better answer to "who can supervise my thesis here".
+        `uzh_first` is two-level: affiliation, then margin over the per-source bar
+        within each level. It is not a score adjustment -- no weight or boost can
+        guarantee an ordering, and a UZH supervisor whose work matches slightly less
+        well is still the better answer to "who can supervise my thesis here".
+        `score` drops the affiliation level and keeps the margin.
 
         Inert under `require_uzh_author`, where every surviving match is affiliated
         and the first sort key is constant.
         """
         if self.ranking_strategy == "score":
-            return sorted(matches, key=lambda m: m.score, reverse=True)
-        return sorted(matches, key=lambda m: (m.has_uzh_affiliation, m.score), reverse=True)
+            return sorted(matches, key=self._margin, reverse=True)
+        return sorted(matches, key=lambda m: (m.has_uzh_affiliation, self._margin(m)), reverse=True)
 
     @staticmethod
-    def _anchors(hits: list[ScoredHit]) -> set[identity.PersonKey]:
+    def _anchors(hits: list[ScoredHit]) -> dict[identity.PersonKey, set[str]]:
         """The identities the structured side of the corpus vouches for.
 
-        Only publications contribute. ZORA writes "Family, Given", so the comma
-        says where the name splits and no guessing is involved; a posting's
-        "Davide Scaramuzza" has to be resolved *against* these rather than the
-        other way round. Building the set from the hits in hand rather than from
-        the whole corpus keeps retrieval read-only and stateless -- the cost is
-        that a merge only happens when both sources surface in the same query.
+        Only publications contribute, and only through `uzh_authors`. ZORA writes
+        "Family, Given", so the comma says where the name splits and no guessing
+        is involved; a posting's "Davide Scaramuzza" has to be resolved *against*
+        these rather than the other way round. The `authors` fallback in
+        `_persons` still *credits* the people on an unaffiliated paper, but it
+        does not vouch for a posting name: across 331,301 distinct author keys a
+        namesake is likely, and a merge onto one shows a stranger's papers to a
+        student as evidence. It is also the set the 105-of-403 ceiling in
+        docs/person-key-resolution.md was measured against.
+
+        Building the set from the hits in hand rather than from the whole corpus
+        keeps retrieval read-only and stateless -- the cost is that a merge only
+        happens when both sources surface in the same query.
+
+        Each key keeps its spellings, because the key holds only the first given
+        name and a later one can still contradict (see `identity.author_keys`).
         """
-        anchors = set()
-        for hit in hits:
-            if hit.metadata["source_type"] == "publication":
-                for name in VectorRetriever._persons(hit):
-                    key = identity.key_of(name)
-                    if key:
-                        anchors.add(key)
-        return anchors
+        return identity.anchors_of(
+            name
+            for hit in hits
+            if hit.metadata["source_type"] == "publication"
+            for name in VectorRetriever._names(hit, "uzh_authors")
+        )
 
     @staticmethod
-    def _group_by_person(hits: list[ScoredHit], query: ParsedQuery) -> list[SupervisorMatch]:
+    def _group_by_person(hits: list[ScoredHit]) -> list[SupervisorMatch]:
         anchors = VectorRetriever._anchors(hits)
+        author_keys = identity.author_keys(anchors)
 
         by_person: dict[identity.PersonKey, list[ScoredHit]] = defaultdict(list)
         spellings: dict[identity.PersonKey, list[str]] = defaultdict(list)
@@ -205,16 +248,24 @@ class VectorRetriever:
             uzh_credit = VectorRetriever._is_uzh_credit(hit)
             posting = hit.metadata["source_type"] == "thesis_posting"
             for name in VectorRetriever._persons(hit):
-                # A posting's free text gets one chance to match an anchor; failing
-                # that it is keyed on its own reading of itself, so the person still
-                # appears rather than vanishing. `resolve` returns None both when
-                # nothing matched and when several did -- an ambiguous name is left
-                # unmerged on purpose, because a coin-flip merge would credit
-                # someone with a stranger's papers and show it to a student as
-                # evidence.
-                key = (identity.resolve(name, anchors) if posting else None) or identity.key_of(
-                    name
-                )
+                # Three key spaces, because grouping is on key equality alone:
+                #   - a posting's name gets one chance to match an anchor; failing
+                #     that it is keyed `unresolved`, so the person still appears but
+                #     never joins a publication person. The plain `key_of` reading is
+                #     no safe fallback: for an ambiguous name it is one of the anchors
+                #     it was ambiguous between.
+                #   - a UZH author is keyed as the anchor it is -- or as its own
+                #     `variant` of it, when the anchor's spellings contradict in a
+                #     later given name ("Pascal Felix" beside "Pascal Flurin").
+                #   - an author credited through the `authors` fallback is keyed
+                #     `unaffiliated`. Otherwise a stranger sharing a UZH author's name
+                #     lands in that person's group, papers and all.
+                if posting:
+                    key = identity.posting_key(name, anchors)
+                elif uzh_credit:
+                    key = author_keys.get(name) or identity.key_of(name)
+                else:
+                    key = identity.author_key(name)
                 if key is None:
                     continue
                 by_person[key].append(hit)
@@ -229,18 +280,27 @@ class VectorRetriever:
             publications = [h for h in person_hits if h.metadata["source_type"] == "publication"]
             postings = [h for h in person_hits if h.metadata["source_type"] == "thesis_posting"]
             departments = [h.metadata.get("department") for h in person_hits]
-            # The hit itself, not just its score: which source won decides which
-            # threshold synthesis applies to this person, and the two are not on a
-            # common scale. Ties go to the earliest hit, which is deterministic.
-            best = max(person_hits, key=lambda hit: hit.score)
+            # Best score per source, not only the overall winner: synthesis
+            # thresholds each source on its own scale and a person passes if either
+            # does, so a publication just under its bar must not hide a posting
+            # comfortably over its.
+            source_scores: dict[Literal["publication", "thesis_posting"], float] = {}
+            for hit in person_hits:
+                source = VectorRetriever._source_type(hit)
+                source_scores[source] = max(hit.score, source_scores.get(source, hit.score))
             matches.append(
                 SupervisorMatch(
                     supervisor=identity.display_name(spellings[key]),
                     department=next((str(d) for d in departments if d), None),
-                    score=best.score,
-                    score_source=VectorRetriever._source_type(best),
+                    score=max(source_scores.values()),
+                    source_scores=source_scores,
                     has_uzh_affiliation=uzh_person[key],
-                    matched_topics=query.topics,
+                    # Not computed yet, so left empty. This used to copy
+                    # `query.topics`, which told every consumer that each candidate
+                    # works on exactly what the student typed -- a claim about a
+                    # named academic the retrieval never checked. The field stays
+                    # in the wire contract so consumers keep their shape.
+                    matched_topics=[],
                     publication_count=len(publications),
                     posting_count=len(postings),
                     evidence=[

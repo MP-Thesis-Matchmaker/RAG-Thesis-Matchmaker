@@ -29,7 +29,8 @@ and below the weakest on-topic head -- the run prints both ends and the gap.
 `docs/score-calibration.md`.** Read that before interpreting new output; three of
 its findings change how the table below should be read:
 
-* No document scored below zero against any of nine queries (lowest: 0.115). The
+* No document scored below zero against any of the five on-topic queries (lowest:
+  0.115); the four controls got no corpus scan, only their top-100 head. The
   signed range is real but unoccupied on this corpus.
 * Postings score systematically below publications at the top (best posting
   0.56-0.65, best publication 0.61-0.73) while separating from noise nearly three
@@ -159,7 +160,7 @@ def _report(
                 f"{lo:>9.3f}{p50:>9.3f}{p90:>9.3f}{p99:>9.3f}{hi:>9.3f}"
             )
 
-    # `max` is what decides whether the answer degrades to _no_strong_match at all
+    # `max` is what decides whether the answer degrades to no_strong_match at all
     # (llm.py returns it only when *nothing* clears the threshold), and `#5` is the
     # weakest document the retriever's own top_k=5 would surface -- so those two
     # bracket what SupervisorMatch.score can actually be. p50 of a top-100 slice
@@ -194,7 +195,7 @@ def _band(
     The threshold has two distinct jobs and they want different numbers, so both
     ends are reported rather than collapsed into one recommendation:
 
-    * `_no_strong_match` fires only when *nothing* clears the threshold, so the
+    * `no_strong_match` fires only when *nothing* clears the threshold, so the
       whole-answer behaviour is governed by each query's best score. The band is
       "above the best an out-of-domain query manages, below the worst an on-topic
       query manages".

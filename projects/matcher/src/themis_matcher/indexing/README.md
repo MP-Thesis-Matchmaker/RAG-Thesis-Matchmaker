@@ -228,8 +228,9 @@ Nine queries — five on-topic probes, four out-of-domain controls — against t
 [`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 The four results that bear on this section:
 
-- **The negative region is empty.** Not one row scored below zero against any query;
-  the lowest observed score was `0.115`. bge-m3's anisotropy, measured rather than
+- **The negative region is empty, for the five on-topic probes.** Their corpus scan
+  found no row below zero; the lowest score was `0.115`. The four controls' lower tail
+  was not scanned, so this is not established for them. bge-m3's anisotropy, measured rather than
   assumed. This does not reverse the decision above — a clamp would still be
   irreversible for no gain — but the reversibility argument is now known to protect an
   empty region. Re-check after any re-embed or model change.
@@ -247,8 +248,8 @@ The four results that bear on this section:
 
 `MATCHER_SYNTHESIS_MIN_SCORE` was therefore **retired and split in two** —
 `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` at 0.57 and `..._POSTING` at 0.48, each
-mid-band with room either side. `SupervisorMatch.score_source` records which one
-applies to a given person.
+mid-band with room either side. `SupervisorMatch.source_scores` carries a person's
+best score per source, and a person passes if either clears its own threshold.
 
 ## Configuration
 

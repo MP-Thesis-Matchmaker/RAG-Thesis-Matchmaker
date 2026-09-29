@@ -65,6 +65,62 @@ def test_a_name_that_merely_starts_like_a_title_survives() -> None:
     assert strip_titles("PD Dr. med. Anna Meier") == "Anna Meier"
 
 
+def test_a_trailing_degree_is_stripped() -> None:
+    """ "Lidia Borkovic, MSc" is on a real posting.
+
+    Left in place, the comma read as "Family, Given" and the matcher keyed her
+    as given "msc", family "lidia borkovic" -- a person who can never resolve.
+    """
+    assert strip_titles("Lidia Borkovic, MSc") == "Lidia Borkovic"
+    assert strip_titles("Anna Smith, PhD") == "Anna Smith"
+    assert strip_titles("Anna Smith, M.Sc.") == "Anna Smith"
+    assert strip_titles("Anna Smith, MSc, PhD") == "Anna Smith"
+    # The shape of 28 scraped profile names: still comma-structured afterwards.
+    assert strip_titles("Caviezel, Giuanna, M.A.") == "Caviezel, Giuanna"
+    # Either order against a trailing title.
+    assert strip_titles("Anna Smith, Prof. Dr., PhD") == "Anna Smith"
+    assert strip_titles("Anna Smith, PhD, Prof. Dr.") == "Anna Smith"
+
+
+def test_a_name_that_looks_like_a_degree_survives() -> None:
+    """Degrees match case-sensitively, after a comma, and never leave a bare family.
+
+    "Ma" and "Ba" are names; pages that capitalise family names write "Lin MA";
+    and ZORA writes given initials that spell a degree -- "Müller, M. A.".
+    """
+    assert strip_titles("Ma Lin") == "Ma Lin"
+    assert strip_titles("Lin, Ma") == "Lin, Ma"
+    assert strip_titles("Lin MA") == "Lin MA"
+    assert strip_titles("Ba, Amadou") == "Ba, Amadou"
+    assert strip_titles("Masaryk, Anna") == "Masaryk, Anna"
+    assert strip_titles("Müller, M. A.") == "Müller, M. A."
+    assert strip_titles("Smith, B.A.") == "Smith, B.A."
+
+
+def test_a_leading_degree_and_m_ed_are_stripped() -> None:
+    """Eight scraped supervisor names start "M. Sc." or "M.Sc.", one ends ", M.Ed.".
+
+    Left in place, the leading one keyed as given name "m", and the trailing one
+    read its comma as "Family, Given" and keyed a person called "M.Ed.".
+    """
+    assert strip_titles("M. Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("M.Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("MSc Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("Dr. M.Sc. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("M.Sc. Dr. Anna Beispiel") == "Anna Beispiel"
+    assert strip_titles("Anna Beispiel, M.Ed.") == "Anna Beispiel"
+
+
+def test_a_leading_initial_pair_is_not_read_as_a_degree() -> None:
+    """In front of a name "M. A." is initials, and "Sc" may begin a family name."""
+    assert strip_titles("M. A. Beispiel") == "M. A. Beispiel"
+    assert strip_titles("B. A. Beispiel") == "B. A. Beispiel"
+    assert strip_titles("MA Lin") == "MA Lin"
+    assert strip_titles("M. Scaramuzza") == "M. Scaramuzza"
+    # Stripping would leave a lone token, which is no name.
+    assert strip_titles("M.Sc. Beispiel") == "M.Sc. Beispiel"
+
+
 def test_initials_are_dropped_and_whitespace_runs_collapse() -> None:
     """Two adjacent initials leave three spaces behind, not two.
 

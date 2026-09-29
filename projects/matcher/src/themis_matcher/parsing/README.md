@@ -24,7 +24,7 @@ Read-only. No I/O except the optional LLM call.
               degree_level="master", department=None, keywords=[],
               raw_query="…")
         │
-        ▼  retrieval/ embeds topics + keywords, filters on degree_level + department
+        ▼  retrieval/ embeds topics + keywords + department, filters on degree_level
 ```
 
 ## Public API
@@ -32,7 +32,7 @@ Read-only. No I/O except the optional LLM call.
 | Symbol | File | Purpose |
 |---|---|---|
 | `QueryExtractor` | `base.py` | Protocol: `extract(raw_query: str) -> ParsedQuery`. |
-| `RuleBasedExtractor` | `rule_based.py` | Offline extractor. Lowercases, strips ~20 filler phrases, splits on `and` / `,` / `;` / `/`, keeps fragments longer than two characters, detects degree level from a keyword table. |
+| `RuleBasedExtractor` | `rule_based.py` | Offline extractor. Strips ~20 filler phrases, splits on `and` / `,` / `;` (not `/`, which joins compounds), keeps fragments longer than one character, detects degree level from whole-word keywords — and only when exactly one level is named, since the level is a hard posting filter. |
 | `OpenAICompatExtractor` | `openai_compat.py` | Calls an OpenAI-compatible chat endpoint in JSON mode, validates the response, and falls back to the rule-based extractor on failure. |
 | `build_extractor(settings)` | `__init__.py` | Factory: LLM extractor if `llm_base_url` is set, rule-based otherwise. |
 
@@ -83,9 +83,10 @@ is accurate — it is a deliberate offline baseline, not a serious NLP component
 ## Known gaps
 
 - **`RuleBasedExtractor` never sets `department` or `keywords`.** Both fields stay
-  empty on the offline path, which means the department filter in `retrieval/` is
-  dormant unless an LLM is configured. Since the offline path is the default, that
-  filter is dormant most of the time.
+  empty on the offline path, so neither reaches the embedded query text unless an
+  LLM is configured. `department` is free text and is **not** a filter:
+  `retrieval/` appends it to the embedded text, because as an exact metadata match
+  "informatics" never equalled a stored unit name and emptied the result.
 - **The LLM path has no HTTP-level test.** Only the factory branch is tested; the
   request shape, the JSON-mode handling, and the fallback trigger are not
   exercised against a stub server.

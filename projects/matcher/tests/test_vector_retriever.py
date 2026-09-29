@@ -11,7 +11,7 @@ from themis_matcher.indexing.indexer import Indexer
 from themis_matcher.indexing.sources import JsonlSourceReader
 from themis_matcher.indexing.store import InMemoryVectorStore
 from themis_matcher.retrieval.vector import VectorRetriever
-from themis_shared.contracts import ParsedQuery, ThesisPosting, ZoraPublication
+from themis_shared.contracts import ParsedQuery, SupervisorMatch, ThesisPosting, ZoraPublication
 
 
 @pytest.fixture()
@@ -112,10 +112,10 @@ def test_exact_topic_match_ranks_person_first(retriever: VectorRetriever) -> Non
     assert matches[0].publication_count >= 1
 
 
-def test_score_source_names_the_document_the_score_came_from(
+def test_source_scores_name_only_the_sources_that_found_the_person(
     retriever: VectorRetriever,
 ) -> None:
-    """Which source won decides which threshold synthesis applies to the person.
+    """Each source gets its own threshold, so each needs its own score.
 
     Prof. G. Roth appears only on a posting, Prof. C. Schmid only on a
     publication, so each has exactly one possible answer and the assertion cannot
@@ -123,25 +123,28 @@ def test_score_source_names_the_document_the_score_came_from(
     """
     graph = retriever.retrieve(ParsedQuery(topics=["Representation learning on graphs"]), top_k=10)
     roth = next(m for m in graph if m.supervisor == "Prof. G. Roth")
-    assert roth.score_source == "thesis_posting"
+    assert set(roth.source_scores) == {"thesis_posting"}
 
     history = retriever.retrieve(ParsedQuery(topics=["Medieval trade routes"]), top_k=10)
     schmid = next(m for m in history if m.supervisor == "Prof. C. Schmid")
-    assert schmid.score_source == "publication"
+    assert set(schmid.source_scores) == {"publication"}
 
 
-def test_score_source_agrees_with_the_highest_scoring_evidence(
+def test_a_person_found_in_both_sources_carries_both_scores(
     retriever: VectorRetriever,
 ) -> None:
-    """The invariant behind the field: it names the source of the person's best hit.
+    """The losing source's score must survive grouping, or synthesis cannot use it.
 
-    Checked across every match of a query that mixes both kinds, including people
-    credited by a publication and a posting at once.
+    Prof. A. Müller is credited by a publication and a posting at once. Every
+    match must name exactly the sources of its evidence, and `score` must be the
+    best of them.
     """
     matches = retriever.retrieve(ParsedQuery(topics=["Dense retrieval for German text"]), top_k=10)
-    assert matches
+    mueller = next(m for m in matches if m.supervisor == "Prof. A. Müller")
+    assert set(mueller.source_scores) == {"publication", "thesis_posting"}
     for match in matches:
-        assert match.score_source in {e.source_type for e in match.evidence}
+        assert set(match.source_scores) == {e.source_type for e in match.evidence}
+        assert match.score == max(match.source_scores.values())
 
 
 def test_matches_sorted_by_score(retriever: VectorRetriever) -> None:
@@ -396,6 +399,21 @@ def test_one_person_spelled_two_ways_is_one_match(identity_retriever: VectorRetr
     assert {"zora:id1", "posting:id1"} == {e.source_id for e in scaramuzza[0].evidence}
 
 
+def test_matched_topics_are_not_echoed_from_the_query(
+    identity_retriever: VectorRetriever,
+) -> None:
+    """Nothing computes them, so nothing may claim them.
+
+    The query's own topics used to be copied into every match, which the
+    synthesis then presented as what each candidate works on.
+    """
+    matches = identity_retriever.retrieve(
+        ParsedQuery(topics=["event cameras for autonomous drone racing"]), top_k=10
+    )
+    assert matches
+    assert all(m.matched_topics == [] for m in matches)
+
+
 def test_two_people_sharing_a_family_name_stay_apart(identity_retriever: VectorRetriever) -> None:
     """Daniel Müller must not inherit Mathias Müller's publications.
 
@@ -413,3 +431,264 @@ def test_two_people_sharing_a_family_name_stay_apart(identity_retriever: VectorR
     assert "Mathias Müller" in by_name
     assert by_name["Daniel Müller"].publication_count == 0
     assert by_name["Mathias Müller"].posting_count == 0
+
+
+def test_an_ambiguous_posting_name_joins_neither_reading(tmp_path: Path) -> None:
+    """A refused merge must actually be refused.
+
+    "Alessandro De Luca" reads as Luca, Alessandro or as De Luca, Alessandro, and
+    both are real ZORA authors here. The earlier fallback, `resolve(...) or
+    key_of(...)`, keyed the refused name on (alessandro, luca) -- one of the two
+    anchors it had just refused -- and so merged it anyway.
+    """
+    sources = tmp_path / "ambiguous"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:luca",
+            title="Glacier retreat in the Engadin",
+            abstract="Alpine glaciology.",
+            authors=["Luca, Alessandro"],
+            uzh_authors=["Luca, Alessandro"],
+        ),
+        ZoraPublication(
+            id="zora:deluca",
+            title="Glacier retreat in the Valais",
+            abstract="Alpine glaciology.",
+            authors=["De Luca, Alessandro"],
+            uzh_authors=["De Luca, Alessandro"],
+        ),
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:ambiguous",
+            title="MSc thesis: glacier retreat in the Alps",
+            description="Alpine glaciology.",
+            supervisors=[{"name": "Alessandro De Luca"}],
+            url="https://uzh.ch/ambiguous",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["glacier retreat"]), top_k=10
+    )
+
+    assert len(matches) == 3
+    posting_people = [m for m in matches if m.posting_count]
+    assert len(posting_people) == 1
+    assert posting_people[0].publication_count == 0
+    assert all(m.posting_count == 0 for m in matches if m.publication_count)
+
+
+def test_an_unaffiliated_namesake_does_not_vouch_for_a_posting_name(tmp_path: Path) -> None:
+    """Only `uzh_authors` are anchors; a plain author never is.
+
+    The paper below has no UZH author, so `_persons` credits its plain authors
+    and "Müller, Daniel" becomes a publication person. Were that person an
+    anchor -- as it was while anchors reused `_persons` -- the posting's "Daniel
+    Müller" would merge with a stranger's paper: against 331,301 distinct author
+    keys, a namesake is the likely reading, not the unlikely one.
+    """
+    sources = tmp_path / "namesake"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:namesake",
+            title="Soil microbiology of alpine meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=[],
+        )
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:namesake",
+            title="MSc thesis: soil microbiology of alpine meadows",
+            description="Microbial communities.",
+            supervisors=[{"name": "Daniel Müller"}],
+            url="https://uzh.ch/namesake",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["soil microbiology"]), top_k=10
+    )
+
+    assert len(matches) == 2
+    assert all(not (m.publication_count and m.posting_count) for m in matches)
+
+
+def test_a_named_department_cannot_empty_the_result(identity_retriever: VectorRetriever) -> None:
+    """A department is a nudge, not a filter.
+
+    The LLM parser writes free text ("informatics"); the index stores official
+    unit names, which differ between postings and ZORA. As an exact metadata
+    filter this matched nothing on either side and returned no one at all.
+    """
+    query = ParsedQuery(topics=["event cameras for autonomous drone racing"])
+    plain = identity_retriever.retrieve(query, top_k=10)
+    nudged = identity_retriever.retrieve(
+        query.model_copy(update={"department": "informatics"}), top_k=10
+    )
+
+    assert nudged
+    assert {m.supervisor for m in nudged} == {m.supervisor for m in plain}
+
+
+def test_an_unaffiliated_namesake_does_not_join_a_uzh_author(tmp_path: Path) -> None:
+    """A stranger's paper must not become a UZH researcher's evidence.
+
+    zora:uzh credits the UZH "Müller, Daniel", and the posting resolves to that
+    anchor. zora:stranger has no UZH author, so `_persons` credits its plain
+    "Müller, Daniel" -- a namesake, as far as anything here can tell. Keyed with
+    plain `key_of` it equalled the anchor, and all three hits became one match.
+    """
+    sources = tmp_path / "uzh-namesake"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id="zora:uzh",
+            title="Soil microbiology of alpine meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=["Müller, Daniel"],
+        ),
+        ZoraPublication(
+            id="zora:stranger",
+            title="Soil microbiology of lowland meadows",
+            abstract="Microbial communities.",
+            authors=["Müller, Daniel"],
+            uzh_authors=[],
+        ),
+    ]
+    postings = [
+        ThesisPosting(
+            id="posting:uzh",
+            title="MSc thesis: soil microbiology of alpine meadows",
+            description="Microbial communities.",
+            supervisors=[{"name": "Daniel Müller"}],
+            url="https://uzh.ch/uzh-namesake",
+        )
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("".join(t.model_dump_json() + "\n" for t in postings))
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["soil microbiology"]), top_k=10
+    )
+
+    assert len(matches) == 2
+    uzh, stranger = matches
+    assert uzh.has_uzh_affiliation
+    assert {e.source_id for e in uzh.evidence} == {"zora:uzh", "posting:uzh"}
+    # Kept, not dropped: the permissive default still reaches them, demoted.
+    assert not stranger.has_uzh_affiliation
+    assert {e.source_id for e in stranger.evidence} == {"zora:stranger"}
+
+
+def test_two_uzh_authors_whose_middle_names_contradict_stay_apart(tmp_path: Path) -> None:
+    """ "Pascal Felix" and "Pascal Flurin" share a first-token key, not a person.
+
+    Both are UZH authors, so both are anchors and both keyed (pascal, beispiel);
+    grouping on that key alone made them one match, each credited with the
+    other's paper.
+    """
+    sources = tmp_path / "middle-names"
+    sources.mkdir()
+    publications = [
+        ZoraPublication(
+            id=f"zora:{given}",
+            title="Glacier retreat in the eastern Alps",
+            abstract="Mass balance.",
+            authors=[f"Beispiel, Pascal {given}"],
+            uzh_authors=[f"Beispiel, Pascal {given}"],
+        )
+        for given in ("Felix", "Flurin")
+    ]
+    (sources / "publications.jsonl").write_text(
+        "".join(p.model_dump_json() + "\n" for p in publications)
+    )
+    (sources / "theses.jsonl").write_text("")
+    embedder = HashEmbedder()
+    store = InMemoryVectorStore()
+    Indexer(embedder=embedder, store=store).run(JsonlSourceReader(sources))
+
+    matches = VectorRetriever(embedder=embedder, store=store).retrieve(
+        ParsedQuery(topics=["glacier retreat"]), top_k=10
+    )
+
+    assert sorted([e.source_id for e in m.evidence] for m in matches) == [
+        ["zora:Felix"],
+        ["zora:Flurin"],
+    ]
+
+
+# --- ranking by margin over each source's own bar ----------------------------
+#
+# Built from SupervisorMatch directly: HashEmbedder scores are arbitrary, so a
+# fixture cannot be steered to the specific cross-scale gap this is about.
+
+
+def _scored(name: str, **source_scores: float) -> SupervisorMatch:
+    return SupervisorMatch(
+        supervisor=name, score=max(source_scores.values()), source_scores=source_scores
+    )
+
+
+def _bars(retriever: VectorRetriever, **kwargs: object) -> VectorRetriever:
+    return VectorRetriever(
+        embedder=retriever.embedder,
+        store=retriever.store,
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+        **kwargs,
+    )
+
+
+def test_ranking_compares_margins_not_raw_scores(retriever: VectorRetriever) -> None:
+    """A posting 0.07 over its bar beats a publication 0.01 over its.
+
+    On raw score the publication person wins (0.58 > 0.55), and `retrieve` cuts
+    at top_k after ranking, so at top_k=1 the posting person used to be dropped
+    before synthesis could apply the per-source threshold.
+    """
+    posting_person = _scored("Posting Person", thesis_posting=0.55)
+    publication_person = _scored("Publication Person", publication=0.58)
+
+    for strategy in ("uzh_first", "score"):
+        ranked = _bars(retriever, ranking_strategy=strategy)._rank(
+            [publication_person, posting_person]
+        )
+        assert [m.supervisor for m in ranked] == ["Posting Person", "Publication Person"]
+
+
+def test_a_failing_source_does_not_lift_a_merged_person(retriever: VectorRetriever) -> None:
+    """Margin is the best source's, so a 0.56 paper under its bar adds nothing.
+
+    The merged person's best margin is their 0.49 posting (+0.01); the posting-only
+    person at 0.55 (+0.07) ranks above them, though 0.56 > 0.55 on raw score.
+    """
+    merged = _scored("Merged Person", publication=0.56, thesis_posting=0.49)
+    posting_only = _scored("Posting Only", thesis_posting=0.55)
+
+    ranked = _bars(retriever)._rank([merged, posting_only])
+    assert [m.supervisor for m in ranked] == ["Posting Only", "Merged Person"]

@@ -6,17 +6,25 @@ from themis_shared.contracts import Evidence, SupervisorMatch
 
 
 def _match(
-    name: str, title: str, score: float = 0.9, score_source: str = "publication"
+    name: str,
+    title: str,
+    score: float = 0.9,
+    source: str = "publication",
+    source_scores: dict[str, float] | None = None,
 ) -> SupervisorMatch:
+    scores = source_scores or {source: score}
     return SupervisorMatch(
         supervisor=name,
         department="Dept of X",
-        score=score,
-        score_source=score_source,
+        score=max(scores.values()),
+        source_scores=scores,
         matched_topics=["nlp"],
         publication_count=3,
         posting_count=1,
-        evidence=[Evidence(source_type="publication", source_id="z:1", title=title)],
+        # One item per scored source, as the retriever builds them from the same hits.
+        evidence=[
+            Evidence(source_type=kind, source_id=f"{kind}:1", title=title) for kind in scores
+        ],
     )
 
 
@@ -65,6 +73,40 @@ def test_build_synthesizer_passes_both_min_scores():
     assert synth._min_scores == {"publication": 0.7, "thesis_posting": 0.5}
 
 
+def test_the_default_template_gets_the_configured_bars():
+    """Built bare, the no-LLM default presented every retrieved candidate as a match."""
+    settings = MatcherSettings(_env_file=None, llm_base_url=None)
+    synth = build_synthesizer(settings)
+    assert synth._min_scores == {
+        "publication": settings.synthesis_min_score_publication,
+        "thesis_posting": settings.synthesis_min_score_posting,
+    }
+
+
+_BARS = {"publication": 0.57, "thesis_posting": 0.48}
+
+
+def test_the_template_with_bars_drops_a_candidate_no_source_vouches_for():
+    strong = _match("Prof. A", "Strong Paper", score=0.70)
+    weak = _match("Dr. B", "Weak Paper", score=0.40)
+    text = TemplateSynthesizer(min_scores=_BARS).synthesize("nlp thesis", [strong, weak])
+    assert "Prof. A" in text
+    assert "Dr. B" not in text
+    assert "Weak Paper" not in text
+
+
+def test_the_template_with_bars_says_when_nothing_is_a_strong_match():
+    """Same answer as the LLM path, and "closest" is by margin, not raw score.
+
+    The 0.55 paper is 0.02 under its bar; the 0.47 posting only 0.01 under its.
+    """
+    paper = _match("Prof. A", "Near Paper", score=0.55)
+    posting = _match("Dr. B", "Near Topic", score=0.47, source="thesis_posting")
+    text = TemplateSynthesizer(min_scores=_BARS).synthesize("nlp thesis", [paper, posting])
+    assert text.startswith("No supervisor in our data looks like a strong match")
+    assert "The closest is Dr. B" in text
+
+
 def test_thresholds_are_per_source_at_the_same_score():
     """Two matches, identical scores, different sources, different verdicts.
 
@@ -82,8 +124,8 @@ def test_thresholds_are_per_source_at_the_same_score():
         min_score_publication=0.57,
         min_score_posting=0.48,
     )
-    weak_paper = _match("Prof. Paper", "A Paper", score=0.52, score_source="publication")
-    strong_posting = _match("Dr. Posting", "A Topic", score=0.52, score_source="thesis_posting")
+    weak_paper = _match("Prof. Paper", "A Paper", score=0.52, source="publication")
+    strong_posting = _match("Dr. Posting", "A Topic", score=0.52, source="thesis_posting")
 
     # The posting clears its threshold, so an answer is attempted rather than
     # degraded -- and the endpoint does not exist, so it falls back to the
@@ -95,6 +137,32 @@ def test_thresholds_are_per_source_at_the_same_score():
     # The publication alone is below its own threshold: no candidate survives.
     only_paper = synth.synthesize("nlp thesis", [weak_paper])
     assert "no supervisor" in only_paper.lower()
+
+
+def test_a_person_found_in_both_sources_passes_if_either_does():
+    """The winning source must not veto the other one.
+
+    0.56 is under the publication bar and 0.50 over the posting bar. Thresholding
+    only the higher score -- the publication -- dropped this person, although the
+    posting alone would have passed: being found twice made them look worse.
+    """
+    from themis_matcher.llm import LLMClient
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    synth = LLMSynthesizer(
+        LLMClient("http://localhost:1", "none"),
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+    )
+    both = _match(
+        "Dr. Both", "A Topic", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    )
+    text = synth.synthesize("nlp thesis", [both])
+    assert "Dr. Both" in text
+    assert "no supervisor" not in text.lower()
+
+    paper_only = _match("Dr. Paper", "A Paper", score=0.56, source="publication")
+    assert "no supervisor" in synth.synthesize("nlp thesis", [paper_only]).lower()
 
 
 def test_llm_synthesizer_flags_weak_matches_without_calling_llm():
@@ -125,8 +193,10 @@ def test_template_says_nothing_about_availability_when_no_posting():
 
 
 def test_template_reports_a_posting_when_there_is_one():
+    """Counted, not called open: "available" admits pending and status-less postings."""
     text = TemplateSynthesizer().synthesize("nlp thesis", [_match("Prof. A", "Paper One")])
-    assert "1 open thesis posting" in text
+    assert "1 thesis posting" in text
+    assert "open" not in text.lower()
 
 
 def test_llm_candidate_block_omits_missing_postings():
@@ -138,4 +208,119 @@ def test_llm_candidate_block_omits_missing_postings():
     zero = _match("Prof. A", "Paper One").model_copy(update={"posting_count": 0})
     block = _format_candidates([zero, _match("Dr. B", "Paper Two")])
     assert "no open position" not in block
-    assert block.count("open thesis posting") == 1  # only Dr. B has one
+    assert block.count("thesis posting") == 1  # only Dr. B has one
+    assert "open" not in block
+
+
+def test_no_topics_means_no_topic_claim():
+    """The retriever leaves `matched_topics` empty, and no consumer fills the gap.
+
+    It used to copy the query in, and the template's fallback said "Works on your
+    topics" -- both telling the student every candidate works on exactly what
+    they typed. Nothing in the retrieval checked that.
+    """
+    from themis_matcher.synthesis.llm import _format_candidates
+
+    bare = _match("Prof. A", "Paper One").model_copy(update={"matched_topics": []})
+    text = TemplateSynthesizer().synthesize("nlp thesis", [bare])
+    assert "Works on" not in text
+    assert "your topics" not in text
+    assert "3 related publications" in text
+    assert "topics" not in _format_candidates([bare])
+    # Real topics, where some consumer does supply them, still show.
+    assert "Works on nlp" in TemplateSynthesizer().synthesize("x", [_match("Dr. B", "Paper")])
+
+
+def test_the_long_shot_is_closest_to_its_own_threshold():
+    """Raw score compares across scales; margin to each source's bar does not.
+
+    The publication is 0.02 under 0.57, the posting 0.01 under 0.48. By raw score
+    the publication wins only because publications score higher everywhere.
+    """
+    from themis_matcher.llm import LLMClient
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    synth = LLMSynthesizer(
+        LLMClient("http://localhost:1", "none"),
+        min_score_publication=0.57,
+        min_score_posting=0.48,
+    )
+    paper = _match("Prof. Paper", "A Paper", score=0.55, source="publication")
+    posting = _match("Dr. Posting", "A Topic", score=0.47, source="thesis_posting")
+
+    text = synth.synthesize("nlp thesis", [paper, posting])
+    assert "long shot" in text
+    assert "The closest is Dr. Posting" in text
+
+
+def test_work_from_a_source_below_its_bar_is_labelled_weaker():
+    """A person who passes on their posting is not vouched for by their papers."""
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    class _Recorder:
+        def chat(self, system: str, user: str) -> str:
+            self.user = user
+            return "ok"
+
+    client = _Recorder()
+    synth = LLMSynthesizer(client, min_score_publication=0.57, min_score_posting=0.48)
+    both = _match(
+        "Dr. Both", "Title", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    ).model_copy(
+        update={
+            "evidence": [
+                Evidence(source_type="publication", source_id="z:1", title="Below-Bar Paper"),
+                Evidence(source_type="thesis_posting", source_id="p:1", title="Open Topic"),
+            ]
+        }
+    )
+
+    assert synth.synthesize("nlp thesis", [both]) == "ok"
+    assert "work: Open Topic" in client.user
+    assert "weaker-matching work: Below-Bar Paper" in client.user
+
+
+def _both_sources_person() -> SupervisorMatch:
+    """Passes on the posting (0.50 over 0.48), not on the paper (0.56 under 0.57)."""
+    return _match(
+        "Dr. Both", "Title", source_scores={"publication": 0.56, "thesis_posting": 0.50}
+    ).model_copy(
+        update={
+            "evidence": [
+                Evidence(source_type="publication", source_id="z:1", title="Below-Bar Paper"),
+                Evidence(source_type="thesis_posting", source_id="p:1", title="Open Topic"),
+            ]
+        }
+    )
+
+
+def test_the_template_fallback_still_labels_weaker_work():
+    """An LLM outage must not turn a below-bar paper into the reason someone fits.
+
+    The fallback used to be a bare TemplateSynthesizer, which printed every
+    evidence item alike -- so the separation the LLM prompt makes held only while
+    the endpoint was up, which in a demo is exactly when it matters least.
+    """
+    from themis_matcher.llm import LLMError
+    from themis_matcher.synthesis.llm import LLMSynthesizer
+
+    class _Down:
+        def chat(self, system: str, user: str) -> str:
+            raise LLMError("endpoint unreachable")
+
+    synth = LLMSynthesizer(_Down(), min_score_publication=0.57, min_score_posting=0.48)
+    text = synth.synthesize("nlp thesis", [_both_sources_person()])
+
+    before, _, after = text.partition("Weaker-matching work:")
+    assert "Open Topic" in before
+    assert "Below-Bar Paper" not in before
+    assert "Below-Bar Paper" in after
+
+
+def test_the_template_without_bars_lists_all_work_alike():
+    """A template built without bars thresholds nothing, so it labels nothing either."""
+    text = TemplateSynthesizer().synthesize("nlp thesis", [_both_sources_person()])
+
+    assert "Weaker-matching" not in text
+    assert "Below-Bar Paper" in text
+    assert "Open Topic" in text

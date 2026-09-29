@@ -14,10 +14,12 @@ list[SupervisorMatch] ──▶ Synthesizer.synthesize(query, matches) ──▶
                                 │
                                 ├── LLMSynthesizer   (when MATCHER_LLM_BASE_URL is set)
                                 │     ├─ no matches           → template fallback
-                                │     ├─ none ≥ its threshold → _no_strong_match, NO LLM CALL
+                                │     ├─ none ≥ its threshold → no_strong_match, NO LLM CALL
                                 │     ├─ LLMError             → template fallback
                                 │     └─ otherwise            → grounded LLM answer
                                 └── TemplateSynthesizer  (deterministic, offline)
+                                      ├─ none ≥ its threshold → no_strong_match
+                                      └─ otherwise            → the strong candidates only
 ```
 
 ## Public API
@@ -25,9 +27,10 @@ list[SupervisorMatch] ──▶ Synthesizer.synthesize(query, matches) ──▶
 | Symbol | File | Purpose |
 |---|---|---|
 | `Synthesizer` | `base.py` | Protocol: `synthesize(query: ParsedQuery, matches: list[SupervisorMatch]) -> str`. |
-| `TemplateSynthesizer` | `template.py` | Deterministic string assembly. Grounded by construction — it can only restate the fields it was given. |
+| `TemplateSynthesizer` | `template.py` | Deterministic string assembly. Grounded by construction — it can only restate the fields it was given. Applies the same per-source bars as `LLMSynthesizer` when given them. |
+| `split_evidence`, `margin`, `no_strong_match` | `template.py` | The threshold logic both synthesisers share, so their answers cannot disagree about who counts as a match. |
 | `LLMSynthesizer` | `llm.py` | Wraps an `LLMClient`, a fallback `Synthesizer`, and one weak-match threshold per source type. |
-| `build_synthesizer(settings)` | `__init__.py` | Factory: `LLMSynthesizer` if `llm_base_url` is set (with `TemplateSynthesizer` as its fallback), otherwise `TemplateSynthesizer`. |
+| `build_synthesizer(settings)` | `__init__.py` | Factory: `LLMSynthesizer` if `llm_base_url` is set (with `TemplateSynthesizer` as its fallback), otherwise `TemplateSynthesizer`. Both get the configured bars. |
 
 ## Data flow
 
@@ -42,16 +45,21 @@ biologists and you still get the five least-dissimilar people back. Handing thos
 to an LLM and asking it to recommend supervisors reliably produces confident,
 useless prose.
 
-So `LLMSynthesizer.synthesize` filters first:
+So both synthesisers filter first. The template did not until 2026-09-28: the
+factory built it without bars, so the no-LLM default listed every retrieved
+candidate as a match. `LLMSynthesizer.synthesize`:
 
 1. **No matches at all** → delegate to the template fallback.
 2. **No match reaches the threshold for its own source type** → return
-   `_no_strong_match`, a deterministic
+   `no_strong_match` (`template.py`), a deterministic
    sentence that says plainly there is no strong match, names the closest
    candidate, and frames it as a long shot. **No LLM call is made.** The model is
    never given the chance to talk up a bad match.
 3. **Otherwise** → format the strong candidates and call the LLM with an
    anti-hallucination system prompt. An `LLMError` falls back to the template.
+
+`TemplateSynthesizer` takes steps 2 and 3 the same way, rendering the strong
+candidates itself. Constructed without bars it filters nothing.
 
 For graded academic work, the property that matters is that every failure path
 lands on deterministic, grounded output rather than on generated text.
@@ -67,11 +75,11 @@ The subset of `MatcherSettings` this sub-package reads; the whole list is in
 | `llm_model` | `MATCHER_LLM_MODEL` | `llama3.1` | Model name sent to the endpoint. |
 | `llm_reasoning_effort` | `MATCHER_LLM_REASONING_EFFORT` | unset | Only for reasoning models. `none` disables hidden reasoning; sent only when set, and dropped on a 400/422 from an endpoint that does not know the field. Measured on `qwen3:8b`: ~31 s per synthesis call with reasoning on, ~6 s off — enough to cross the client's 30 s timeout and degrade to the fallback. |
 | `llm_api_key` | `MATCHER_LLM_API_KEY` | unset | Bearer token, when the endpoint needs one. |
-| `synthesis_min_score_publication` | `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` | `0.57` | Below this, a publication-scored match counts as weak. |
-| `synthesis_min_score_posting` | `MATCHER_SYNTHESIS_MIN_SCORE_POSTING` | `0.48` | The same for a posting-scored match. |
+| `synthesis_min_score_publication` | `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` | `0.57` | A person's best publication score must reach this for the publications to vouch for them. |
+| `synthesis_min_score_posting` | `MATCHER_SYNTHESIS_MIN_SCORE_POSTING` | `0.48` | The same for their best posting score. A person is presented if **either** source clears. |
 
-Both are compared against `SupervisorMatch.score`, a cosine similarity in `[-1, 1]` —
-not a percentage. Why the range is signed rather than rescaled:
+Both are compared against the values in `SupervisorMatch.source_scores`, each a cosine
+similarity in `[-1, 1]` — not a percentage. Why the range is signed rather than rescaled:
 [`../indexing/README.md`](../indexing/README.md#what-the-score-is-and-why-it-is-not-0-1).
 
 **Why two.** The threshold used to be one value at `0.0`, which is inert. Measuring it
@@ -85,8 +93,13 @@ there trims postings while leaving publications untouched — which, because the
 key never joins the two sources, removes exactly the supervisors with open positions.
 Two values sit mid-band instead, with room either side.
 
-`LLMSynthesizer` picks between them on `SupervisorMatch.score_source`, which the
-retriever sets to the source of the person's highest-scoring hit. Reproduce or extend
+`LLMSynthesizer` applies them to `SupervisorMatch.source_scores`, which the retriever
+fills with the person's best score per source: a person passes if **either** source
+clears its own threshold, so a publication just under its bar cannot veto a posting
+comfortably over its. Titles from a source that did not clear still reach the prompt, but
+labelled as weaker-matching work. When nobody clears, the long shot named is the candidate
+closest to *its own* source's threshold, not the highest raw score, which would compare
+across the two scales. Reproduce or extend
 the measurement with
 [`scripts/score_distribution.py --control`](../../../../../scripts/score_distribution.py).
 
@@ -99,10 +112,12 @@ roles at once — the offline implementation *and* the fallback injected into
 
 ## Status
 
-**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (10 tests), including an
+**Implemented and tested.** `projects/matcher/tests/test_synthesis.py` (13 tests), including an
 assertion that a below-threshold match produces an answer **without** calling the
-LLM, and one that gives two matches the same score under different source types and
-checks they get opposite verdicts — which no single-threshold implementation can pass.
+LLM, one that gives two matches the same score under different source types and
+checks they get opposite verdicts — which no single-threshold implementation can pass —
+one that a person found in both sources passes when either source clears, and two for the
+long-shot margin and the weaker-work label.
 
 ## Known gaps
 
@@ -117,9 +132,11 @@ checks they get opposite verdicts — which no single-threshold implementation c
   are added — the floor is a max over controls, the ceiling a min over probes — so treat
   0.57 and 0.48 as a first calibration, not a settled constant. Threats to validity are
   listed in [`docs/score-calibration.md`](../../../../../docs/score-calibration.md).
-- **They will need re-measuring once the person key is fixed.** A person's `score_source`
-  is whichever source their best hit came from, and today no one is credited by both, so
-  the two populations are disjoint. Merging them changes which threshold applies to whom.
+- **They will need re-measuring now that the person key is fixed.** They were measured
+  while no one was credited by both sources. A merged person is now thresholded on both
+  of their `source_scores` and passes on either, which is a more permissive rule for
+  exactly that population — small today (0 of 25 matches at `top_k=5`), unmeasured as
+  it grows.
 - **`llm.py` has no dedicated test file.** The prompt construction, the candidate
   formatting, and the `LLMError` fallback are only exercised indirectly.
 - The system prompt is a single hard-coded English string. Nothing evaluates

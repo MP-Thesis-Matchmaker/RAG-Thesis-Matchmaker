@@ -16,7 +16,8 @@ is that script's output, not an estimate.
 ## Why this exists
 
 `MATCHER_SYNTHESIS_MIN_SCORE` gates whether `LLMSynthesizer` presents a candidate as a
-match or degrades to `_no_strong_match` (`synthesis/llm.py:81`). Its default was `0.0`,
+match or degrades to `no_strong_match` (`synthesis/template.py` since 2026-09-28, which the
+template path now applies too). Its default was `0.0`,
 which is inert, and there was no basis for any other value: `ScoredHit.score` is a
 cosine similarity in `[-1, 1]` (see
 [`indexing/README.md`](../projects/matcher/src/themis_matcher/indexing/README.md#what-the-score-is-and-why-it-is-not-0-1)),
@@ -52,7 +53,7 @@ The **admissible band** is then
 max over controls of (best score)  ≤  threshold  ≤  min over on-topic of (best score)
 ```
 
-because `_no_strong_match` fires only when *nothing* clears the threshold. A second,
+because `no_strong_match` fires only when *nothing* clears the threshold. A second,
 tighter ceiling — `min over on-topic of #5` — marks where the threshold stops merely
 detecting hopeless queries and starts trimming candidates inside result sets that are
 fine.
@@ -129,7 +130,9 @@ Bold marks the strongest false best-match — the noise floor.
 ### F1 — The negative half of the range is empty
 
 Zero of 214,756 publications and zero of 695 postings scored below `0.0` against any of
-the nine queries. The lowest observed score anywhere was **0.115**.
+the **five on-topic** queries. The lowest score they produced anywhere was **0.115**. The
+four controls got no corpus scan (see *Threats to validity*), only their top-100 head, so
+this finding says nothing about their lower tail.
 
 This is bge-m3's anisotropy, measured rather than assumed: dense retrievers of this
 family place all embeddings in a narrow cone, so "unrelated" bottoms out around 0.12–0.20
@@ -205,7 +208,9 @@ deleting the most actionable half of the output.
 > fixed: 103 of 403 supervisor names now resolve across sources
 > ([`person-key-resolution.md`](person-key-resolution.md)), so the two populations are no
 > longer strictly disjoint and a merged person's `score_source` is whichever source scored
-> higher. The measurement above is left as recorded — it is dated evidence, not a changelog
+> higher. (Superseded 2026-09-27: `score_source` is gone; `source_scores` keeps both, and a
+> person passes if either clears — see the update under "Recommendation, and what was
+> applied".) The measurement above is left as recorded — it is dated evidence, not a changelog
 > — but two things follow. First, F5's argument for *two* thresholds is unaffected: it rests
 > on the sources occupying different score ranges, which the merge does not change. Second,
 > **0.57 and 0.48 need re-measuring**, because the population they were tuned on is no
@@ -266,6 +271,13 @@ defaulted: a default would silently mis-threshold whichever source it guessed wr
 is the failure the field exists to prevent. Inferring it from `publication_count > 0` was
 rejected for the same reason — it happens to work only while the join defect holds, and
 would break silently the moment the person key is fixed.
+
+> **Update 2026-09-27 — `score_source` replaced by `source_scores`.** Naming only the
+> winning source let the loser's score vanish: a merged person at publication 0.56 (bar
+> 0.57) and posting 0.50 (bar 0.48) was dropped, though the posting alone passes.
+> `SupervisorMatch` now carries the best score per source, a validator keeps `score`
+> equal to their maximum, and `LLMSynthesizer` passes a person if **either** source
+> clears its own threshold. The thresholds themselves are unchanged.
 
 **These are a first calibration, not a constant.** Nine queries support the *structure* of
 the conclusion — that the two sources need separate values — more strongly than either

@@ -1,7 +1,9 @@
 # Person-key resolution: what joins the two sources, and what does not
 
 Measured 2026-09-03 against the live index (214,756 publications, 695 postings,
-215,451 embedded documents). Reproduce with
+215,451 embedded documents); **F1 and F4 re-measured 2026-09-27** under the
+shipped rule, every other figure is from 2026-09-03; **F1 and F2 re-checked
+2026-09-28** after the given-name rule below. Reproduce with
 [`scripts/person_key_coverage.py`](../scripts/person_key_coverage.py).
 
 > **This is not an evaluation.** The five probe queries carry no relevance
@@ -109,25 +111,114 @@ fabricated evidence.
 - names fold through NFKD with combining marks dropped, titles stripped
 - the key is **first given token + family**, so `Alexandra M. Freund` and
   `Alexandra Freund` are one person
-- the **full** first given token must agree; an initial is never enough
+- the first given name must agree exactly; an initial matches only an initial
+  (`A. Smith` merges with `Smith, A.`, `D. Scaramuzza` never with
+  `Scaramuzza, Davide`)
+- later given names may be omitted or abbreviated but must not contradict
+  (`Markus A` fits `Markus Andreas`; `M. A.` does not fit `M. B.`); one dropped
+  interior letter is read as a typo. An anchor key whose own spellings
+  contradict is split, one key per spelling
 - a family-name match alone is never enough
-- publications supply the anchors (ZORA's comma says where the name splits);
-  a posting's free text is resolved *against* them, never the reverse
+- publications supply the anchors (ZORA's comma says where the name splits),
+  and only through `uzh_authors`; a posting's free text is resolved *against*
+  them, never the reverse
+- a posting name that already writes `Family, Given` is read by its comma and
+  never split by guessing
 - where free text could split two ways (`Alessandro De Luca`), both readings are
   offered and the structured side decides — so there is no particle list
 - a name matching more than one anchor is **not merged at all**
+- a posting name no single anchor vouches for gets a key marked `unresolved`,
+  which no publication person can equal
+- an author credited through the `authors` fallback (a paper with no
+  `uzh_authors`) gets a key marked `unaffiliated`, which no UZH author and no
+  posting person can equal
+
+> **Correction 2026-09-27 — the retriever had drifted from this rule.**
+> `VectorRetriever._anchors` built anchors from `_persons()`, which falls back
+> from `uzh_authors` to plain `authors` on a paper with no UZH author, and
+> `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` is off by default. So at runtime a
+> posting name could merge onto an unaffiliated namesake — the 331,301-key
+> column the table above warns against. Anchors now come from `uzh_authors`
+> alone, and an unmatched posting name is keyed `unresolved` so it cannot join
+> an unaffiliated author by key equality either. Separately, a comma-form
+> posting name (`Thomas, Martin`) used to be tried in natural order first and
+> could match the anchor of the reversed person (`Martin, Thomas`); it is now
+> read by its comma only.
+
+> **Re-run 2026-09-27, later the same day — figures unchanged.** Three further
+> changes: (1) an author credited through the `authors` fallback is keyed
+> `unaffiliated` and no longer groups with a UZH author of the same name;
+> (2) `identity.resolve`, which the ceiling counts with, is now defined through
+> `posting_key`, so the ceiling measures the rule the retriever ships. The old
+> `resolve` ignored commas; and (3) `_rank` orders on each person's margin over
+> their best source's threshold instead of raw score. Re-measured with
+> `scripts/person_key_coverage.py`, which now builds its retriever through
+> `build_retriever` so it picks up those thresholds: **105 of 403**, **0 of 25 ·
+> 1 of 100 · 5 of 250**, the same five people at `top_k=50`.
+
+> **Correction 2026-09-28 — the initial rule was stated wrongly, and later given
+> names were ignored.** A fact-check found that this list said "an initial is
+> never enough" while the code merged an initial with the same initial: the key
+> compares the first given token as a string, so `a` equals `a` and only `d`
+> against `davide` was ever refused. That behaviour is kept — two initials say
+> the same thing and nothing is inferred — and the wording above now describes
+> it. `--given-names` (a query-free audit in the same script) found **0
+> initial-to-initial merges among the 105**, and 1 posting name that genuinely
+> starts with an initial, matching no anchor. The audit also found that later
+> given tokens were never compared. Of the 403 anchor keys with two or more
+> spellings, 97 differ by a middle initial against its full form and 215 only
+> omit a middle name — overwhelmingly one person each, so those still merge. A
+> contradiction now refuses: the rule splits **1 of 2,411** anchor keys (the
+> Meier pair in F2), and none of the 105 merges changes. Separately, leading
+> degrees (`M. Sc.`, `M.Sc.`) and a trailing `, M.Ed.` are now stripped; they
+> had given 8 posting names the given name `m`. **105 of 403 unchanged.**
+>
+> The first pass after (2) read **104**, and the missing name exposed a bug
+> rather than a rule change: `Sofia Forss,` carries a stray trailing comma, the
+> comma-first reading found no given half, and `posting_key` returned None, so
+> the retriever dropped her from every result. The old `resolve` counted her
+> anyway, so the published 105 had included a person the retriever could not
+> return. A comma with an empty side is now read as free text. Of the 6
+> supervisor names containing a comma, none now resolve differently under the
+> two definitions.
+>
+> F1–F3 are unaffected by this correction: the script computes the ceiling against `uzh_authors`
+> directly. **F4 was affected**: it was measured through `VectorRetriever` with
+> the wider anchor set. Re-measured 2026-09-27 under the shipped rule, `top_k=5`
+> and `20` are unchanged (0 and 1) and `top_k=50` fell from 7 merges to 5.
+>
+> **Gerald Schwank no longer merges**, and his was very likely a *true* merge.
+> 50 publications name "Schwank, Gerald"; on none is he among `uzh_authors` (38
+> have none at all, and on 12 he co-authors a UZH paper without being linked),
+> and he has no `person` row. 34 of those records carry an ORCID authority —
+> the same ORCID on all 34 — and 16 carry none. He is the ORCID-only population
+> `uzh_authors` stopped admitting on 2026-08-25, and the strict rule gives him
+> up by design: nothing in `uzh_authors` distinguishes him from a namesake.
+> Admitting ORCID-backed authors as anchors would recover him; that is a
+> decision about the trade, not a fix, and is not taken here. The 2026-09-03
+> list names six people for seven merges, so one merged in two queries; which
+> one was not recorded, so whether Schwank accounts for the whole drop is
+> unknown.
 
 ## Results
 
-### F1 — The corpus ceiling is 103 of 403 supervisors (25.6%)
+### F1 — The corpus ceiling is 105 of 403 supervisors (26.1%)
 
 | | |
 |---|---:|
 | Distinct supervisor names | 403 |
 | Anchor keys from `uzh_authors` | 2,411 |
-| **Resolved** | **103 (25.6%)** |
+| **Resolved** | **105 (26.1%)** |
 | Refused as ambiguous | 0 |
-| Unresolved | 300 |
+| Unresolved | 298 |
+
+Re-measured 2026-09-27; it was 103 (25.6%) on 2026-09-03. The +2 is data, not
+code — `resolve` and the anchor query did not change. The 2026-09-03 figure was
+taken on posting rows still mangled by the title bug in F6; the re-scrape that
+followed repaired them, and exactly two repaired names now resolve: "Phillip
+Ströbel" and "Phillip B. Ströbel", one person spelled two ways. (Checked by
+applying the pre-fix `strip_titles` to today's names: no other resolvable name
+changes.)
 
 ### F2 — Conflation is measurably zero on this corpus
 
@@ -144,11 +235,28 @@ jose|mateos       ['maria', 'maría']         <- one person, accent
 false merge that could be detected, and one genuinely risky key exists that
 nothing currently touches.
 
+> **Re-checked 2026-09-28.** `--given-names` reproduces these four. Under the
+> contradiction rule the Meier key is split; `christian`/`cristian` is one
+> dropped interior letter and stays whole, and the two accent pairs fold equal.
+> Two further keys flagged by a position-by-position comparison — a dropped
+> middle name, and a particle (`C` against `de Carvalho`) — are artefacts of
+> that comparison; the shipped rule matches in order with gaps and keeps them
+> whole.
+
 ### F3 — 0 refusals, which means the ambiguity guard is untested by real data
 
 `resolve` returns None when several candidate splits match. Across 403 names
-that never happened. The guard is exercised by a unit test and by nothing else;
+that never happened. The guard is exercised by unit tests and by nothing else;
 it is insurance, not a working part.
+
+> **Correction 2026-09-27 — the insurance did not pay out.** `resolve` refused
+> correctly, but `_group_by_person` then fell back to `key_of`, and for a
+> natural-order name `key_of` is `candidates()[0]` — one of the very anchors the
+> name was ambiguous between. A refused name therefore merged anyway, into its
+> one-token-family reading. `identity.posting_key` now gives an ambiguous name an
+> `unresolved` key no anchor can equal, and an end-to-end retriever test pins it.
+> No figure above changes: with 0 ambiguous names the defect never fired on this
+> corpus.
 
 ### F4 — The join effectively never fires at the default width
 
@@ -161,21 +269,36 @@ needs the same person in both slices at once:
 |---:|---:|---:|
 | **5 (default)** | **0** | 0 of 25 (0.0%) |
 | 20 | 1 | 1 of 100 (1.0%) |
-| 50 | 7 | 7 of 250 (2.8%) |
+| 50 | 5 | 5 of 250 (2.0%) |
+
+*Re-measured 2026-09-27 under the shipped rule. The 2026-09-03 run, with the
+wider anchor set, had 7 at `top_k=50`; see the correction under "The rule that
+shipped".*
 
 Who merges, at `top_k=50`: Rico Sennrich, Simon Clematide, Volker Dellwo
-(computational linguistics), Gerald Schwank, Klaus Oberauer, Liudmila
-Zavolokina.
+(computational linguistics), Klaus Oberauer, Liudmila Zavolokina.
 
-**103 is a ceiling on who could ever merge; it is not a yield.** At the shipped
+**105 is a ceiling on who could ever merge; it is not a yield.** At the shipped
 default the answer is zero. The change remains a precondition for the `ranking`
 package and still collapses duplicate spellings within a single source, but no
 coverage claim follows from the corpus figure.
 
-### F5 — 62% cannot be fixed by any key
+### F5 — 62% have no registered-author record
 
-251 of 403 supervisors have no ZORA record at all. No normalisation reaches
-them. Raising coverage past roughly a quarter requires a *different source of
+251 of 403 supervisors have no registered-author record: no CRIS `person` row
+with even a matching family name. Only 6 of them appear among the `uzh_authors`
+strings, so **at least 245 of the 251 are out of reach of the shipped rule**,
+which resolves against `uzh_authors` and nothing else. The 6 are within its
+reach; whether each resolves was not separately counted, and F1's 105 is the
+figure that includes them if they do.
+
+That is not the same as having no ZORA record at all, and must not be reported
+as such. The join table above has 267 of 403 supervisors resolving against
+`publication.authors`, and only 152 supervisors lie outside the 251 — so **at
+least 115 of the 251 name-match some author string in ZORA**. Those are name
+matches, not identities: against 331,301 distinct author keys a namesake is
+entirely possible, which is exactly why the shipped rule resolves posting names
+against `uzh_authors` only. Raising coverage past roughly a quarter requires a *different source of
 identity* — a UZH directory, or the scraped `researcher_profile` records that
 are already stored and unread (569 rows) — not a better string rule.
 
@@ -199,12 +322,12 @@ ippe Jetzer        -> Philippe Jetzer
 ala, Gavino        -> Scala, Gavino
 ```
 
-Fixed by requiring a word boundary after each title. **The stored data is not
-repaired:** the live `posting` table holds 10 mangled supervisor names —
-`anuele Giacomuzzo`, `halie von Rooy`, `ippe Jetzer`, `lip Ströbel`,
-`lip B. Ströbel`, `utr. Brigitte Tag` among them — and only a re-scrape fixes
-those rows. Until then those supervisors cannot resolve, so F1's 103 is a slight
-*under*-count.
+Fixed by requiring a word boundary after each title. The stored data was not
+repaired by the fix itself: the live `posting` table then held 10 mangled
+supervisor names — `anuele Giacomuzzo`, `halie von Rooy`, `ippe Jetzer`,
+`lip Ströbel`, `lip B. Ströbel`, `utr. Brigitte Tag` among them — so the
+original 103 was a slight *under*-count. The re-scrape the same day repaired
+those rows, and F1's re-measured +2 is exactly two of them.
 
 ## Threats to validity
 
@@ -229,9 +352,11 @@ those rows. Until then those supervisors cannot resolve, so F1's 103 is a slight
 - **The 569 unread `researcher_profile` rows** are the obvious candidate for
   reaching part of F5's 62%. They have a table and no consumer.
 - **Re-measure `MATCHER_SYNTHESIS_MIN_SCORE_PUBLICATION` / `_POSTING`**
-  (0.57 / 0.48, [`score-calibration.md`](score-calibration.md)). Merging changes
-  which source supplies a merged person's `score`, so `score_source` flips for
-  exactly the population this change creates — currently a very small one.
+  (0.57 / 0.48, [`score-calibration.md`](score-calibration.md)). They were
+  measured while the two populations were disjoint. A merged person now carries
+  both sources' best scores in `source_scores` and passes if either clears its
+  own threshold, so the population this change creates is thresholded twice —
+  currently a very small one.
 - **Reversed-order names** (`SHIMIZU Kentaro` against `Kentaro Shimizu`) are not
   caught. `flip_trailing_given` exists in `themis_shared.names` and could be
   offered as a third candidate; it was left out because it doubles the guess
@@ -248,3 +373,11 @@ uv run --package themis-matcher --extra embeddings \
 Read-only: `SELECT` only, no writes. Needs `DATABASE_URL` on a built index and
 the real `BAAI/bge-m3` model; the script refuses to run against `hash-fake` or a
 model that disagrees with the index manifest.
+
+The given-name audit needs only `DATABASE_URL` — no model, no index. It prints
+raw author spellings as examples; they are personal data and stay out of this
+file:
+
+```bash
+uv run --package themis-matcher python scripts/person_key_coverage.py --given-names
+```

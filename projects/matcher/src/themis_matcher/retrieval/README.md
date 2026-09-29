@@ -14,16 +14,19 @@ the only ranking logic in the system — see the note below.
 ```
 ParsedQuery ──▶ VectorRetriever.retrieve
                      │
-                     ├─ embed the query with the SAME model that built the index
+                     ├─ embed the query (topics + keywords [+ department]) with the
+                     │  SAME model that built the index
                      │
-                     ├─ query 1: source_type=publication + has_uzh_author=True [+ department]
-                     └─ query 2: source_type=thesis_posting [+ department] [+ degree_level]
+                     ├─ query 1: source_type=publication + has_uzh_author=True
+                     └─ query 2: source_type=thesis_posting [+ degree_level]
                      │
                      ▼  up to 2 × top_k ScoredHits
               _persons()  fan out each hit to the people it credits
                      ▼
-              _group_by_person()  score = max(hit score) + its source_type;
-                                  sort desc; truncate
+              _group_by_person()  best score per source_type
+                     ▼
+              _rank()  affiliation, then margin over each source's bar;
+                       truncate to top_k
                      ▼
               list[SupervisorMatch]  ──▶ synthesis / adapters
 ```
@@ -55,7 +58,7 @@ Filters applied:
 | | publications | thesis postings |
 |---|---|---|
 | `source_type` | `publication` | `thesis_posting` |
-| `department` | if the query names one | if the query names one |
+| `department` | — *(embedded, not filtered -- see below)* | — *(embedded, not filtered)* |
 | `degree_level` | — | *(not filtered directly -- see below)* |
 | `has_uzh_author` | **`True`** *only when `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`* | — |
 | `is_available` | — | **`True`** *unless `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING=false`* |
@@ -73,7 +76,7 @@ different claims.
 | setting | default | effect |
 |---|---|---|
 | `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR` | `false` | adds `has_uzh_author: True` to the publication query |
-| `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, score)`; `score` on similarity alone |
+| `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` sorts on `(has_uzh_affiliation, margin)`; `score` on margin alone. Margin = best source score minus that source's `MATCHER_SYNTHESIS_MIN_SCORE_*` bar |
 | `MATCHER_RETRIEVAL_REQUIRE_AVAILABLE_POSTING` | `true` | adds `is_available: True` to the posting query |
 
 The default is **permissive but demoted**: an external researcher is reachable and
@@ -93,6 +96,13 @@ Two consequences worth knowing:
 - **`SupervisorMatch` is no longer sorted by score.** Under `uzh_first` a
   lower-scored UZH supervisor precedes a higher-scored external one. `has_uzh_affiliation`
   says which is which; callers should not re-sort on `score` and expect the order back.
+- **Within a tier the key is the margin, not `score`** (since 2026-09-27). Postings
+  score systematically lower than publications, so sorting on raw score cut a
+  posting-only person well over the 0.48 posting bar in favour of publication people
+  barely over 0.57, before synthesis could threshold anyone. `_rank` now orders on
+  best-source-score minus that source's bar — the same margin `LLMSynthesizer`
+  thresholds on, from the same two settings — so the `top_k` cut and the threshold
+  agree. At the constructor's 0.0 defaults the margin is the raw score.
 
 Indexing deliberately takes no position now — see the comment at the top of
 `indexing/sources.py`. A `WHERE` clause there would make `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR`
@@ -126,12 +136,12 @@ Two differences from the UZH knob, both deliberate:
   Widening `top_k` on the posting query to chase that would inflate `posting_count`
   per person for a recall problem two orders of magnitude smaller.
 
-**Known gap.** `synthesis/` renders `"{posting_count} open thesis posting(s)"`, and
-that word "open" is only guaranteed while this setting is on. With it off, a taken
-topic is described as open. The wording is load-bearing against a hallucination seen
-in `docs/example-run.md`, so it was left alone rather than weakened for a
-non-default path — but flipping the setting without fixing the phrasing is a
-correctness regression, not just a recall change.
+**Fixed 2026-09-28: the wording no longer says "open".** `synthesis/` used to render
+`"{posting_count} open thesis posting(s)"`, which overclaimed even with this setting
+on — available means only "not marked assigned or private", so pending and
+status-less postings counted as open — and with it off described taken topics as
+open too. It now renders `"{posting_count} thesis posting(s)"`, so flipping the
+setting is a recall change only.
 
 #### Known gap: `MATCHER_RETRIEVAL_REQUIRE_UZH_AUTHOR=true` under-returns
 
@@ -180,17 +190,19 @@ strategy's ordering is only meaningful *within* one query. And **postings score
 systematically below publications** (best posting 0.564–0.652 against 0.605–0.734),
 because 695 short advertisements are a thinner corpus than 214,756 abstracts — which
 means `_group_by_person`'s `max` is not comparing like with like when a person has both.
-Since the person key was fixed (2026-09-03) somebody finally can — 103 of 403 supervisors
+Since the person key was fixed (2026-09-03) somebody finally can — 105 of 403 supervisors
 resolve across sources — so this is live rather than hypothetical, though still rare: 0 of
 25 returned matches at the default `top_k=5`. The thresholds in
 [`docs/score-calibration.md`](../../../../../docs/score-calibration.md) were measured while
 the two populations were disjoint and need re-measuring as that stops being true.
 
-Because of that, `_group_by_person` emits **`score_source`** alongside `score`: the
-`source_type` of the hit the maximum came from. Synthesis thresholds on it, since a
-0.52 publication and a 0.52 posting are not equally good. It is the *winning* hit's
-source, not a summary of the person's evidence — someone credited by both gets
-whichever scored higher.
+Because of that, `_group_by_person` emits **`source_scores`** alongside `score`: the
+person's best score *per* `source_type`, one entry for each source that retrieved them,
+with `score` the maximum of those. Synthesis thresholds each entry against its own
+source's value, since a 0.52 publication and a 0.52 posting are not equally good, and
+a person passes if **either** clears. Keeping only the winning hit's source — the
+earlier `score_source` — let a 0.56 publication, just under 0.57, drop someone whose
+0.50 posting would have passed 0.48 on its own.
 
 ## Configuration
 
@@ -232,8 +244,9 @@ serves fake results.
 
 ## Known gaps
 
-- **This package contains the entire ranking implementation, and it is one line:
-  `score = max(hit.score)`.** `CLAUDE.md`'s target layout lists a separate
+- **This package contains the entire ranking implementation, and it is small:
+  best score per source, then `_rank`'s sort on affiliation and margin over each
+  source's bar.** `CLAUDE.md`'s target layout lists a separate
   `ranking` package for multi-signal scoring (semantic similarity, publication
   frequency, open positions, department affiliation), and
   `pipeline/orchestrator.py`'s docstring already claims a rank step. Neither
@@ -245,37 +258,55 @@ serves fake results.
   supervisor names, 0 matching any of the 2,942 `uzh_authors`**.
 
   Since 2026-09-03 [`identity.py`](identity.py) canonicalises to a
-  first-given-token + family key. Publications supply the anchors, because ZORA's
-  comma says where a name splits; a posting's free text is resolved against them.
-  **103 of 403 supervisor names (25.6%) now resolve**, with no conflation
+  first-given-token + family key. Publications supply the anchors — through
+  `uzh_authors` only, never the `authors` fallback — because ZORA's comma says where
+  a name splits; a posting's free text is resolved against them, and a posting
+  name no single anchor vouches for is keyed `unresolved` so it joins no
+  publication person. An author credited through the `authors` fallback is keyed
+  `unaffiliated` and joins no UZH author either, so a namesake's paper cannot become
+  a UZH researcher's evidence; the cost is that a UZH researcher with ORCID-only
+  papers can appear twice, once demoted.
+  **105 of 403 supervisor names (26.1%) now resolve**, with no conflation
   detectable — of 2,411 anchor keys, the 4 that collapse differing given names are
-  reached by no supervisor at all.
+  reached by no supervisor at all. Since 2026-09-28 the first given name must agree
+  exactly (an initial matches only an initial) and a contradicting later given name
+  refuses, which splits the one genuine conflation of those four; the 105 are
+  unchanged.
 
   **What remains a gap is the yield, not the key.** `retrieve` fetches `top_k`
   postings *and* `top_k` publications, so a merge needs one person in both slices
   at once. Measured over five probes: **0 of 25 returned matches at the default
-  `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. So `publication_count` and
+  `top_k=5`**, 1 of 100 at 20, 5 of 250 at 50 (re-measured 2026-09-27 under the
+  `uzh_authors`-only anchors). So `publication_count` and
   `posting_count` are now *capable* of both being non-zero and still rarely are,
   and a multi-signal score built on them would have almost nothing to combine at
   the default width. Over-fetching for grouping and truncating afterwards is the
   obvious lever; it is not pulled, because it inflates `posting_count` and costs
   latency, and nobody has decided the trade.
 
-  **And 62% of supervisors are unreachable by any string rule** — 251 of 403 have
-  no ZORA record at all, being PhD students, postdocs, or externals. Raising
+  **And 62% of supervisors have no registered-author record** — 251 of 403 (no
+  CRIS `person` row; only 6 among the `uzh_authors`, so at least 245 are out of
+  the rule's reach), being PhD students, postdocs, or externals. Raising
   coverage past a quarter needs a different source of identity (the 569 unread
   `researcher_profile` rows are the obvious candidate), not a better key. Full
   measurement, including why the `person` table is the *wrong* join target and why
   email was rejected as a disambiguator:
   [`docs/person-key-resolution.md`](../../../../../docs/person-key-resolution.md).
-- **`matched_topics` is not computed.** Every match receives a copy of
-  `query.topics` rather than the topics that actually matched. The field looks
-  informative and is not.
+- **`matched_topics` is not computed.** Until 2026-09-28 every match received a
+  copy of `query.topics`, so the template, the LLM prompt and the CLI all said each
+  candidate works on exactly what the student typed. It is now left empty, and
+  every consumer prints topics only when there are some. The field stays in the
+  wire contract for when it is actually computed.
 - **`publication_count` is populated but unused in scoring**, despite
   `contracts/retrieval.py` describing it as a ranking signal.
-- **`department` matching is exact-string.** `parsing/` never populates the field
-  from free text today, so the filter is effectively dormant; it will need
-  normalisation (aliases, abbreviations) before it is useful.
+- **`department` is a soft signal, not a filter.** It used to be an exact jsonb
+  equality on the LLM parser's free text, over two vocabularies that do not agree
+  with each other (a posting's "Institut für Informatik (IFI) / Department of
+  Informatics" against ZORA's English unit names), so "informatics" emptied the
+  result. It is now appended to the embedded query text instead. Documents do not
+  embed their own department, so it nudges only as a topical word; the effect is
+  unmeasured. A real department constraint needs the extracted value mapped onto
+  known `org_unit`s first.
 - **`posting_count` is a fact about this query, not about the person.** It counts
   thesis postings retrieved for someone in this result set. The posting query is
   unthresholded -- it returns the nearest `top_k` postings whatever their distance

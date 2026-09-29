@@ -38,8 +38,9 @@ def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     """Find UZH researchers whose work matches a topic or research interest.
 
     Returns a ranked list of people, each with a relevance score, department,
-    whether they have an open thesis position, and evidence (their publications
-    and postings). The score is a cosine similarity in [-1, 1], not a percentage
+    any thesis postings they are named on, and evidence (their publications and
+    postings). A posting is not proof of an open position: its status may be
+    pending or unknown. The score is a cosine similarity in [-1, 1], not a percentage
     or a confidence -- do not present it as one, and do not multiply it by 100.
 
     Works for general expertise questions like "who works on humanoid robots at

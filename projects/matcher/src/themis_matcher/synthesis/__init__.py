@@ -12,7 +12,9 @@ def build_synthesizer(settings: MatcherSettings | None = None) -> Synthesizer:
 
     Uses the configured LLM endpoint when MatcherSettings.llm_base_url is set,
     otherwise the offline template synthesiser. Keeps the pipeline runnable
-    with no LLM.
+    with no LLM. Both get the configured per-source score bars: the template used
+    to be built without them and so presented every retrieved candidate as a
+    match, where the LLM path would have said there is no strong one.
     """
     settings = settings or get_settings()
     if settings.llm_base_url:
@@ -30,7 +32,12 @@ def build_synthesizer(settings: MatcherSettings | None = None) -> Synthesizer:
             min_score_publication=settings.synthesis_min_score_publication,
             min_score_posting=settings.synthesis_min_score_posting,
         )
-    return TemplateSynthesizer()
+    return TemplateSynthesizer(
+        min_scores={
+            "publication": settings.synthesis_min_score_publication,
+            "thesis_posting": settings.synthesis_min_score_posting,
+        }
+    )
 
 
 __all__ = ["Synthesizer", "TemplateSynthesizer", "build_synthesizer"]

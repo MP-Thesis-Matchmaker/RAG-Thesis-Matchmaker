@@ -37,8 +37,9 @@ described: a stray `from themis_matcher import ...` in the gateway fails with `M
 The shared wire models live in [`themis_shared.contracts.api`](libs/shared/src/themis_shared/contracts/api.py),
 so both ends stay typed without either importing the other.
 
-Not built: a **`ranking` package.** Ranking is one line inside
-`themis_matcher.retrieval`'s `VectorRetriever._group_by_person` (`score = max(hit.score)`).
+Not built: a **`ranking` package.** Ranking is `themis_matcher.retrieval`'s
+`VectorRetriever._rank`: affiliation, then margin over each source's own threshold (the
+`MATCHER_SYNTHESIS_MIN_SCORE_*` bars, since 2026-09-27 — raw score compared two scales).
 
 **The person key was the first thing that package had to fix, and it is now fixed —
 partially, and the partiality is the point (2026-09-03).** `_group_by_person` used to group on
@@ -46,22 +47,28 @@ an exact name string, and the two sources spell people differently — `"Davide 
 posting against `"Scaramuzza, Davide"` on a paper — so **0 of 403 supervisor names matched any
 of the 2,942 `uzh_authors`**. `themis_matcher.retrieval.identity` now canonicalises to a
 first-given-token + family key, resolving free text against the comma-structured ZORA side:
-**103 of 403 (25.6%)**, 0 conflations detectable.
+**105 of 403 (26.1%)** (re-measured 2026-09-27; 103 on 09-03, the +2 being posting rows the
+re-scrape repaired), 0 conflations detectable.
 
 Three things about it that are not obvious:
 
 - **The `person` table is the wrong join target**, which is the opposite of the intuition.
   62% of supervisors have no `person` row with even a matching family name — they are PhD
-  students, postdocs and externals with no ZORA record — and `person` resolves *fewer*
+  students, postdocs and externals with no registered-author record (only 6 of those 251 are
+  among the `uzh_authors`; many still name-match *some* ZORA author string, which is not
+  identity) — and `person` resolves *fewer*
   supervisors than `uzh_authors` does (81 vs 94), because only 1,706 of 2,942 author strings
   are exactly a `display_name`. `person` carries identity (CRIS UUID, ORCID), not coverage.
-- **103 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and `top_k`
+- **105 is a ceiling, not a yield.** `retrieve` fetches `top_k` postings and `top_k`
   publications separately, so a merge needs one person in both slices. Measured: **0 of 25
-  returned matches at the default `top_k=5`**, 1 of 100 at 20, 7 of 250 at 50. Do not report
+  returned matches at the default `top_k=5`**, 1 of 100 at 20, 5 of 250 at 50 (2026-09-27,
+  under the `uzh_authors`-only anchors; 7 at 50 before). Do not report
   the corpus figure as a coverage figure.
 - **The rule is deliberately strict** because a wrong merge is fabricated evidence shown to a
-  student. Family-name-only and initial matches are refused; 46 supervisor names share a family
-  name with a *different* ZORA author (`Daniel Müller` against `Müller, Mathias`).
+  student. Family-name-only matches are refused; the first given name must agree exactly, an
+  initial matching only an initial; contradicting later given names refuse (2026-09-28). 46
+  supervisor names share a family name with a *different* ZORA author (`Daniel Müller` against
+  `Müller, Mathias`).
 
 Full measurement: [`docs/person-key-resolution.md`](docs/person-key-resolution.md). Also
 detail:
@@ -255,9 +262,9 @@ still missing:
 - `indexing` — builds the searchable index / embeddings from ingested data → shipped
 - `retrieval` — semantic similarity search over the index; read-only → shipped
 - `ranking` — multi-signal scoring over retrieved candidates; read-only
-  → **not built.** Ranking is currently one line inside `themis_matcher.retrieval`'s
-  `VectorRetriever._group_by_person` (`score = max(hit.score)`). Keep the intent; the slot is
-  between retrieve and synthesise
+  → **not built.** Ranking is currently `themis_matcher.retrieval`'s `VectorRetriever._rank`
+  (affiliation, then margin over per-source bars). Keep the intent; the slot is between
+  retrieve and synthesise
 - `application service` — plain functions orchestrating retrieval → ranking → LLM synthesis;
   exposes the core use cases
   → **shipped as `themis_matcher.pipeline`**, plus `themis_gateway.service` — note these are

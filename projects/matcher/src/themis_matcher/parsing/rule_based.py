@@ -12,10 +12,24 @@ import re
 
 from themis_shared.contracts import DegreeLevel, ParsedQuery
 
+# Whole words only. A substring test read "undergraduate" as master (via
+# "graduate"), "obscure" as bachelor (via "bsc") and "postdoctoral" as phd.
+#
+# "graduate" is deliberately absent. Someone holding a bachelor is already a
+# graduate, so the word means master *or above* -- two levels, which the single
+# `degree_level` cannot express. It therefore adds no level, and an explicit one
+# decides: "graduate student, master's thesis" is master. `\b` also covers
+# "master's", since the apostrophe is a word boundary. Known gap: a hyphenated
+# "post-doctoral" still reads as phd.
 _DEGREE_KEYWORDS: list[tuple[DegreeLevel, tuple[str, ...]]] = [
     (DegreeLevel.phd, ("phd", "ph.d", "doctoral", "doctorate")),
-    (DegreeLevel.master, ("master", "msc", "m.sc", "graduate")),
-    (DegreeLevel.bachelor, ("bachelor", "bsc", "b.sc", "undergraduate")),
+    (DegreeLevel.master, ("master", "masters", "msc", "m.sc")),
+    (DegreeLevel.bachelor, ("bachelor", "bachelors", "bsc", "b.sc", "undergraduate")),
+]
+
+_DEGREE_RES = [
+    (level, re.compile(r"\b(?:" + "|".join(map(re.escape, keywords)) + r")\b"))
+    for level, keywords in _DEGREE_KEYWORDS
 ]
 
 _FILLER = (
@@ -116,10 +130,14 @@ _GLUE = frozenset(
 
 
 def _detect_degree(text: str) -> DegreeLevel | None:
-    for level, keywords in _DEGREE_KEYWORDS:
-        if any(k in text for k in keywords):
-            return level
-    return None
+    """The one level the text names, or None when it names none or several.
+
+    The level becomes a hard posting filter, so a wrong one hides postings while
+    no filter only adds some. "bachelor or master thesis" is therefore None,
+    and both kinds of student see the posting.
+    """
+    levels = {level for level, pattern in _DEGREE_RES if pattern.search(text)}
+    return levels.pop() if len(levels) == 1 else None
 
 
 def _trim_glue(phrase: str) -> str:

@@ -141,8 +141,8 @@ the comments in `pyproject.toml`.
 
 ## Not here
 
-Ranking is one line inside `retrieval/vector.py` — `score = max(hit.score)` in
-`_group_by_person`, plus a two-level sort for `uzh_first`. The separate `ranking`
+Ranking is `VectorRetriever._rank` in `retrieval/vector.py`: affiliation first under
+`uzh_first`, then the margin of a person's best source over that source's threshold. The separate `ranking`
 package the architecture calls for does not exist yet. The slot is between
 retrieve and synthesise.
 
@@ -151,12 +151,13 @@ retrieve and synthesise.
 spell people differently: `"Davide Scaramuzza"` on a posting against
 `"Scaramuzza, Davide"` on a paper — **0** of 403 supervisor names matched any of
 the 2,942 `uzh_authors`. [`retrieval/identity.py`](src/themis_matcher/retrieval/identity.py)
-now resolves free text against the comma-structured ZORA side: **103 of 403
-(25.6%)**, no detectable conflation.
+now resolves free text against the comma-structured ZORA side: **105 of 403
+(26.1%)**, no detectable conflation.
 
-Two caveats before anyone builds on it. **103 is a ceiling, not a yield** —
+Two caveats before anyone builds on it. **105 is a ceiling, not a yield** —
 `retrieve` fetches `top_k` of each source separately, so a merge needs one person
 in both slices, and that is **0 of 25 returned matches at the default
-`top_k=5`**. And **62% of supervisors cannot be reached by any key**: they have
-no ZORA record at all. Measurement:
+`top_k=5`**. And **62% of supervisors have no registered-author record** — no
+CRIS `person` row, and only 6 of them among the `uzh_authors` — so at least 245
+of 403 are out of the rule's reach. Measurement:
 [`docs/person-key-resolution.md`](../../docs/person-key-resolution.md).
