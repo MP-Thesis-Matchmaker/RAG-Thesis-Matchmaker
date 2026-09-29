@@ -83,7 +83,8 @@ RUN uv sync --locked --no-default-groups --no-editable --package themis-zora
 # `python -m themis_zora harvest` is the same program by its module name.
 #
 # Default: one-shot incremental harvest. A scheduled run is this same invocation
-# with a different --mode, issued by a Kubernetes CronJob — see k8s/. Note that
+# with a different --mode, issued by a Kubernetes CronJob — see themis-zora.yaml in
+# the deploy repo (uzh-dsi-askuzh-themis). Note that
 # `harvest` is part of CMD, not ENTRYPOINT: a chart overriding `args` has to
 # repeat it (`args: ["harvest", "--mode", "full"]`), which is the price of the
 # subcommand and is paid once per manifest.

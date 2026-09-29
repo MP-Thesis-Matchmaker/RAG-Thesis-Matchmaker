@@ -273,8 +273,8 @@ items — the communities are the org structure.
 ### Scheduling
 
 This package does not decide when to run. There was an in-process poll loop
-(`scheduler.py`, deleted); the cluster's CronJobs replace it, and
-[`k8s/`](../../k8s/README.md) holds the two schedules. See
+(`scheduler.py`, deleted); the cluster's CronJobs replace it. The two schedules
+live in `themis-zora.yaml` in the deploy repo, `uzh-dsi-askuzh-themis`; see
 [`docs/deployment.md`](../../docs/deployment.md).
 
 What the CronJobs replaced is narrower than it looks. They took over the *when* —

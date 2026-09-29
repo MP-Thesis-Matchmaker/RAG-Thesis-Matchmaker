@@ -13,29 +13,32 @@ then against the ZI Container Services handbook
   syncs `*.yaml` in the root of a GitLab repo, and each file declares
   `appComponents` pointing at CCS's shared `general_helm_chart`
 
+**The manifests live in the deploy repo, not here.** [`uzh-dsi-askuzh-themis`](https://gitlab.uzh.ch/zi-container-services/user-space/test01/uzh-dsi-askuzh-masterthesis-supervisor) is the GitLab
+repository ArgoCD syncs; its root `*.yaml` files are the deployment, and its README
+holds resources, Vault secrets and day-to-day operations. This repository builds the
+images and holds no manifests. It used to carry a `k8s/` directory of raw `Job`/`CronJob`
+objects that never matched the chart format; it was removed on 2026-09-29 so there is
+one copy to keep true.
+
 Everything below that is not yet filled in is marked `TODO(ci)` — a value we do
 not have yet. Nothing here is guessed: an unverified registry hostname or DSN in
 a committed manifest is worse than an obvious blank.
 
 ## What runs where
 
-| Component | Runtime | Trigger | Manifest |
+| Component | Runtime | Trigger | Manifest (deploy repo) |
 |---|---|---|---|
-| `init-db` | one-shot `Job` | before every rollout | [`k8s/init-db-job.yaml`](../k8s/init-db-job.yaml) |
-| `themis-zora harvest` | `CronJob` | incremental daily, full weekly | [`k8s/zora-harvest-*.yaml`](../k8s/) |
-| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | **none** — image exists (`projects/matcher/`), default `CMD` |
-| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | **none** — same image, `command` override |
-| `themis-gateway mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | **none** — image exists (`projects/gateway/`), default `CMD` |
-| `themis-scraper run` | `CronJob` | `fetch` then `run`, weekly | **none** — image exists (`projects/scraper/`) |
+| `init-db` | one-shot `Job` | on creation; re-run by a manual SYNC | `themis-zora.yaml` (`themis-init-db`) |
+| `themis-zora harvest` | `CronJob` | full Mon 01:00, incremental the other days 01:00 | `themis-zora.yaml` |
+| `themis-matcher serve` | `Deployment` + `Service` | always on, HTTP on 8100 | `themis-matcher.yaml` |
+| `themis-matcher index` | one-shot `Job` | a cold full build, by hand | `themis-matcher-index.yaml.template` (inert until renamed to `.yaml`) |
+| `themis-gateway mcp` | `Deployment` + `Service` | always on, HTTP at `/mcp` | `themis-gateway.yaml` |
+| `themis-scraper run` | `CronJob` | Sat 04:00 | `themis-scraper.yaml` |
 
-Every row but the first two lacks only a manifest. What used to block them — no image
-installed the `[embeddings]` or `[mcp]` extra — is fixed; what remains is that
-the committed manifests are in the wrong format for this cluster (see
-**Deploying** below) and that two quota raises are outstanding. The matcher's
-`Service` is **in-cluster only, with no `HTTPRoute`**: its index endpoints start
-work measured in hours and it answers unauthenticated, so the namespace boundary
+Every component has a manifest; what remains outstanding is the quota raise. The
+matcher's `Service` is **in-cluster only, with no `HTTPRoute`**: its index endpoints
+start work measured in hours and it answers unauthenticated, so the namespace boundary
 is what guards it.
-See [`k8s/README.md`](../k8s/README.md).
 
 Harvesting is a **cluster** concern. It is never run in GitHub Actions, and
 harvest output is never committed to git — the repository is source code, not a
@@ -197,22 +200,17 @@ The file format is not a raw Kubernetes manifest. It is a list of
 
 ```yaml
 appComponents:
-- name: thesis-matchmaker-indexer
+- name: themis-zora-harvest-full
   sources:
     - repoURL: https://gitlab.uzh.ch/zi-container-services/helm-charts.git
       helmpath: "general_helm_chart"
       targetRevision: dev
       values: |-
-        image: registry.cs.zi.uzh.ch/TODO(ci)/thesis-matchmaker-indexer:<git-sha>
+        image: registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-zora:latest-test
         ...
 ```
 
-The image names in these examples still read `thesis-matchmaker-*`, matching what `k8s/` says
-today. They are renamed as a set when those manifests are rewritten — see [`k8s/README.md`](../k8s/README.md).
-
-**This is why the manifests in [`k8s/`](../k8s/) cannot be used as they stand** —
-they are raw `Job` and `CronJob` objects, which is a different thing from chart
-values. Converting them is a task of its own; the value keys are known:
+These are the chart keys the deploy repo's values use:
 
 | Need | Chart key |
 |---|---|
@@ -365,16 +363,14 @@ Not questions for Central Informatics — things we owe ourselves.
   differ?" and documentation is free to be correct. Adopting it moved the
   fingerprint once, to `3d4f0475bf80`; the DDL was unchanged, so existing databases
   are re-stamped with an UPDATE rather than a reset.
-- **`resources` are unset on every committed container, and in this cluster that
-  means the pods do not start.** This was written up as a considered trade-off —
-  better BestEffort than an invented limit that OOM-kills a harvest — and that
-  reasoning is simply wrong here. The namespace carries a ResourceQuota, and the
-  handbook is blunt about the consequence: "Muss bei jedem Pod die Ressourcen für
-  memory und cpu angegeben werden, ansonsten wird dieser nicht gestartet!" A pod
-  without requests and limits is rejected, not merely deprioritised. The shared
-  chart sets defaults via `resources.requests/limits.{cpu,memory}`, and those
-  defaults are meant to be adjusted rather than accepted. Fixing this is part of
-  converting `k8s/` to the Argo format.
+- **`resources` are mandatory in this cluster — resolved in the deploy repo.** The
+  namespace carries a ResourceQuota, and the handbook is blunt about the consequence:
+  "Muss bei jedem Pod die Ressourcen für memory und cpu angegeben werden, ansonsten
+  wird dieser nicht gestartet!" A pod without requests and limits is rejected, not
+  merely deprioritised. Every component in the deploy repo sets them; its README has
+  the table. The ZORA harvest runs under a 512Mi limit, and a manual full harvest ran
+  out of memory in the cluster while it still held the whole corpus for one
+  transaction — the reason publications are now written in committed batches.
 - **No image is pushed anywhere automatically.** Deliberate until the Harbor
   project exists, and manual work in the meantime. Manifests are a different
   story now — Argo applies them continuously once they are in the GitLab repo, so
@@ -571,9 +567,8 @@ docker build -f projects/matcher/Dockerfile \
 docker push registry.cs.zi.uzh.ch/uzh-dsi-askuzh-masterthesis-supervisor/themis-matcher:0.0.1-test
 ```
 
-Note the image name -- `themis-matcher`, matching the distribution. The
-`thesis-matchmaker-*` names elsewhere in this document are pre-split and get
-renamed as a set when the `k8s/` manifests are converted.
+Note the image name -- `themis-matcher`, matching the distribution, and what the
+deploy repo references.
 
 **Build for `linux/amd64` explicitly** when building on an Apple Silicon machine.
 `docker build` defaults to the host architecture, and an arm64 image will not run
