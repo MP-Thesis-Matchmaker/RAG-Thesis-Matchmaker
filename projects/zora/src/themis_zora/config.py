@@ -51,14 +51,20 @@ class ZoraSettings(Settings):
 
     # --- Paths -----------------------------------------------------------
     # Harvest output and the watermark live in Postgres (see zora/store.py); the
-    # only thing still written to disk is the raw-response cache under raw_dir,
-    # which keeps ingestion reproducible without re-hitting ZORA.
+    # only thing a run can still write to disk is the raw-response cache under
+    # raw_dir, and only when `write_raw_dump` is on.
     #
     # Relative to the working directory, the same choice the rest of the
     # repository makes. Deriving it from the package location would break in the
     # container image, where `uv sync --no-editable` installs into site-packages
     # and there is no repository above the module at all.
     data_dir: Path = Path("data")
+
+    # Off by default, and off in the cluster: there it would land on an emptyDir
+    # that is discarded with the pod, so it cost scratch storage for a copy nobody
+    # could ever replay. Postgres is the record. Turn it on locally to get a dump
+    # that `--from-dump` can replay without re-hitting ZORA.
+    write_raw_dump: bool = False
 
     # --- Auth ------------------------------------------------------------
     # The ZORA personal API token, from one of two variables. The file wins when

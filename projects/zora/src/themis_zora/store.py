@@ -13,15 +13,20 @@ the harvester happened to be given, which is why that CI workflow committed it
 back into the repository -- a resume point coupled to git history, and unable to
 survive two concurrent runs at all.
 
-The retention safety check gets strictly better in the process. On disk it had to
-count, then write, then validate -- so a failure left a half-trusted file behind.
-Here the whole harvest is one transaction that is rolled back if the corpus
-shrank implausibly, which is what that check was always reaching for.
+Publications are written in **committed batches** (`upsert_publications`), so a
+harvest holds one batch in memory rather than the whole corpus -- a full run used to
+be one transaction over ~215k rows, and was OOM-killed in the cluster for it. The
+retention safety check survives that because it only ever needed to guard the one
+statement that can shrink the table: the full-mode prune. `finish_harvest` runs it,
+once, after the fetch completed, in its own transaction that is rolled back if the
+corpus shrank implausibly. Upserts cannot shrink anything, so a run that dies
+midway leaves its committed batches behind -- refreshed rows, nothing deleted.
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from datetime import datetime
 
 from psycopg.types.json import Jsonb
@@ -109,7 +114,7 @@ class HarvestState(BaseModel):
 
 
 class _RetentionAbort(Exception):
-    """Internal: unwinds the transaction when the corpus shrank implausibly."""
+    """Internal: unwinds the prune when the corpus shrank implausibly."""
 
 
 def _dsn(dsn: str | None) -> str:
@@ -146,39 +151,54 @@ def _params(row: dict) -> dict:
     }
 
 
-def write_harvest(
-    rows: list[dict],
+def upsert_publications(rows: list[dict], dsn: str | None = None) -> int:
+    """Upsert one batch of validated publication rows and commit it.
+
+    Idempotent (`ON CONFLICT (id) DO UPDATE`), so a batch re-sent by a re-run, or
+    an item that pagination happened to return twice, costs a write and nothing
+    else. @return: the number of rows sent.
+    """
+    if not rows:
+        return 0
+    with db.connection(_dsn(dsn)) as conn:
+        with conn.transaction():
+            conn.cursor().executemany(_UPSERT, [_params(row) for row in rows])
+    return len(rows)
+
+
+def finish_harvest(
+    kept_ids: Iterable[str],
     *,
     mode: str,
+    upserted: int,
     previous_total: int,
     min_retention_ratio: float,
     dsn: str | None = None,
 ) -> HarvestWriteResult:
-    """Upsert a harvest, atomically, subject to the retention check.
+    """Close a harvest whose batches are already committed: prune, then check.
 
     A **full** harvest is an authoritative snapshot, so publications missing from
-    it are deleted -- that is how corrections and withdrawals upstream ever take
-    effect. An **incremental** harvest only ever saw new items, so it must not
-    delete anything.
+    `kept_ids` are deleted -- that is how corrections and withdrawals upstream ever
+    take effect. An **incremental** harvest only ever saw new items, so it must not
+    delete anything, and this only counts.
+
+    Call it only once the fetch completed: `kept_ids` is the snapshot, and a
+    partial one would prune every publication the run had not reached yet.
 
     If the resulting corpus is smaller than `min_retention_ratio` of
-    `previous_total`, nothing is committed: that pattern means an auth failure
+    `previous_total`, the prune is rolled back: that pattern means an auth failure
     returning an empty-but-200 response or a bad scope far more often than it
-    means UZH lost most of its publications overnight.
+    means UZH lost most of its publications overnight. The upserted batches stay
+    -- they cannot have shrunk anything.
     """
-    target = _dsn(dsn)
-    ids = [row["id"] for row in rows]
-    result = HarvestWriteResult(total=previous_total, upserted=0, deleted=0, aborted=True)
+    result = HarvestWriteResult(total=previous_total, upserted=upserted, deleted=0, aborted=True)
 
-    with db.connection(target) as conn:
+    with db.connection(_dsn(dsn)) as conn:
         try:
             with conn.transaction():
-                if rows:
-                    conn.cursor().executemany(_UPSERT, [_params(row) for row in rows])
-
                 deleted = 0
                 if mode == "full":
-                    cursor = conn.execute(_PRUNE, {"kept": ids})
+                    cursor = conn.execute(_PRUNE, {"kept": list(kept_ids)})
                     deleted = cursor.rowcount
 
                 total = conn.execute("SELECT count(*) FROM publication").fetchone()[0]
@@ -186,9 +206,9 @@ def write_harvest(
                 if previous_total > 0 and total < previous_total * min_retention_ratio:
                     logger.error(
                         "Retention check failed: %d publications after this harvest is "
-                        "less than %.0f%% of the previous %d. Rolling back -- this looks "
-                        "like an auth failure or a scope misconfiguration, not a real "
-                        "data change.",
+                        "less than %.0f%% of the previous %d. Rolling back the prune -- "
+                        "this looks like an auth failure or a scope misconfiguration, "
+                        "not a real data change.",
                         total,
                         min_retention_ratio * 100,
                         previous_total,
@@ -196,7 +216,7 @@ def write_harvest(
                     raise _RetentionAbort
 
                 result = HarvestWriteResult(
-                    total=total, upserted=len(rows), deleted=deleted, aborted=False
+                    total=total, upserted=upserted, deleted=deleted, aborted=False
                 )
         except _RetentionAbort:
             pass

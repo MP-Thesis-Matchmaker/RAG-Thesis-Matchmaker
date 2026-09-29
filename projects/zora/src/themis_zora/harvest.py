@@ -11,8 +11,10 @@ Outputs (all in the Postgres at DATABASE_URL):
     publication      — one row per publication
     harvest_state    — the incremental harvest watermark
 
-A raw JSONL dump of each step is written to data/raw/ so ingestion stays
-reproducible without re-hitting ZORA.
+Publications are validated and upserted in committed batches of 1000, so a run
+holds one batch in memory rather than the corpus. With ZORA_WRITE_RAW_DUMP=true
+each step also streams a raw JSONL dump to data/raw/ that --from-dump can replay;
+it is off by default, and off in the cluster.
 
 One run harvests three things, in this order: **persons, then org units, then
 publications**. The entity mirrors come first because they are what a publication's
@@ -29,10 +31,17 @@ full:        fetches every item currently in scope (optionally filtered by
              --since) and treats the result as an authoritative snapshot:
              publications missing from it are deleted. That is what reflects
              corrections and withdrawals upstream, which incremental mode cannot
-             detect (dc.date.accessioned does not change on edit).
+             detect (dc.date.accessioned does not change on edit). The delete
+             runs once, after the fetch completed, and is rolled back if the
+             corpus shrank implausibly; a run that dies midway deletes nothing
+             but keeps the batches it already committed.
 incremental: fetches only items accessioned since the last successful run (per
              harvest_state) and upserts them, deleting nothing. Cheap, runs
              daily.
+
+Either way the watermark in harvest_state moves only when the whole run
+succeeded, and a record that fails validation is logged and skipped rather than
+failing the run.
 --from-dump: skips ZORA entirely and replays a raw dump written by an earlier
              run. The records in it were already normalized, so this re-runs
              only the validate/upsert half of the pipeline. Repeatable, once per
@@ -55,6 +64,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from contextlib import nullcontext
+
+from pydantic import ValidationError
 
 from themis_shared import schema
 
@@ -75,6 +87,11 @@ logger = logging.getLogger(__name__)
 # Re-exported: the dump helpers live in raw_dump.py now (entities.py needs them
 # too, and this module imports entities.py), but this is where callers look.
 __all__ = ["publication_dump", "read_raw_dump", "run", "write_raw_dump"]
+
+# Publications per committed batch. The API's maximum page size, and what bounds a
+# run's memory: one batch of rows plus the ids seen so far, instead of the ~215k
+# records a full harvest used to hold until its single transaction at the end.
+_BATCH_SIZE = 1000
 
 
 def _as_dump_map(from_dump: str | dict[str, str] | None) -> dict[str, str]:
@@ -152,27 +169,71 @@ def _harvest_publications(
             for dso in zora_client.iter_items(client_factory(), since=since)
         )
 
-    raw_items = []
+    # Only once the fetch has run to completion is `seen_ids` a snapshot the prune
+    # can trust, which is why nothing below deletes anything before the loop ends.
+    seen_ids: set[str] = set()
+    batch: list[dict] = []
+    upserted = 0
+    malformed = 0
     last_accessioned_seen = since
 
-    for i, record in enumerate(records):
-        if limit is not None and i >= limit:
-            logger.info("Reached --limit %d, stopping", limit)
-            break
-        if not record.get("handle"):
-            logger.warning("Skipping item %d: no handle (uuid=%s)", i, record.get("uuid"))
-            continue
-        raw_items.append(record)
-        if record.get("accessioned"):
-            last_accessioned_seen = record["accessioned"]
+    dumping = raw_dump.enabled() and not from_dump
+    if from_dump and raw_dump.enabled():
+        # The source file already *is* the raw cache. Writing a second copy under
+        # a new timestamp would double it on disk and make it ambiguous which
+        # dump a later replay should use.
+        logger.info("Not writing a raw dump: --from-dump replays an existing one")
 
+    with raw_dump.open_raw_dump(mode) if dumping else nullcontext() as dump:
+        for i, record in enumerate(records):
+            if limit is not None and i >= limit:
+                logger.info("Reached --limit %d, stopping", limit)
+                break
+            handle = record.get("handle")
+            if not handle:
+                logger.warning("Skipping item %d: no handle (uuid=%s)", i, record.get("uuid"))
+                continue
+            if dump is not None:
+                dump.write(record)
+            if record.get("accessioned"):
+                last_accessioned_seen = record["accessioned"]
+
+            # Seen even if it fails validation below: the item still exists
+            # upstream, and leaving it out of the snapshot would have the prune
+            # delete the last good copy we hold because today's copy is broken.
+            seen_ids.add(handle)
+            try:
+                # Validates against ZoraPublication, so a malformed record is caught
+                # here rather than by Postgres halfway through a batch.
+                batch.append(mapping.to_publication(record))
+            except ValidationError as exc:
+                malformed += 1
+                first = exc.errors()[0]
+                logger.warning(
+                    "Skipping malformed publication %s (%d validation error(s), first: %s: %s)",
+                    handle,
+                    exc.error_count(),
+                    ".".join(str(part) for part in first["loc"]),
+                    first["msg"],
+                )
+                continue
+
+            if len(batch) >= _BATCH_SIZE:
+                upserted += store.upsert_publications(batch)
+                batch = []
+                logger.info("Committed %d publications so far", upserted)
+
+    if batch:
+        upserted += store.upsert_publications(batch)
     logger.info(
-        "%s %d publication records",
+        "%s %d publication records (%d upserted, %d skipped as malformed)",
         "Replayed" if from_dump else "Fetched",
-        len(raw_items),
+        len(seen_ids),
+        upserted,
+        malformed,
     )
 
-    if mode == "incremental" and not raw_items:
+    if mode == "incremental" and not seen_ids:
         logger.info("No new publications since last run — nothing to do")
         # Re-persist the unchanged watermark/total purely to stamp
         # last_incremental_run_at: a run that legitimately found nothing still ran,
@@ -180,37 +241,30 @@ def _harvest_publications(
         store.save_state(since, st.last_total_publications, mode)
         return 0
 
-    if from_dump:
-        # The source file already *is* the raw cache. Writing a second copy under
-        # a new timestamp would double ~50 MB on disk and make it ambiguous which
-        # dump a later replay should use.
-        logger.info("Not writing a raw dump: --from-dump replays an existing one")
-    else:
-        write_raw_dump(raw_items, mode)
-
-    # to_publication validates each record against ZoraPublication as it builds it,
-    # so a malformed record fails here rather than after being written. accessioned
-    # is part of that model, so the validated row is exactly what gets stored.
-    rows = [mapping.to_publication(record) for record in raw_items]
-
-    # Upsert, prune (full mode only) and retention-check inside one transaction:
-    # nothing is committed if the corpus shrank implausibly.
-    result = store.write_harvest(
-        rows,
+    # Prune (full mode only) and retention-check in one transaction; the batches
+    # above are already committed and stay whatever this decides.
+    result = store.finish_harvest(
+        seen_ids,
         mode=mode,
+        upserted=upserted,
         previous_total=st.last_total_publications,
         min_retention_ratio=config.ZoraSettings.ZORA_MIN_RETENTION_RATIO,
     )
     if result.aborted:
-        logger.error("Nothing was written. Investigate before re-running.")
+        logger.error(
+            "Nothing was pruned and the watermark was not advanced; the %d upserted "
+            "rows stay. Investigate before re-running.",
+            upserted,
+        )
         return 1
 
     store.save_state(last_accessioned_seen, result.total, mode)
     logger.info(
-        "Done. %d publications in the database (%d upserted, %d removed).",
+        "Done. %d publications in the database (%d upserted, %d removed, %d skipped as malformed).",
         result.total,
         result.upserted,
         result.deleted,
+        malformed,
     )
     return 0
 

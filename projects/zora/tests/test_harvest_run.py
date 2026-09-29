@@ -4,7 +4,8 @@
 dict-style access to `HarvestState` survived the Postgres migration and only
 surfaced after a 2.5-hour full harvest had already been fetched. These tests
 exercise the orchestration itself -- what `run()` passes where -- so the seam
-between `load_state`, `write_harvest` and `save_state` cannot drift again.
+between `load_state`, `upsert_publications`, `finish_harvest` and `save_state`
+cannot drift again.
 """
 
 from __future__ import annotations
@@ -37,7 +38,11 @@ class _Spy:
 
     def __init__(self, state: store.HarvestState) -> None:
         self.state = state
-        self.write_calls: list[dict] = []
+        # One entry per committed batch, and the rows across all of them.
+        self.batches: list[list[dict]] = []
+        # The one closing call per run: the kept-id snapshot and the retention inputs.
+        self.finish_calls: list[dict] = []
+        self.finish_aborted = False
         self.save_calls: list[tuple] = []
         # Which steps ran, in order. `run()` promises persons -> org units ->
         # publications -> reconcile, and the order is the point: the mirrors are
@@ -54,11 +59,24 @@ class _Spy:
     def load_state(self, dsn: str | None = None) -> store.HarvestState:
         return self.state
 
-    def write_harvest(self, rows, **kwargs) -> store.HarvestWriteResult:
+    @property
+    def rows(self) -> list[dict]:
+        return [row for batch in self.batches for row in batch]
+
+    def upsert_publications(self, rows, dsn=None) -> int:
+        # Copied: the caller starts a fresh list per batch, but a spy that kept a
+        # reference would hide a caller that reused and cleared one instead.
+        self.batches.append(list(rows))
+        return len(rows)
+
+    def finish_harvest(self, kept_ids, **kwargs) -> store.HarvestWriteResult:
         self.steps.append("publications")
-        self.write_calls.append({"rows": rows, **kwargs})
+        self.finish_calls.append({"kept": set(kept_ids), **kwargs})
         return store.HarvestWriteResult(
-            total=len(rows), upserted=len(rows), deleted=0, aborted=False
+            total=len(self.finish_calls[-1]["kept"]),
+            upserted=kwargs["upserted"],
+            deleted=0,
+            aborted=self.finish_aborted,
         )
 
     def save_state(self, last_accessioned, total, mode, dsn=None) -> None:
@@ -90,7 +108,8 @@ def spy(monkeypatch: pytest.MonkeyPatch, tmp_path) -> _Spy:
     """
     s = _Spy(store.HarvestState(last_accessioned="2025-06-01", last_total_publications=22541))
     monkeypatch.setattr(store, "load_state", s.load_state)
-    monkeypatch.setattr(store, "write_harvest", s.write_harvest)
+    monkeypatch.setattr(store, "upsert_publications", s.upsert_publications)
+    monkeypatch.setattr(store, "finish_harvest", s.finish_harvest)
     monkeypatch.setattr(store, "save_state", s.save_state)
     # Every store call `run()` makes has to be stubbed, not just the ones a test
     # asserts on: an unstubbed one opens a real connection to `settings.database_url`,
@@ -141,7 +160,7 @@ def test_each_capability_can_be_opted_out(spy: _Spy) -> None:
 def test_no_publications_leaves_the_watermark_untouched(spy: _Spy) -> None:
     """Only the publication step owns harvest_state."""
     assert harvest.run("full", publications=False) == 0
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
     assert spy.save_calls == []
 
 
@@ -173,7 +192,7 @@ def test_an_aborted_entity_snapshot_stops_before_publications(spy: _Spy) -> None
 
     assert harvest.run("full") == 1
     assert spy.steps == ["persons"]
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
     assert spy.save_calls == []
 
 
@@ -182,7 +201,7 @@ def test_an_aborted_org_unit_snapshot_also_stops_the_run(spy: _Spy) -> None:
 
     assert harvest.run("full") == 1
     assert spy.steps == ["persons", "org_units"]
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
 
 
 def test_an_entity_step_failure_surfaces_as_a_clean_exit(
@@ -201,7 +220,7 @@ def test_an_entity_step_failure_surfaces_as_a_clean_exit(
         cli.main()
 
     assert exc.value.code == 1
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
 
 
 def test_main_maps_the_no_flags_onto_run(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -236,40 +255,99 @@ def test_full_harvest_passes_previous_total_from_state(spy: _Spy) -> None:
     """The regression: previous_total is read off HarvestState, not dict-indexed.
 
     `HarvestState` is a Pydantic model, so a `.get()` here raises AttributeError
-    *while building the argument list* -- before write_harvest is entered. The
+    *while building the argument list* -- before finish_harvest is entered. The
     raw dump is already on disk at that point, which is why the failure looked
     like a successful harvest that silently wrote nothing.
     """
     assert harvest.run("full") == 0
 
-    assert len(spy.write_calls) == 1
-    assert spy.write_calls[0]["previous_total"] == 22541
-    assert spy.write_calls[0]["mode"] == "full"
+    assert len(spy.finish_calls) == 1
+    assert spy.finish_calls[0]["previous_total"] == 22541
+    assert spy.finish_calls[0]["mode"] == "full"
 
 
-def test_full_harvest_writes_raw_dump_and_saves_watermark(spy: _Spy) -> None:
+def test_a_default_run_writes_no_raw_dump(spy: _Spy) -> None:
+    """Off unless asked for: in the cluster a dump only ever landed on an emptyDir."""
+    assert harvest.run("full") == 0
+    assert not os.path.exists(config.get_settings().raw_dir)
+    # The watermark advances to the newest accessioned date seen, not the oldest.
+    assert spy.save_calls == [("2026-02-02", 2, "full")]
+
+
+def test_raw_dump_is_written_when_enabled(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ZORA_WRITE_RAW_DUMP", "true")
     assert harvest.run("full") == 0
 
     dumps = os.listdir(config.get_settings().raw_dir)
     assert len(dumps) == 1 and dumps[0].endswith("_full.jsonl")
     with open(os.path.join(config.get_settings().raw_dir, dumps[0]), encoding="utf-8") as f:
         assert [json.loads(line)["handle"] for line in f] == ["123/1", "123/2"]
-
-    # The watermark advances to the newest accessioned date seen, not the oldest.
     assert spy.save_calls == [("2026-02-02", 2, "full")]
 
 
-def test_aborted_write_returns_failure_and_leaves_watermark_alone(
+def _items(*handles: str):
+    return lambda client, since=None: iter([_dso(handle) for handle in handles])
+
+
+def test_publications_are_committed_in_batches(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The OOM fix: a run holds one batch, not the corpus."""
+    monkeypatch.setattr(harvest, "_BATCH_SIZE", 2)
+    monkeypatch.setattr(zora_client, "iter_items", _items("1/1", "1/2", "1/3", "1/4", "1/5"))
+
+    assert harvest.run("full") == 0
+
+    assert [len(batch) for batch in spy.batches] == [2, 2, 1]
+    # One prune, after every batch, over the whole snapshot.
+    assert len(spy.finish_calls) == 1
+    assert spy.finish_calls[0]["kept"] == {"1/1", "1/2", "1/3", "1/4", "1/5"}
+    assert spy.finish_calls[0]["upserted"] == 5
+
+
+def test_a_malformed_record_is_skipped_but_stays_in_the_snapshot(spy: _Spy, tmp_path) -> None:
+    """Skipped, logged, and still kept: the prune must not delete its last good copy."""
+    path = _write_dump(
+        tmp_path / "dump.jsonl",
+        [_record("123/1"), _record("123/2", year="not a year"), _record("123/3")],
+    )
+    assert harvest.run("full", from_dump={"full": path}) == 0
+
+    assert [row["id"] for row in spy.rows] == ["123/1", "123/3"]
+    assert spy.finish_calls[0]["kept"] == {"123/1", "123/2", "123/3"}
+    assert spy.finish_calls[0]["upserted"] == 2
+
+
+def test_a_crash_mid_fetch_keeps_its_batches_but_prunes_and_stamps_nothing(
     spy: _Spy, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        store,
-        "write_harvest",
-        lambda rows, **kw: store.HarvestWriteResult(total=0, upserted=0, deleted=0, aborted=True),
-    )
+    """The half of a run that finished stays; nothing that needs the whole run happens."""
+    monkeypatch.setenv("ZORA_WRITE_RAW_DUMP", "true")
+    monkeypatch.setattr(harvest, "_BATCH_SIZE", 2)
+
+    def dies_on_page_two(client, since=None):
+        yield from (_dso("1/1"), _dso("1/2"), _dso("1/3"))
+        raise RuntimeError("connection reset")
+
+    monkeypatch.setattr(zora_client, "iter_items", dies_on_page_two)
+
+    with pytest.raises(RuntimeError, match="connection reset"):
+        harvest.run("full")
+
+    assert [[row["id"] for row in batch] for batch in spy.batches] == [["1/1", "1/2"]]
+    assert spy.finish_calls == []
+    assert spy.save_calls == []
+    assert "reconcile" not in spy.steps
+    # A truncated dump must not look like a whole one: a replay would prune the rest.
+    dumps = os.listdir(config.get_settings().raw_dir)
+    assert len(dumps) == 1 and dumps[0].endswith("_full.jsonl.partial")
+
+
+def test_aborted_finish_returns_failure_and_leaves_watermark_alone(spy: _Spy) -> None:
+    spy.finish_aborted = True
 
     assert harvest.run("full") == 1
-    # A rolled-back harvest must not move the resume point.
+    # The batches were committed before the retention check could object...
+    assert [row["id"] for row in spy.rows] == ["123/1", "123/2"]
+    # ...but a run whose prune was refused must not move the resume point.
     assert spy.save_calls == []
 
 
@@ -279,7 +357,7 @@ def test_incremental_with_no_new_items_stamps_run_and_keeps_total(
     monkeypatch.setattr(zora_client, "iter_items", lambda client, since=None: iter([]))
 
     assert harvest.run("incremental") == 0
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
     assert spy.save_calls == [("2025-06-01", 22541, "incremental")]
 
 
@@ -343,15 +421,15 @@ def test_from_dump_replays_without_contacting_zora(
 
     assert harvest.run("full", from_dump=dump) == 0
 
-    assert len(spy.write_calls) == 1
-    rows = spy.write_calls[0]["rows"]
+    assert len(spy.finish_calls) == 1
+    rows = spy.rows
     assert [row["id"] for row in rows] == ["123/1", "123/2"]
     # mapping.to_publication ran, so the normalized keys were renamed.
     assert rows[0]["publication_type"] == "article"
     assert rows[0]["url"] == "https://www.zora.uzh.ch/id/eprint/123/1"
     # accessioned is part of the validated model now, not spliced on afterwards.
     assert rows[0]["accessioned"] == "2026-01-01T00:00:00Z"
-    assert spy.write_calls[0]["previous_total"] == 22541
+    assert spy.finish_calls[0]["previous_total"] == 22541
 
 
 def test_a_lone_publication_dump_runs_only_the_publication_step(
@@ -465,6 +543,19 @@ def test_an_unroutable_name_is_rejected_and_dump_kind_fixes_it(
     assert spy.steps == ["publications", "reconcile"]
 
 
+def test_a_partial_dump_is_refused_even_with_dump_kind(spy: _Spy, tmp_path, monkeypatch) -> None:
+    """Naming the kind of a truncated dump does not make it whole."""
+    monkeypatch.setattr(db, "close_pools", lambda: None)
+    path = _write_dump(tmp_path / "20260101T000000Z_full.jsonl.partial", [_record("123/1")])
+
+    for extra in ([], ["--dump-kind", "full"]):
+        monkeypatch.setattr("sys.argv", ["themis-zora", "harvest", "--from-dump", path, *extra])
+        with pytest.raises(SystemExit) as exc:
+            cli.main()
+        assert exc.value.code == 2
+    assert spy.steps == []
+
+
 def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> None:
     """One override cannot name the kind of two files."""
     monkeypatch.setattr(db, "close_pools", lambda: None)
@@ -481,8 +572,11 @@ def test_dump_kind_needs_exactly_one_dump(spy: _Spy, tmp_path, monkeypatch) -> N
     assert exc.value.code == 2
 
 
-def test_from_dump_does_not_write_another_raw_dump(spy: _Spy, dump: str) -> None:
+def test_from_dump_does_not_write_another_raw_dump(
+    spy: _Spy, dump: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The source file already *is* the cache; re-dumping it would just duplicate it."""
+    monkeypatch.setenv("ZORA_WRITE_RAW_DUMP", "true")
     assert harvest.run("full", from_dump=dump) == 0
     assert (
         not os.path.exists(config.get_settings().raw_dir)
@@ -520,7 +614,7 @@ def test_watermark_is_the_last_record_seen_not_the_maximum(spy: _Spy, tmp_path) 
 
 def test_from_dump_respects_limit(spy: _Spy, dump: str) -> None:
     assert harvest.run("full", from_dump=dump, limit=1) == 0
-    assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1"]
+    assert [row["id"] for row in spy.rows] == ["123/1"]
 
 
 def test_from_dump_skips_records_without_a_handle(spy: _Spy, tmp_path) -> None:
@@ -530,7 +624,7 @@ def test_from_dump_skips_records_without_a_handle(spy: _Spy, tmp_path) -> None:
         [_record("123/1"), {**_record("ignored"), "handle": None}, _record("123/3")],
     )
     assert harvest.run("full", from_dump={"full": path}) == 0
-    assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/3"]
+    assert [row["id"] for row in spy.rows] == ["123/1", "123/3"]
 
 
 def test_from_dump_tolerates_blank_lines(spy: _Spy, tmp_path) -> None:
@@ -540,17 +634,11 @@ def test_from_dump_tolerates_blank_lines(spy: _Spy, tmp_path) -> None:
         encoding="utf-8",
     )
     assert harvest.run("full", from_dump={"full": str(path)}) == 0
-    assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/2"]
+    assert [row["id"] for row in spy.rows] == ["123/1", "123/2"]
 
 
-def test_from_dump_aborted_write_still_reports_failure(
-    spy: _Spy, dump: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(
-        store,
-        "write_harvest",
-        lambda rows, **kw: store.HarvestWriteResult(total=0, upserted=0, deleted=0, aborted=True),
-    )
+def test_from_dump_aborted_finish_still_reports_failure(spy: _Spy, dump: str) -> None:
+    spy.finish_aborted = True
     assert harvest.run("full", from_dump=dump) == 1
     assert spy.save_calls == []
 
@@ -567,7 +655,7 @@ def test_main_wires_from_dump_through(
         cli.main()
 
     assert exc.value.code == 0
-    assert [row["id"] for row in spy.write_calls[0]["rows"]] == ["123/1", "123/2"]
+    assert [row["id"] for row in spy.rows] == ["123/1", "123/2"]
 
 
 def test_missing_dump_fails_cleanly_without_a_traceback(
@@ -591,7 +679,7 @@ def test_missing_dump_fails_cleanly_without_a_traceback(
         cli.main()
 
     assert exc.value.code == 1
-    assert spy.write_calls == []
+    assert spy.finish_calls == []
 
 
 def test_main_closes_connection_pools(spy: _Spy, monkeypatch: pytest.MonkeyPatch) -> None:
