@@ -58,6 +58,13 @@ def _collect_dumps(args: argparse.Namespace) -> dict[str, str]:
     if args.dump_kind and len(paths) != 1:
         raise _UsageError("--dump-kind names the kind of one dump; pass exactly one --from-dump")
     for path in paths:
+        # Before --dump-kind gets a say: naming the kind of a truncated dump does
+        # not make it whole, and a truncated full dump would prune what it lacks.
+        if raw_dump.is_partial(path):
+            raise _UsageError(
+                f"{path} is an incomplete dump from a run that never finished fetching; "
+                "it cannot be replayed"
+            )
         try:
             kind = args.dump_kind or raw_dump.dump_kind(path)
         except RuntimeError as exc:

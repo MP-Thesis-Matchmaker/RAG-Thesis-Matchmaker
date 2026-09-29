@@ -36,10 +36,16 @@ ignored in incremental mode, which always uses the `harvest_state` watermark.
 
 ## Replaying a harvest without re-fetching
 
-Every step writes its records to `data/raw/<timestamp>_<kind>.jsonl` **before** touching Postgres,
-where `<kind>` is the publication mode (`full`/`incremental`) or the entity kind
-(`persons`/`orgunits`). That ordering is what makes a failed write cheap to recover from: the two
-hours of ZORA requests are already on disk, so replay the dump instead of repeating them.
+With `ZORA_WRITE_RAW_DUMP=true` (off by default, and off in the cluster), every step streams its
+records to `data/raw/<timestamp>_<kind>.jsonl` as it fetches, where `<kind>` is the publication mode
+(`full`/`incremental`) or the entity kind (`persons`/`orgunits`). The file is named `.partial`
+until the step finished fetching; only a complete one can be replayed. That makes a failed local
+run cheap to recover from: the two hours of ZORA requests are already on disk, so replay the dump
+instead of repeating them.
+
+Publications reach Postgres in committed batches of 1000, not at the end. A run that dies midway
+keeps what it committed, but deletes nothing and does not advance the watermark: the full-mode
+prune and its retention check run only once the fetch completed.
 
 ```bash
 themis-zora harvest --mode full \
@@ -127,8 +133,9 @@ docker run --rm \
   zora-harvester --mode full --limit 5
 ```
 
-The `data/` mount is **only** the raw-response cache (`data/raw/`). Harvest output goes to the
-database; nothing is written back into the repository checkout.
+The `data/` mount is **only** for the opt-in raw dump (`data/raw/`, with
+`-e ZORA_WRITE_RAW_DUMP=true`). Harvest output goes to the database; nothing is written back into
+the repository checkout.
 
 In practice prefer `docker compose`, which already wires the network, the database URL, and the
 token mount:

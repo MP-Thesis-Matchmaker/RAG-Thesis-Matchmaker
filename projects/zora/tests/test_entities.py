@@ -16,8 +16,9 @@ from themis_zora import entities, fields, store
 
 @pytest.fixture()
 def raw_dir(tmp_path, monkeypatch):
-    """Point the raw-dump cache at a temp directory for the duration of a test."""
+    """Point the raw-dump cache at a temp directory, with dumps switched on."""
     monkeypatch.setenv("ZORA_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("ZORA_WRITE_RAW_DUMP", "true")
     return tmp_path / "raw"
 
 
@@ -75,6 +76,19 @@ def test_harvest_persons_normalizes_dumps_and_writes(raw_dir, monkeypatch):
     assert written[0][0]["orcid"] == "0000-0002-0450-9897"
     # The dump holds the *normalized* records, written before the DB write.
     assert [record["uuid"] for record in _dump_lines(raw_dir, "persons")] == ["p1", "p2"]
+
+
+def test_no_entity_dump_is_written_by_default(raw_dir, monkeypatch):
+    """Opt-in, as for publications: the fixture's switch is the only thing turning it on."""
+    monkeypatch.delenv("ZORA_WRITE_RAW_DUMP")
+    monkeypatch.setattr(
+        entities.zora_client, "iter_persons", lambda client: iter([_person_dso("p1")])
+    )
+    monkeypatch.setattr(entities.store, "write_persons", _captured_writer([]))
+
+    entities.harvest_persons(client=object())
+
+    assert not raw_dir.exists()
 
 
 def test_harvest_persons_honours_limit(raw_dir, monkeypatch):

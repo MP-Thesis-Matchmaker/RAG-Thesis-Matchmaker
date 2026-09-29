@@ -52,3 +52,32 @@ def test_the_kind_is_read_from_the_basename_not_the_path(tmp_path):
     path = tmp_path / "persons" / "20260821T151956Z_full.jsonl"
 
     assert raw_dump.dump_kind(str(path)) == "full"
+
+
+def test_a_dump_only_gets_its_final_name_once_the_block_exits_cleanly(raw_dir):
+    with raw_dump.open_raw_dump("full") as dump:
+        dump.write({"uuid": "x"})
+        assert [p.name for p in raw_dir.iterdir()] == [
+            dump.path.rsplit("/", 1)[-1] + raw_dump.PARTIAL_SUFFIX
+        ]
+    assert [p.name for p in raw_dir.iterdir()] == [dump.path.rsplit("/", 1)[-1]]
+
+
+def test_a_crash_leaves_only_a_partial_dump(raw_dir):
+    """A truncated dump under a routable name would replay as a whole snapshot."""
+    with pytest.raises(RuntimeError, match="boom"):
+        with raw_dump.open_raw_dump("full") as dump:
+            dump.write({"uuid": "x"})
+            raise RuntimeError("boom")
+
+    (leftover,) = raw_dir.iterdir()
+    assert leftover.name.endswith("_full.jsonl.partial")
+    with pytest.raises(RuntimeError, match="incomplete dump"):
+        raw_dump.dump_kind(str(leftover))
+
+
+def test_dumps_are_off_unless_switched_on(monkeypatch):
+    monkeypatch.delenv("ZORA_WRITE_RAW_DUMP", raising=False)
+    assert raw_dump.enabled() is False
+    monkeypatch.setenv("ZORA_WRITE_RAW_DUMP", "true")
+    assert raw_dump.enabled() is True

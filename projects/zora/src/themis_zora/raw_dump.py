@@ -1,9 +1,16 @@
 """The raw-response cache: one JSONL file per harvest step, under data/raw/.
 
-Keeps ingestion reproducible without re-hitting ZORA. A full publication harvest is
-~215k records and roughly two hours of requests, and the dump is written *before*
-anything reaches Postgres, so a run that fetched successfully but failed on the
-write does not have to fetch again (`harvest.py --from-dump`).
+**Opt-in** (`ZORA_WRITE_RAW_DUMP=true`), off by default and off in the cluster. It
+exists so a local run can be replayed without re-hitting ZORA (`harvest --from-dump`):
+a full publication harvest is ~215k records and roughly two hours of requests. In the
+cluster it would land on an emptyDir that is discarded with the pod, so it bought
+nothing there but scratch storage; Postgres is the record.
+
+The dump is streamed record by record, alongside the batched database writes, and
+lands under a `.partial` name that is renamed to its final one only once the step
+finished fetching. That rename is what keeps a crashed run from leaving a truncated
+dump that looks complete -- and a truncated `_full` dump replayed in full mode would
+prune every publication missing from it.
 
 Its own module rather than part of `harvest.py` because `entities.py` writes dumps
 too, and `harvest.py` imports `entities.py` -- sharing it the other way round would
@@ -20,8 +27,10 @@ from __future__ import annotations
 import json
 import logging
 import os
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
+from typing import TextIO
 
 from . import config
 
@@ -36,14 +45,43 @@ PERSONS = "persons"
 ORG_UNITS = "orgunits"
 KINDS = (*PUBLICATION_KINDS, PERSONS, ORG_UNITS)
 
+# What a dump is called until the step that writes it has finished fetching.
+PARTIAL_SUFFIX = ".partial"
 
-def write_raw_dump(records: list[dict], kind: str) -> str:
-    """Write one JSONL dump and return its path.
+
+def enabled() -> bool:
+    """Whether this run writes dumps at all (`ZORA_WRITE_RAW_DUMP`)."""
+    return config.get_settings().write_raw_dump
+
+
+def is_partial(path: str) -> bool:
+    """Whether `path` is a dump whose run never finished fetching."""
+    return path.endswith(PARTIAL_SUFFIX)
+
+
+class RawDumpWriter:
+    """One open dump, written a record at a time. Obtained from `open_raw_dump`."""
+
+    def __init__(self, path: str, file: TextIO) -> None:
+        # The final name, which only exists once the `with` block exited cleanly.
+        self.path = path
+        self._file = file
+
+    def write(self, record: dict) -> None:
+        self._file.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+@contextmanager
+def open_raw_dump(kind: str) -> Iterator[RawDumpWriter]:
+    """Stream one JSONL dump, renamed to its final name only on a clean exit.
 
     @param kind: what this dump holds -- a publication harvest mode
                   ("full"/"incremental") or an entity kind
                   ("persons"/"orgunits"). It becomes part of the filename, so a
                   replay can tell the kinds apart.
+
+    An exception inside the block leaves the file behind as `<name>.partial`,
+    which `dump_kind` cannot route and the CLI refuses to replay.
     """
     # Resolved per call, not at import: ZORA_DATA_DIR used to be read once when
     # this module was first imported, which is why three test modules had to
@@ -52,10 +90,19 @@ def write_raw_dump(records: list[dict], kind: str) -> str:
     os.makedirs(raw_dir, exist_ok=True)
     ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     dump_path = os.path.join(raw_dir, f"{ts}_{kind}.jsonl")
-    with open(dump_path, "w", encoding="utf-8") as f:
+    partial_path = dump_path + PARTIAL_SUFFIX
+    with open(partial_path, "w", encoding="utf-8") as f:
+        yield RawDumpWriter(dump_path, f)
+    os.replace(partial_path, dump_path)
+    logger.info("Wrote raw dump %s", dump_path)
+
+
+def write_raw_dump(records: Iterable[dict], kind: str) -> str:
+    """Write one JSONL dump in one go and return its path. See `open_raw_dump`."""
+    with open_raw_dump(kind) as dump:
         for record in records:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    return dump_path
+            dump.write(record)
+    return dump.path
 
 
 def dump_kind(path: str) -> str:
@@ -73,6 +120,11 @@ def dump_kind(path: str) -> str:
 
     @raise RuntimeError: if the filename carries no recognisable kind.
     """
+    if is_partial(path):
+        raise RuntimeError(
+            f"{path} is an incomplete dump: the run that wrote it never finished "
+            "fetching, and replaying it would treat a truncated snapshot as a whole one."
+        )
     stem = os.path.basename(path).removesuffix(".jsonl")
     for kind in KINDS:
         if stem.endswith(f"_{kind}"):

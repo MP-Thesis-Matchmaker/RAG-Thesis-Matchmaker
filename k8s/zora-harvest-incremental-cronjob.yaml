@@ -72,14 +72,15 @@ spec:
                 # the file and this mirrors how the token arrives here.
                 - name: ZORA_UZH_API_KEY_FILE
                   value: /run/secrets/zora/token
-                - name: ZORA_DATA_DIR
-                  value: /var/cache/zora
+                # No ZORA_WRITE_RAW_DUMP and no cache volume: the raw dump is
+                # off by default and stays off here. It used to land on an
+                # emptyDir that was discarded with the pod, so it cost scratch
+                # storage for a copy nothing could ever replay. Postgres is the
+                # record; see k8s/README.md.
               volumeMounts:
                 - name: zora-api-token
                   mountPath: /run/secrets/zora
                   readOnly: true
-                - name: raw-cache
-                  mountPath: /var/cache/zora
               # resources: deliberately unset -- see k8s/README.md. A full
               # harvest of ~22.5k records has never been profiled in a cluster,
               # and an invented memory limit would OOM-kill it mid-run.
@@ -88,12 +89,3 @@ spec:
               secret:
                 secretName: zora-api-token
                 defaultMode: 0400
-            - name: raw-cache
-              # OPEN QUESTION, not a settled choice. harvest.write_raw_dump writes
-              # one JSONL per run so ingestion is reproducible without re-hitting
-              # ZORA. emptyDir discards it when the pod exits, which loses exactly
-              # that property. The alternatives are a PVC (needs a storage class
-              # we have not been given) or moving the cache into Postgres as a
-              # jsonb table. emptyDir is the honest placeholder: the harvest works,
-              # and nothing pretends the dump is being kept.
-              emptyDir: {}

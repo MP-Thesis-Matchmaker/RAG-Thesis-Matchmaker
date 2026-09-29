@@ -6,6 +6,7 @@ database whose name ends in _test (see tests/conftest.py).
 
 from __future__ import annotations
 
+import psycopg
 import pytest
 
 from themis_shared import db
@@ -50,8 +51,15 @@ def clean_db(dsn: str) -> str:
 
 
 def _write(dsn: str, rows: list[dict], *, mode: str, previous_total: int = 0):
-    return store.write_harvest(
-        rows, mode=mode, previous_total=previous_total, min_retention_ratio=_RATIO, dsn=dsn
+    """A whole harvest the way `harvest.py` drives it: batches, then one finish."""
+    upserted = store.upsert_publications(rows, dsn=dsn)
+    return store.finish_harvest(
+        [row["id"] for row in rows],
+        mode=mode,
+        upserted=upserted,
+        previous_total=previous_total,
+        min_retention_ratio=_RATIO,
+        dsn=dsn,
     )
 
 
@@ -117,14 +125,37 @@ def test_incremental_harvest_never_deletes(clean_db: str) -> None:
     assert result.total == 5
 
 
-def test_implausible_shrink_is_rolled_back_entirely(clean_db: str) -> None:
-    """The retention check now leaves nothing half-written, unlike the file version."""
+def test_implausible_shrink_rolls_back_the_prune_but_keeps_the_batches(clean_db: str) -> None:
+    """The retention check guards the one statement that can shrink the table.
+
+    Batches are committed as they arrive, so by the time the check runs they are
+    already in; they cannot have shrunk anything, and they stay.
+    """
     _write(clean_db, [_row(f"zora:{i}") for i in range(10)], mode="full")
-    result = _write(clean_db, [_row("zora:0")], mode="full", previous_total=10)
+    result = _write(clean_db, [_row("zora:0", title="Refreshed")], mode="full", previous_total=10)
     assert result.aborted is True
-    # Every one of the ten survives: the transaction was rolled back, so neither
-    # the deletes nor the upsert landed.
+    # Every one of the ten survives: the prune was rolled back...
     assert store.publication_count(clean_db) == 10
+    # ...while the batch committed before it stays.
+    with db.connection(clean_db) as conn:
+        title = conn.execute("SELECT title FROM publication WHERE id = 'zora:0'").fetchone()[0]
+    assert title == "Refreshed"
+
+
+def test_batches_commit_independently(clean_db: str) -> None:
+    """Each batch is its own transaction: a later failure cannot undo an earlier one."""
+    store.upsert_publications([_row("zora:1")], dsn=clean_db)
+    with pytest.raises(psycopg.errors.NotNullViolation):
+        # A NOT NULL violation on the primary key aborts this batch only.
+        store.upsert_publications([_row("zora:2"), _row(None)], dsn=clean_db)
+    with db.connection(clean_db) as conn:
+        ids = [r[0] for r in conn.execute("SELECT id FROM publication ORDER BY id")]
+    assert ids == ["zora:1"]
+
+
+def test_an_empty_batch_is_a_no_op(clean_db: str) -> None:
+    assert store.upsert_publications([], dsn=clean_db) == 0
+    assert store.publication_count(clean_db) == 0
 
 
 def test_state_roundtrip_and_full_run_stamps_both_modes(clean_db: str) -> None:

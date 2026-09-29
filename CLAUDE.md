@@ -226,6 +226,14 @@ Deployment target is a **UZH Kubernetes cluster** pulling from that registry, wi
 **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Harvesting runs
 as a cluster job — never in CI, and **never committing data back to the repo**.
 
+**The publication harvest writes in committed batches of 1000 (2026-09-29)**, not in one
+transaction at the end — that version held all ~215k records in memory and was OOM-killed in
+the cluster. The full-mode prune and its retention check run once, after the fetch completed,
+over the ids seen; a run that dies midway keeps its batches but deletes nothing and does not
+advance the watermark. A record that fails validation is skipped and logged, never fatal, and
+still counts as seen so the prune keeps its last good copy. Details:
+[`zora/README.md`](projects/zora/README.md).
+
 Keep this table current as modules land; put the detail in the member README, not here.
 
 ## Architecture (agreed decisions — respect them)
@@ -309,7 +317,11 @@ still missing:
 - **ZORA access is via the DSpace(-CRIS) REST API, not OAI-PMH** (decision confirmed with ZORA
   maintainers, 2026-07). Details below under "ZORA / DSpace REST API".
 - Any scraping: respect robots.txt, terms of use, and rate limits; **cache raw responses** so
-  ingestion is reproducible and re-runs don't re-hit sites.
+  ingestion is reproducible and re-runs don't re-hit sites. **ZORA is the exception
+  (2026-09-29):** its raw dump is opt-in (`ZORA_WRITE_RAW_DUMP`, off by default) and off in the
+  cluster, where it only ever landed on an `emptyDir` discarded with the pod — scratch storage
+  for a copy nothing could replay. There Postgres is the record; the dump is a local tool for
+  `--from-dump`. The scraper's response cache is unaffected.
 - Researchers' names, affiliations, and publications are **personal data** — handle carefully and
   flag legal/ethical considerations rather than ignoring them.
 
