@@ -28,20 +28,24 @@ ZORA DSpace REST API
    │
    ├─1─▶ entities.harvest_persons    (iter_persons  → normalize_person  → mapping.to_person)
    ├─2─▶ entities.harvest_org_units  (iter_org_tree → normalize_org_unit → mapping.to_org_unit)
-   │        each: data/raw/<ts>_{persons,orgunits}.jsonl, then a snapshot replace
+   │        each: [opt-in] data/raw/<ts>_{persons,orgunits}.jsonl, then a snapshot replace
    │        (upsert + prune in ONE TRANSACTION; empty snapshot refused)
    │        a failure here stops the run before the expensive half
    │
    └─3─▶ zora_client.iter_items ──▶ normalize.normalize_item ──▶ mapping.to_publication
             │  Solr query, paginated, sorted by dc.date.accessioned
-            ├──▶ data/raw/<ts>_<mode>.jsonl        (per-run dump, still on disk)
+            ├──▶ [opt-in] data/raw/<ts>_<mode>.jsonl   (streamed; .partial until done)
             │
-            └──▶ store.write_harvest  ── ONE TRANSACTION ─────────────┐
-                     upsert publication                              │
-                     full mode only: delete rows not in this harvest  │
-                     count, and ROLL BACK if the corpus shrank        │
-                     implausibly (MIN_RETENTION_RATIO)                │
-                 store.save_state    → harvest_state (watermark)      │
+            ├──▶ store.upsert_publications  ── one COMMIT per 1000 ───┐
+            │        malformed record: logged, skipped, still "seen"  │
+            │                                                         │
+            └──▶ store.finish_harvest  ── ONE TRANSACTION, after ─────┤
+                     the fetch completed                              │
+                     full mode only: delete rows not seen this run    │
+                     count, and ROLL BACK the delete if the corpus    │
+                     shrank implausibly (MIN_RETENTION_RATIO)         │
+                 store.save_state    → harvest_state (watermark),     │
+                     only once all of the above succeeded             │
                                                        │              │
                                                        ▼              │
                               indexing/ reads the publication table ◀─┘
@@ -57,7 +61,8 @@ The mirrors come first because they are what a publication's author authorities
 | Symbol | File | Purpose |
 |---|---|---|
 | *(constants only)* | `config.py` | Every DSpace field name, the API endpoint, the raw-dump directory, and the safety threshold. One place to change when ZORA's schema moves. |
-| `write_harvest(rows, ...)` | `store.py` | Upsert + prune + retention check, in one transaction. Returns counts and whether it aborted. |
+| `upsert_publications(rows)` | `store.py` | Upserts and commits one batch. Idempotent. |
+| `finish_harvest(kept_ids, ...)` | `store.py` | After the last batch: prune (full mode) + count + retention check, in one transaction. Returns counts and whether it aborted; an abort rolls back the prune only. |
 | `publication_count()` | `store.py` | Row count, for the retention check and for operators. |
 | `load_state()` / `save_state(...)` | `store.py` | The `harvest_state` row. `load_state` returns a `HarvestState`; a database that has never been harvested yields the defaults rather than an error. |
 | `get_client()` | `zora_client.py` | Builds an authenticated `DSpaceClient` with retries (3×, backoff 2, on 500/502/503/504) and timeouts (10 s connect, 60 s read). Raises `RuntimeError` if the token is missing or auth fails. |
@@ -73,7 +78,7 @@ The mirrors come first because they are what a publication's author authorities
 | `harvest_persons(client, limit)` / `harvest_org_units(client, limit)` | `entities.py` | One entity mirror each: fetch → normalize → dump → validate → snapshot write. Called by `harvest.run`; **not runnable on their own**. |
 | `reconcile_uzh_authors()` | `store.py` | Recomputes `uzh_authors` for every publication from `authors` + `author_authority_map`. Returns rows changed; idempotent. How an eligibility-rule change reaches the existing corpus without a re-harvest. |
 | `write_persons(rows)` / `write_org_units(rows)` | `store.py` | Snapshot-replace of the mirror tables (upsert + prune in one transaction). Refuse an empty snapshot over a non-empty table. |
-| `write_raw_dump(records, kind)` / `read_raw_dump(path)` | `raw_dump.py` | The per-step JSONL cache under `data/raw/`. Its own module because both `harvest.py` and `entities.py` write dumps. |
+| `open_raw_dump(kind)` / `write_raw_dump(records, kind)` / `read_raw_dump(path)` | `raw_dump.py` | The opt-in per-step JSONL cache under `data/raw/`: streamed, and named `.partial` until the step finished fetching. Its own module because both `harvest.py` and `entities.py` write dumps. |
 | `dump_kind(path)` | `raw_dump.py` | Which step a dump feeds, read off its filename. Raises rather than guessing when the name says nothing. |
 
 **The models are not here.** `contracts.ZoraPublication`, `ZoraPerson`,
@@ -87,12 +92,26 @@ The mirrors come first because they are what a publication's author authorities
 **Reads:** the ZORA REST API; the API token file; the `harvest_state` row.
 
 **Writes:** the `publication` table and the `harvest_state` row (both via
-`store.py`, the only writer), plus
-`data/raw/<YYYYMMDDTHHMMSSZ>_<mode>.jsonl` — the raw-response cache, the one
-thing still on disk.
+`store.py`, the only writer), plus — only with `ZORA_WRITE_RAW_DUMP=true` —
+`data/raw/<YYYYMMDDTHHMMSSZ>_<mode>.jsonl`, the raw-response cache.
 
 The previous corpus does **not** need reading back: the upsert is the merge, and
-the retention check counts rows inside the same transaction.
+the retention check counts rows inside the prune's transaction.
+
+**Publications are written in committed batches of 1000**, so a run holds one
+batch plus the set of ids it has seen, not the corpus. Until 2026-09-29 a full
+harvest held all ~215K records (three copies of them, by the end) for one
+transaction, and was OOM-killed in the cluster for it. What that changes:
+
+- **The retention check guards the prune, not the whole run.** Upserts cannot
+  shrink the table, so the only statement that needs guarding is the full-mode
+  delete, which runs once, after the fetch completed, over the ids seen.
+- **A run that dies midway keeps the batches it committed** — rows refreshed with
+  newer data — and deletes nothing, advances no watermark, reconciles nothing and
+  triggers no index run. Re-running is safe: every write is an upsert.
+- **A record that fails validation is logged and skipped**, not fatal. Its id still
+  counts as seen, or the prune would delete the last good copy of a publication
+  that still exists upstream. The final log line reports how many were skipped.
 
 `harvest_state` is a single row, `CHECK (id = 1)`:
 
@@ -151,15 +170,21 @@ python -m themis_zora harvest --mode full --from-dump data/raw/<ts>_full.jsonl
 
 Disabling all three is a usage error rather than a no-op run.
 
-**`--from-dump` is the point of the raw cache.** A full harvest is ~215K records
-and roughly two hours of requests, and those records land in `data/raw/` *before*
-anything is written to Postgres. So a run that fetches successfully but fails on
-the write does not have to fetch again: the dump already holds normalized
-records, and replaying it re-runs only the validate/upsert half of the pipeline.
-No API token is needed (no client is built), and no second dump is written, since
-the source file already *is* the cache. Everything downstream is unchanged — same
-`mapping.to_publication` validation, same single transaction, same retention rail,
-same watermark.
+**`--from-dump` is the point of the raw cache, and the cache is opt-in.** Set
+`ZORA_WRITE_RAW_DUMP=true` and a run streams its normalized records to
+`data/raw/` as it fetches; off (the default, and the cluster's setting) it writes
+nothing to disk. A full harvest is ~215K records and roughly two hours of requests,
+so a local run whose writes failed can be replayed without fetching again: the
+dump already holds normalized records, and replaying it re-runs only the
+validate/upsert half of the pipeline. No API token is needed (no client is built),
+and no second dump is written, since the source file already *is* the cache.
+Everything downstream is unchanged — same `mapping.to_publication` validation,
+same batches, same retention rail, same watermark.
+
+A dump is named `<ts>_<kind>.jsonl.partial` until its step finished fetching, and
+renamed only then. A run that crashed leaves the `.partial` behind, and
+`--from-dump` refuses it even with `--dump-kind`: a truncated full dump replayed in
+full mode would prune every publication it happened not to reach.
 
 Every step writes a dump, so every step can replay one. `write_raw_dump` puts the
 kind in the filename and `dump_kind` reads it back out; `--from-dump` is repeatable,
@@ -216,8 +241,10 @@ Opt out per run with `--no-persons` / `--no-org-units`.
 Both are always full snapshots: fetch everything, upsert, prune what disappeared.
 Watermark, incremental mode and the retention ratio are all meaningless at ~2,000
 and ~500 rows; the one safety rail is in the store — an empty snapshot never
-overwrites a non-empty table. Raw dumps land in `data/raw/<ts>_persons.jsonl` /
-`<ts>_orgunits.jsonl` like publication runs.
+overwrites a non-empty table. With `ZORA_WRITE_RAW_DUMP=true`, raw dumps land in
+`data/raw/<ts>_persons.jsonl` / `<ts>_orgunits.jsonl` like publication runs. They
+are not batched — a few thousand rows, replaced atomically — and a malformed
+entity record still fails the step.
 
 An entity step that fails ends the run **before** the publication step: a full
 harvest costs hours, and if the API is refusing requests or the tree walk broke,
@@ -270,7 +297,8 @@ subclass of the shared `Settings`.
 | Setting | Env var | Default | Effect |
 |---|---|---|---|
 | `database_url` | `DATABASE_URL` | local Postgres | Holds `publication`, `person`, `org_unit` and `harvest_state`. Inherited from the shared floor, and unprefixed on purpose. Create the schema with `themis-init-db`. |
-| `data_dir` | `ZORA_DATA_DIR` | `data` | Root for `raw/` — the per-run response cache, the only thing still written to disk. |
+| `write_raw_dump` | `ZORA_WRITE_RAW_DUMP` | `false` | Stream each step's normalized records to `raw/` for `--from-dump`. Off in the cluster. |
+| `data_dir` | `ZORA_DATA_DIR` | `data` | Root for `raw/`, the opt-in raw dump — the only thing a run can write to disk. |
 | `uzh_api_key_file` | `ZORA_UZH_API_KEY_FILE` | — | Path to a file holding the token. Wins over the inline variable below; how the token arrives in the cluster. |
 | `uzh_api_key` | `ZORA_UZH_API_KEY` | — | The token itself, for local runs. Both are resolved by `ZoraSettings.api_token` and assigned to the DSpace client. **Never commit the token.** |
 
@@ -384,7 +412,8 @@ re-implementing the rule in SQL.
 
 **Implemented and running in production.** Nothing is written back into the repository: the
 pre-Postgres `data/publications.jsonl` and `data/state.json` are untracked, and
-the only file a run still leaves behind is its raw-response dump in `data/raw/`.
+a run leaves no file behind unless `ZORA_WRITE_RAW_DUMP` asks for a raw dump in
+`data/raw/`.
 
 Test coverage: `projects/zora/tests/test_normalize.py` and `projects/zora/tests/test_mapping.py`
 are thorough on the pure functions; `store.py` is covered from

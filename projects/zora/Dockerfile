@@ -37,12 +37,10 @@ COPY projects/zora/ ./projects/zora/
 # --no-default-groups drops the dev group: no pytest, no ruff in a batch image.
 RUN uv sync --locked --no-default-groups --no-editable --package themis-zora
 
-# data/ is expected to be bind-mounted at runtime, but it is now ONLY the
-# raw-response cache (data/raw/). Harvest output and the incremental watermark
-# go to Postgres via zora/store.py, so nothing is written back into the repo
-# checkout. This placeholder just means the image doesn't error out if someone
-# runs it without a mount for a quick smoke test.
-RUN mkdir -p data/raw
+# Nothing is written to disk by default: harvest output and the incremental
+# watermark go to Postgres via zora/store.py. The one exception is the opt-in raw
+# dump (ZORA_WRITE_RAW_DUMP=true), which creates data/raw/ itself -- bind-mount
+# data/ if you want to keep it, as the cluster deliberately does not.
 
 # No USER directive here on purpose: this image is only ever run as a
 # short-lived batch job (`docker run --rm ...`), never as a long-lived

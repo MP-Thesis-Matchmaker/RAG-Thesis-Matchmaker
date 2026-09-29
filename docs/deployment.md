@@ -285,7 +285,7 @@ this table rather than assuming a chart value took effect. The full inventory is
 | `MATCHER_BASE_URL` | where the harvester, scraper and gateway reach the matcher | chart `env`, the in-cluster Service address |
 | `ZORA_UZH_API_KEY_FILE` | ZORA API token path | Vault, mounted as a file |
 | `ZORA_UZH_API_KEY` | ZORA API token, inline | local only — the file above wins |
-| `ZORA_DATA_DIR` | root of the raw-response cache | chart `env`; an `emptyDir` in both CronJobs |
+| `ZORA_WRITE_RAW_DUMP` / `ZORA_DATA_DIR` | opt-in raw dump, and where it goes | local only — unset in the cluster, where no dump is written |
 | `MATCHER_LLM_BASE_URL` / `MATCHER_LLM_API_KEY` | LibreChat / AI Buddy gateway | Vault via `vaultEnv` |
 | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
 | `MATCHER_API_HOST` / `MATCHER_API_PORT` | must be `0.0.0.0` in a container | baked into `projects/matcher/Dockerfile` |
@@ -335,12 +335,11 @@ Blocking for deployment, not for local development against a Postgres container.
 8. **Backup and retention** policy for the harvested publication data — this is
    personal data (researcher names and affiliations), so retention is a legal
    question as much as an operational one.
-9. **Storage for the raw-response cache.** Answered in part: PVCs are available on
-   the `idnas21zb.uzh.ch` storage class (NFS; RWO/RWX/ROX; `Delete`, with a
-   `retain.` variant), and the namespace allows 10 PVCs totalling 50 Gi. So the
-   `emptyDir` in the committed CronJobs is now a choice rather than a limitation
-   and should become a PVC. Still open is whether we would rather move the cache
-   into Postgres as a `jsonb` table and drop the volume entirely.
+9. **Storage for the raw-response cache.** Decided 2026-09-29: none in the cluster.
+   PVCs are available (`idnas21zb.uzh.ch`, 10 PVCs / 50 Gi per namespace), but the
+   dump duplicates what Postgres already holds, so it is now opt-in
+   (`ZORA_WRITE_RAW_DUMP`, off by default) and the CronJobs no longer mount a
+   volume for it. It remains a local tool for `--from-dump` replays.
 10. **Two quota raises.** The default namespace quota is `limits.cpu: 2`,
    `limits.memory: 4Gi`, `pods: 10`. bge-m3 is a 568M-parameter model held in
    memory, and one matcher pod peaks near 3.6 GiB — so a 4 Gi *namespace-wide*

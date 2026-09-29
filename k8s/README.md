@@ -182,13 +182,12 @@ bge-m3 is a 568M-parameter model and the indexer and serving pods each hold a co
 The original instinct was still half right — fill these in from a measured run, not
 a guess. It just cannot be left blank in the meantime.
 
-**The raw-response cache** — `harvest.write_raw_dump` writes one JSONL per run to
-`ZORA_DATA_DIR/raw/`, which exists so ingestion is reproducible without re-hitting
-ZORA. Here it is mounted as an `emptyDir`, which is discarded when the pod exits,
-so in the cluster that reproducibility is currently lost. The alternatives are a
-PVC (needs a storage class we have not been given) or moving the cache into
-Postgres as a `jsonb` table. `emptyDir` is the placeholder that does not pretend
-otherwise.
+**No raw-response cache here** (decided 2026-09-29). The harvester can stream one
+JSONL per step to `ZORA_DATA_DIR/raw/` for `--from-dump` replays, but only with
+`ZORA_WRITE_RAW_DUMP=true`, and neither CronJob sets it. It used to be always on
+and land on an `emptyDir`, discarded when the pod exits: scratch storage spent on
+a copy nothing could ever replay. Postgres is the record; the dump is a local
+convenience.
 
 ## Running things by hand
 
