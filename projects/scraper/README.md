@@ -197,6 +197,11 @@ on the first one made every run red.
   page, so a dead page still comes out `ok` on last cycle's content.
 - Flagged sources that were stored (`page_changed`, `needs_review`, `llm_fallback`) are
   in the run report and the notification and do not affect the exit code.
+- **An LLM failure is not the page's failure.** When the LLM is unconfigured or errors
+  where a source needed it (a process page's summary, a PDF-enriched description), the
+  source fails this run and counts toward the 30%, but is **not quarantined**: a quarantine
+  on the PVC would outlive the missing key. Without `SCRAPER_LLM_API_KEY` the 50 process
+  pages alone are 49%, so such a run exits 1, and the next run with a key recovers.
 - **`fetch` exits 1** above the same 30%, counted against every selected source, so a
   `--resume` retry of 3 dead pages out of 103 is 3%, not 100%.
 - The ratio is taken before `--resume` filtering in both commands, so a retry pod judges

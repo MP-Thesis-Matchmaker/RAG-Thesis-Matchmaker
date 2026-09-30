@@ -77,6 +77,12 @@ class Result:
     page_type: str
     reasons: list[str] = field(default_factory=list)
     record_count: int = 0
+    # The failure is the LLM's, not the page's: it was unconfigured or errored where
+    # the extraction needed it. Set by `main._flag_llm_outage`. Such a result still
+    # fails the source for this run, but must not quarantine it -- quarantine means
+    # "the template no longer fits the page", and a missing key or a proxy outage
+    # says nothing about the page.
+    llm_outage: bool = False
 
     @property
     def flagged(self) -> bool:
