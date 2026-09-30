@@ -73,7 +73,7 @@
       "thesis_sources": [
         {
           "source_id": "iff--1",
-          "url": "https://www.df.uzh.ch/en/studies/bachelor-master/thesis.html",
+          "url": "https://www.df.uzh.ch/en/studies/student-life-and-support/thesis.html",
           "notes": "Theses process page/people page with professors for thesis supervision"
         },
         {
@@ -162,7 +162,7 @@
         },
         {
           "source_id": "ifi--10",
-          "urls": ["https://www.cl.uzh.ch/en/studies/studies-BA-MA/teaching/BaMasterArbeit.html", "https://www.cl.uzh.ch/de/about-us/people.html"],
+          "urls": ["https://www.cl.uzh.ch/en/Studies/Learning-Formats/Open-topics.html", "https://www.cl.uzh.ch/de/about-us/people.html"],
           "notes": "Open-topics page and people page"
         },
         {
