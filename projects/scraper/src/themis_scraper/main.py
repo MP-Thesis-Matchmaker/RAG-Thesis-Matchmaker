@@ -1336,15 +1336,15 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     if not verified:
         if none_verified and selected:
-            # Loud, because this is the shape a fresh deployment has: verification
-            # lives only in var/state.json, which is gitignored, so a pod with an
-            # empty volume sees 0 verified sources however many specs are committed.
-            # Exiting 0 here made a CronJob that wrote nothing report Success.
+            # Loud, because a run that could do nothing must not report Success.
+            # Verification comes from the committed contracts (see registry), so
+            # this now means none of the selected sources has one -- a data root
+            # without specs/, or every source quarantined in the state file.
             print(
-                f"nothing to run: none of the {len(selected)} selected source(s) is marked "
-                f"verified in {get_settings().state_path}. Onboard them "
-                f"(`onboard --next`) or restore that file -- the committed specs under "
-                f"{get_settings().specs_dir} are not sufficient on their own."
+                f"nothing to run: none of the {len(selected)} selected source(s) is "
+                f"verified. A source is verified by its committed contract "
+                f"({get_settings().specs_dir}/<id>/expected.json, written by `onboard`) "
+                f"unless {get_settings().state_path} quarantined it."
             )
             return 1
         print("nothing to run.")
@@ -1693,6 +1693,14 @@ def _apply_result(
     )
     run_state = registry.RUN_DONE if result.writable else registry.RUN_FAILED
     registry.update_source_state(state, src.source_id, onboarding=onboarding, run=run_state)
+    if onboarding == registry.ONBOARD_QUARANTINED:
+        # Which contract was quarantined, so a later re-onboarding (a new contract
+        # in a new image) lifts it without anyone editing this state file.
+        registry.update_source_state(
+            state,
+            src.source_id,
+            quarantined_contract=registry.contract_id(registry.committed_contract(src.source_id)),
+        )
     registry.save_state(state)
     report.add_source(rep, result, action=action, diff=diff)
 
