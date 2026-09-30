@@ -26,7 +26,7 @@ directory:                         # resolve missing profile URLs by name
 # subpages; each detail page has a description and a "Supervisor(s):" line.
 topics:
   record:
-    container: 'main a[href*="/BaMasterArbeit/"]'
+    container: 'main a[href*="/Open-topics/"]'
     fields:
       title:
         attr: text
@@ -43,7 +43,7 @@ topics:
   id_from: [source_link]          # stable id per topic URL (also drives dedup)
   follow:
     url_field: source_link
-    url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/BaMasterArbeit/.+\.html$'
+    url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/Open-topics/.+\.html$'
     fields:
       topic_description:
         selector: ".ContentArea"

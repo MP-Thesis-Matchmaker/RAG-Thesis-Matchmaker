@@ -30,7 +30,7 @@ registry/scraping_sources.json   (human-authored: 103 sources across 37 units)
         ▼
    title_check ──▶ validate ──▶ dataset (nested JSON) ──▶ store (Postgres)
                        │                                      │
-                       └─ report: flagged sources, non-zero exit
+                       └─ report: flagged sources; exit 1 above 30% not scraped
                                                               ▼
                                               posting / researcher_profile /
                                               application_process
@@ -59,7 +59,7 @@ LLM at all.
 | `load()`, `save()`, `upsert_source()` | `dataset.py` | The nested target data model, and its JSON on disk. |
 | `to_posting()`, `iter_records()` | `normalize.py` | Records → `ThesisPosting` / `ResearcherProfile` / `ApplicationProcess`. |
 | `write_dataset()`, `posting_count()` | `store.py` | **The only writer** of the three tables. |
-| `finalize()`, `write()`, `notify()` | `report.py` | Run report; non-zero exit when anything is flagged. |
+| `finalize()`, `write()`, `notify()` | `report.py` | Run report and notification of flagged sources. The exit code is set in `main.cmd_run`, not here: see "Exit codes". |
 
 ## Data flow
 
@@ -182,6 +182,28 @@ owns its own command rather than sharing one.
 In the cluster: `projects/scraper/Dockerfile`, whose `ENTRYPOINT` is already the module and
 whose `CMD` is the `run --resume` half. Locally,
 `docker compose run --rm scraper fetch --resume`.
+
+### Exit codes
+
+A CronJob decides success from the exit code alone, so it answers "is the scraper
+broken?", not "did every page work?". Over ~100 pages some are always dead, and failing
+on the first one made every run red.
+
+- **`run` exits 1** if a failure raises out of it (the Postgres write, the dataset file),
+  if no source is verified at all, or if **more than 30%** of the verified sources were
+  not scraped this cycle (`validate.MAX_UNSCRAPED_RATIO`). "Not scraped" means the run
+  could not store the source (`fetch_failed`, `extract_failed`, `schema_invalid`) *or*
+  this cycle's fetch failed. The second matters because `run` extracts from any cached
+  page, so a dead page still comes out `ok` on last cycle's content.
+- Flagged sources that were stored (`page_changed`, `needs_review`, `llm_fallback`) are
+  in the run report and the notification and do not affect the exit code.
+- **`fetch` exits 1** above the same 30%, counted against every selected source, so a
+  `--resume` retry of 3 dead pages out of 103 is 3%, not 100%.
+- The ratio is taken before `--resume` filtering in both commands, so a retry pod judges
+  the whole cycle. `check` still exits 1 on any flag: it is the single-source dev tool.
+
+The cluster runs `fetch --resume; run --resume`, with `;`, not `&&`: `run` must not be
+skipped because a page died, and the Job's status is `run`'s.
 
 ## Field mapping
 

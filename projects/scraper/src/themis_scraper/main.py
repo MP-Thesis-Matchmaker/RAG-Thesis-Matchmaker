@@ -150,9 +150,12 @@ def _fetch_and_cache(state: dict, src: registry.Source, sess, render: bool):
 def cmd_fetch(args: argparse.Namespace) -> int:
     state = registry.load_state()
     targets = _select_sources(args.only)
+    # The exit threshold is judged against every selected source, not just the
+    # ones --resume leaves pending: a retry that re-fetches 3 dead pages of 103 has
+    # failed on 3%, not on 100%.
+    before = len(targets)
 
     if args.resume:
-        before = len(targets)
         targets = [
             s
             for s in targets
@@ -217,7 +220,18 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         return 130
 
     print(f"\ndone. fetched={fetched} failed={failed}")
-    return 1 if failed else 0
+    too_many = validate.too_many_unscraped(failed, before)
+    print(_threshold_line("failed", failed, before, too_many))
+    return 1 if too_many else 0
+
+
+def _threshold_line(label: str, count: int, total: int, exceeded: bool) -> str:
+    share = count / total if total else 0.0
+    verdict = "above" if exceeded else "within"
+    return (
+        f"{label}: {count}/{total} ({share:.0%}) -- {verdict} the "
+        f"{validate.MAX_UNSCRAPED_RATIO:.0%} threshold"
+    )
 
 
 # --- onboard command --------------------------------------------------------
@@ -1306,6 +1320,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     # once every source is done. "Nothing was verified in the first place" is a
     # different situation and must not share its exit code.
     none_verified = not verified
+    # Also before --resume, for the exit threshold: a retry pod re-runs only what
+    # the first one left pending, but whether the run as a whole failed is a
+    # question about every verified source.
+    all_verified = list(verified)
 
     if args.resume:
         before = len(verified)
@@ -1474,10 +1492,39 @@ def cmd_run(args: argparse.Namespace) -> int:
     report.notify(f"run complete: {sm['total']} sources, {sm['flagged']} flagged")
     if written.postings:
         # Only when postings were actually written. Never affects the exit code
-        # below: a flagged source is this run's business, an unreachable matcher
+        # below: failed sources are this run's business, an unreachable matcher
         # is not.
         index_trigger.trigger_index(get_settings())
-    return 1 if sm["flagged"] else 0
+
+    # The exit code answers "is the scraper broken?", not "did every page work?".
+    # Flagged-but-stored sources (page_changed, needs_review, llm_fallback) are in
+    # the report and the notification and no longer fail the run; neither does a
+    # handful of dead pages. What does: a failure raised out of the write above
+    # (the database, the dataset file), or more than MAX_UNSCRAPED_RATIO of the
+    # verified sources not scraped this cycle.
+    unscraped = _unscraped(state, all_verified)
+    too_many = validate.too_many_unscraped(len(unscraped), len(all_verified))
+    print(_threshold_line("not scraped", len(unscraped), len(all_verified), too_many))
+    if unscraped:
+        print("  " + ", ".join(unscraped[:20]) + (" ..." if len(unscraped) > 20 else ""))
+    return 1 if too_many else 0
+
+
+def _unscraped(state: dict, sources: list[registry.Source]) -> list[str]:
+    """The ids of `sources` this cycle failed to scrape.
+
+    Two ways to fail. The run itself could not store the source (`RUN_FAILED`:
+    fetch_failed, extract_failed, schema_invalid). Or this cycle's fetch failed and
+    the run went ahead on the page cached by an earlier cycle: `_ensure_main_cached`
+    accepts any cached copy, so that extraction succeeds on stale content. Counting
+    only the first would let an outage that fails every fetch exit 0.
+    """
+    ids = []
+    for src in sources:
+        entry = registry.source_state(state, src.source_id)
+        if entry.get("run") == registry.RUN_FAILED or registry.last_fetch_failed(entry):
+            ids.append(src.source_id)
+    return ids
 
 
 def _run_aux_people(state, data, src, contract, fetch_fn, rep) -> None:

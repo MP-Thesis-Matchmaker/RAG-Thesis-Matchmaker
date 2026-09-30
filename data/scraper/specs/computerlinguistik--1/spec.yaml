@@ -2,12 +2,12 @@
 # same institute as ifi--10, but cross-listed here under the Philosophische
 # Fakultät. The registry URL (studium/theses.html) 404s, so page_url points at
 # the live CL page. Identical extraction to ifi--10 (the "Meet Our Experts"
-# people block + the BaMasterArbeit topic subpages with supervisors), but stored
+# people block + the Open-topics subpages with supervisors), but stored
 # at the computerlinguistik UNIT level (no group).
 source_id: computerlinguistik--1
 page_type: people
 source_type: grouped_people
-page_url: "https://www.cl.uzh.ch/en/studies/studies-BA-MA/teaching/BaMasterArbeit.html"
+page_url: "https://www.cl.uzh.ch/en/Studies/Learning-Formats/Open-topics.html"
 
 grouped:
   container: "ul.type1 li"
@@ -24,7 +24,7 @@ directory:                         # resolve missing profile URLs by name
 # detail page has a description and a "Supervisor(s):" line.
 topics:
   record:
-    container: 'main a[href*="/BaMasterArbeit/"]'
+    container: 'main a[href*="/Open-topics/"]'
     fields:
       title:
         attr: text
@@ -41,7 +41,7 @@ topics:
   id_from: [source_link]
   follow:
     url_field: source_link
-    url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/BaMasterArbeit/.+\.html$'
+    url_pattern: '^https?://(www\.)?cl\.uzh\.ch/.+/Open-topics/.+\.html$'
     fields:
       topic_description:
         selector: ".ContentArea"
