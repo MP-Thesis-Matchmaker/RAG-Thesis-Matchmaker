@@ -52,6 +52,20 @@ def quarantines(status: str) -> bool:
     return status not in KEEPS_VERIFIED
 
 
+# The share of sources that may fail before `fetch` or `run` exits non-zero. A
+# CronJob decides success from the exit code alone, and over ~100 university pages
+# some link rot is the normal weekly state: failing on the first dead page made
+# every run red, which is the same as never alerting. Above this share the cause is
+# systemic (an outage, a blocked IP, a broken release) and the run should fail.
+# A constant, not a setting, for the reason ZORA_MIN_RETENTION_RATIO is one.
+MAX_UNSCRAPED_RATIO = 0.30
+
+
+def too_many_unscraped(unscraped: int, total: int) -> bool:
+    """Whether `unscraped` of `total` sources is strictly above the threshold."""
+    return total > 0 and unscraped / total > MAX_UNSCRAPED_RATIO
+
+
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _URL_RE = re.compile(r"^https?://[^\s]+$", re.I)
 

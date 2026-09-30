@@ -145,6 +145,17 @@ def source_state(state: dict, source_id: str) -> dict:
     )
 
 
+def last_fetch_failed(entry: dict) -> bool:
+    """Whether a source's most recent fetch failed.
+
+    Both fetch paths in `main` record a failure as `last_fetch` without a
+    `content_sha1` and a success with one, so its absence is the signal. A source
+    that was never fetched has no `last_fetch` at all and does not count.
+    """
+    last = entry.get("last_fetch")
+    return bool(last) and "content_sha1" not in last
+
+
 def update_source_state(state: dict, source_id: str, **fields) -> dict:
     entry = source_state(state, source_id)
     entry.update(fields)
