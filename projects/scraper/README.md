@@ -47,7 +47,7 @@ LLM at all.
 |---|---|---|
 | `main()` | `main.py` | argparse CLI, interrupt/resume loop, interactive `onboard` flow. Orchestration only. |
 | `Settings`, `get_settings()` | `config.py` | Every configurable default, `SCRAPER_`-prefixed. Derived paths are properties off `data_root`. |
-| `Source`, registry/state loaders | `registry.py` | The immutable source list, and the mutable `var/state.json` lifecycle. |
+| `Source`, registry/state loaders | `registry.py` | The immutable source list, and the `var/state.json` lifecycle, with verification and `page_type` taken from the committed contracts. |
 | `FetchResult` and the fetch stage | `fetch.py` | `requests` first, Playwright chromium only if installed and needed, PDFs as bytes. |
 | cache read/write, content hashes | `cache.py` | `cache/<id>/{page.html,meta.json,history/}`; change detection. |
 | spec-driven extraction, `SpecError` | `spec_engine.py` | LLM-free: container, fields, transforms, follow. Name transforms (`strip_titles`, `name_lastfirst`, `name_lastfirst_space`) delegate to [`themis_shared.names`](../../libs/shared/README.md) — the matcher needs the same title vocabulary, and one vocabulary in two places drifts. The `_TRANSFORMS` keys are unchanged, because the frozen specs reference them by name. |
@@ -197,6 +197,11 @@ on the first one made every run red.
   page, so a dead page still comes out `ok` on last cycle's content.
 - Flagged sources that were stored (`page_changed`, `needs_review`, `llm_fallback`) are
   in the run report and the notification and do not affect the exit code.
+- **An LLM failure is not the page's failure.** When the LLM is unconfigured or errors
+  where a source needed it (a process page's summary, a PDF-enriched description), the
+  source fails this run and counts toward the 30%, but is **not quarantined**: a quarantine
+  on the PVC would outlive the missing key. Without `SCRAPER_LLM_API_KEY` the 50 process
+  pages alone are 49%, so such a run exits 1, and the next run with a key recovers.
 - **`fetch` exits 1** above the same 30%, counted against every selected source, so a
   `--resume` retry of 3 dead pages out of 103 is 3%, not 100%.
 - The ratio is taken before `--resume` filtering in both commands, so a retry pod judges
@@ -278,20 +283,17 @@ process entries, zero quarantined.
   and the honest direction is this one absorbing that one.
 - **`main.py` is 1,894 lines.** Orchestration only, but still the largest single file in
   the repository by a wide margin.
-- **Onboarding state is untracked, so the committed specs are inert without it.**
-  `var/state.json` is the only record of which sources are verified and which page_type
-  each one is, and it is gitignored. 66 of the 103 sources ship a frozen
-  `spec.yaml` + `snapshot.html` + `expected.json` in the repository, but a fresh checkout
-  or a pod with an empty volume marks all 103 unverified and `run` has nothing to do.
-  `run` now exits non-zero in that state instead of 0 — it used to look like a healthy
-  no-op, which in a CronJob means Success forever while `posting` stays empty — but that
-  is a guard, not an answer. The real question is whether "verified" belongs in mutable
-  operator state at all when the artefact it certifies is committed: `page_type` in
-  particular is declared in the tracked `spec.yaml` *and* duplicated into state, and it is
-  the state copy that `run` reads, defaulting to `"process"` when absent. A topics page
-  read with the process extractor fails as a plausible-looking `extract_failed`.
-  Deriving verification from the committed triple would make the repository
-  self-sufficient; decide it with the PVC question below.
+- **Verification comes from the committed contracts (resolved 2026-09-30).** It used to
+  live only in the gitignored `var/state.json`, so a pod with a fresh volume saw all 103
+  sources unverified and `run` did nothing. That happened in the cluster, where nobody
+  can copy a state file into the PVC. Now `registry.load_state` treats a committed
+  `specs/<id>/expected.json` as the record of an approved onboarding: every source has
+  one, and `onboard` re-freezes it on each re-onboarding, so it is as current as the
+  onboarding itself. `page_type` comes from it too; the state copy `run` used to read,
+  defaulting to `"process"`, was a second truth. The state keeps what only runs know:
+  progress, fetch results, quarantine. A quarantine records which contract it was taken
+  against (`quarantined_contract`), so a re-onboarding shipped in a new image lifts it
+  without anyone touching the cluster's state file.
 - **The page cache is not persisted in the cluster.** The same open question
   [`../../docs/deployment.md`](../../docs/deployment.md) raises about the ZORA raw
   cache: an `emptyDir` throws away the property the cache exists for.

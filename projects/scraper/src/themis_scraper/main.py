@@ -1253,16 +1253,34 @@ def _enrich_topic_pdfs(src, records, cfg) -> int:
     return n
 
 
-def _flag_llm_outage(result, spec) -> None:
-    """Name the LLM as the suspect when it plausibly is.
+def _llm_could_not_run(status: str | None) -> bool:
+    """Whether an `_llm.status` from llm_extract means the LLM itself failed.
 
-    A spec whose descriptions come from LLM enrichment (pdf_enrich / pdf_summary)
-    fails schema validation whenever the LLM is down -- the records extract fine,
-    only the enriched field is None. Without this hint the flag reads exactly like
-    page drift; it misdiagnosed ifi--17 that way on the first full run (the LLM was
-    out of credits, the page had not changed at all). Prepended, not appended: the
-    per-source line and the summary table print only reasons[0], and when the LLM
-    is down this IS the headline. No new status, no state change.
+    "unavailable" (no key) and "error: ..." (proxy down, out of credits) are the
+    LLM's failures. "ok", "disabled" (asked not to use it) and "binary_no_text"
+    (a PDF with nothing to summarise) are not: the last one is the page's.
+    """
+    return status == "unavailable" or (status or "").startswith("error")
+
+
+def _flag_llm_outage(result, spec, records=None) -> None:
+    """Name the LLM as the suspect when it plausibly is, and keep it from quarantining.
+
+    Two shapes, both of which read like page drift without this:
+
+    - A spec whose descriptions come from LLM enrichment (pdf_enrich / pdf_summary)
+      fails schema validation whenever the LLM is down -- the records extract fine,
+      only the enriched field is None. It misdiagnosed ifi--17 that way on the first
+      full run (the LLM was out of credits, the page had not changed at all).
+    - A process page is summarised by the LLM alone, so without one it is
+      `extract_failed` "no usable process summary". In the cluster that was all 50
+      process pages, before the scraper's LLM key existed.
+
+    Prepended, not appended: the per-source line and the summary table print only
+    reasons[0], and when the LLM is down this IS the headline. The status stays --
+    the source did fail this run and counts toward the exit threshold -- but
+    `result.llm_outage` stops `_apply_result` from quarantining it, which would
+    otherwise outlive the outage: the PVC keeps the quarantine after the key arrives.
     """
     if (
         result.status == validate.SCHEMA_INVALID
@@ -1275,6 +1293,24 @@ def _flag_llm_outage(result, spec) -> None:
             "LLM unavailable for pdf enrichment -- descriptions may be "
             "missing because of that, not because the page changed",
         )
+        result.llm_outage = True
+    elif (
+        result.status == validate.EXTRACT_FAILED
+        and result.page_type == "process"
+        and records
+        and any(_llm_could_not_run((r.get("_llm") or {}).get("status")) for r in records)
+    ):
+        status = next(
+            s
+            for s in ((r.get("_llm") or {}).get("status") for r in records)
+            if _llm_could_not_run(s)
+        )
+        result.reasons.insert(
+            0,
+            f"LLM could not summarise the process page ({status}) -- "
+            "not quarantined, the page is not the problem",
+        )
+        result.llm_outage = True
 
 
 def _ensure_main_cached(state, src, page_type) -> bool:
@@ -1336,15 +1372,15 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     if not verified:
         if none_verified and selected:
-            # Loud, because this is the shape a fresh deployment has: verification
-            # lives only in var/state.json, which is gitignored, so a pod with an
-            # empty volume sees 0 verified sources however many specs are committed.
-            # Exiting 0 here made a CronJob that wrote nothing report Success.
+            # Loud, because a run that could do nothing must not report Success.
+            # Verification comes from the committed contracts (see registry), so
+            # this now means none of the selected sources has one -- a data root
+            # without specs/, or every source quarantined in the state file.
             print(
-                f"nothing to run: none of the {len(selected)} selected source(s) is marked "
-                f"verified in {get_settings().state_path}. Onboard them "
-                f"(`onboard --next`) or restore that file -- the committed specs under "
-                f"{get_settings().specs_dir} are not sufficient on their own."
+                f"nothing to run: none of the {len(selected)} selected source(s) is "
+                f"verified. A source is verified by its committed contract "
+                f"({get_settings().specs_dir}/<id>/expected.json, written by `onboard`) "
+                f"unless {get_settings().state_path} quarantined it."
             )
             return 1
         print("nothing to run.")
@@ -1421,7 +1457,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                     ),
                 )
 
-                _flag_llm_outage(result, sp)
+                _flag_llm_outage(result, sp, records)
 
                 # LLM fallback: the deterministic template failed — either it
                 # matched nothing (extract_failed) or what it matched was
@@ -1686,13 +1722,23 @@ def _apply_result(
 
     # page_changed stays verified (data is good, keep scraping — the flag is just
     # a review note); hard failures and llm_fallback quarantine until re-onboarded.
+    # Except a failure that was the LLM's (see _flag_llm_outage): the source still
+    # fails this run, but stays verified so the next run with an LLM just works.
     onboarding = (
         registry.ONBOARD_QUARANTINED
-        if validate.quarantines(result.status)
+        if validate.quarantines(result.status) and not result.llm_outage
         else registry.ONBOARD_VERIFIED
     )
     run_state = registry.RUN_DONE if result.writable else registry.RUN_FAILED
     registry.update_source_state(state, src.source_id, onboarding=onboarding, run=run_state)
+    if onboarding == registry.ONBOARD_QUARANTINED:
+        # Which contract was quarantined, so a later re-onboarding (a new contract
+        # in a new image) lifts it without anyone editing this state file.
+        registry.update_source_state(
+            state,
+            src.source_id,
+            quarantined_contract=registry.contract_id(registry.committed_contract(src.source_id)),
+        )
     registry.save_state(state)
     report.add_source(rep, result, action=action, diff=diff)
 

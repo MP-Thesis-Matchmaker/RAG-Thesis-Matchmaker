@@ -71,8 +71,9 @@ RUN playwright install --with-deps --only-shell chromium
 # The scraper's data tree, and it has to be COPYied rather than left to a mount:
 # `uv sync --no-editable` builds the project into a wheel, so nothing outside
 # projects/scraper/ survives on its own. registry/ names the 103 sources and
-# specs/ holds the per-source spec.yaml that spec_engine reads AT RUNTIME -- without
-# them the image starts and then finds nothing to scrape.
+# specs/ holds the per-source spec.yaml that spec_engine reads AT RUNTIME, plus the
+# expected.json that registry.load_state takes as the record that a source was
+# onboarded -- without them the image starts and then finds nothing to scrape.
 #
 # zora/schema/zora_publication.schema.json is the cautionary precedent: it is not
 # declared as package data and so does not reach any image. That file is only a
