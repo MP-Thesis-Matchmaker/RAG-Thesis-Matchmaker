@@ -224,7 +224,10 @@ it would build locally and break CI.
 
 Deployment target is a **UZH Kubernetes cluster** pulling from that registry, with a
 **Postgres + pgvector** server; see [`docs/deployment.md`](docs/deployment.md). Harvesting runs
-as a cluster job — never in CI, and **never committing data back to the repo**.
+as a cluster job — never in CI, and **never committing data back to the repo**. **The manifests
+live in the separate ArgoCD repo `uzh-dsi-askuzh-themis`, not here** — backend-core builds the
+images and holds none; its old `k8s/` directory was never in the chart's format and was
+removed on 2026-09-29.
 
 **The publication harvest writes in committed batches of 1000 (2026-09-29)**, not in one
 transaction at the end — that version held all ~215k records in memory and was OOM-killed in

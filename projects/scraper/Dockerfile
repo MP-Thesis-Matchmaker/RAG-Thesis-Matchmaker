@@ -63,8 +63,9 @@ RUN uv sync --locked --no-default-groups --no-editable \
 #     (libnss3, libatk, fonts, ...); without it the binary exists but will not launch.
 #   --only-shell installs the headless shell rather than full chromium -- roughly
 #     half the size, and the scraper never opens a headed window.
-# Runtime note (k8s/README.md): chromium wants a real /dev/shm; give the pod an
-# emptyDir with medium: Memory or it can crash on heavy pages.
+# Runtime note: chromium wants a real /dev/shm or it can crash on heavy pages. The
+# deploy repo's themis-scraper.yaml mounts an emptyDir there; the chart has no
+# `medium` key, so it is disk-backed rather than tmpfs.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN playwright install --with-deps --only-shell chromium
 
