@@ -19,10 +19,11 @@ from collections.abc import Iterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from themis_matcher.api.service import MatcherService, build_service
-from themis_matcher.config import MatcherSettings
+from themis_matcher.config import MatcherSettings, get_settings
 from themis_matcher.indexing.indexer import ModelMismatchError
 from themis_matcher.indexing.runs import IndexRunInProgress
 from themis_shared import db
@@ -100,6 +101,21 @@ def create_app(
         summary="Matching over the ZORA corpus and scraped thesis postings.",
         lifespan=lifespan,
     )
+
+    # Opt-in, and off unless MATCHER_CORS_ORIGINS names an origin: in the cluster
+    # only the gateway calls this API, server-to-server, so there is no browser
+    # to grant anything to. Middleware has to be in place before the app starts,
+    # so the settings are resolved here rather than in the lifespan -- into a
+    # local of its own, leaving `settings` exactly as the lifespan receives it.
+    # No credentials: nothing here reads a cookie or an Authorization header.
+    cors_origins = (settings or get_settings()).cors_origin_list
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
+        )
 
     @app.exception_handler(MatcherApiError)
     def _handle_api_error(request: Request, exc: MatcherApiError) -> JSONResponse:
