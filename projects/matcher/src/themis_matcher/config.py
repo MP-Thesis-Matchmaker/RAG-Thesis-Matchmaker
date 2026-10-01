@@ -16,12 +16,11 @@ side under different names to keep them apart.
 from __future__ import annotations
 
 import logging
-import os
 from typing import Literal
 
 from pydantic_settings import SettingsConfigDict
 
-from themis_shared.config import Settings, warn_on_unprefixed_env
+from themis_shared.config import Settings, env_names_set, warn_on_unprefixed_env
 
 __all__ = ["MatcherSettings", "get_settings"]
 
@@ -242,11 +241,21 @@ def _warn_on_retired_env() -> None:
     matters more here than for a rename: the old default was 0.0, so someone who
     set this to disable the weak-match guard would find it silently enabled at
     0.57/0.48 instead.
+
+    Looks where MatcherSettings looks -- the environment and `.env` -- for the
+    same reason `warn_on_unprefixed_env` does.
     """
+    set_names = env_names_set(MatcherSettings)
     for old, new in _RETIRED.items():
-        if os.environ.get(old) and old not in _warned_retired:
+        if old in set_names and old not in _warned_retired:
             _warned_retired.add(old)
-            logger.warning("%s is set but no longer read; use %s instead", old, new)
+            where = set_names[old]
+            logger.warning(
+                "%s is set%s but no longer read; use %s instead",
+                old,
+                f" in {where}" if where else "",
+                new,
+            )
 
 
 def get_settings() -> MatcherSettings:
