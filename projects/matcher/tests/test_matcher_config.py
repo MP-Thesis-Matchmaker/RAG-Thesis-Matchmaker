@@ -8,10 +8,15 @@ width) and left alone otherwise.
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from themis_matcher.config import MatcherSettings
+from themis_matcher import config
+from themis_matcher.config import MatcherSettings, get_settings
+from themis_shared import config as shared_config
 
 
 def test_the_prefix_is_what_the_environment_has_to_say(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -71,3 +76,29 @@ def test_cors_is_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_the_token_cap_default_is_the_one_the_schema_was_built_for() -> None:
     """1024 is measured, and document.embedding is vector(1024). Not a free knob."""
     assert MatcherSettings(_env_file=None).embedding_max_seq_length == 1024
+
+
+def test_stale_names_in_dot_env_are_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Both migration notices read `.env`, where stale names actually sit.
+
+    An unprefixed `LLM_BASE_URL` in `.env` used to pass without a word: the
+    matcher read `MATCHER_LLM_BASE_URL`, found nothing, and quietly fell back to
+    the rule-based parser and the template synthesiser.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text(
+        "LLM_BASE_URL=http://llm.example/v1\nMATCHER_SYNTHESIS_MIN_SCORE=0\n"
+    )
+    monkeypatch.delenv("LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("MATCHER_SYNTHESIS_MIN_SCORE", raising=False)
+    shared_config._warned.clear()
+    config._warned_retired.clear()
+
+    with caplog.at_level(logging.WARNING):
+        get_settings()
+
+    assert "LLM_BASE_URL is set in .env but no longer read; use MATCHER_LLM_BASE_URL" in caplog.text
+    assert "MATCHER_SYNTHESIS_MIN_SCORE is set in .env but no longer read" in caplog.text
+    assert "llm.example" not in caplog.text

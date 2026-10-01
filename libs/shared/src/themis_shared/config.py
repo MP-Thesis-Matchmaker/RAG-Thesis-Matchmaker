@@ -25,6 +25,7 @@ import logging
 import os
 from collections.abc import Iterable
 
+from dotenv import dotenv_values
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -85,6 +86,38 @@ def get_settings() -> Settings:
 _warned: set[str] = set()
 
 
+def env_names_set(cls: type[BaseSettings]) -> dict[str, str]:
+    """Every variable name set to a non-empty value where `cls` would look for it.
+
+    Maps the upper-cased name to where it was found: `""` for the process
+    environment, otherwise the path of the env file. Only names leave this
+    function -- values are read to test for emptiness and dropped, so nothing a
+    caller logs can carry a key or a password.
+
+    Both of pydantic-settings' sources count, because a retired name is just as
+    unread in either: the environment, and the class's own `env_file`, which
+    pydantic-settings parses itself without ever copying it into `os.environ`.
+    Checking `os.environ` alone therefore missed the common case -- the stale
+    name sitting in `.env` -- and the migration notices stayed silent exactly
+    where they were needed. The environment is applied last because it wins over
+    the file in pydantic-settings too.
+    """
+    found: dict[str, str] = {}
+    env_file = cls.model_config.get("env_file")
+    if env_file:
+        paths = [env_file] if isinstance(env_file, str | os.PathLike) else list(env_file)
+        encoding = cls.model_config.get("env_file_encoding")
+        for path in paths:
+            if os.path.isfile(path):
+                for name, value in dotenv_values(path, encoding=encoding).items():
+                    if value:
+                        found[name.upper()] = os.fspath(path)
+    for name, value in os.environ.items():
+        if value:
+            found[name.upper()] = ""
+    return found
+
+
 def warn_on_unprefixed_env(cls: type[BaseSettings], also: Iterable[str] = ()) -> None:
     """Log a warning for retired, unprefixed spellings of this class's variables.
 
@@ -101,6 +134,9 @@ def warn_on_unprefixed_env(cls: type[BaseSettings], also: Iterable[str] = ()) ->
     and are meant to stay unprefixed. `also` names retired variables with no
     field behind them at all -- `DSPACE_API_ENDPOINT` is the one such case.
 
+    A name counts as set when it is in the environment or in the class's env
+    file (see `env_names_set`); the warning says which.
+
     Delete this, its call sites and its test once everyone's .env has caught up.
     It is a migration aid with an expiry date, not a compatibility layer: nothing
     reads the old names, and this does not make them work.
@@ -113,14 +149,17 @@ def warn_on_unprefixed_env(cls: type[BaseSettings], also: Iterable[str] = ()) ->
     }
     retired.update({name: "" for name in also})
 
-    found = sorted(old for old in retired if os.environ.get(old) and old not in _warned)
+    set_names = env_names_set(cls)
+    found = sorted(old for old in retired if old in set_names and old not in _warned)
     if not found:
         return
     _warned.update(found)
     for old in found:
         new = retired[old]
+        where = set_names[old]
         logger.warning(
-            "%s is set but no longer read; %s",
+            "%s is set%s but no longer read; %s",
             old,
+            f" in {where}" if where else "",
             f"use {new} instead" if new else "it was retired with no replacement",
         )
