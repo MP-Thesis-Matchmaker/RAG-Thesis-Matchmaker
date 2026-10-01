@@ -115,6 +115,7 @@ whole list.
 | `retrieval_ranking_strategy` | `MATCHER_RETRIEVAL_RANKING_STRATEGY` | `uzh_first` | `uzh_first` or `score`. A `Literal`, so a typo fails at load naming the valid values. |
 | `api_host` | `MATCHER_API_HOST` | `127.0.0.1` | Bind address for `themis-matcher serve`. The image sets `0.0.0.0`. |
 | `api_port` | `MATCHER_API_PORT` | `8100` | Port. 8100 so it does not collide with the gateway's 8000 on a laptop. |
+| `cors_origins` | `MATCHER_CORS_ORIGINS` | unset | Comma-separated browser origins allowed to call the API cross-origin (`GET`/`POST`, `Content-Type`, no credentials), e.g. `http://localhost:4200` for the demo frontend. Unset adds no CORS middleware at all — the in-cluster default, where only the gateway calls this API. |
 | `index_run_heartbeat_timeout_s` | `MATCHER_INDEX_RUN_HEARTBEAT_TIMEOUT_S` | `900` | How long an index run may go without committing a chunk before its slot is released. Bounds the gap between chunks, not the run. |
 
 Two more arrive inherited and stay **unprefixed**: `DATABASE_URL` and

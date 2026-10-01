@@ -194,11 +194,33 @@ class MatcherSettings(Settings):
     api_host: str = "127.0.0.1"
     api_port: int = 8100
 
+    # Browser origins allowed to call the API cross-origin, comma-separated, e.g.
+    # "http://localhost:4200". Empty -- the default -- means no CORS middleware at
+    # all, which is right in the cluster: the API is an internal seam reached by
+    # the gateway server-to-server, and a browser never talks to it there. The
+    # knob exists for the demo frontend, which runs on its own origin during
+    # development and calls the API straight from the browser.
+    #
+    # A str rather than a list[str] on purpose: pydantic-settings parses a list
+    # field's environment value as JSON, so a list would need
+    # MATCHER_CORS_ORIGINS='["http://localhost:4200"]'. Read it through
+    # cors_origin_list, never split it at the call site.
+    cors_origins: str = ""
+
     # How long an index run may go without committing a chunk before it is
     # presumed dead and its single-active slot released. This bounds the gap
     # between two chunks, not the length of a run: a cold index takes days but
     # breathes every chunk.
     index_run_heartbeat_timeout_s: int = 900
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """`cors_origins` split on commas, whitespace stripped, empties dropped.
+
+        Dropping empties is what makes a trailing comma, or a value of only
+        spaces, mean "no origins" rather than an origin of "".
+        """
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 # Retired on 2026-08-28, split in two because publications and postings are not

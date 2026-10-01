@@ -56,6 +56,18 @@ def test_an_unknown_ranking_strategy_is_refused_at_load(monkeypatch: pytest.Monk
         MatcherSettings(_env_file=None)
 
 
+def test_cors_origins_are_split_stripped_and_emptied(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A comma-separated str, not a JSON list -- and stray commas mean nothing."""
+    monkeypatch.setenv("MATCHER_CORS_ORIGINS", " http://a:4200 , ,http://b ")
+    assert MatcherSettings(_env_file=None).cors_origin_list == ["http://a:4200", "http://b"]
+
+
+def test_cors_is_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Empty is load-bearing: it is what keeps the CORS middleware out of the cluster."""
+    monkeypatch.delenv("MATCHER_CORS_ORIGINS", raising=False)
+    assert MatcherSettings(_env_file=None).cors_origin_list == []
+
+
 def test_the_token_cap_default_is_the_one_the_schema_was_built_for() -> None:
     """1024 is measured, and document.embedding is vector(1024). Not a free knob."""
     assert MatcherSettings(_env_file=None).embedding_max_seq_length == 1024

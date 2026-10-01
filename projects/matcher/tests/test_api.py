@@ -163,3 +163,40 @@ def test_unknown_run_is_a_404(client: TestClient) -> None:
     # way it must be a refusal with a code, not an unhandled traceback.
     assert response.status_code in (404, 503)
     assert "code" in response.json()
+
+
+def _cors_client(store: InMemoryVectorStore, settings: MatcherSettings) -> TestClient:
+    """Like `_client`, but hands `settings` to create_app, which is where CORS is read."""
+    service = build_service(settings, embedder=HashEmbedder(), store=store)
+    return TestClient(create_app(settings, service))
+
+
+def test_cors_preflight_is_answered_for_a_configured_origin(
+    empty_store: InMemoryVectorStore,
+) -> None:
+    settings = _settings().model_copy(update={"cors_origins": "http://localhost:4200"})
+    preflight = {"Access-Control-Request-Method": "GET"}
+
+    with _cors_client(empty_store, settings) as client:
+        allowed = client.options(
+            "/v1/health", headers={"Origin": "http://localhost:4200", **preflight}
+        )
+        refused = client.options(
+            "/v1/health", headers={"Origin": "http://evil.example", **preflight}
+        )
+
+    assert allowed.headers["access-control-allow-origin"] == "http://localhost:4200"
+    assert "access-control-allow-origin" not in refused.headers
+
+
+def test_no_cors_headers_by_default(
+    empty_store: InMemoryVectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The in-cluster default: no middleware, so a browser origin is granted nothing."""
+    monkeypatch.delenv("MATCHER_CORS_ORIGINS", raising=False)
+
+    with _cors_client(empty_store, _settings()) as client:
+        response = client.get("/v1/health", headers={"Origin": "http://localhost:4200"})
+
+    assert response.status_code == 200
+    assert "access-control-allow-origin" not in response.headers
