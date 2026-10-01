@@ -145,7 +145,7 @@ before those changes were designed. Details:
 
 **Configuration is owned by the member that reads it (2026-08-27).** `themis_shared.config.Settings`
 is **two fields** — `database_url` and `matcher_base_url`, the only two more than one member reads.
-Everything else lives in a prefixed subclass: `MatcherSettings` (`MATCHER_`, 17 fields),
+Everything else lives in a prefixed subclass: `MatcherSettings` (`MATCHER_`, 19 fields),
 `GatewaySettings` (`GATEWAY_`), `ZoraSettings` (`ZORA_`), `ScraperSettings` (`SCRAPER_`). Adding a
 field to the shared class means every member inherits it; `test_smoke.py` fails first, deliberately.
 
