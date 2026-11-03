@@ -20,9 +20,14 @@ it.
 from __future__ import annotations
 
 import httpx
+import logging
 
 from themis_gateway.config import get_settings
 from themis_shared.contracts import MatchRequest
+
+# Logger setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Long enough for a cold query -- the matcher may still be loading the embedding
 # model on its first request -- and short enough that askUZH is not left hanging
@@ -47,6 +52,7 @@ class IndexNotBuiltError(RuntimeError):
 def _base_url() -> str:
     settings = get_settings()
     if not settings.matcher_base_url:
+        logger.warning("MATCHER_BASE_URL not set!")
         raise MatcherUnavailableError(
             "MATCHER_BASE_URL is not set, so there is no matcher to ask. "
             "Point it at the matcher's HTTP API (default port 8100)."
