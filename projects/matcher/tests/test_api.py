@@ -200,3 +200,17 @@ def test_no_cors_headers_by_default(
 
     assert response.status_code == 200
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_the_api_retriever_uses_the_per_source_score_bars() -> None:
+    """The API must rank like the CLI: by margin over each source's bar, not raw score."""
+    settings = _settings()
+    settings.synthesis_min_score_publication = 0.7
+    settings.synthesis_min_score_posting = 0.5
+
+    service = build_service(settings, embedder=HashEmbedder(), store=InMemoryVectorStore())
+
+    assert service.pipeline.retriever._min_scores == {
+        "publication": 0.7,
+        "thesis_posting": 0.5,
+    }

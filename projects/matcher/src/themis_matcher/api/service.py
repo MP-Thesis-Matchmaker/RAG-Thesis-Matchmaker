@@ -124,6 +124,11 @@ def build_service(
         require_uzh_author=settings.retrieval_require_uzh_author,
         require_available_posting=settings.retrieval_require_available_posting,
         ranking_strategy=settings.retrieval_ranking_strategy,
+        # The same per-source bars `build_retriever` passes. Without them both
+        # bars are 0.0, so the API ranked by raw score while the CLI ranked by
+        # margin, and publications (higher raw scores) crowded out postings.
+        min_score_publication=settings.synthesis_min_score_publication,
+        min_score_posting=settings.synthesis_min_score_posting,
     )
     return MatcherService(
         settings=settings,
