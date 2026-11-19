@@ -1,9 +1,11 @@
 """Run report + notification.
 
 Every run writes output/runs/<timestamp>.json and prints a table of flagged
-(quarantined) sources with reasons. `notify(summary)` is the single, swappable
-hook — it just prints today; later it can email or POST a webhook without any
-caller change. A run with flags exits non-zero so a scheduler can alert.
+sources with reasons; some of them are also quarantined (see
+`validate.quarantines`). `notify(summary)` is the single, swappable hook — it
+just prints today; later it can email or POST a webhook without any caller
+change. The exit code is not decided here: `main.cmd_run` fails only on systemic
+breakage (see `validate.MAX_UNSCRAPED_RATIO` and the README's "Exit codes").
 """
 
 from __future__ import annotations
