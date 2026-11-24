@@ -169,7 +169,8 @@ uv run pytest
 the root `pyproject.toml`, so `cd projects/zora && pytest` sees none of them. To run one member's
 tests, name the directory instead: `uv run pytest projects/scraper/tests`.
 
-560 tests across 43 files. 66 of them need Postgres and skip when `DATABASE_URL` is unset; point it
+694 tests across 49 files. Three need the gateway's `mcp` extra and skip without it. 69 need
+Postgres and skip when `DATABASE_URL` is unset; point it
 at a database whose name ends in `_test` (`docker compose up -d postgres` creates
 `matchmaker_test` for exactly this), because the fixtures TRUNCATE between tests and the guard in
 `conftest.py` will refuse anything else.

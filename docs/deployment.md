@@ -288,6 +288,7 @@ this table rather than assuming a chart value took effect. The full inventory is
 | `MATCHER_EMBEDDING_MODEL` | `BAAI/bge-m3`, or `hash-fake` offline | chart `env` |
 | `MATCHER_API_HOST` / `MATCHER_API_PORT` | must be `0.0.0.0` in a container | baked into `projects/matcher/Dockerfile` |
 | `GATEWAY_MCP_HOST` / `GATEWAY_MCP_PORT` | must be `0.0.0.0` in a container | baked into `projects/gateway/Dockerfile` |
+| `GATEWAY_MCP_ENABLE_FIND_RESEARCHERS` / `GATEWAY_MCP_ENABLE_RECOMMEND_SUPERVISORS` | which MCP tools are served; both default to `true` | chart `env`, only to switch one off |
 | `SCRAPER_CONTACT` | the address advertised in the scraper's User-Agent | chart `env`; the scraper refuses to fetch without it |
 | `HF_HOME` | where bge-m3 is cached; the RWX PVC | baked into the matcher image |
 

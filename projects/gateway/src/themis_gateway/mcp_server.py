@@ -7,6 +7,12 @@ Two thin tools over the app-service functions in ``service``:
   conversation context.
 - ``recommend_supervisors``: a full written recommendation, for standalone use.
 
+Either can be switched off per deployment with ``GATEWAY_MCP_ENABLE_FIND_RESEARCHERS``
+and ``GATEWAY_MCP_ENABLE_RECOMMEND_SUPERVISORS`` (both default to on). That is why
+the tools are registered in ``build_server`` rather than by decorator at import
+time: a disabled tool must never be registered, so that it is absent from
+``tools/list`` instead of advertised and then failing when called.
+
 Deployment: this runs as a standalone server that AI Buddy points its agent at,
 so the default transport is streamable HTTP and the tools are served at
 ``http://<GATEWAY_MCP_HOST>:<GATEWAY_MCP_PORT>/mcp``. Nothing is merged into AI Buddy itself.
@@ -22,18 +28,9 @@ from __future__ import annotations
 from mcp.server.mcpserver import MCPServer
 
 from themis_gateway import __version__, service
-
-# MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved from
-# mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than `mcp` on
-# purpose -- the old name shadowed the `mcp` package inside this very module.
-#
-# version is passed explicitly because 2.x defaults it to "". In 1.x the field
-# was filled with the SDK's own version, which reported "1.29.0" as though that
-# were this server's version; ours is the honest value.
-server = MCPServer("themis", version=__version__)
+from themis_gateway.config import GatewaySettings
 
 
-@server.tool()
 def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     """Find UZH researchers whose work matches a topic or research interest.
 
@@ -50,7 +47,6 @@ def find_researchers(query: str, top_k: int = 5) -> list[dict]:
     return service.find_researchers(query, top_k=top_k)
 
 
-@server.tool()
 def recommend_supervisors(interests: str, top_k: int = 5) -> str:
     """Recommend thesis supervisors for a student as a short written answer.
 
@@ -59,3 +55,31 @@ def recommend_supervisors(interests: str, top_k: int = 5) -> str:
     answer is wanted instead of structured data.
     """
     return service.recommend_supervisors(interests, top_k=top_k)
+
+
+# Keyed by the names GatewaySettings.enabled_mcp_tools yields. A name there with
+# no entry here is a KeyError at startup, which is the right time to find out.
+_TOOLS = {
+    "find_researchers": find_researchers,
+    "recommend_supervisors": recommend_supervisors,
+}
+
+
+def build_server(settings: GatewaySettings) -> MCPServer:
+    """Build the MCP server with the tools this deployment has enabled.
+
+    The function's docstring becomes the tool description the calling model
+    reads, and its name the tool name -- hence the plain functions above.
+    """
+    # MCPServer is the SDK 2.x name for what 1.x called FastMCP; the class moved
+    # from mcp.server.fastmcp to mcp.server.mcpserver. Named `server` rather than
+    # `mcp` on purpose -- the old name shadowed the `mcp` package inside this
+    # very module.
+    #
+    # version is passed explicitly because 2.x defaults it to "". In 1.x the
+    # field was filled with the SDK's own version, which reported "1.29.0" as
+    # though that were this server's version; ours is the honest value.
+    server = MCPServer("themis", version=__version__)
+    for name in settings.enabled_mcp_tools:
+        server.add_tool(_TOOLS[name])
+    return server
