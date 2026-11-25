@@ -14,7 +14,8 @@ a decision is unmade or a fact is unknown, say so explicitly.
 ## Current repo state (as of 2026-08-26)
 
 A **five-member `uv` workspace**, every member `requires-python >=3.11`, ~11,750 LOC across the
-five `src/` trees, 560 tests in 43 files (494 pass / 66 skip without `DATABASE_URL`). The
+five `src/` trees, 694 tests in 49 files (622 pass without `DATABASE_URL`; 69 skip for it, and 3 more in one
+module skip for the `mcp` extra). The
 workspace root has **no `[project]` table** — it is virtual, which is why a bare `uv sync`
 installs nothing and errors; always `--all-packages` or `--package themis-<x>`.
 **Per-member detail lives in the member's `README.md`; read those instead of expanding this
@@ -169,8 +170,8 @@ Three things about this that are not obvious and cost time to rediscover:
 Tooling: `uv` everywhere — a **single root `uv.lock` covering all five members**, tracked, and what
 actually gets installed by CI (`uv sync --locked --all-packages`, or `--package themis-<x>`) and by
 the container images alike; pip is used nowhere. One `.venv`, at the root: `--package X` *replaces*
-its contents rather than making a second environment. `pytest` (560 tests / 43 files; 66 need
-Postgres and skip without `DATABASE_URL`) and `ruff` (line length 100, py311) are configured
+its contents rather than making a second environment. `pytest` (694 tests / 49 files; 69 need
+Postgres and skip without `DATABASE_URL`, 3 need the `mcp` extra) and `ruff` (line length 100, py311) are configured
 **only in the root `pyproject.toml`** — which fixes pytest's rootdir at the repo root, so always
 invoke it from there. `ruff` lives in the root `dev` group; `pytest` is repeated in every member's
 `dev` group so `--package X` still yields a runnable environment.

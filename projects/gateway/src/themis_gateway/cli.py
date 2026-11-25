@@ -25,6 +25,15 @@ from themis_gateway import __version__
 from themis_gateway.config import GatewaySettings, get_settings
 
 
+def _tools_line(settings: GatewaySettings) -> str:
+    """The enabled tools, for the status summary and the startup banner.
+
+    Printed in both because the two flags fail open: a misspelled variable is
+    ignored and the tool stays on, and this line is the only place that shows.
+    """
+    return ", ".join(settings.enabled_mcp_tools) or "none - 'mcp' will refuse to start"
+
+
 def _run_mcp(settings: GatewaySettings, args: argparse.Namespace) -> None:
     """Serve the MCP tools until killed.
 
@@ -33,17 +42,29 @@ def _run_mcp(settings: GatewaySettings, args: argparse.Namespace) -> None:
     extra is not installed. That extra is never installed in CI, so this is the
     difference between a status summary and a ModuleNotFoundError.
     """
-    from themis_gateway.mcp_server import server
+    if not settings.enabled_mcp_tools:
+        # Before the import below, so the message is the same with or without the
+        # extra. A server with no tools would start and answer `tools/list` with
+        # an empty list, which reads to the caller as a working, useless service.
+        raise SystemExit(
+            "themis-gateway: both MCP tools are disabled; set "
+            "GATEWAY_MCP_ENABLE_FIND_RESEARCHERS or "
+            "GATEWAY_MCP_ENABLE_RECOMMEND_SUPERVISORS to true"
+        )
+
+    from themis_gateway.mcp_server import build_server
+
+    server = build_server(settings)
 
     if args.stdio:
-        # Deliberately before get_settings(): stdio needs no host or port, and a
-        # local inspector session should not require the deployment config to be
-        # present and valid.
+        # Nothing printed on this path: stdout is the transport, and a banner
+        # there would corrupt the protocol stream.
         server.run(transport="stdio")
         return
 
     print(f"themis-gateway serving MCP on http://{settings.mcp_host}:{settings.mcp_port}/mcp")
     print(f"  matcher: {settings.matcher_base_url or 'unset - every tool call will fail'}")
+    print(f"  tools:   {_tools_line(settings)}")
     server.run(
         transport="streamable-http",
         host=settings.mcp_host,
@@ -64,6 +85,7 @@ def _dispatch(settings: GatewaySettings, args: argparse.Namespace) -> None:
     print("themis-gateway")
     print(f"  matcher:  {settings.matcher_base_url or 'unset - every tool call will fail'}")
     print(f"  mcp bind: {settings.mcp_host}:{settings.mcp_port}")
+    print(f"  tools:    {_tools_line(settings)}")
     print("try: themis-gateway mcp")
 
 

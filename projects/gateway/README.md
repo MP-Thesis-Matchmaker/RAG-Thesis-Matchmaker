@@ -46,7 +46,7 @@ described.
 | `MatcherUnavailableError` | `service.py` | The matcher is unreachable, unconfigured, or refused for a reason we do not recognise. |
 | `find_researchers` (MCP tool) | `mcp_server.py` | The tool askUZH calls. Same signature, minus the injectable client. |
 | `recommend_supervisors` (MCP tool) | `mcp_server.py` | Prose variant, same shape. |
-| `server` + tools | `mcp_server.py` | The MCP server and its two tools. Reached through `themis-gateway mcp`; the parser lives in `cli.py`, which imports this module lazily so `--help` works without the `mcp` extra. |
+| `build_server(settings)` | `mcp_server.py` | Builds the MCP server and registers the tools the settings enable. Reached through `themis-gateway mcp`; the parser lives in `cli.py`, which imports this module lazily so `--help` works without the `mcp` extra. |
 
 The `pipeline` parameter on both service functions exists purely for injection in
 tests — production callers omit it.
@@ -72,11 +72,18 @@ CLI, a demo, a REST client. Same retrieval, different last step.
 |---|---|---|---|
 | `mcp_host` | `GATEWAY_MCP_HOST` | `127.0.0.1` | Bind address for the HTTP transport. |
 | `mcp_port` | `GATEWAY_MCP_PORT` | `8000` | Port; the server is served at `http://<host>:<port>/mcp`. |
+| `mcp_enable_find_researchers` | `GATEWAY_MCP_ENABLE_FIND_RESEARCHERS` | `true` | `false` stops the tool being registered: clients no longer see it in `tools/list`. |
+| `mcp_enable_recommend_supervisors` | `GATEWAY_MCP_ENABLE_RECOMMEND_SUPERVISORS` | `true` | Same, for the prose tool. |
 | `matcher_base_url` | `MATCHER_BASE_URL` | unset | Where the matcher's API is. **Unset means no matcher**: both functions then raise `MatcherUnavailableError` rather than guessing at localhost. |
 
 That is the whole list, and the short list is the point: this process holds no
 model, no database connection and no LLM client, so it has nothing else to
-configure. Everything that used to be inherited from `Pipeline` is now the
+configure.
+
+Two things about the tool flags. **They fail open:** a misspelled variable is
+ignored silently and the tool stays served, so check with a bare `themis-gateway`,
+which prints the tools in effect. And with **both** off, `themis-gateway mcp`
+exits with an error instead of serving an empty tool list. Everything that used to be inherited from `Pipeline` is now the
 matcher's — see [`projects/matcher/README.md`](../matcher/README.md).
 
 ## Running it
@@ -100,8 +107,10 @@ logic.
 ## Status
 
 **MCP adapter implemented** (merged in PR #16) and exposed as a console script.
-`projects/gateway/tests/test_mcp_service.py` (9 tests) covers `service.py` against an
+`projects/gateway/tests/test_mcp_service.py` (10 tests) covers `service.py` against an
 `httpx.MockTransport`, so it needs neither a matcher nor a network.
+`test_gateway_config.py` and `test_gateway_cli.py` cover the settings and the
+tool flags' effect on the CLI, also without the `mcp` extra.
 
 **REST API: design-only.** The diagram shows it; no code exists yet. When it is
 built it belongs here, as a second wrapper over the same `service.py` functions.
@@ -111,9 +120,10 @@ door is still unwritten.
 
 ## Known gaps
 
-- **`mcp_server.py` is untested.** Only the transport-free `service.py` has tests;
-  the `MCPServer` registration, the two tool signatures, and `main()`'s transport
-  switch are not exercised. CI also never installs the `mcp` extra, so nothing in
+- **`mcp_server.py` is untested in CI.** `tests/test_mcp_server.py` checks which
+  tools `build_server` registers, but it needs the `mcp` extra and skips without
+  it, which means it skips in every CI job. Tool invocation through the server
+  and `main()`'s transport switch are not exercised anywhere. So nothing in
   CI would notice if this module stopped importing — and that is not theoretical:
   it *did* stop importing when the SDK reached 2.0 and removed `FastMCP`, and the
   failure was found by building an image rather than by a test.
