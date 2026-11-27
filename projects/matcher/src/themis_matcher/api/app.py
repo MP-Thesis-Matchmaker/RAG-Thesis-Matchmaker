@@ -226,7 +226,10 @@ def create_app(
     def match(request: Request, body: MatchRequest) -> MatchResponse:
         service = _service(request)
         _require_index(service)
-        return MatchResponse(matches=service.pipeline.run(body.query, top_k=body.top_k))
+        logger.info("/v1/match start: top_k=%d query_chars=%d", body.top_k, len(body.query))
+        matches = service.pipeline.run(body.query, top_k=body.top_k)
+        logger.info("/v1/match done: returned_matches=%d", len(matches))
+        return MatchResponse(matches=matches)
 
     @app.post(
         "/v1/recommend",
@@ -238,7 +241,10 @@ def create_app(
     def recommend(request: Request, body: MatchRequest) -> RecommendResponse:
         service = _service(request)
         _require_index(service)
-        return RecommendResponse(answer=service.pipeline.recommend(body.query, top_k=body.top_k))
+        logger.info("/v1/recommend start: top_k=%d query_chars=%d", body.top_k, len(body.query))
+        answer = service.pipeline.recommend(body.query, top_k=body.top_k)
+        logger.info("/v1/recommend done: answer_chars=%d", len(answer))
+        return RecommendResponse(answer=answer)
 
     def _trigger(request: Request, kind: IndexRunKind) -> IndexRunAccepted:
         run = _service(request).trigger_index(kind)
