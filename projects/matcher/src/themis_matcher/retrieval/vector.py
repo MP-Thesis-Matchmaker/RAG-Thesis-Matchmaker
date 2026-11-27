@@ -143,6 +143,7 @@ class VectorRetriever:
             len(posting_hits),
             posting_filters,
         )
+        logger.info("Retrieval result set 'postings': %s", self._hit_summary(posting_hits))
 
         logger.info("Run 'publications' query ...")
         publication_top_k = top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k
@@ -152,17 +153,23 @@ class VectorRetriever:
             filters=publication_filters,
         )
         logger.info(
-            "Retrieval results of 'publications' query: requested_top_k=%d returned_hits=%d filters=%s",
+            (
+                "Retrieval results of 'publications' query: requested_top_k=%d "
+                "returned_hits=%d filters=%s"
+            ),
             publication_top_k,
             len(publication_hits),
             publication_filters,
         )
+        logger.info("Retrieval result set 'publications': %s", self._hit_summary(publication_hits))
 
         logger.info("Merge results of postings and publications ...")
         hits = posting_hits + publication_hits
         grouped = self._group_by_person(hits)
         ranked = self._rank(grouped)
         result = ranked[:top_k]
+        logger.info("Retrieval grouped (after merge): %s", self._match_summary(grouped))
+        logger.info("Retrieval returned (after rank/top_k): %s", self._match_summary(result))
         logger.info(
             "Retrieval done: hits_total=%d grouped_people=%d returned_matches=%d",
             len(hits),
@@ -180,6 +187,34 @@ class VectorRetriever:
     def _names(hit: ScoredHit, key: str) -> list[str]:
         people = hit.metadata.get(key) or []
         return [str(name) for name in people] if isinstance(people, list) else []
+
+    @staticmethod
+    def _hit_summary(hits: list[ScoredHit], limit: int = 10) -> list[str]:
+        clipped = hits[:limit]
+        summary = []
+        for hit in clipped:
+            people = VectorRetriever._persons(hit)
+            if not people:
+                people_text = "<no person>"
+            elif len(people) <= 2:
+                people_text = ", ".join(people)
+            else:
+                people_text = f"{', '.join(people[:2])}, +{len(people) - 2} more"
+            summary.append(f"{people_text} (score={hit.score:.3f}, id={hit.id})")
+        if len(hits) > limit:
+            summary.append(f"... +{len(hits) - limit} more")
+        return summary
+
+    @staticmethod
+    def _match_summary(matches: list[SupervisorMatch], limit: int = 10) -> list[str]:
+        clipped = matches[:limit]
+        summary = [
+            f"{m.supervisor}(pub={m.publication_count},post={m.posting_count},score={m.score:.3f})"
+            for m in clipped
+        ]
+        if len(matches) > limit:
+            summary.append(f"... +{len(matches) - limit} more")
+        return summary
 
     @staticmethod
     def _persons(hit: ScoredHit) -> list[str]:
