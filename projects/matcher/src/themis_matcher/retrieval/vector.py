@@ -13,6 +13,7 @@ The default is permissive-but-demoted: reachable, always below any UZH match.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from typing import Literal
 
@@ -32,6 +33,8 @@ from themis_shared.contracts import Evidence, ParsedQuery, SupervisorMatch
 #
 # Not applied when the filter is off, where nothing is discarded after the scan.
 _FILTERED_OVERFETCH = 4
+
+logger = logging.getLogger(__name__)
 
 
 def _query_text(query: ParsedQuery) -> str:
@@ -82,7 +85,20 @@ class VectorRetriever:
         }
 
     def retrieve(self, query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]:
-        vector = self.embedder.embed_query(_query_text(query))
+        """
+        Retrieve the top_k matches for a query, e.g., 'behavioral economics'
+        """
+        logger.info(
+            (
+                "Retrieval start: top_k=%d ranking=%s require_uzh_author=%s "
+                "require_available_posting=%s degree_level=%s"
+            ),
+            top_k,
+            self.ranking_strategy,
+            self.require_uzh_author,
+            self.require_available_posting,
+            query.degree_level,
+        )
 
         # Postings and publications are filtered differently: degree_level only
         # exists on postings, so one combined query would wrongly drop every
@@ -111,18 +127,50 @@ class VectorRetriever:
             posting_filters["is_available"] = True
         publication_filters: dict[str, str | bool] = {"source_type": "publication"}
         if self.require_uzh_author:
+            logger.info("Require UZH author: True")
             # Eligibility as a hard cut: an unaffiliated researcher cannot supervise
             # a UZH thesis, so they should not occupy a slot at all.
             publication_filters["has_uzh_author"] = True
 
-        hits = self.store.query(vector, top_k=top_k, filters=posting_filters)
-        hits += self.store.query(
-            vector,
-            top_k=top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k,
-            filters=publication_filters,
+        logger.info(f"Embed query: '{query.raw_query}'")
+        vector = self.embedder.embed_query(_query_text(query))
+
+        logger.info("Run 'postings' query ...")
+        posting_hits = self.store.query(vector, top_k=top_k, filters=posting_filters)
+        logger.info(
+            "Retrieval results of 'postings' query: requested_top_k=%d returned_hits=%d filters=%s",
+            top_k,
+            len(posting_hits),
+            posting_filters,
         )
 
-        return self._rank(self._group_by_person(hits))[:top_k]
+        logger.info("Run 'publications' query ...")
+        publication_top_k = top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k
+        publication_hits = self.store.query(
+            vector,
+            top_k=publication_top_k,
+            filters=publication_filters,
+        )
+        logger.info(
+            "Retrieval results of 'publications' query: requested_top_k=%d returned_hits=%d filters=%s",
+            publication_top_k,
+            len(publication_hits),
+            publication_filters,
+        )
+
+        logger.info("Merge results of postings and publications ...")
+        hits = posting_hits + publication_hits
+        grouped = self._group_by_person(hits)
+        ranked = self._rank(grouped)
+        result = ranked[:top_k]
+        logger.info(
+            "Retrieval done: hits_total=%d grouped_people=%d returned_matches=%d",
+            len(hits),
+            len(grouped),
+            len(result),
+        )
+
+        return result
 
     @staticmethod
     def _source_type(hit: ScoredHit) -> Literal["publication", "thesis_posting"]:
