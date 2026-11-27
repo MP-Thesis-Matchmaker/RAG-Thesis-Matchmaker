@@ -143,7 +143,8 @@ class VectorRetriever:
             len(posting_hits),
             posting_filters,
         )
-        logger.info("Retrieval result set 'postings': %s", self._hit_summary(posting_hits))
+        posting_grouped = self._rank(self._group_by_person(posting_hits))
+        logger.info("Retrieval result set 'postings': %s", self._match_summary(posting_grouped))
 
         logger.info("Run 'publications' query ...")
         publication_top_k = top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k
@@ -161,7 +162,10 @@ class VectorRetriever:
             len(publication_hits),
             publication_filters,
         )
-        logger.info("Retrieval result set 'publications': %s", self._hit_summary(publication_hits))
+        publication_grouped = self._rank(self._group_by_person(publication_hits))
+        logger.info(
+            "Retrieval result set 'publications': %s", self._match_summary(publication_grouped)
+        )
 
         logger.info("Merge results of postings and publications ...")
         hits = posting_hits + publication_hits
@@ -188,22 +192,6 @@ class VectorRetriever:
         people = hit.metadata.get(key) or []
         return [str(name) for name in people] if isinstance(people, list) else []
 
-    @staticmethod
-    def _hit_summary(hits: list[ScoredHit], limit: int = 10) -> list[str]:
-        clipped = hits[:limit]
-        summary = []
-        for hit in clipped:
-            people = VectorRetriever._persons(hit)
-            if not people:
-                people_text = "<no person>"
-            elif len(people) <= 2:
-                people_text = ", ".join(people)
-            else:
-                people_text = f"{', '.join(people[:2])}, +{len(people) - 2} more"
-            summary.append(f"{people_text} (score={hit.score:.3f}, id={hit.id})")
-        if len(hits) > limit:
-            summary.append(f"... +{len(hits) - limit} more")
-        return summary
 
     @staticmethod
     def _match_summary(matches: list[SupervisorMatch], limit: int = 10) -> list[str]:
