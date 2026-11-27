@@ -127,8 +127,7 @@ def create_app(
             {
                 "name": "matching",
                 "description": (
-                    "Student query endpoints for ranked evidence "
-                    "and prose recommendations."
+                    "Student query endpoints for ranked evidence and prose recommendations."
                 ),
             },
             {"name": "index", "description": "Index state, run receipts, and run history."},
