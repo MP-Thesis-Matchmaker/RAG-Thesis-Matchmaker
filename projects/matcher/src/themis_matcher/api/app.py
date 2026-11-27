@@ -40,6 +40,25 @@ from themis_shared.contracts import (
 
 logger = logging.getLogger(__name__)
 
+_RESPONSES_404 = {
+    status.HTTP_404_NOT_FOUND: {
+        "model": ApiError,
+        "description": "No resource exists for the requested id.",
+    }
+}
+_RESPONSES_409 = {
+    status.HTTP_409_CONFLICT: {
+        "model": ApiError,
+        "description": "Request conflicts with matcher state (for example no index exists).",
+    }
+}
+_RESPONSES_503 = {
+    status.HTTP_503_SERVICE_UNAVAILABLE: {
+        "model": ApiError,
+        "description": "Matcher dependencies are unavailable (for example Postgres).",
+    }
+}
+
 
 class MatcherApiError(Exception):
     """A refusal with a machine-readable code.
@@ -99,6 +118,21 @@ def create_app(
     app = FastAPI(
         title="themis-matcher",
         summary="Matching over the ZORA corpus and scraped thesis postings.",
+        description=(
+            "HTTP interface for thesis matching over publications and postings. "
+            "Interactive docs are available at `/docs` and raw schema at `/openapi.json`."
+        ),
+        openapi_tags=[
+            {"name": "system", "description": "Service status and runtime metadata."},
+            {
+                "name": "matching",
+                "description": (
+                    "Student query endpoints for ranked evidence "
+                    "and prose recommendations."
+                ),
+            },
+            {"name": "index", "description": "Index state, run receipts, and run history."},
+        ],
         lifespan=lifespan,
     )
 
@@ -160,11 +194,22 @@ def create_app(
     for _db_error in db.DB_ERRORS:
         app.add_exception_handler(_db_error, _handle_db_error)
 
-    @app.get("/v1/health", summary="Liveness. Touches no database.")
+    @app.get(
+        "/v1/health",
+        tags=["system"],
+        summary="Liveness check.",
+        description="Returns `ok` without touching the database.",
+    )
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.get("/v1/index/status", response_model=IndexStatus)
+    @app.get(
+        "/v1/index/status",
+        tags=["index"],
+        summary="Current index manifest.",
+        response_model=IndexStatus,
+        responses={**_RESPONSES_409, **_RESPONSES_503},
+    )
     def index_status(request: Request) -> IndexStatus:
         service = _service(request)
         _require_index(service)
@@ -172,13 +217,25 @@ def create_app(
         assert manifest is not None  # _require_index just checked
         return IndexStatus(**manifest.model_dump())
 
-    @app.post("/v1/match", response_model=MatchResponse)
+    @app.post(
+        "/v1/match",
+        tags=["matching"],
+        summary="Return ranked supervisor matches.",
+        response_model=MatchResponse,
+        responses={**_RESPONSES_409, **_RESPONSES_503},
+    )
     def match(request: Request, body: MatchRequest) -> MatchResponse:
         service = _service(request)
         _require_index(service)
         return MatchResponse(matches=service.pipeline.run(body.query, top_k=body.top_k))
 
-    @app.post("/v1/recommend", response_model=RecommendResponse)
+    @app.post(
+        "/v1/recommend",
+        tags=["matching"],
+        summary="Return grounded recommendation prose.",
+        response_model=RecommendResponse,
+        responses={**_RESPONSES_409, **_RESPONSES_503},
+    )
     def recommend(request: Request, body: MatchRequest) -> RecommendResponse:
         service = _service(request)
         _require_index(service)
@@ -190,27 +247,43 @@ def create_app(
 
     @app.post(
         "/v1/index/publications",
+        tags=["index"],
         response_model=IndexRunAccepted,
         status_code=status.HTTP_202_ACCEPTED,
         summary="Index harvested publications. Returns a receipt, not a result.",
+        responses={**_RESPONSES_409, **_RESPONSES_503},
     )
     def index_publications(request: Request) -> IndexRunAccepted:
         return _trigger(request, IndexRunKind.publication)
 
     @app.post(
         "/v1/index/postings",
+        tags=["index"],
         response_model=IndexRunAccepted,
         status_code=status.HTTP_202_ACCEPTED,
         summary="Index scraped thesis postings. Returns a receipt, not a result.",
+        responses={**_RESPONSES_409, **_RESPONSES_503},
     )
     def index_postings(request: Request) -> IndexRunAccepted:
         return _trigger(request, IndexRunKind.thesis_posting)
 
-    @app.get("/v1/index/runs", response_model=list[IndexRun])
+    @app.get(
+        "/v1/index/runs",
+        tags=["index"],
+        summary="Recent index runs.",
+        response_model=list[IndexRun],
+        responses=_RESPONSES_503,
+    )
     def index_runs(request: Request, limit: int = 20) -> list[IndexRun]:
         return _service(request).runs.recent(limit=min(max(limit, 1), 100))
 
-    @app.get("/v1/index/runs/{run_id}", response_model=IndexRun)
+    @app.get(
+        "/v1/index/runs/{run_id}",
+        tags=["index"],
+        summary="One index run by id.",
+        response_model=IndexRun,
+        responses={**_RESPONSES_404, **_RESPONSES_503},
+    )
     def index_run(request: Request, run_id: int) -> IndexRun:
         run = _service(request).runs.get(run_id)
         if run is None:
