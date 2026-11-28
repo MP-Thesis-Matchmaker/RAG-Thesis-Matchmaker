@@ -48,6 +48,12 @@ uv run themis-matcher serve                       # the HTTP API, default :8100
 | `POST` | `/v1/index/postings` | 202 + a run id. Fired by `themis-scraper` on success |
 | `GET` | `/v1/index/runs`, `/v1/index/runs/{id}` | Run history and one run's state |
 
+The same service exposes OpenAPI documentation:
+
+- Swagger UI: http://127.0.0.1:8100/docs
+- OpenAPI JSON: http://127.0.0.1:8100/openapi.json
+- ReDoc: http://127.0.0.1:8100/redoc
+
 Four things about it are deliberate.
 
 **Triggers return a receipt, not a result.** A cold full index is measured in days

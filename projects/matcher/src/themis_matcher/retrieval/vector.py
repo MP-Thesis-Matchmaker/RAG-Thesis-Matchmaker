@@ -13,6 +13,7 @@ The default is permissive-but-demoted: reachable, always below any UZH match.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from typing import Literal
 
@@ -32,6 +33,8 @@ from themis_shared.contracts import Evidence, ParsedQuery, SupervisorMatch
 #
 # Not applied when the filter is off, where nothing is discarded after the scan.
 _FILTERED_OVERFETCH = 4
+
+logger = logging.getLogger(__name__)
 
 
 def _query_text(query: ParsedQuery) -> str:
@@ -82,7 +85,20 @@ class VectorRetriever:
         }
 
     def retrieve(self, query: ParsedQuery, top_k: int = 5) -> list[SupervisorMatch]:
-        vector = self.embedder.embed_query(_query_text(query))
+        """
+        Retrieve the top_k matches for a query, e.g., 'behavioral economics'
+        """
+        logger.info(
+            (
+                "Retrieval start: top_k=%d ranking=%s require_uzh_author=%s "
+                "require_available_posting=%s degree_level=%s"
+            ),
+            top_k,
+            self.ranking_strategy,
+            self.require_uzh_author,
+            self.require_available_posting,
+            query.degree_level,
+        )
 
         # Postings and publications are filtered differently: degree_level only
         # exists on postings, so one combined query would wrongly drop every
@@ -111,18 +127,61 @@ class VectorRetriever:
             posting_filters["is_available"] = True
         publication_filters: dict[str, str | bool] = {"source_type": "publication"}
         if self.require_uzh_author:
+            logger.info("Require UZH author: True")
             # Eligibility as a hard cut: an unaffiliated researcher cannot supervise
             # a UZH thesis, so they should not occupy a slot at all.
             publication_filters["has_uzh_author"] = True
 
-        hits = self.store.query(vector, top_k=top_k, filters=posting_filters)
-        hits += self.store.query(
+        logger.info(f"Embed query: '{query.raw_query}'")
+        vector = self.embedder.embed_query(_query_text(query))
+
+        logger.info("Run 'postings' query ...")
+        posting_hits = self.store.query(vector, top_k=top_k, filters=posting_filters)
+        logger.info(
+            "Retrieval results of 'postings' query: requested_top_k=%d returned_hits=%d filters=%s",
+            top_k,
+            len(posting_hits),
+            posting_filters,
+        )
+        posting_grouped = self._rank(self._group_by_person(posting_hits))
+        logger.info("Retrieval result set 'postings': %s", self._match_summary(posting_grouped))
+
+        logger.info("Run 'publications' query ...")
+        publication_top_k = top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k
+        publication_hits = self.store.query(
             vector,
-            top_k=top_k * _FILTERED_OVERFETCH if self.require_uzh_author else top_k,
+            top_k=publication_top_k,
             filters=publication_filters,
         )
+        logger.info(
+            (
+                "Retrieval results of 'publications' query: requested_top_k=%d "
+                "returned_hits=%d filters=%s"
+            ),
+            publication_top_k,
+            len(publication_hits),
+            publication_filters,
+        )
+        publication_grouped = self._rank(self._group_by_person(publication_hits))
+        logger.info(
+            "Retrieval result set 'publications': %s", self._match_summary(publication_grouped)
+        )
 
-        return self._rank(self._group_by_person(hits))[:top_k]
+        logger.info("Merge results of postings and publications ...")
+        hits = posting_hits + publication_hits
+        grouped = self._group_by_person(hits)
+        ranked = self._rank(grouped)
+        result = ranked[:top_k]
+        logger.info("Retrieval grouped (after merge): %s", self._match_summary(grouped))
+        logger.info("Retrieval returned (after rank/top_k): %s", self._match_summary(result))
+        logger.info(
+            "Retrieval done: hits_total=%d grouped_people=%d returned_matches=%d",
+            len(hits),
+            len(grouped),
+            len(result),
+        )
+
+        return result
 
     @staticmethod
     def _source_type(hit: ScoredHit) -> Literal["publication", "thesis_posting"]:
@@ -132,6 +191,17 @@ class VectorRetriever:
     def _names(hit: ScoredHit, key: str) -> list[str]:
         people = hit.metadata.get(key) or []
         return [str(name) for name in people] if isinstance(people, list) else []
+
+    @staticmethod
+    def _match_summary(matches: list[SupervisorMatch], limit: int = 10) -> list[str]:
+        clipped = matches[:limit]
+        summary = [
+            f"{m.supervisor}(pub={m.publication_count},post={m.posting_count},score={m.score:.3f})"
+            for m in clipped
+        ]
+        if len(matches) > limit:
+            summary.append(f"... +{len(matches) - limit} more")
+        return summary
 
     @staticmethod
     def _persons(hit: ScoredHit) -> list[str]:
