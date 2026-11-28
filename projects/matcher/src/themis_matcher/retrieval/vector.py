@@ -192,7 +192,6 @@ class VectorRetriever:
         people = hit.metadata.get(key) or []
         return [str(name) for name in people] if isinstance(people, list) else []
 
-
     @staticmethod
     def _match_summary(matches: list[SupervisorMatch], limit: int = 10) -> list[str]:
         clipped = matches[:limit]
