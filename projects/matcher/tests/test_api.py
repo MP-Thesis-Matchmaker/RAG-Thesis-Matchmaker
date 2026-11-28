@@ -97,6 +97,24 @@ def test_health_answers_without_touching_the_database(empty_client: TestClient) 
     assert response.json() == {"status": "ok"}
 
 
+def test_openapi_schema_exposes_matcher_routes_with_tags(empty_client: TestClient) -> None:
+    response = empty_client.get("/openapi.json")
+
+    assert response.status_code == 200
+    schema = response.json()
+    assert schema["info"]["title"] == "themis-matcher"
+    assert schema["paths"]["/v1/health"]["get"]["tags"] == ["system"]
+    assert schema["paths"]["/v1/recommend"]["post"]["tags"] == ["matching"]
+    assert "409" in schema["paths"]["/v1/recommend"]["post"]["responses"]
+
+
+def test_swagger_ui_is_served(empty_client: TestClient) -> None:
+    response = empty_client.get("/docs")
+
+    assert response.status_code == 200
+    assert "Swagger UI" in response.text
+
+
 def test_match_refuses_when_no_index_exists(empty_client: TestClient) -> None:
     """Serving canned matches would be worse than an error: the caller cannot tell."""
     response = empty_client.post("/v1/match", json={"query": "dense retrieval"})
